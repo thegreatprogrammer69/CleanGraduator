@@ -1,4 +1,5 @@
 cmake-*/
+.idea
 *.7z
 *.zip
 *.rar
