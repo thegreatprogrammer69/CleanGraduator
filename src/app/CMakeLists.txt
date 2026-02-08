@@ -1,5 +1,9 @@
 add_executable(CleanGraduator
         main.cpp
+        cameragridwidget.h
+        cameragridwidget.cpp
+        mainwindow.h
+        mainwindow.cpp
 )
 
 target_link_libraries(CleanGraduator

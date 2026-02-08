@@ -5,11 +5,11 @@
 
 namespace infra::camera {
 
-class DShowCameraStream;
+class DShowCamera;
 
 class SampleGrabberCB final : public ISampleGrabberCB {
 public:
-    explicit SampleGrabberCB(DShowCameraStream* owner);
+    explicit SampleGrabberCB(DShowCamera* owner);
 
     // IUnknown
     STDMETHODIMP QueryInterface(REFIID riid, void** ppv) override;
@@ -26,7 +26,7 @@ public:
 
 private:
     std::atomic<ULONG> ref_count_{1};
-    DShowCameraStream* owner_;
+    DShowCamera* owner_;
 };
 
 }

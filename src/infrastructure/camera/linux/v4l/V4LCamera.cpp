@@ -27,7 +27,7 @@ static int xioctl(int fd, unsigned long request, void* arg) {
     }
 }
 
-V4LCamera::V4LCamera(const CameraPorts& ports, V4LCameraConfig config)
+V4LCamera::V4LCamera(CameraPorts ports, V4LCameraConfig config)
     : logger_(ports.logger), ports_(ports), config_(std::move(config)) {}
 
 V4LCamera::~V4LCamera() {

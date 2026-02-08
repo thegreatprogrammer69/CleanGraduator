@@ -1,10 +1,10 @@
-#include "../SampleGrabberCB.h"
-#include "DShowCameraStream.h"
+#include "SampleGrabberCB.h"
+#include "DShowCamera.h"
 
 
 namespace infra::camera {
 
-SampleGrabberCB::SampleGrabberCB(DShowCameraStream *owner): owner_(owner) {}
+SampleGrabberCB::SampleGrabberCB(DShowCamera *owner): owner_(owner) {}
 
 HRESULT SampleGrabberCB::QueryInterface(const IID &riid, void **ppv) {
     if (riid == IID_ISampleGrabberCB || riid == IID_IUnknown) {

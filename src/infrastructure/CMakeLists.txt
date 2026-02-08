@@ -27,7 +27,7 @@ if(WIN32)
             platform/com/ComPort_windows.cpp
             platform/lpt/LptPort_windows.cpp
             platform/sleep/sleep_windows.cpp
-            camera/windows/dshow/DShowVideoStream.cpp
+            camera/windows/dshow/DShowCamera.cpp
             camera/windows/dshow/SampleGrabberCB.cpp
     )
 elseif(UNIX)
@@ -42,18 +42,26 @@ elseif(UNIX)
     )
 endif()
 
-find_package(PkgConfig REQUIRED)
-
-pkg_check_modules(GSTREAMER REQUIRED
-        gstreamer-1.0
-        gstreamer-base-1.0
-        gstreamer-app-1.0
-)
 
 add_library(infrastructure STATIC
         ${SOURCES}
         ${PLATFORM_SOURCES}
 )
+
+
+if(UNIX)
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(GSTREAMER REQUIRED
+            gstreamer-1.0
+            gstreamer-base-1.0
+            gstreamer-app-1.0
+    )
+else()
+    set(GSTREAMER_INCLUDE_DIRS, "")
+    set(GSTREAMER_LIBRARIES, "")
+    set(GSTREAMER_CFLAGS_OTHER, "")
+endif()
+
 
 target_include_directories(infrastructure
         PUBLIC

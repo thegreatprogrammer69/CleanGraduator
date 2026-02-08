@@ -5,7 +5,7 @@ namespace infra::platform {
 
 class LptPort {
 public:
-    LptPort(unsigned short address);
+    explicit LptPort(unsigned short address);
     ~LptPort();
     unsigned char read(unsigned short offset) const;
     void write(unsigned short offset, unsigned char value);

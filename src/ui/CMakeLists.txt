@@ -1,8 +1,16 @@
 add_library(ui STATIC
         widgets/video/VideoOpenGLWidget.cpp
         widgets/video/VideoOpenGLWidget.h
-        presenters/VideoStreamPresenter.cpp
-        presenters/VideoStreamPresenter.h
+        ../application/presenters/VideoFramePresenter.cpp
+        ../application/presenters/VideoFramePresenter.h
+        widgets/layout/StackPanelWidget.cpp
+        widgets/layout/StackPanelWidget.h
+        adapters/QtVideoSourceAdapter.cpp
+        adapters/QtVideoSourceAdapter.h
+        views/QtVideoSourceView.cpp
+        views/QtVideoSourceView.h
+        widgets/video/QtVideoOpenGLWidget.cpp
+        widgets/video/QtVideoOpenGLWidget.h
 )
 
 target_include_directories(ui

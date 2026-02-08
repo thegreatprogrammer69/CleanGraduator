@@ -19,7 +19,7 @@ namespace infra::camera {
 
 class V4LCamera final : public domain::ports::IVideoSource {
 public:
-    explicit V4LCamera(const CameraPorts& ports, V4LCameraConfig config);
+    explicit V4LCamera(CameraPorts ports, V4LCameraConfig config);
     ~V4LCamera() override;
 
     bool start() override;
@@ -34,7 +34,7 @@ private:
 private:
     fmt::FmtLogger logger_;
 
-    const CameraPorts& ports_;
+    CameraPorts ports_;
     V4LCameraConfig config_;
 
     std::mutex sinks_mutex_;

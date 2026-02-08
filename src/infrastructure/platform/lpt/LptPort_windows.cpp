@@ -71,12 +71,13 @@ LptPort::~LptPort() {
     }
 }
 
-unsigned char LptPort::read(unsigned short offset) {
+unsigned char LptPort::read(unsigned short offset) const {
     if (!impl_ || !impl_->readIoPortByte) return 0;
     return impl_->readIoPortByte(address_ + offset);
 }
 
-void LptPort::write(unsigned char value, unsigned short offset) {
+    //    void write(unsigned short offset, unsigned char value);
+void LptPort::write(unsigned short offset, unsigned char value) {
     if (!impl_ || !impl_->writeIoPortByte) return;
     impl_->writeIoPortByte(address_ + offset, value);
 }
