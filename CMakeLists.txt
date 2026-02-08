@@ -9,6 +9,7 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
+
 find_package(Qt5 REQUIRED COMPONENTS Widgets OpenGL)
 set(QT_VERSION_MAJOR 5)
 find_package(OpenGL REQUIRED)

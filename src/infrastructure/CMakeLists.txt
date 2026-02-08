@@ -1,14 +1,21 @@
 set(SOURCES
+
+
         catalogs/FileDisplacementCatalog.cpp
         catalogs/FileGaugeCatalog.cpp
         catalogs/FilePrinterCatalog.cpp
+
+        calculation/angle/CastAnglemeter.cpp
+        calculation/angle/detail/cast_anglemeter.cpp
+
         hardware/dm5002/DM5002RFPressureSensor.cpp
         hardware/g540/G540LPT.cpp
-        fmt/fmt_application.cpp
-        fmt/fmt_domain.cpp
+
         logging/ConsoleLogger.cpp
         logging/FileLogger.cpp
+
         clock/SessionClock.cpp
+
         process/ProcessLifecycle.cpp
         process/ProcessRunner.cpp
 )
@@ -31,8 +38,17 @@ elseif(UNIX)
             platform/lpt/LptPort_linux.cpp
             platform/sleep/sleep_linux.cpp
             camera/linux/v4l/V4LCamera.cpp
+            camera/linux/gstreamer/GStreamerCamera.cpp
     )
 endif()
+
+find_package(PkgConfig REQUIRED)
+
+pkg_check_modules(GSTREAMER REQUIRED
+        gstreamer-1.0
+        gstreamer-base-1.0
+        gstreamer-app-1.0
+)
 
 add_library(infrastructure STATIC
         ${SOURCES}
@@ -42,9 +58,15 @@ add_library(infrastructure STATIC
 target_include_directories(infrastructure
         PUBLIC
         ${PROJECT_SOURCE_DIR}/src
+        ${GSTREAMER_INCLUDE_DIRS}
 )
 
 target_link_libraries(infrastructure
         PUBLIC
         domain
+        ${GSTREAMER_LIBRARIES}
+)
+
+target_compile_options(infrastructure PRIVATE
+        ${GSTREAMER_CFLAGS_OTHER}
 )

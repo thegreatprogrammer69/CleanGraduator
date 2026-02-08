@@ -1,5 +1,6 @@
 add_library(application STATIC
-    read/MeasurementSetupQuery.cpp
+    fmt/fmt_application.cpp
+    interactors/AngleFromVideoInteractor.cpp
 )
 
 target_include_directories(application

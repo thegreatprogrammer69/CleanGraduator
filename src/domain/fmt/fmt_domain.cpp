@@ -3,6 +3,7 @@
 #include <chrono>
 #include <ostream>
 
+#include "domain/core/calibration/CalibrationCellSeverity.h"
 #include "domain/core/measurement/Angle.h"
 #include "domain/core/measurement/AngleUnit.h"
 #include "domain/core/measurement/Pressure.h"
@@ -72,8 +73,8 @@ std::ostream& operator<<(std::ostream& os, const PressureUnit& f) {
 }
 
 std::ostream& operator<<(std::ostream& os, const Timestamp& f) {
-    const auto ns = std::chrono::duration_cast<std::chrono::nanoseconds>(f.toDuration()).count();
-    os << ns << " ns";
+    std::chrono::duration<double> seconds = f.toDuration();
+    os << seconds.count() << " s";
     return os;
 }
 
@@ -116,6 +117,24 @@ std::ostream& operator<<(std::ostream& os, const ProcessLifecycleState& f) {
             break;
         case ProcessLifecycleState::Stopping:
             os << "Stopping";
+            break;
+    }
+    return os;
+}
+
+std::ostream & operator<<(std::ostream &os, CalibrationCellSeverity &f) {
+    switch (f) {
+        case CalibrationCellSeverity::None:
+            os << "None";
+            break;
+        case CalibrationCellSeverity::Info:
+            os << "Info";
+            break;
+        case CalibrationCellSeverity::Warning:
+            os << "Warning";
+            break;
+        case CalibrationCellSeverity::Error:
+            os << "Error";
             break;
     }
     return os;

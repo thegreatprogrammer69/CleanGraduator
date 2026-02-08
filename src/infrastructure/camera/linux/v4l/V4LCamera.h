@@ -11,7 +11,7 @@
 
 #include "domain/fmt/FmtLogger.h"
 #include "domain/ports/inbound/IVideoSource.h"
-#include "infrastructure/camera/CameraConfig.h"
+#include "V4LCameraConfig.h"
 #include "infrastructure/camera/CameraPorts.h"
 
 
@@ -19,7 +19,7 @@ namespace infra::camera {
 
 class V4LCamera final : public domain::ports::IVideoSource {
 public:
-    explicit V4LCamera(const CameraPorts& ports, CameraConfig config);
+    explicit V4LCamera(const CameraPorts& ports, V4LCameraConfig config);
     ~V4LCamera() override;
 
     bool start() override;
@@ -35,7 +35,7 @@ private:
     fmt::FmtLogger logger_;
 
     const CameraPorts& ports_;
-    CameraConfig config_;
+    V4LCameraConfig config_;
 
     std::mutex sinks_mutex_;
     std::vector<domain::ports::IVideoSink*> sinks_;

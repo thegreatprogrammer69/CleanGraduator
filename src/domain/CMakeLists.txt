@@ -1,7 +1,7 @@
-add_library(domain INTERFACE)
+add_library(domain STATIC fmt/fmt_domain.cpp)
 
 
 target_include_directories(domain
-        INTERFACE
+        PUBLIC
         ${PROJECT_SOURCE_DIR}/src
 )

@@ -3,6 +3,7 @@
 #include <iosfwd>
 
 namespace domain::common {
+    enum class CalibrationCellSeverity;
     class Angle;
     enum class AngleUnit;
     class Pressure;
@@ -23,5 +24,6 @@ std::ostream& operator<<(std::ostream& os, const domain::common::PixelFormat& f)
 std::ostream& operator<<(std::ostream& os, const domain::common::VideoBuffer& f);
 std::ostream& operator<<(std::ostream& os, const domain::common::VideoFrame& f);
 std::ostream& operator<<(std::ostream& os, const domain::common::ProcessLifecycleState& f);
+std::ostream& operator<<(std::ostream& os, const domain::common::CalibrationCellSeverity& f);
 
 #endif //CLEANGRADUATOR_FMT_DOMAIN_H
