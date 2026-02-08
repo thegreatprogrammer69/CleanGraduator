@@ -4,10 +4,9 @@
 #include "domain/core/video/VideoFrame.h"
 
 namespace domain::ports {
-    class IAnglemeter {
-    public:
-        IAnglemeter() = default;
-        virtual ~IAnglemeter() = default;
+    struct IAngleCalculator {
+        IAngleCalculator() = default;
+        virtual ~IAngleCalculator() = default;
         virtual common::Angle calculate(common::VideoFramePtr) = 0;
     };
 }

@@ -2,6 +2,8 @@
 #define GRADUATOR_PRESSURE_H
 #include <stdexcept>
 #include <cmath>
+
+#include "PressurePoints.h"
 #include "PressureUnit.h"
 
 

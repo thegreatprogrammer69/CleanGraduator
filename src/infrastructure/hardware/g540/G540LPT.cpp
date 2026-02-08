@@ -1,53 +1,77 @@
 #include "G540LPT.h"
 #include "g540logic.h"
 #include <algorithm>
+#include <atomic>
+#include <thread>
 #include <infrastructure/platform/sleep/sleep.h>
+
+#include "infrastructure/platform/lpt/LptPort.h"
 
 
 namespace infra::hardware {
+
+    struct G540LPT::G540LptImpl {
+        explicit G540LptImpl(unsigned short lpt_port)
+            : lpt_port(lpt_port)
+        { }
+
+        platform::LptPort lpt_port;
+
+        std::atomic<bool> emergency{false};
+        std::atomic<bool> stopped{true};
+        mutable std::thread worker;
+
+        std::atomic<G540Direction> direction;
+        std::atomic<std::chrono::steady_clock::duration> half_period{};
+        struct {std::atomic<unsigned char> b1; std::atomic<unsigned char> b2; } step_bytes{};
+        struct {std::atomic<unsigned char> begin; std::atomic<unsigned char> end; } limit_bytes{};
+    };
+
     G540LPT::G540LPT(const G540Ports& ports, const G540LptConfig &config)
-        : ports_(ports)
+        : impl_(std::make_unique<G540LptImpl>(config.lpt_port))
+        , ports_(ports)
         , config_(config)
-        , lpt_port_(config.lpt_port)
+        , logger_(ports.logger)
     {
-        ports_.logger.info("constructor called");
-        limit_bytes_.begin = 1 << config_.bit_begin_limit_switch;
-        limit_bytes_.end   = 1 << config_.bit_end_limit_switch;
+        logger_.info("constructor called");
+        impl_->limit_bytes.begin = 1 << config_.bit_begin_limit_switch;
+        impl_->limit_bytes.end   = 1 << config_.bit_end_limit_switch;
         G540LPT::applyDirection(G540Direction::Neutral);
         G540LPT::applyFrequency(config_.min_freq_hz);
     }
 
     G540LPT::~G540LPT() {
-        ports_.logger.info("destructor called, stopping worker");
+        logger_.info("destructor called, stopping worker");
         G540LPT::stop();
     }
 
     void G540LPT::start() {
-        if (!stopped_) {
-            ports_.logger.warn("start() called but worker already running");
+        if (!impl_->stopped) {
+            logger_.warn("start() called but worker already running");
             return;
         }
 
-        ports_.logger.info("starting worker thread");
+        logger_.info("starting worker thread");
 
-        if (worker_.joinable()) {
-            worker_.join();
+        if (impl_->worker.joinable()) {
+            impl_->worker.join();
         }
 
-        stopped_.store(false, std::memory_order_release);
-        worker_ = std::thread(&G540LPT::run, this);
+        impl_->stopped.store(false, std::memory_order_release);
+        impl_->emergency.store(false, std::memory_order_release);
+        impl_->worker = std::thread(&G540LPT::run, this);
     }
 
     void G540LPT::stop() {
-        if (stopped_.exchange(true, std::memory_order_relaxed)) {
-            ports_.logger.warn("stop() called but worker already stopped");
+        if (impl_->stopped.exchange(true, std::memory_order_release)) {
+            logger_.warn("stop() called but worker already stopped");
             return;
         }
 
-        ports_.logger.info("stopping worker thread");
+        logger_.info("stopping worker thread");
 
-        if (worker_.joinable()) {
-            worker_.join();
+        if (impl_->worker.joinable()) {
+            impl_->worker.join();
         }
 
         applyDirection(G540Direction::Neutral);
@@ -55,67 +79,71 @@ namespace infra::hardware {
     }
 
     void G540LPT::emergencyStop() {
-        stopped_.store(true, std::memory_order_relaxed);
-        // lpt_port_.write(0, 0);
-        ports_.logger.error("EMERGENCY STOP triggered");
+        impl_->emergency.store(true, std::memory_order_release);
+        impl_->stopped.store(true, std::memory_order_release);
+
+        // Немедленно гасим импульсы
+        // impl_->lpt_port.write(0, 0);
+
+        logger_.error("!!! EMERGENCY STOP !!!");
     }
 
     bool G540LPT::stopped() const {
-        return stopped_.load(std::memory_order_acquire);
+        return impl_->stopped.load(std::memory_order_acquire);
     }
 
     void G540LPT::applyFrequency(int hz) {
         if (hz > config_.max_freq_hz) hz = config_.max_freq_hz;
         if (hz < config_.min_freq_hz) hz = config_.min_freq_hz;
-        half_period_ = g540logic::calculateHalfPeriod(hz);
-        ports_.logger.info("frequency set to " + std::to_string(hz) + " Hz");
+        impl_->half_period = g540logic::calculateHalfPeriod(hz);
+        logger_.info("frequency set to {} Hz", hz);
     }
 
     void G540LPT::applyDirection(G540Direction direction) {
         constexpr int axis = 0; // Ось X
         constexpr int shift = 2 * axis; // 0, 2, 4, 6 для X,Y,Z,A;
 
-        direction_ = direction;
+        impl_->direction = direction;
         if (direction == G540Direction::Forward) {
-            ports_.logger.info("direction set to Forward");
-            step_bytes_.b1 = 0 << shift;
-            step_bytes_.b2 = 1 << shift;
+            logger_.info("direction set to Forward");
+            impl_->step_bytes.b1 = 0 << shift;
+            impl_->step_bytes.b2 = 1 << shift;
         }
         else if (direction == G540Direction::Backward) {
-            ports_.logger.info("direction set to Backward");
-            step_bytes_.b1 = 2 << shift;
-            step_bytes_.b2 = 3 << shift;
+            logger_.info("direction set to Backward");
+            impl_->step_bytes.b1 = 2 << shift;
+            impl_->step_bytes.b2 = 3 << shift;
         }
         else {
-            ports_.logger.info("direction set to Neutral");
-            step_bytes_.b1 = 0;
-            step_bytes_.b2 = 0;
+            logger_.info("direction set to Neutral");
+            impl_->step_bytes.b1 = 0;
+            impl_->step_bytes.b2 = 0;
         }
     }
 
     void G540LPT::applyFlapsState(G540FlapsState flaps_state) {
         switch (flaps_state) {
             case G540FlapsState::CloseBoth:
-                ports_.logger.info("flaps state set to CloseBoth");
-                lpt_port_.write(2, config_.byte_close_both_flaps);
+                logger_.info("flaps state set to CloseBoth");
+                impl_->lpt_port.write(2, config_.byte_close_both_flaps);
                 break;
             case G540FlapsState::OpenInput:
-                ports_.logger.info("flaps state set to OpenInput");
-                lpt_port_.write(2, config_.byte_open_input_flap);
+                logger_.info("flaps state set to OpenInput");
+                impl_->lpt_port.write(2, config_.byte_open_input_flap);
                 break;
             case G540FlapsState::OpenOutput:
-                ports_.logger.info("flaps state set to OpenOutput");
-                lpt_port_.write(2, config_.byte_open_output_flap);
+                logger_.info("flaps state set to OpenOutput");
+                impl_->lpt_port.write(2, config_.byte_open_output_flap);
                 break;
             default:
-                ports_.logger.error("invalid G540StepperFlapsState argument");
+                logger_.error("invalid G540StepperFlapsState argument");
         }
     }
 
     G540LimitsState G540LPT::getLimitsState() const {
         const unsigned char state = readState();
-        const bool begin = state & limit_bytes_.begin.load();
-        const bool end   = state & limit_bytes_.end.load();
+        const bool begin = state & impl_->limit_bytes.begin.load();
+        const bool end   = state & impl_->limit_bytes.end.load();
         return  begin && end ? G540LimitsState::Both  :
                 begin        ? G540LimitsState::Begin :
                 end          ? G540LimitsState::End   :
@@ -125,33 +153,38 @@ namespace infra::hardware {
     void G540LPT::run() {
         using namespace std::chrono;
 
-        ports_.logger.info("worker thread started");
+        logger_.info("worker thread started");
 
-        while (!stopped_.load(std::memory_order_acquire))
+        while (true)
         {
-            const auto direction = direction_.load();
-            const auto half_period = half_period_.load();
+            if (impl_->emergency.load(std::memory_order_acquire)) break;
+            if (impl_->stopped.load(std::memory_order_acquire)) break;
+
+            const auto direction = impl_->direction.load();
+            const auto half_period = impl_->half_period.load();
             const auto limits    = getLimitsState();
-            const auto step1 = step_bytes_.b1.load();
-            const auto step2 = step_bytes_.b2.load();
+            const auto step1 = impl_->step_bytes.b1.load();
+            const auto step2 = impl_->step_bytes.b2.load();
 
             if (!g540logic::canMove(direction, limits)) {
-                platform::sleep(100ms);
+                platform::sleep(25ms);
                 continue;
             }
 
-            lpt_port_.write(0, step1);
+            if (impl_->emergency.load(std::memory_order_acquire)) break;
+            impl_->lpt_port.write(0, step1);
             platform::precise_sleep(half_period);
 
-            lpt_port_.write(0, step2);
+            if (impl_->emergency.load(std::memory_order_acquire)) break;
+            impl_->lpt_port.write(0, step2);
             platform::precise_sleep(half_period);
         }
 
-        ports_.logger.info("worker thread stopped");
-        stopped_.store(true, std::memory_order_release);
+        logger_.info("worker thread stopped");
+        impl_->stopped.store(true, std::memory_order_release);
     }
 
     unsigned char G540LPT::readState() const {
-        return lpt_port_.read(1) ^ (1 << 7);
+        return impl_->lpt_port.read(1) ^ (1 << 7);
     }
 }

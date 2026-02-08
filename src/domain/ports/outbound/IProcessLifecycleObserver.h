@@ -4,8 +4,7 @@
 
 
 namespace domain::ports {
-    class IProcessLifecycleObserver {
-    public:
+    struct IProcessLifecycleObserver {
         virtual ~IProcessLifecycleObserver() = default;
         virtual void onStateChanged(common::ProcessLifecycleState newState) = 0;
     };

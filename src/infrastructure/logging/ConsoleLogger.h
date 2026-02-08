@@ -5,7 +5,7 @@
 
 namespace infra::logging {
 
-class ConsoleLogger final : public ILogger {
+class ConsoleLogger final : public domain::ports::ILogger {
 public:
     void info(const std::string& msg) override;
     void warn(const std::string& msg) override;

@@ -3,8 +3,7 @@
 #include "domain/core/measurement/Timestamp.h"
 
 namespace domain::ports {
-    class IClock {
-    public:
+    struct IClock {
         virtual ~IClock() = default;
         virtual common::Timestamp now() const = 0;
     };

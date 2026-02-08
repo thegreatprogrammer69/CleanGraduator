@@ -6,7 +6,7 @@
 #include "DM5002RFConfig.h"
 #include "PressureSensorPorts.h"
 #include "domain/core/measurement/Timestamp.h"
-#include "infrastructure/logging/FmtLogger.h"
+#include "domain/fmt/FmtLogger.h"
 
 namespace infra::hardware {
 
@@ -34,7 +34,7 @@ private:
     std::unique_ptr<DM5002RFPressureSensorImpl> impl_;
     const PressureSensorPorts& ports_;
     const DM5002RFConfig& config_;
-    domain::ports::FmtLogger logger_;
+    fmt::FmtLogger logger_;
 };
 
 }

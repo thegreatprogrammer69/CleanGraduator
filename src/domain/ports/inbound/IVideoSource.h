@@ -4,8 +4,7 @@
 
 
 namespace domain::ports {
-    class IVideoSource {
-    public:
+    struct IVideoSource {
         virtual ~IVideoSource() = default;
         virtual bool start() = 0;
         virtual void stop() = 0;

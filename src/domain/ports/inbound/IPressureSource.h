@@ -4,8 +4,7 @@
 
 
 namespace domain::ports {
-    class IPressureSource {
-    public:
+    struct IPressureSource {
         virtual ~IPressureSource() = default;
         virtual bool start() = 0;
         virtual void stop() = 0;

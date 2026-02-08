@@ -4,8 +4,7 @@
 
 
 namespace domain::ports {
-    class IProcessLifecycle {
-    public:
+    struct IProcessLifecycle {
         virtual ~IProcessLifecycle() = default;
 
         virtual bool canStart() const = 0;

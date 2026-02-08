@@ -9,10 +9,10 @@
 #include <memory>
 #include <algorithm>
 
+#include "domain/fmt/FmtLogger.h"
 #include "domain/ports/inbound/IVideoSource.h"
 #include "infrastructure/camera/CameraConfig.h"
 #include "infrastructure/camera/CameraPorts.h"
-#include "infrastructure/logging/FmtLogger.h"
 
 
 namespace infra::camera {
@@ -32,6 +32,8 @@ private:
     void dispatchFrame(const uint8_t* data, size_t size);
 
 private:
+    fmt::FmtLogger logger_;
+
     const CameraPorts& ports_;
     CameraConfig config_;
 
@@ -49,7 +51,6 @@ private:
     int fd_ = -1;
     std::vector<Buffer> buffers_;
 
-    logging::FmtLogger
 };
 
 }

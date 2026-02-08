@@ -8,8 +8,7 @@ namespace domain::common {
 }
 
 namespace domain::ports {
-    class IVideoSink {
-    public:
+    struct IVideoSink {
         virtual ~IVideoSink() = default;
         virtual void onVideoFrame(const common::Timestamp&, common::VideoFramePtr) = 0;
     };

@@ -1,14 +1,11 @@
 #ifndef CLEANGRADUATOR_G540BOARDLPT_H
 #define CLEANGRADUATOR_G540BOARDLPT_H
-#include <atomic>
-#include <chrono>
-#include <thread>
+#include <memory>
 
 #include "G540LptConfig.h"
 #include "G540Ports.h"
 #include "IG540.h"
-
-#include "infrastructure/platform/lpt/LptPort.h"
+#include "domain/fmt/FmtLogger.h"
 
 namespace infra::hardware {
     class G540LPT : public IG540 {
@@ -31,17 +28,11 @@ namespace infra::hardware {
         unsigned char readState() const;
 
     private:
+        struct G540LptImpl;
+        std::unique_ptr<G540LptImpl> impl_;
         const G540Ports& ports_;
         G540LptConfig config_;
-        platform::LptPort lpt_port_;
-
-        std::atomic<bool> stopped_{true};
-        mutable std::thread worker_;
-
-        std::atomic<G540Direction> direction_;
-        std::atomic<std::chrono::steady_clock::duration> half_period_{};
-        struct {std::atomic<unsigned char> b1; std::atomic<unsigned char> b2; } step_bytes_{};
-        struct {std::atomic<unsigned char> begin; std::atomic<unsigned char> end; } limit_bytes_{};
+        fmt::FmtLogger logger_;
     };
 }
 

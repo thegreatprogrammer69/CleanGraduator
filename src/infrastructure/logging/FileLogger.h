@@ -1,13 +1,13 @@
 #ifndef UNTITLED_FILELOGGER_H
 #define UNTITLED_FILELOGGER_H
 
-#include <domain/ports/outbound/ILogger.h>
+#include "domain/ports/outbound/ILogger.h"
 #include <fstream>
 #include <mutex>
 
 namespace infra::logging {
 
-class FileLogger final : public ILogger {
+class FileLogger final : public domain::ports::ILogger {
 public:
     explicit FileLogger(const std::string& filePath);
 

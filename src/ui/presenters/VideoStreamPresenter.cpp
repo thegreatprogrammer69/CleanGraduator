@@ -3,6 +3,11 @@
 #include <QMetaObject>
 #include <QThread>
 
+namespace ui::presenters {
+
+using namespace domain::ports;
+using namespace domain::common;
+
 VideoStreamPresenter::VideoStreamPresenter() = default;
 
 VideoStreamPresenter::~VideoStreamPresenter() = default;
@@ -16,7 +21,7 @@ VideoFramePtr VideoStreamPresenter::lastVideoFrame() {
     return latest_frame_;
 }
 
-void VideoStreamPresenter::onVideoFrame(time_point_t, VideoFramePtr frame) {
+void VideoStreamPresenter::onVideoFrame(const Timestamp&, VideoFramePtr frame) {
     {
         std::lock_guard lock(mutex_);
         latest_frame_ = std::move(frame);
@@ -24,7 +29,7 @@ void VideoStreamPresenter::onVideoFrame(time_point_t, VideoFramePtr frame) {
 
     // ВАЖНО:
     // onVideoFrame может приходить НЕ из GUI thread.
-    // Сигнал надо эмитить безопасно для Qt.
+    // Сигнал надо эмитить безопасно (Qt::QueuedConnection).
     if (QThread::currentThread() == thread()) {
         emit videoFrameReady();
     } else {
@@ -34,4 +39,6 @@ void VideoStreamPresenter::onVideoFrame(time_point_t, VideoFramePtr frame) {
             Qt::QueuedConnection
         );
     }
+}
+
 }

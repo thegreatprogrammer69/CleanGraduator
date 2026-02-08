@@ -1,14 +1,18 @@
 #ifndef CLEANGRADUATOR_PROCESSRUNNERPORTS_H
 #define CLEANGRADUATOR_PROCESSRUNNERPORTS_H
-#include "domain/ports/inbound/IAngleSource.h"
-#include "domain/ports/inbound/IPressureSource.h"
-#include "domain/ports/inbound/IProcessLifecycle.h"
+
+
+namespace domain::ports {
+    class IPressureSource;
+    class IAngleSource;
+    class IProcessLifecycle;
+}
 
 namespace infra::process {
     struct ProcessRunnerPorts {
-        IProcessLifecycle& lifecycle;
-        IPressureSource& pressure_source;
-        IAngleSource& angle_source;
+        domain::ports::IProcessLifecycle& lifecycle;
+        domain::ports::IPressureSource& pressure_source;
+        domain::ports::IAngleSource& angle_source;
     };
 }
 

@@ -4,7 +4,7 @@
 #include <vector>
 #include <algorithm>
 
-#include "../../domain/core/process/ProcessLifecycleState.h"
+#include "domain/core/process/ProcessLifecycleState.h"
 #include "domain/ports/inbound/IProcessLifecycle.h"
 #include "domain/ports/outbound/IProcessLifecycleObserver.h"
 #include "infrastructure/clock/SessionClock.h"
@@ -12,12 +12,14 @@
 
 namespace infra::process {
 
-class ProcessLifecycle final : public IProcessLifecycle {
+class ProcessLifecycle final : public domain::ports::IProcessLifecycle {
+    using State = domain::common::ProcessLifecycleState;
+    using Observer = domain::ports::IProcessLifecycleObserver;
 public:
     explicit ProcessLifecycle(
-        ProcessLifecycleState initial = ProcessLifecycleState::Idle);
+        State initial = State::Idle);
 
-    IClock& clock();
+    domain::ports::IClock& clock();
 
     bool canStart() const override;
     bool canStop() const override;
@@ -27,17 +29,17 @@ public:
     void markBackward() override;
     void markStopping() override;
 
-    ProcessLifecycleState state() const override;
-    void subscribe(IProcessLifecycleObserver& observer) override;
+    State state() const override;
+    void subscribe(Observer& observer) override;
 
 private:
-    void setState(ProcessLifecycleState newState);
-    void notify();
+    void setState(State newState);
+    void notify() const;
 
 private:
-    SessionClock clock_;
-    ProcessLifecycleState state_;
-    std::vector<IProcessLifecycleObserver*> observers_;
+    clock::SessionClock clock_;
+    State state_;
+    std::vector<Observer*> observers_;
 };
 
 }

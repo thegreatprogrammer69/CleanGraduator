@@ -3,54 +3,54 @@
 
 namespace infra::process {
 
-ProcessLifecycle::ProcessLifecycle(ProcessLifecycleState initial): state_(initial) {}
+ProcessLifecycle::ProcessLifecycle(const State initial): state_(initial) {}
 
-IClock & ProcessLifecycle::clock() {
+domain::ports::IClock & ProcessLifecycle::clock() {
     return clock_;
 }
 
 bool ProcessLifecycle::canStart() const {
-    return state_ == ProcessLifecycleState::Idle;
+    return state_ == State::Idle;
 }
 
 bool ProcessLifecycle::canStop() const {
-    return state_ == ProcessLifecycleState::Forward ||
-           state_ == ProcessLifecycleState::Backward;
+    return state_ == State::Forward ||
+           state_ == State::Backward;
 }
 
 void ProcessLifecycle::markIdle() {
-    setState(ProcessLifecycleState::Idle);
+    setState(State::Idle);
 }
 
 void ProcessLifecycle::markForward() {
     if (canStart()) {
         clock_.start();
-        setState(ProcessLifecycleState::Forward);
+        setState(State::Forward);
     }
 }
 
 void ProcessLifecycle::markBackward() {
     if (canStart()) {
-        setState(ProcessLifecycleState::Backward);
+        setState(State::Backward);
     }
 }
 
 void ProcessLifecycle::markStopping() {
     if (canStop()) {
         clock_.stop();
-        setState(ProcessLifecycleState::Stopping);
+        setState(State::Stopping);
     }
 }
 
-ProcessLifecycleState ProcessLifecycle::state() const {
+ProcessLifecycle::State ProcessLifecycle::state() const {
     return state_;
 }
 
-void ProcessLifecycle::subscribe(IProcessLifecycleObserver &observer) {
+void ProcessLifecycle::subscribe(Observer &observer) {
     observers_.push_back(&observer);
 }
 
-void ProcessLifecycle::setState(ProcessLifecycleState newState) {
+void ProcessLifecycle::setState(const State newState) {
     if (state_ == newState) {
         return;
     }
@@ -58,7 +58,7 @@ void ProcessLifecycle::setState(ProcessLifecycleState newState) {
     notify();
 }
 
-void ProcessLifecycle::notify() {
+void ProcessLifecycle::notify() const {
     for (auto* observer : observers_) {
         observer->onStateChanged(state_);
     }

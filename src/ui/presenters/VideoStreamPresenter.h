@@ -4,24 +4,27 @@
 #include <QObject>
 #include "domain/ports/outbound/IVideoSink.h"
 
-class VideoStreamPresenter final : public QObject, private IVideoSink {
+namespace ui::presenters {
+class VideoStreamPresenter final : public QObject, domain::ports::IVideoSink {
     Q_OBJECT
 public:
     VideoStreamPresenter();
     ~VideoStreamPresenter() override;
-    VideoFramePtr lastVideoFrame();
+
+    domain::common::VideoFramePtr lastVideoFrame();
     IVideoSink& sink();
 
 private: // IVideoSink
-    void onVideoFrame(time_point_t, VideoFramePtr) override;
+    void onVideoFrame(const domain::common::Timestamp&, domain::common::VideoFramePtr) override;
 
 signals:
     void videoFrameReady();
 
 private:
     std::mutex mutex_;
-    VideoFramePtr latest_frame_;
+    domain::common::VideoFramePtr latest_frame_;
 };
 
+}
 
 #endif //CLEANGRADUATOR_VIDEOSTREAMPRESENTER_H

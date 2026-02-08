@@ -1,16 +1,16 @@
 #ifndef CLEANGRADUATOR_FMTLOGGER_H
 #define CLEANGRADUATOR_FMTLOGGER_H
 
-#include <string>
-
+#include <utility>
 #include "domain/ports/outbound/ILogger.h"
-#include "infrastructure/fmt/fmt.h"
+#include "fmt.h"
 
-namespace domain::ports {
 
-    class FmtLogger {
+namespace fmt {
+
+    class FmtLogger final {
     public:
-        explicit FmtLogger(ILogger& logger)
+        explicit FmtLogger(domain::ports::ILogger& logger)
             : logger_(logger) {}
 
         template <typename... Args>
@@ -29,12 +29,9 @@ namespace domain::ports {
         }
 
     private:
-        ILogger& logger_;
+        domain::ports::ILogger& logger_;
     };
 
-} // namespace domain::ports
-
 }
-
 
 #endif //CLEANGRADUATOR_FMTLOGGER_H

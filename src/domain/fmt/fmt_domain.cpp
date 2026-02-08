@@ -13,7 +13,8 @@
 #include "domain/core/video/VideoBuffer.h"
 #include "domain/core/video/VideoFrame.h"
 
-namespace fmt {
+
+using namespace domain::common;
 
 std::ostream& operator<<(std::ostream& os, const Angle& f) {
     os << f.value() << ' ' << f.unit();
@@ -119,5 +120,3 @@ std::ostream& operator<<(std::ostream& os, const ProcessLifecycleState& f) {
     }
     return os;
 }
-
-} // namespace fmt

@@ -4,8 +4,7 @@
 
 
 namespace domain::ports {
-    class IAngleSource {
-    public:
+    struct IAngleSource {
         virtual ~IAngleSource() = default;
         virtual void start() = 0;
         virtual void stop() = 0;

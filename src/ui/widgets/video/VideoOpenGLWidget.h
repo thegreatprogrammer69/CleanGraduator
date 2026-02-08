@@ -3,9 +3,19 @@
 
 #include <QOpenGLWidget>
 #include <QOpenGLFunctions_2_1>
+#include <QOpenGLShaderProgram>
 
-class VideoStreamPresenter;
-struct VideoFrame;
+#include "domain/core/video/PixelFormat.h"
+
+namespace domain::common {
+    struct VideoFrame;
+}
+
+namespace ui::presenters {
+    class VideoStreamPresenter;
+}
+
+namespace ui::widgets {
 
 class VideoOpenGLWidget final
     : public QOpenGLWidget
@@ -14,7 +24,7 @@ class VideoOpenGLWidget final
     Q_OBJECT
 public:
     explicit VideoOpenGLWidget(
-        VideoStreamPresenter& video_stream_presenter,
+        presenters::VideoStreamPresenter& video_stream_presenter,
         QWidget* parent = nullptr
     );
 
@@ -24,8 +34,8 @@ protected:
     void paintGL() override;
 
 private:
-    void initTextureIfNeeded(const VideoFrame& frame);
-    void uploadFramePBO(const VideoFrame& frame);
+    void initTextureIfNeeded(const domain::common::VideoFrame& frame);
+    void uploadFramePBO(const domain::common::VideoFrame& frame);
     void drawQuad();
 
 private slots:
@@ -33,7 +43,7 @@ private slots:
 
 
 private:
-    VideoStreamPresenter& video_stream_presenter_;
+    presenters::VideoStreamPresenter& video_stream_presenter_;
 
     GLuint texture_{0};
     GLuint pbo_[2]{0, 0};
@@ -42,6 +52,20 @@ private:
     bool   textureInitialized_{false};
     int    texWidth_{0};
     int    texHeight_{0};
+
+    void initShader();
+
+    QOpenGLShaderProgram program_;
+    bool shaderInited_ = false;
+
+    // чтобы шейдер знал, что сейчас загружено
+    domain::common::PixelFormat currentFormat_ = domain::common::PixelFormat::RGB24;
+    int frameWidth_  = 0;
+    int frameHeight_ = 0;
+
+    GLenum glUploadFormat_ = GL_RGB; // GL_RGB или GL_RGBA
 };
+
+}
 
 #endif //CLEANGRADUATOR_VIDEOOPENGLWIDGET_H

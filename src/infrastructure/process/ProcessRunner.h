@@ -1,17 +1,23 @@
 #ifndef CLEANGRADUATOR_PROCESSRUNNER_H
 #define CLEANGRADUATOR_PROCESSRUNNER_H
-#include "domain/ports/inbound/IProcessLifecycle.h"
 #include "domain/ports/outbound/IProcessLifecycleObserver.h"
 
 
+namespace domain::ports {
+    class IProcessLifecycle;
+}
+
 namespace infra::process {
 
-class ProcessRunner : public IProcessLifecycleObserver {
+class ProcessRunner : public domain::ports::IProcessLifecycleObserver {
+    using State = domain::common::ProcessLifecycleState;
+    using IProcessLifecycle = domain::ports::IProcessLifecycle;
+
 public:
     explicit ProcessRunner(IProcessLifecycle& lifecycle);
     ~ProcessRunner() override;
 
-    void onStateChanged(ProcessLifecycleState newState) override;
+    void onStateChanged(State newState) override;
 
 private:
     void onIdle();

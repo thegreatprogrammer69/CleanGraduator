@@ -1,6 +1,5 @@
 add_library(application STATIC
-    usecases/StubUseCase.h
-    usecases/StubUseCase.cpp
+    read/MeasurementSetupQuery.cpp
 )
 
 target_include_directories(application
