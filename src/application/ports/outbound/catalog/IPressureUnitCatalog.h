@@ -2,12 +2,12 @@
 #define CLEANGRADUATOR_IPRESSUREUNITCATALOG_H
 #include <optional>
 #include <vector>
-#include "application/model/PressureUnitRecord.h"
+#include "application/dto/PressureUnitRecord.h"
 
 namespace application::ports {
     struct IPressureUnitCatalog {
-        virtual std::vector<model::PressureUnitRecord> list() const = 0;
-        virtual std::optional<model::PressureUnitRecord> at(int idx) const = 0;
+        virtual std::vector<dto::PressureUnitRecord> list() const = 0;
+        virtual std::optional<dto::PressureUnitRecord> at(dto::PressureUnitRecordId idx) const = 0;
         virtual ~IPressureUnitCatalog() = default;
     };
 }

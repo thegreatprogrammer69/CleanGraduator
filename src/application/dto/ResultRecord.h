@@ -2,15 +2,20 @@
 #define CLEANGRADUATOR_RESULTRECORD_H
 #include <chrono>
 
-#include "GaugeRecord.h"
+#include "../model/GaugeRecord.h"
 #include "domain/core/result/Result.h"
 
-namespace application::model {
+namespace application::dto {
     struct ResultRecord {
         domain::common::Result result;
         GaugeRecord gauge;
         std::chrono::system_clock::duration duration;
         int printerId;
+    };
+    struct ResultRecordId {
+        int value;
+        bool operator==(const ResultRecordId& o) const {  return value == o.value;  }
+        bool operator<(const ResultRecordId& o) const {  return value < o.value;  }
     };
 }
 

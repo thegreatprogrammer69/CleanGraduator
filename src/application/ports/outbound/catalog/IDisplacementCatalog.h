@@ -2,12 +2,12 @@
 #define CLEANGRADUATOR_IDisplacementCATALOG_H
 #include <optional>
 #include <vector>
-#include "application/model/DisplacementRecord.h"
+#include "application/dto/DisplacementRecord.h"
 
 namespace application::ports {
     struct IDisplacementCatalog {
-        virtual std::vector<model::DisplacementRecord> list() const = 0;
-        virtual std::optional<model::DisplacementRecord> at(int idx) const = 0;
+        virtual std::vector<dto::DisplacementRecord> list() const = 0;
+        virtual std::optional<dto::DisplacementRecord> at(dto::DisplacementRecordId idx) const = 0;
         virtual ~IDisplacementCatalog() = default;
     };
 }

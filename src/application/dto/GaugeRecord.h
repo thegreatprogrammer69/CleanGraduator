@@ -4,10 +4,15 @@
 #include <vector>
 #include "domain/core/calibration/CalibrationPoints.h"
 
-namespace application::model {
+namespace application::dto {
     struct GaugeRecord {
         std::wstring name;
         domain::common::CalibrationPoints values;
+    };
+    struct GaugeRecordId {
+        int value;
+        bool operator==(const GaugeRecordId& o) const {  return value == o.value;  }
+        bool operator<(const GaugeRecordId& o) const {  return value < o.value;  }
     };
 }
 

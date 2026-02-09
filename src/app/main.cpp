@@ -199,18 +199,18 @@ int main(int argc, char *argv[]) {
     // V4LCamera video_stream(ports, camera_config);
 
     // GStreamerCameraConfig camera_config { .pipe = "v4l2src device=/dev/video0 ! videoconvert ! video/x-raw,format=RGB,width=640,height=480,framerate=30/1 ! appsink name=appsink" };
-    GStreamerCameraConfig camera_config { .pipe = "filesrc location=/media/mint/4CC052E2C052D1B6/Documents/MANOTOM/output.avi ! decodebin ! videorate ! videoconvert ! video/x-raw,format=RGB,width=640,height=480,framerate=30/1 ! appsink name=appsink sync=true" };
-    GStreamerCamera video_stream(ports, camera_config);
+    // GStreamerCameraConfig camera_config { .pipe = "filesrc location=/media/mint/4CC052E2C052D1B6/Documents/MANOTOM/output.avi ! decodebin ! videorate ! videoconvert ! video/x-raw,format=RGB,width=640,height=480,framerate=30/1 ! appsink name=appsink sync=true" };
+    // GStreamerCamera video_stream(ports, camera_config);
 
-    // DShowCameraConfig camera_config1 = {
-    //     .index = 0
-    // };
-    // DShowCamera video_stream1(ports, camera_config1);
-    //
-    // DShowCameraConfig camera_config2 = {
-    //     .index = 1
-    // };
-    // DShowCamera video_stream2(ports, camera_config2);
+    DShowCameraConfig camera_config1 = {
+        .index = 0
+    };
+    DShowCamera video_stream1(ports, camera_config1);
+
+    DShowCameraConfig camera_config2 = {
+        .index = 1
+    };
+    DShowCamera video_stream2(ports, camera_config2);
 
     infra::calculation::CastAnglemeterPorts cast_anglemeter_ports = {
         .logger = *console_logger,
@@ -224,10 +224,12 @@ int main(int argc, char *argv[]) {
     application::interactors::AngleFromVideoInteractor angle_from_video_interactor(angle_from_video_interactor_ports);
     angle_from_video_interactor.start();
 
-    video_stream.addSink(angle_from_video_interactor);
+    video_stream1.addSink(angle_from_video_interactor);
+    video_stream2.addSink(angle_from_video_interactor);
 
 
-    mvvm::VideoSourceViewModel video_source_view_model1(video_stream);
+    mvvm::VideoSourceViewModel video_source_view_model1(video_stream1);
+    mvvm::VideoSourceViewModel video_source_view_model2(video_stream2);
 
 
     // QtVideoSourceWidget widget1(video_source_view_model1);
@@ -237,10 +239,10 @@ int main(int argc, char *argv[]) {
     // widget2.show();
 
     std::vector<mvvm::VideoSourceGridViewModel::Slot> video_slots {
-        {0, 0, video_source_view_model1}, {0, 1, video_source_view_model1},
-        {1, 0, video_source_view_model1}, {1, 1, video_source_view_model1},
-        {2, 0, video_source_view_model1}, {2, 1, video_source_view_model1},
-        {3, 0, video_source_view_model1}, {3, 1, video_source_view_model1},
+        {0, 0, video_source_view_model1}, {0, 1, video_source_view_model2},
+        {1, 0, video_source_view_model1}, {1, 1, video_source_view_model2},
+        {2, 0, video_source_view_model1}, {2, 1, video_source_view_model2},
+        {3, 0, video_source_view_model1}, {3, 1, video_source_view_model2},
     };
     mvvm::VideoSourceGridViewModel video_source_grid_view_model(video_slots, 4, 2, 4.0/3.0);
 
@@ -250,8 +252,14 @@ int main(int argc, char *argv[]) {
     w.resize(1100, 700);
     w.show();
 
-    std::thread thr([&video_stream]() {
-        if (!video_stream.start()) {
+    std::thread thr1([&video_stream1]() {
+        if (!video_stream1.start()) {
+            std::cerr << "video_stream.start() error" << std::endl;
+        }
+    });
+
+    std::thread thr2([&video_stream2]() {
+        if (!video_stream2.start()) {
             std::cerr << "video_stream.start() error" << std::endl;
         }
     });

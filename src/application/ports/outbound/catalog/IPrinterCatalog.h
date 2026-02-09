@@ -2,12 +2,12 @@
 #define CLEANGRADUATOR_IPRINTERCATALOG_H
 #include <optional>
 #include <vector>
-#include "application/model/PrinterRecord.h"
+#include "application/dto/PrinterRecord.h"
 
 namespace application::ports {
     struct IPrinterCatalog {
-        virtual std::vector<model::PrinterRecord> list() const = 0;
-        virtual std::optional<model::PrinterRecord> at(int idx) const = 0;
+        virtual std::vector<dto::PrinterRecord> list() const = 0;
+        virtual std::optional<dto::PrinterRecord> at(dto::PrinterRecordId idx) const = 0;
         virtual ~IPrinterCatalog() = default;
     };
 }

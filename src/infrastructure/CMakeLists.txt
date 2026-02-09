@@ -39,6 +39,8 @@ elseif(UNIX)
             platform/sleep/sleep_linux.cpp
             camera/linux/v4l/V4LCamera.cpp
             camera/linux/gstreamer/GStreamerCamera.cpp
+            settings/FileUserSettingsRepository.h
+            settings/FileUserSettingsRepository.cpp
     )
 endif()
 

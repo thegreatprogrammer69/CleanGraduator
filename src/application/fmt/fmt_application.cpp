@@ -1,8 +1,8 @@
 #include "fmt_application.h"
 
 #include "application/model/DisplacementRecord.h"
-#include "application/model/GaugeRecord.h"
-#include "application/model/PrinterRecord.h"
+#include "../dto/GaugeRecord.h"
+#include "../dto/PrinterRecord.h"
 
 #include <ostream>
 #include <string>
