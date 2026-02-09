@@ -1,5 +1,6 @@
-#include "mainwindow.h"
-#include "cameragridwidget.h"
+#include "QtMainWindow.h"
+
+#include "ui/widgets/layout/QtStackPanelWidget.h"
 
 #include <QWidget>
 #include <QHBoxLayout>
@@ -16,7 +17,9 @@
 #include <QTableWidget>
 #include <QHeaderView>
 
-#include "ui/widgets/layout/StackPanelWidget.h"
+#include "video/QtVideoSourceGridWidget.h"
+#include "viewmodels/MainWindowViewModel.h"
+
 
 static QWidget* makeProcessPage(QWidget *parent = nullptr)
 {
@@ -67,8 +70,8 @@ static QPushButton* makeSegmentButton(const QString &text, QWidget *parent = nul
     return b;
 }
 
-MainWindow::MainWindow(ui::presenters::VideoStreamPresenter& presenter, QWidget *parent)
-    : QMainWindow(parent)
+ui::QtMainWindow::QtMainWindow(mvvm::MainWindowViewModel& model, QWidget *parent)
+    : QMainWindow(parent), model_(model)
 {
     auto *central = new QWidget(this);
     central->setObjectName("centralWidget");
@@ -76,7 +79,7 @@ MainWindow::MainWindow(ui::presenters::VideoStreamPresenter& presenter, QWidget 
 
     /* ================= Левая часть: камеры ================= */
     const double aspectWH = 4.0 / 3.0;
-    m_cameras = new CameraGridWidget(presenter, 4, 2, aspectWH, central);
+    m_cameras = new widgets::QtVideoSourceGridWidget(model.videoSourceGridModel(), this);
 
     /* ================= Правая часть ================= */
     auto *rightPanel = new QWidget(central);
@@ -87,7 +90,7 @@ MainWindow::MainWindow(ui::presenters::VideoStreamPresenter& presenter, QWidget 
     rightLayout->setSpacing(10);
 
     /* ========= StackPanelWidget (табы + стек) ========= */
-    auto *panel = new StackPanelWidget(rightPanel);
+    auto *panel = new ui::widgets::QtStackPanelWidget(rightPanel);
 
     /* =================================================
      * =============== PAGE: ПРОЦЕСС ====================

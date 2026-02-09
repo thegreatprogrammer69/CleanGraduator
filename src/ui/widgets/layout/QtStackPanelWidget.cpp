@@ -1,4 +1,4 @@
-#include "stackpanelwidget.h"
+#include "QtStackPanelWidget.h"
 
 #include <QFrame>
 #include <QHBoxLayout>
@@ -7,6 +7,8 @@
 #include <QPushButton>
 #include <QStyle>
 #include <QVariant>
+
+using namespace ui::widgets;
 
 static QPushButton* makeTabButton(const QString &text, QWidget *parent)
 {
@@ -18,7 +20,7 @@ static QPushButton* makeTabButton(const QString &text, QWidget *parent)
     return b;
 }
 
-StackPanelWidget::StackPanelWidget(QWidget *parent)
+QtStackPanelWidget::QtStackPanelWidget(QWidget *parent)
     : QWidget(parent)
 {
     auto *root = new QVBoxLayout(this);
@@ -46,12 +48,12 @@ StackPanelWidget::StackPanelWidget(QWidget *parent)
     });
 }
 
-int StackPanelWidget::addTab(QWidget *page, const QString &label)
+int QtStackPanelWidget::addTab(QWidget *page, const QString &label)
 {
     return insertTab(count(), page, label);
 }
 
-int StackPanelWidget::insertTab(int index, QWidget *page, const QString &label)
+int QtStackPanelWidget::insertTab(int index, QWidget *page, const QString &label)
 {
     if (!page) return -1;
 
@@ -83,7 +85,7 @@ int StackPanelWidget::insertTab(int index, QWidget *page, const QString &label)
     return index;
 }
 
-void StackPanelWidget::removeTab(int index)
+void QtStackPanelWidget::removeTab(int index)
 {
     if (index < 0 || index >= count()) return;
 
@@ -110,32 +112,32 @@ void StackPanelWidget::removeTab(int index)
     setCurrentIndex(newIndex);
 }
 
-int StackPanelWidget::count() const
+int QtStackPanelWidget::count() const
 {
     return m_stack->count();
 }
 
-int StackPanelWidget::currentIndex() const
+int QtStackPanelWidget::currentIndex() const
 {
     return m_stack->currentIndex();
 }
 
-QWidget* StackPanelWidget::currentWidget() const
+QWidget* QtStackPanelWidget::currentWidget() const
 {
     return m_stack->currentWidget();
 }
 
-QWidget* StackPanelWidget::widget(int index) const
+QWidget* QtStackPanelWidget::widget(int index) const
 {
     return m_stack->widget(index);
 }
 
-int StackPanelWidget::indexOf(QWidget *page) const
+int QtStackPanelWidget::indexOf(QWidget *page) const
 {
     return m_stack->indexOf(page);
 }
 
-void StackPanelWidget::setCurrentIndex(int index)
+void QtStackPanelWidget::setCurrentIndex(int index)
 {
     if (index < 0 || index >= count()) return;
     if (index == m_stack->currentIndex()) return;
@@ -143,42 +145,42 @@ void StackPanelWidget::setCurrentIndex(int index)
     // setActiveButton вызовется через сигнал currentChanged от m_stack
 }
 
-void StackPanelWidget::setCurrentWidget(QWidget *page)
+void QtStackPanelWidget::setCurrentWidget(QWidget *page)
 {
     const int idx = indexOf(page);
     if (idx >= 0) setCurrentIndex(idx);
 }
 
-QString StackPanelWidget::tabText(int index) const
+QString QtStackPanelWidget::tabText(int index) const
 {
     auto *btn = tabButton(index);
     return btn ? btn->text() : QString();
 }
 
-void StackPanelWidget::setTabText(int index, const QString &text)
+void QtStackPanelWidget::setTabText(int index, const QString &text)
 {
     auto *btn = tabButton(index);
     if (!btn) return;
     btn->setText(text);
 }
 
-QFrame* StackPanelWidget::tabsBar() const
+QFrame* QtStackPanelWidget::tabsBar() const
 {
     return m_tabsBar;
 }
 
-QStackedWidget* StackPanelWidget::stackedWidget() const
+QStackedWidget* QtStackPanelWidget::stackedWidget() const
 {
     return m_stack;
 }
 
-QPushButton* StackPanelWidget::tabButton(int index) const
+QPushButton* QtStackPanelWidget::tabButton(int index) const
 {
     if (index < 0 || index >= m_buttons.size()) return nullptr;
     return m_buttons[index];
 }
 
-void StackPanelWidget::setActiveButton(int index)
+void QtStackPanelWidget::setActiveButton(int index)
 {
     for (int i = 0; i < m_buttons.size(); ++i) {
         const bool active = (i == index);
@@ -189,7 +191,7 @@ void StackPanelWidget::setActiveButton(int index)
     }
 }
 
-void StackPanelWidget::repolish(QWidget *w)
+void QtStackPanelWidget::repolish(QWidget *w)
 {
     if (!w) return;
     w->style()->unpolish(w);

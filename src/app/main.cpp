@@ -1,5 +1,6 @@
-#include <infrastructure/camera/windows/dshow/DShowCamera.h>
 #include "application/fmt/fmt.h"
+
+#include <infrastructure/camera/windows/dshow/DShowCamera.h>
 #include <infrastructure/camera/linux/v4l/V4LCamera.h>
 #include "infrastructure/camera/linux/gstreamer/GStreamerCamera.h"
 
@@ -16,16 +17,17 @@
 #include "infrastructure/process/ProcessLifecycle.h"
 #include "infrastructure/process/ProcessRunner.h"
 
-#include <ui/widgets/video/VideoOpenGLWidget.h>
-#include "ui/presenters/VideoStreamPresenter.h"
+#include <ui/widgets/video/QtVideoSourceWidget.h>
+#include <viewmodels/VideoSourceViewModel.h>
 
 #include <QApplication>
 
-#include "mainwindow.h"
 #include "application/interactors/AngleFromVideoInteractor.h"
 #include "infrastructure/calculation/angle/CastAnglemeter.h"
 #include "infrastructure/logging/FileLogger.h"
-#include "ui/adapters/QtVideoSourceAdapter.h"
+#include "ui/widgets/QtMainWindow.h"
+#include "viewmodels/MainWindowViewModel.h"
+#include "viewmodels/VideoSourceGridViewModel.h"
 
 static QString appStyle()
 {
@@ -158,13 +160,13 @@ int main(int argc, char *argv[]) {
     using namespace infra::hardware;
     using namespace infra::process;
     using namespace infra::catalogs;
-    using namespace ui::presenters;
     using namespace ui::widgets;
     using namespace domain::ports;
     using namespace domain::common;
     using namespace fmt;
 
-    std::unique_ptr<ILogger> console_logger = std::make_unique<FileLogger>("app.log");
+    // std::unique_ptr<ILogger> console_logger = std::make_unique<FileLogger>("app.log");
+    std::unique_ptr<ILogger> console_logger = std::make_unique<ConsoleLogger>();
     FmtLogger logger(*console_logger);
 
     ProcessLifecycle lifecycle; // IProcessLifecycle
@@ -197,18 +199,18 @@ int main(int argc, char *argv[]) {
     // V4LCamera video_stream(ports, camera_config);
 
     // GStreamerCameraConfig camera_config { .pipe = "v4l2src device=/dev/video0 ! videoconvert ! video/x-raw,format=RGB,width=640,height=480,framerate=30/1 ! appsink name=appsink" };
-    // GStreamerCameraConfig camera_config { .pipe = "filesrc location=/media/mint/4CC052E2C052D1B6/Documents/MANOTOM/output.avi ! decodebin ! videorate ! videoconvert ! video/x-raw,format=RGB,width=640,height=480,framerate=30/1 ! appsink name=appsink sync=true" };
-    // GStreamerCamera video_stream(ports, camera_config);
+    GStreamerCameraConfig camera_config { .pipe = "filesrc location=/media/mint/4CC052E2C052D1B6/Documents/MANOTOM/output.avi ! decodebin ! videorate ! videoconvert ! video/x-raw,format=RGB,width=640,height=480,framerate=30/1 ! appsink name=appsink sync=true" };
+    GStreamerCamera video_stream(ports, camera_config);
 
-    DShowCameraConfig camera_config1 = {
-        .index = 0
-    };
-    DShowCamera video_stream1(ports, camera_config1);
-
-    DShowCameraConfig camera_config2 = {
-        .index = 1
-    };
-    DShowCamera video_stream2(ports, camera_config2);
+    // DShowCameraConfig camera_config1 = {
+    //     .index = 0
+    // };
+    // DShowCamera video_stream1(ports, camera_config1);
+    //
+    // DShowCameraConfig camera_config2 = {
+    //     .index = 1
+    // };
+    // DShowCamera video_stream2(ports, camera_config2);
 
     infra::calculation::CastAnglemeterPorts cast_anglemeter_ports = {
         .logger = *console_logger,
@@ -222,24 +224,37 @@ int main(int argc, char *argv[]) {
     application::interactors::AngleFromVideoInteractor angle_from_video_interactor(angle_from_video_interactor_ports);
     angle_from_video_interactor.start();
 
-    // video_stream.addSink(angle_from_video_interactor);
+    video_stream.addSink(angle_from_video_interactor);
 
 
-    ui::adapters::QtVideoSourceAdapter adapter1(video_stream1);
-    ui::adapters::QtVideoSourceAdapter adapter2(video_stream2);
+    mvvm::VideoSourceViewModel video_source_view_model1(video_stream);
 
-    VideoOpenGLWidget widget1(adapter1);
-    widget1.show();
 
-    VideoOpenGLWidget widget2(adapter2);
-    widget2.show();
+    // QtVideoSourceWidget widget1(video_source_view_model1);
+    // widget1.show();
+    //
+    // QtVideoSourceWidget widget2(video_source_view_model1);
+    // widget2.show();
 
-    MainWindow w(video_stream_presenter2);
+    std::vector<mvvm::VideoSourceGridViewModel::Slot> video_slots {
+        {0, 0, video_source_view_model1}, {0, 1, video_source_view_model1},
+        {1, 0, video_source_view_model1}, {1, 1, video_source_view_model1},
+        {2, 0, video_source_view_model1}, {2, 1, video_source_view_model1},
+        {3, 0, video_source_view_model1}, {3, 1, video_source_view_model1},
+    };
+    mvvm::VideoSourceGridViewModel video_source_grid_view_model(video_slots, 4, 2, 4.0/3.0);
+
+    mvvm::MainWindowViewModel main_window_view_model(video_source_grid_view_model);
+
+    ui::QtMainWindow w(main_window_view_model);
     w.resize(1100, 700);
     w.show();
 
-    video_stream2.start();
-    video_stream1.start();
+    std::thread thr([&video_stream]() {
+        if (!video_stream.start()) {
+            std::cerr << "video_stream.start() error" << std::endl;
+        }
+    });
 
     return app.exec();
 }

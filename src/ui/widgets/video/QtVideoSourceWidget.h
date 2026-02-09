@@ -6,6 +6,7 @@
 #include <QOpenGLShaderProgram>
 
 #include "domain/core/video/PixelFormat.h"
+#include "viewmodels/VideoSourceViewModel.h"
 
 namespace domain::common {
     struct VideoFrame;
@@ -14,14 +15,15 @@ namespace domain::common {
 
 namespace ui::widgets {
 
-    class QtVideoOpenGLWidget final
+    class QtVideoSourceWidget final
         : public QOpenGLWidget
         , protected QOpenGLFunctions_2_1
     {
         Q_OBJECT
     public:
-        explicit QtVideoOpenGLWidget(QWidget* parent = nullptr);
+        explicit QtVideoSourceWidget(mvvm::VideoSourceViewModel& model, QWidget* parent = nullptr);
 
+    private slots:
         void setVideoFrame(domain::common::VideoFramePtr frame);
 
     protected:
@@ -37,6 +39,7 @@ namespace ui::widgets {
 
     private:
         domain::common::VideoFramePtr current_frame_;
+        mvvm::Observable<domain::common::VideoFramePtr>::Subscription frame_sub_;
 
         GLuint texture_{0};
         GLuint pbo_[2]{0, 0};

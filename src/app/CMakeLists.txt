@@ -1,9 +1,5 @@
 add_executable(CleanGraduator
         main.cpp
-        cameragridwidget.h
-        cameragridwidget.cpp
-        mainwindow.h
-        mainwindow.cpp
 )
 
 target_link_libraries(CleanGraduator
@@ -12,6 +8,7 @@ target_link_libraries(CleanGraduator
         application
         ui
         infrastructure
+        viewmodels
 )
 
 target_link_libraries(CleanGraduator PRIVATE Qt5::Widgets)

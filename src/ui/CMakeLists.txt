@@ -1,16 +1,14 @@
 add_library(ui STATIC
-        widgets/video/VideoOpenGLWidget.cpp
-        widgets/video/VideoOpenGLWidget.h
-        ../application/presenters/VideoFramePresenter.cpp
-        ../application/presenters/VideoFramePresenter.h
-        widgets/layout/StackPanelWidget.cpp
-        widgets/layout/StackPanelWidget.h
-        adapters/QtVideoSourceAdapter.cpp
-        adapters/QtVideoSourceAdapter.h
-        views/QtVideoSourceView.cpp
-        views/QtVideoSourceView.h
-        widgets/video/QtVideoOpenGLWidget.cpp
-        widgets/video/QtVideoOpenGLWidget.h
+        widgets/layout/QtStackPanelWidget.cpp
+        widgets/layout/QtStackPanelWidget.h
+
+        widgets/video/QtVideoSourceGridWidget.cpp
+        widgets/video/QtVideoSourceGridWidget.h
+        widgets/video/QtVideoSourceWidget.cpp
+        widgets/video/QtVideoSourceWidget.h
+
+        widgets/QtMainWindow.cpp
+        widgets/QtMainWindow.h
 )
 
 target_include_directories(ui
@@ -25,4 +23,5 @@ target_link_libraries(ui
         OpenGL::GL
         domain
         application
+        viewmodels
 )
