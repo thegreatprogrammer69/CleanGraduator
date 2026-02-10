@@ -73,27 +73,67 @@ void QtVideoSourceGridWidget::resizeEvent(QResizeEvent* event)
 
 void QtVideoSourceGridWidget::rebuildFromModel()
 {
-    // очищаем старые плитки (если перестраиваем)
+    // очищаем старые плитки
     for (auto* t : m_tiles)
         t->deleteLater();
     m_tiles.clear();
 
-    // Можно было бы также чистить layout item'ы, но т.к. виджеты удаляем,
-    // layout сам «освободится» от них. Если хотите жёстко — можно пройтись и удалить items.
-
     const auto& video_slots = m_model.videoSlots();
-    m_tiles.reserve(static_cast<int>(video_slots.size()));
+    if (video_slots.empty()) {
+        m_rows = 0;
+        m_cols = 0;
+        return;
+    }
+
+    constexpr int MinRowsPerColumn = 3;
+
+    // считаем реальные строки и колонки
+    int maxRow = -1;
+    int maxCol = -1;
 
     for (const auto& s : video_slots) {
         if (s.row < 0 || s.col < 0)
             continue;
 
-        auto* tile = makeTile(s.vm, this);
+        maxRow = qMax(maxRow, s.row);
+        maxCol = qMax(maxCol, s.col);
+    }
 
+    m_cols = qMin(maxCol + 1, m_model.cols());
+    m_rows = qMin(maxRow + 1, m_model.rows());
+
+    // считаем количество камер в каждой колонке
+    QVector<int> camsPerCol(m_cols, 0);
+    for (const auto& s : video_slots) {
+        if (s.col >= 0 && s.col < m_cols && s.row >= 0)
+            camsPerCol[s.col]++;
+    }
+
+    // итоговое число строк — максимум между реальными и минимально нужными
+    int effectiveRows = m_rows;
+    for (int c = 0; c < m_cols; ++c)
+        effectiveRows = qMax(effectiveRows,
+                             qMin(MinRowsPerColumn, camsPerCol[c]));
+
+
+    m_tiles.reserve(video_slots.size());
+
+    // добавляем реальные камеры
+    for (const auto& s : video_slots) {
+        if (s.row < 0 || s.col < 0)
+            continue;
+
+        if (s.col >= m_cols || s.row >= m_rows)
+            continue;
+
+        auto* tile = makeTile(s.vm, this);
         m_tiles.push_back(tile);
         m_grid->addWidget(tile, s.row, s.col);
     }
+
 }
+
+
 
 void QtVideoSourceGridWidget::recalcSizes()
 {

@@ -4,8 +4,8 @@
 
 namespace application::ports {
 
-    struct ICameraGridSettingsRepository {
-        virtual ~ICameraGridSettingsRepository() = default;
+    struct IVideoSourceGridSettingsRepository {
+        virtual ~IVideoSourceGridSettingsRepository() = default;
         virtual dto::UserSettings load() const = 0;
         virtual void save(const dto::UserSettings& settings) = 0;
     };

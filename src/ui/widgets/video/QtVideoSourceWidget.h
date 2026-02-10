@@ -4,6 +4,7 @@
 #include <QOpenGLWidget>
 #include <QOpenGLFunctions_2_1>
 #include <QOpenGLShaderProgram>
+#include <QTimer>
 
 #include "application/dto/settings/camera_grid/VideoSourceCrosshair.h"
 #include "domain/core/video/PixelFormat.h"
@@ -65,6 +66,9 @@ namespace ui::widgets {
         int frameHeight_{0};
 
         GLenum glUploadFormat_{GL_RGB};
+
+        QTimer repaintTimer_;
+        std::chrono::steady_clock::time_point lastFrameTime_ = std::chrono::steady_clock::now();
     };
 
 }

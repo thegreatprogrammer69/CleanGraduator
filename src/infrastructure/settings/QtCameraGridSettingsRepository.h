@@ -4,11 +4,11 @@
 #include <string>
 
 #include "application/dto/UserSettings.h"
-#include "application/ports/outbound/settings/ICameraGridSettingsRepository.h"
+#include "application/ports/outbound/settings/IVideoSourceGridSettingsRepository.h"
 
 namespace infrastructure::settings {
 
-    class QtCameraGridSettingsRepository final : public application::ports::ICameraGridSettingsRepository {
+    class QtCameraGridSettingsRepository final : public application::ports::IVideoSourceGridSettingsRepository {
     public:
         explicit QtCameraGridSettingsRepository(std::string iniFilePath);
 

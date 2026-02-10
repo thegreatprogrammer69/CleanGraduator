@@ -7,6 +7,14 @@
 
 #include "infrastructure/process/ProcessLifecycle.h"
 
+namespace application::ports {
+    struct IVideoSourceGridSettingsRepository;
+}
+
+namespace domain::ports {
+    struct IAngleCalculator;
+}
+
 namespace application::interactors {
 class AngleFromVideoInteractor;
 }
@@ -24,9 +32,6 @@ struct ILogger;
 struct IVideoSource;
 }
 
-namespace infrastructure::settings {
-class QtCameraGridSettingsRepository;
-}
 
 namespace infra::calculation {
 class CastAnglemeter;
@@ -50,7 +55,7 @@ class QtMainWindow;
 class AppBootstrap {
 public:
     explicit AppBootstrap(std::string configDirectory);
-
+    ~AppBootstrap();
     void initialize();
     ui::QtMainWindow& mainWindow();
 
@@ -59,18 +64,17 @@ private:
 
     std::unique_ptr<domain::ports::ILogger> logger_;
     infra::process::ProcessLifecycle lifecycle_;
-    std::unique_ptr<infra::process::ProcessRunner> processRunner_;
+    std::unique_ptr<domain::ports::IProcessLifecycleObserver> processRunner_;
 
-    std::unique_ptr<domain::ports::IVideoSource> primaryCamera_;
-    std::unique_ptr<domain::ports::IVideoSource> secondaryCamera_;
+    std::vector<std::unique_ptr<domain::ports::IVideoSource>> videoSources_;
 
-    std::unique_ptr<infra::calculation::CastAnglemeter> castAnglemeter_;
+    std::unique_ptr<domain::ports::IAngleCalculator> castAnglemeter_;
     std::unique_ptr<application::interactors::AngleFromVideoInteractor> angleInteractor_;
 
     std::vector<std::unique_ptr<mvvm::VideoSourceViewModel>> sourceViewModels_;
     std::unique_ptr<mvvm::VideoSourceGridViewModel> gridViewModel_;
 
-    std::unique_ptr<infrastructure::settings::QtCameraGridSettingsRepository> settingsRepository_;
+    std::unique_ptr<application::ports::IVideoSourceGridSettingsRepository> settingsRepository_;
     std::unique_ptr<application::services::VideoSourceGridService> gridService_;
     std::unique_ptr<application::usecases::ApplyCameraGridSettings> settingsUseCase_;
     std::unique_ptr<mvvm::VideoSourceGridSettingsViewModel> settingsViewModel_;

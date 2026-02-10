@@ -5,6 +5,8 @@ set(SOURCES
 #        catalogs/FileGaugeCatalog.cpp
 #        catalogs/FilePrinterCatalog.cpp
 
+        utils/ini/IniFile.cpp
+
         calculation/angle/CastAnglemeter.cpp
         calculation/angle/detail/cast_anglemeter.cpp
 

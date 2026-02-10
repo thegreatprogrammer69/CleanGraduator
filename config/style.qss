@@ -1,0 +1,145 @@
+/* ===== Base ===== */
+QMainWindow, QWidget#centralWidget {
+    background: #F3F4F6;
+    color: #111827;
+    font-family: "Segoe UI", "Inter", "Arial";
+    font-size: 13px;
+}
+
+/* ===== Camera grid (фон между тайлами) ===== */
+QWidget#cameraGrid { background: transparent; }
+
+QFrame#cameraTile {
+    background: #FFFFFF;
+    border: 1px solid #D1D5DB;
+    border-radius: 10px;
+}
+QFrame#cameraTile QLabel {
+    color: #374151;
+    font-weight: 600;
+}
+
+/* ===== Right panel card ===== */
+QFrame#rightPanel {
+    background: #FFFFFF;
+    border: 1px solid #D1D5DB;
+    border-radius: 12px;
+}
+
+/* ===== Segmented control container ===== */
+QFrame#segmentedBar {
+    background: #F3F4F6;
+    border: 1px solid #E5E7EB;
+    border-radius: 10px;
+}
+
+/* ===== Segment buttons ===== */
+QPushButton#segmentBtn {
+    background: transparent;
+    border: none;
+    padding: 8px 14px;
+    border-radius: 8px;
+    color: #374151;
+    font-weight: 600;
+}
+
+QPushButton#segmentBtn:hover {
+    background: #E5E7EB;
+}
+
+QPushButton#segmentBtn[active="true"] {
+    background: #FFFFFF;
+    border: 1px solid #D1D5DB;
+    color: #111827;
+}
+
+/* ===== Page content (optional polish) ===== */
+QLabel#pageTitle {
+    font-size: 16px;
+    font-weight: 700;
+    color: #111827;
+}
+QLabel#hintText {
+    color: #6B7280;
+}
+
+/* ===== Tabs bar ===== */
+QFrame#tabsBar {
+    background: #FFFFFF;
+    border: 1px solid #D1D5DB;
+    border-radius: 12px;
+}
+
+/* Кнопки вкладок */
+QPushButton#tabBtn {
+    background: transparent;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-weight: 600;
+    color: #374151;
+}
+
+QPushButton#tabBtn[active="true"] {
+    background: #E5E7EB;
+    color: #111827;
+}
+
+/* ===== Content cards ===== */
+QFrame#contentCard {
+    background: #FFFFFF;
+    border: 1px solid #D1D5DB;
+    border-radius: 12px;
+}
+
+QFrame#cameraTile {
+    background-color: #000000;
+    border-radius: 12px;
+}
+
+/* Таблица */
+QTableWidget {
+    border: none;
+    gridline-color: #E5E7EB;
+}
+
+QHeaderView::section {
+    background: #F3F4F6;
+    border: none;
+    border-right: 1px solid #E5E7EB;
+    border-bottom: 1px solid #E5E7EB;
+    padding: 4px;
+    font-weight: 600;
+}
+
+/* ─────────────────────────────────────────────
+   Secondary button: "Открыть все камеры"
+   ───────────────────────────────────────────── */
+QPushButton#openAllCamerasButton {
+    background: transparent;
+    border: 1px solid palette(mid);
+    border-radius: 4px;
+    padding: 4px 10px;
+    color: palette(button-text);
+}
+
+QPushButton#openAllCamerasButton:hover {
+    background: palette(base);
+}
+
+QPushButton#openAllCamerasButton:pressed {
+    background: palette(midlight);
+}
+
+
+/* ─────────────────────────────────────────────
+   Error state for cameras edit
+   ───────────────────────────────────────────── */
+QLineEdit[error="true"] {
+    border: 1px solid #c74a4a;
+    background: #fff5f5;
+}
+
+QLineEdit[error="true"]:focus {
+    border: 1px solid #b53b3b;
+}

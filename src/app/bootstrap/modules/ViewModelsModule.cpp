@@ -30,12 +30,15 @@ std::unique_ptr<mvvm::VideoSourceGridViewModel> ViewModelsModule::createGridView
     }
 
     using Slot = mvvm::VideoSourceGridViewModel::Slot;
-    mvvm::VideoSourceGridViewModel::Slots slots{
-        {0, 0, *sourceViewModels.at(0)}, {0, 1, *sourceViewModels.at(std::min<size_t>(1, sourceViewModels.size() - 1))},
-        {1, 0, *sourceViewModels.at(0)}, {1, 1, *sourceViewModels.at(std::min<size_t>(1, sourceViewModels.size() - 1))},
-        {2, 0, *sourceViewModels.at(0)}, {2, 1, *sourceViewModels.at(std::min<size_t>(1, sourceViewModels.size() - 1))},
-        {3, 0, *sourceViewModels.at(0)}, {3, 1, *sourceViewModels.at(std::min<size_t>(1, sourceViewModels.size() - 1))},
-    };
+    mvvm::VideoSourceGridViewModel::Slots slots{};
+
+    for (int col = 0; col < 2; ++col) {
+        for (int row = 0; row < 4; ++row) {
+            int i = col * 4 + row;
+            if (i >= sourceViewModels.size()) break;
+            slots.push_back(Slot(row, col, *sourceViewModels[i]));
+        }
+    }
 
     return std::make_unique<mvvm::VideoSourceGridViewModel>(std::move(slots), 4, 2, 4.0 / 3.0);
 }
@@ -56,7 +59,7 @@ std::unique_ptr<application::services::VideoSourceGridService> ViewModelsModule:
 
 std::unique_ptr<application::usecases::ApplyCameraGridSettings> ViewModelsModule::createSettingsUseCase(
     domain::ports::ILogger& logger,
-    infrastructure::settings::QtCameraGridSettingsRepository& settingsRepository,
+    application::ports::IVideoSourceGridSettingsRepository& settingsRepository,
     application::services::VideoSourceGridService& gridService,
     mvvm::VideoSourceViewModel& crosshairListener)
 {

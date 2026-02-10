@@ -34,7 +34,7 @@ struct ViewModelsModule {
 
     static std::unique_ptr<application::usecases::ApplyCameraGridSettings> createSettingsUseCase(
         domain::ports::ILogger& logger,
-        infrastructure::settings::QtCameraGridSettingsRepository& settingsRepository,
+        application::ports::IVideoSourceGridSettingsRepository& settingsRepository,
         application::services::VideoSourceGridService& gridService,
         mvvm::VideoSourceViewModel& crosshairListener);
 

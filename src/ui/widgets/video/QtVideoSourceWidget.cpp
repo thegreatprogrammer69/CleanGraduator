@@ -14,11 +14,16 @@ QtVideoSourceWidget::QtVideoSourceWidget(mvvm::VideoSourceViewModel& model, QWid
     crosshair_sub_ = model.crosshair.subscribe([this] (const auto& a) {
         current_crosshair_ = a.new_value;
     });
+
+    repaintTimer_.setInterval(500);
+    connect(&repaintTimer_, &QTimer::timeout, this, QOverload<>::of(&QOpenGLWidget::update));
+    repaintTimer_.start();
 }
 
 void QtVideoSourceWidget::setVideoFrame(VideoFramePtr frame) {
     std::lock_guard lock(mutex_);
     current_frame_ = frame;
+    lastFrameTime_ = std::chrono::steady_clock::now();
     update();
 }
 
@@ -166,6 +171,15 @@ void QtVideoSourceWidget::drawQuad() {
 
     program_.bind();
 
+    // uNoVideo
+    const auto now = std::chrono::steady_clock::now();
+    const bool noVideo =
+        !current_frame_ ||
+        std::chrono::duration_cast<std::chrono::milliseconds>(
+            now - lastFrameTime_).count() > 500;
+
+    program_.setUniformValue("uNoVideo", noVideo ? 1 : 0);
+
     // Закругленные края
     const float dpr = devicePixelRatioF();
     program_.setUniformValue("uSize", QVector2D(width() * dpr, height() * dpr));
@@ -226,6 +240,8 @@ uniform int  uFormat;
 uniform int  uWidth;
 uniform int  uHeight;
 uniform int  uPackedWidth; // YUYV = width/2, RGB = width
+
+uniform int uNoVideo; // 0 = есть видео, 1 = нет видео
 
 uniform vec2  uSize;     // размер виджета в пикселях
 uniform float uRadius;   // радиус скругления
@@ -322,6 +338,11 @@ void main()
 
     if (!insideRoundedRect(fragPos, uSize, uRadius)) {
         gl_FragColor = vec4(243.0/255.0, 244.0/255.0, 246.0/255.0, 1.0);
+        return;
+    }
+
+    if (uNoVideo == 1) {
+        gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
         return;
     }
 

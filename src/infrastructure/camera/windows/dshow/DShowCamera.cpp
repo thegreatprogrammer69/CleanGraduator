@@ -55,8 +55,7 @@ struct DShowCamera::DShowCameraImpl {
 };
 
 DShowCamera::DShowCamera(CameraPorts ports, DShowCameraConfig config)
-    : impl_(std::make_unique<DShowCameraImpl>())
-    , logger_(ports.logger)
+    : logger_(ports.logger)
     , clock_(ports.clock)
     , config_(config)
 {
@@ -91,6 +90,8 @@ void DShowCamera::open() {
     };
 
     logger_.info("DShowCamera::start() begin");
+
+    impl_ = std::make_unique<DShowCameraImpl>();
 
     HRESULT hr = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED | COINIT_SPEED_OVER_MEMORY);
     if (FAILED(hr)) {

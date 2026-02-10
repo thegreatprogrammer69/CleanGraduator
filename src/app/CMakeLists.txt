@@ -1,3 +1,5 @@
+add_definitions(-DPLATFORM_WINDOWS)
+
 add_executable(CleanGraduator
         main.cpp
         bootstrap/AppBootstrap.cpp

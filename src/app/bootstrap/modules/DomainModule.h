@@ -27,9 +27,11 @@ struct DomainModule {
     };
 
     static AnglemeterConfig loadAnglemeterConfig(const std::string& configDirectory);
-    static std::unique_ptr<infra::calculation::CastAnglemeter> createAnglemeter(
+
+    static std::unique_ptr<domain::ports::IAngleCalculator> createAnglemeter(
         domain::ports::ILogger& logger,
         const AnglemeterConfig& config);
+
     static std::unique_ptr<application::interactors::AngleFromVideoInteractor> createAngleFromVideoInteractor(
         domain::ports::ILogger& logger,
         domain::ports::IAngleCalculator& calculator);

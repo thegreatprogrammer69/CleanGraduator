@@ -1,5 +1,5 @@
 #include "ApplyCameraGridSettings.h"
-#include "application/ports/outbound/settings/ICameraGridSettingsRepository.h"
+#include "application/ports/outbound/settings/IVideoSourceGridSettingsRepository.h"
 #include "application/services/VideoSourceGridService.h"
 
 using namespace application::usecases;

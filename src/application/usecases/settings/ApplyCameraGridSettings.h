@@ -19,13 +19,13 @@ namespace application::dto {
 }
 
 namespace application::ports {
-    struct ICameraGridSettingsRepository;
+    struct IVideoSourceGridSettingsRepository;
 }
 
 namespace application::usecases {
     struct ApplyCameraGridSettingsPorts {
         domain::ports::ILogger& logger;
-        ports::ICameraGridSettingsRepository& settings_repo;
+        ports::IVideoSourceGridSettingsRepository& settings_repo;
         ports::IVideoSourceCrosshairListener& crosshair_listener;
     };
 
@@ -46,7 +46,7 @@ namespace application::usecases {
 
     private:
         fmt::FmtLogger logger_;
-        ports::ICameraGridSettingsRepository& settings_repo_;
+        ports::IVideoSourceGridSettingsRepository& settings_repo_;
         ports::IVideoSourceCrosshairListener& crosshair_listener_;
         services::VideoSourceGridService& grid_service_;
     };

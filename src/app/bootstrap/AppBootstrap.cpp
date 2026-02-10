@@ -9,12 +9,21 @@
 #include "app/bootstrap/modules/UiModule.h"
 #include "app/bootstrap/modules/ViewModelsModule.h"
 #include "domain/ports/inbound/IVideoSource.h"
+#include "domain/ports/inbound/IAngleCalculator.h"
+#include "application/ports/outbound/settings/IVideoSourceGridSettingsRepository.h"
+#include "viewmodels/video/VideoSourceGridViewModel.h"
+#include "viewmodels/video/VideoSourceViewModel.h"
+#include "viewmodels/settings/VideoSourceGridSettingsViewModel.h"
+#include "viewmodels/MainWindowViewModel.h"
 #include "ui/widgets/QtMainWindow.h"
 
 AppBootstrap::AppBootstrap(std::string configDirectory)
     : configDirectory_(std::move(configDirectory))
     , lifecycle_(domain::common::ProcessLifecycleState::Idle)
 {
+}
+
+AppBootstrap::~AppBootstrap() {
 }
 
 void AppBootstrap::initialize() {
@@ -24,28 +33,28 @@ void AppBootstrap::initialize() {
     processRunner_ = InfrastructureModule::createProcessRunner(lifecycle_);
     lifecycle_.markForward();
 
-    const auto primaryCameraConfig = InfrastructureModule::loadCameraConfig(configDirectory_, "camera_primary.ini");
-    const auto secondaryCameraConfig = InfrastructureModule::loadCameraConfig(configDirectory_, "camera_secondary.ini");
-
     infra::camera::CameraPorts cameraPorts{
         .logger = *logger_,
         .clock = lifecycle_.clock(),
     };
 
-    primaryCamera_ = InfrastructureModule::createCamera(primaryCameraConfig, cameraPorts);
-    secondaryCamera_ = InfrastructureModule::createCamera(secondaryCameraConfig, cameraPorts);
+    videoSources_ = InfrastructureModule::createVideoSources(configDirectory_, "cameras.ini", cameraPorts);
 
     const auto anglemeterConfig = DomainModule::loadAnglemeterConfig(configDirectory_);
     castAnglemeter_ = DomainModule::createAnglemeter(*logger_, anglemeterConfig);
     angleInteractor_ = DomainModule::createAngleFromVideoInteractor(*logger_, *castAnglemeter_);
     angleInteractor_->start();
 
-    std::vector<domain::ports::IVideoSource*> sources{primaryCamera_.get(), secondaryCamera_.get()};
-    sourceViewModels_ = ViewModelsModule::createVideoSourceViewModels(sources);
+    std::vector<domain::ports::IVideoSource*> videoSources{};
+    for (const auto& videoSource : videoSources_) {
+        videoSources.push_back(videoSource.get());
+    }
+
+    sourceViewModels_ = ViewModelsModule::createVideoSourceViewModels(videoSources);
     gridViewModel_ = ViewModelsModule::createGridViewModel(sourceViewModels_);
 
     settingsRepository_ = InfrastructureModule::createSettingsRepository(configDirectory_);
-    gridService_ = ViewModelsModule::createGridService(sources);
+    gridService_ = ViewModelsModule::createGridService(videoSources);
     settingsUseCase_ = ViewModelsModule::createSettingsUseCase(
         *logger_,
         *settingsRepository_,

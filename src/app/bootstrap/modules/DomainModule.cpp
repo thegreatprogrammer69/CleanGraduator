@@ -24,7 +24,7 @@ DomainModule::AnglemeterConfig DomainModule::loadAnglemeterConfig(const std::str
     return config;
 }
 
-std::unique_ptr<infra::calculation::CastAnglemeter> DomainModule::createAnglemeter(
+std::unique_ptr<domain::ports::IAngleCalculator> DomainModule::createAnglemeter(
     domain::ports::ILogger& logger,
     const AnglemeterConfig& config)
 {

@@ -35,24 +35,6 @@ InfrastructureModule::LoggerConfig InfrastructureModule::loadLoggerConfig(const 
     return config;
 }
 
-InfrastructureModule::CameraConfig InfrastructureModule::loadCameraConfig(
-    const std::string& configDirectory,
-    const std::string& fileName)
-{
-    const auto filePath = configDirectory + "/" + fileName;
-    const auto ini = loadIniOrThrow(filePath);
-
-    CameraConfig config;
-    const auto& section = ini["camera"];
-    config.implementation = section.getString("implementation", "");
-    config.index = section.getInt("index", config.index);
-    config.source = section.getString("source", config.source);
-    config.pipeline = section.getString("pipeline", config.pipeline);
-    config.width = section.getInt("width", config.width);
-    config.height = section.getInt("height", config.height);
-    config.fps = section.getInt("fps", config.fps);
-    return config;
-}
 
 std::unique_ptr<domain::ports::ILogger> InfrastructureModule::createLogger(const LoggerConfig& config) {
     if (config.implementation == "file") {
@@ -66,40 +48,58 @@ std::unique_ptr<domain::ports::ILogger> InfrastructureModule::createLogger(const
     throw std::runtime_error("Unsupported logger implementation: " + config.implementation);
 }
 
-std::unique_ptr<domain::ports::IVideoSource> InfrastructureModule::createCamera(
-    const CameraConfig& config,
+std::vector<std::unique_ptr<domain::ports::IVideoSource>> InfrastructureModule::createVideoSources(
+    const std::string& configDirectory, const std::string& fileName,
     const infra::camera::CameraPorts& ports)
 {
-#if defined(PLATFORM_WINDOWS)
-    if (config.implementation == "dshow") {
-        infra::camera::DShowCameraConfig cameraConfig{};
-        cameraConfig.index = config.index;
-        cameraConfig.width = config.width;
-        cameraConfig.height = config.height;
-        cameraConfig.fps = config.fps;
-        return std::make_unique<infra::camera::DShowCamera>(ports, cameraConfig);
-    }
-#elif defined(PLATFORM_LINUX)
-    if (config.implementation == "v4l") {
-        infra::camera::V4LCameraConfig cameraConfig{};
-        cameraConfig.source = config.source;
-        cameraConfig.width = config.width;
-        cameraConfig.height = config.height;
-        cameraConfig.fps = config.fps;
-        return std::make_unique<infra::camera::V4LCamera>(ports, cameraConfig);
-    }
+    std::vector<std::unique_ptr<domain::ports::IVideoSource>> result;
 
-    if (config.implementation == "gstreamer") {
-        infra::camera::GStreamerCameraConfig cameraConfig{};
-        cameraConfig.pipe = config.pipeline;
-        return std::make_unique<infra::camera::GStreamerCamera>(ports, cameraConfig);
-    }
+    const auto filePath = configDirectory + "/" + fileName;
+    const auto ini = loadIniOrThrow(filePath);
+
+    for (int camIdx = 0; camIdx < 8; camIdx++) {
+        const auto sectionName = "camera_" + std::to_string(camIdx);
+        if (!ini.hasSection(sectionName)) {
+            break;
+        }
+        const auto& section = ini[sectionName];
+        std::string backend = section.getString("backend", "");
+
+#if defined(PLATFORM_WINDOWS)
+        if (backend == "dshow") {
+            infra::camera::DShowCameraConfig cameraConfig{};
+            cameraConfig.index = section.getInt("index", 0);
+            cameraConfig.width = section.getInt("width", 0);
+            cameraConfig.height = section.getInt("height", 0);
+            cameraConfig.fps = section.getInt("fps", 0);
+            result.push_back(std::make_unique<infra::camera::DShowCamera>(ports, cameraConfig));
+            continue;
+        }
+#elif defined(PLATFORM_LINUX)
+        if (config.implementation == "v4l") {
+            infra::camera::V4LCameraConfig cameraConfig{};
+            cameraConfig.source = config.source;
+            cameraConfig.width = config.width;
+            cameraConfig.height = config.height;
+            cameraConfig.fps = config.fps;
+            return std::make_unique<infra::camera::V4LCamera>(ports, cameraConfig);
+            continue;
+        }
+
+        if (config.implementation == "gstreamer") {
+            infra::camera::GStreamerCameraConfig cameraConfig{};
+            cameraConfig.pipe = config.pipeline;
+            return std::make_unique<infra::camera::GStreamerCamera>(ports, cameraConfig);
+            continue;
+        }
 #endif
 
-    throw std::runtime_error("Unsupported camera implementation for current platform: " + config.implementation);
+        throw std::runtime_error("unsupported camera implementation for current platform: " + backend);
+    }
+    return result;
 }
 
-std::unique_ptr<infrastructure::settings::QtCameraGridSettingsRepository> InfrastructureModule::createSettingsRepository(
+std::unique_ptr<application::ports::IVideoSourceGridSettingsRepository> InfrastructureModule::createSettingsRepository(
     const std::string& configDirectory)
 {
     const auto filePath = configDirectory + "/settings_repository.ini";
@@ -108,6 +108,6 @@ std::unique_ptr<infrastructure::settings::QtCameraGridSettingsRepository> Infras
     return std::make_unique<infrastructure::settings::QtCameraGridSettingsRepository>(repositoryPath);
 }
 
-std::unique_ptr<infra::process::ProcessRunner> InfrastructureModule::createProcessRunner(infra::process::ProcessLifecycle& lifecycle) {
+std::unique_ptr<domain::ports::IProcessLifecycleObserver> InfrastructureModule::createProcessRunner(infra::process::ProcessLifecycle& lifecycle) {
     return std::make_unique<infra::process::ProcessRunner>(lifecycle);
 }
