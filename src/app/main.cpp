@@ -230,22 +230,22 @@ int main(int argc, char *argv[]) {
         .clock = lifecycle.clock()
     };
 
-    V4LCameraConfig camera_config { .source = "/dev/video0" };
-    V4LCamera video_stream(ports, camera_config);
+    // V4LCameraConfig camera_config { .source = "/dev/video0" };
+    // V4LCamera video_stream(ports, camera_config);
 
     // GStreamerCameraConfig camera_config { .pipe = "v4l2src device=/dev/video0 ! videoconvert ! video/x-raw,format=RGB,width=640,height=480,framerate=30/1 ! appsink name=appsink" };
     // GStreamerCameraConfig camera_config { .pipe = "filesrc location=/media/mint/4CC052E2C052D1B6/Documents/MANOTOM/output.avi ! decodebin ! videorate ! videoconvert ! video/x-raw,format=RGB,width=640,height=480,framerate=30/1 ! appsink name=appsink sync=true" };
     // GStreamerCamera video_stream(ports, camera_config);
 
-    // DShowCameraConfig camera_config1 = {
-    //     .index = 0
-    // };
-    // DShowCamera video_stream1(ports, camera_config1);
-    //
-    // DShowCameraConfig camera_config2 = {
-    //     .index = 1
-    // };
-    // DShowCamera video_stream2(ports, camera_config2);
+    DShowCameraConfig camera_config1 = {
+        .index = 0
+    };
+    DShowCamera video_stream(ports, camera_config1);
+
+    DShowCameraConfig camera_config2 = {
+        .index = 1
+    };
+    DShowCamera video_stream2(ports, camera_config2);
 
     infra::calculation::CastAnglemeterPorts cast_anglemeter_ports = {
         .logger = *console_logger,

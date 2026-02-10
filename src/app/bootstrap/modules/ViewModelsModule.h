@@ -1,0 +1,11 @@
+//
+// Created by User on 11.02.2026.
+//
+
+#ifndef CLEANGRADUATOR_VIEWMODELSMODULE_H
+#define CLEANGRADUATOR_VIEWMODELSMODULE_H
+
+class ViewModelsModule {
+};
+
+#endif //CLEANGRADUATOR_VIEWMODELSMODULE_H

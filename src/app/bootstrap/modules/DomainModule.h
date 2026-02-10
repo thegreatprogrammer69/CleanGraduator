@@ -1,0 +1,11 @@
+//
+// Created by User on 11.02.2026.
+//
+
+#ifndef CLEANGRADUATOR_DOMAINMODULE_H
+#define CLEANGRADUATOR_DOMAINMODULE_H
+
+class DomainModule {
+};
+
+#endif //CLEANGRADUATOR_DOMAINMODULE_H

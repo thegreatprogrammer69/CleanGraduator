@@ -85,13 +85,17 @@ void DShowCamera::removeSink(domain::ports::IVideoSink &sink) {
     logger_.info("removeSink: total sinks={}", sinks_.size());
 }
 
-bool DShowCamera::start() {
+void DShowCamera::open() {
+    auto abort_opening = [this]() {
+        throw std::runtime_error(this->logger_.lastError());
+    };
+
     logger_.info("DShowCamera::start() begin");
 
     HRESULT hr = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED | COINIT_SPEED_OVER_MEMORY);
     if (FAILED(hr)) {
         logger_.error("CoInitializeEx failed: hr=0x{:08X}", hr);
-        return false;
+        abort_opening();
     }
     impl_->com_initialized = true;
     logger_.info("COM initialized");
@@ -99,19 +103,19 @@ bool DShowCamera::start() {
     hr = impl_->graph.CoCreateInstance(CLSID_FilterGraph);
     if (FAILED(hr)) {
         logger_.error("Create FilterGraph failed: hr=0x{:08X}", hr);
-        return false;
+        abort_opening();
     }
 
     hr = impl_->capture.CoCreateInstance(CLSID_CaptureGraphBuilder2);
     if (FAILED(hr)) {
         logger_.error("Create CaptureGraphBuilder2 failed: hr=0x{:08X}", hr);
-        return false;
+        abort_opening();
     }
 
     hr = impl_->capture->SetFiltergraph(impl_->graph);
     if (FAILED(hr)) {
         logger_.error("SetFiltergraph failed: hr=0x{:08X}", hr);
-        return false;
+        abort_opening();
     }
 
     impl_->graph.QueryInterface(&impl_->control);
@@ -120,25 +124,25 @@ bool DShowCamera::start() {
     impl_->source_filter = CreateCaptureFilterByIndex(config_.index);
     if (!impl_->source_filter) {
         logger_.error("Failed to create capture filter, index={}", config_.index);
-        return false;
+        abort_opening();
     }
 
     hr = impl_->graph->AddFilter(impl_->source_filter, L"Video Source");
     if (FAILED(hr)) {
         logger_.error("Add source filter failed: hr=0x{:08X}", hr);
-        return false;
+        abort_opening();
     }
 
     hr = impl_->grabber_filter.CoCreateInstance(CLSID_SampleGrabber);
     if (FAILED(hr)) {
         logger_.error("Create SampleGrabber filter failed: hr=0x{:08X}", hr);
-        return false;
+        abort_opening();
     }
 
     hr = impl_->grabber_filter.QueryInterface(&impl_->grabber);
     if (FAILED(hr)) {
         logger_.error("Query SampleGrabber interface failed: hr=0x{:08X}", hr);
-        return false;
+        abort_opening();
     }
 
     AM_MEDIA_TYPE mt{};
@@ -151,25 +155,25 @@ bool DShowCamera::start() {
     hr = impl_->grabber->SetMediaType(&mt);
     if (FAILED(hr)) {
         logger_.error("SetMediaType failed: hr=0x{:08X}", hr);
-        return false;
+        abort_opening();
     }
 
     hr = impl_->graph->AddFilter(impl_->grabber_filter, L"SampleGrabber");
     if (FAILED(hr)) {
         logger_.error("Add SampleGrabber failed: hr=0x{:08X}", hr);
-        return false;
+        abort_opening();
     }
 
     hr = impl_->null_renderer.CoCreateInstance(CLSID_NullRenderer);
     if (FAILED(hr)) {
         logger_.error("Create NullRenderer failed: hr=0x{:08X}", hr);
-        return false;
+        abort_opening();
     }
 
     hr = impl_->graph->AddFilter(impl_->null_renderer, L"NullRenderer");
     if (FAILED(hr)) {
         logger_.error("Add NullRenderer failed: hr=0x{:08X}", hr);
-        return false;
+        abort_opening();
     }
 
     hr = impl_->capture->RenderStream(
@@ -181,7 +185,7 @@ bool DShowCamera::start() {
     );
     if (FAILED(hr)) {
         logger_.error("RenderStream failed: hr=0x{:08X}", hr);
-        return false;
+        abort_opening();
     }
 
     AM_MEDIA_TYPE mt_out{};
@@ -205,14 +209,13 @@ bool DShowCamera::start() {
     hr = impl_->control->Run();
     if (FAILED(hr)) {
         logger_.error("Graph Run failed: hr=0x{:08X}", hr);
-        return false;
+        abort_opening();
     }
 
     logger_.info("DShowCamera started successfully");
-    return true;
 }
 
-void DShowCamera::stop() {
+void DShowCamera::close() {
     logger_.info("DShowCamera::stop()");
     impl_.reset();
     logger_.info("DShowCamera stopped");

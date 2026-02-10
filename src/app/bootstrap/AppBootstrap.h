@@ -1,0 +1,11 @@
+//
+// Created by User on 11.02.2026.
+//
+
+#ifndef CLEANGRADUATOR_APPBOOTSTRAP_H
+#define CLEANGRADUATOR_APPBOOTSTRAP_H
+
+class AppBootstrap {
+};
+
+#endif //CLEANGRADUATOR_APPBOOTSTRAP_H
