@@ -5,8 +5,13 @@
 #include <QOpenGLFunctions_2_1>
 #include <QOpenGLShaderProgram>
 
+#include "application/dto/settings/camera_grid/VideoSourceCrosshair.h"
 #include "domain/core/video/PixelFormat.h"
-#include "viewmodels/VideoSourceViewModel.h"
+#include "viewmodels/Observable.h"
+
+namespace mvvm {
+    class VideoSourceViewModel;
+}
 
 namespace domain::common {
     struct VideoFrame;
@@ -38,8 +43,11 @@ namespace ui::widgets {
         void drawQuad();
 
     private:
+        std::mutex mutex_;
         domain::common::VideoFramePtr current_frame_;
         mvvm::Observable<domain::common::VideoFramePtr>::Subscription frame_sub_;
+        application::dto::VideoSourceCrosshair current_crosshair_;
+        mvvm::Observable<application::dto::VideoSourceCrosshair>::Subscription crosshair_sub_;
 
         GLuint texture_{0};
         GLuint pbo_[2]{0, 0};

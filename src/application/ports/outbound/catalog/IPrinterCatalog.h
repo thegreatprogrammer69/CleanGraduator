@@ -2,7 +2,7 @@
 #define CLEANGRADUATOR_IPRINTERCATALOG_H
 #include <optional>
 #include <vector>
-#include "application/dto/PrinterRecord.h"
+#include "../../../dto/common/PrinterRecord.h"
 
 namespace application::ports {
     struct IPrinterCatalog {

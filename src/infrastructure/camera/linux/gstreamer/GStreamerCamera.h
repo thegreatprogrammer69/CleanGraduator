@@ -24,8 +24,8 @@ namespace infra::camera {
         explicit GStreamerCamera(const CameraPorts& ports, GStreamerCameraConfig config);
         ~GStreamerCamera() override;
 
-        bool start() override;
-        void stop() override;
+        void open() override;
+        void close() override;
         void addSink(domain::ports::IVideoSink& sink) override;
         void removeSink(domain::ports::IVideoSink& sink) override;
 

@@ -6,8 +6,8 @@
 namespace domain::ports {
     struct IVideoSource {
         virtual ~IVideoSource() = default;
-        virtual bool start() = 0;
-        virtual void stop() = 0;
+        virtual void open() = 0;
+        virtual void close() = 0;
         virtual void addSink(IVideoSink& sink) = 0;
         virtual void removeSink(IVideoSink& sink) = 0;
     };

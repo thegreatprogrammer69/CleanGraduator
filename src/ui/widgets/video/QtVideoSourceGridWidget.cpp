@@ -8,7 +8,7 @@
 
 #include "ui/widgets/video/QtVideoSourceWidget.h"
 
-#include "viewmodels/VideoSourceGridViewModel.h"
+#include "viewmodels/video/VideoSourceGridViewModel.h"
 
 namespace {
 

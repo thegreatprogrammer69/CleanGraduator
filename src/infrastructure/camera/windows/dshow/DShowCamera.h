@@ -15,8 +15,8 @@ class DShowCamera final : public domain::ports::IVideoSource {
 public:
     explicit DShowCamera(CameraPorts ports, DShowCameraConfig config);
     ~DShowCamera() override;
-    bool start() override;
-    void stop() override;
+    void open() override;
+    void close() override;
     void addSink(domain::ports::IVideoSink& sink) override;
     void removeSink(domain::ports::IVideoSink& sink) override;
 

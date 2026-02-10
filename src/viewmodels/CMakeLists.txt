@@ -1,9 +1,10 @@
 add_library(viewmodels STATIC
-        VideoSourceViewModel.cpp
-        VideoSourceGridViewModel.cpp
+        video/VideoSourceViewModel.cpp
+        video/VideoSourceGridViewModel.cpp
+
+        settings/VideoSourceGridSettingsViewModel.cpp
+
         MainWindowViewModel.cpp
-        SettingsViewModel.cpp
-        SettingsViewModel.h
 )
 
 target_include_directories(viewmodels

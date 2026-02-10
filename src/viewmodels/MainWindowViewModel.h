@@ -3,15 +3,18 @@
 
 
 namespace mvvm {
+    class VideoSourceGridSettingsViewModel;
     class VideoSourceGridViewModel;
 
     class MainWindowViewModel {
     public:
-        MainWindowViewModel(VideoSourceGridViewModel& video_source_grid);
+        MainWindowViewModel(VideoSourceGridViewModel& video_source_grid, VideoSourceGridSettingsViewModel& video_source_grid_settings_view_model);
         VideoSourceGridViewModel& videoSourceGridModel();
+        VideoSourceGridSettingsViewModel& videoSourceGridSettingsViewModel();
 
     private:
         VideoSourceGridViewModel& video_source_grid_;
+        VideoSourceGridSettingsViewModel& video_source_grid_settings_;
     };
 }
 

@@ -25,11 +25,15 @@ namespace fmt {
 
         template <typename... Args>
         void error(const std::string& format, const Args&... args) {
-            logger_.error(fmt::fmt(format, args...));
+            last_error_ = fmt::fmt(format, args...);
+            logger_.error(last_error_);
         }
+
+        const std::string& lastError() { return last_error_; }
 
     private:
         domain::ports::ILogger& logger_;
+        std::string last_error_;
     };
 
 }

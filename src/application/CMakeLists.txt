@@ -1,12 +1,13 @@
 add_library(application STATIC
-    fmt/fmt_application.cpp
-    interactors/AngleFromVideoInteractor.cpp
-        ports/outbound/settings/ISettingsRepository.h
-        dto/CameraString.h
-        dto/UserSettings.h
-        dto/FrameCrosshair.h
-        usecases/settings/SettingsUseCase.h
-        usecases/settings/SettingsUseCase.cpp
+        fmt/fmt_application.cpp
+
+        dto/settings/camera_grid/VideoSourceGridString.cpp
+
+        interactors/AngleFromVideoInteractor.cpp
+
+        services/VideoSourceGridService.cpp
+
+        usecases/settings/ApplyCameraGridSettings.cpp
 )
 
 target_include_directories(application

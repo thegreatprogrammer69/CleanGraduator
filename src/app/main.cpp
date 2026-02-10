@@ -8,9 +8,9 @@
 
 #include <infrastructure/clock/SessionClock.h>
 
-#include <infrastructure/catalogs/FilePrinterCatalog.h>
-#include <infrastructure/catalogs/FileDisplacementCatalog.h>
-#include <infrastructure/catalogs/FileGaugeCatalog.h>
+// #include <infrastructure/catalogs/FilePrinterCatalog.h>
+// #include <infrastructure/catalogs/FileDisplacementCatalog.h>
+// #include <infrastructure/catalogs/FileGaugeCatalog.h>
 
 #include "infrastructure/hardware/g540/G540LPT.h"
 
@@ -18,16 +18,20 @@
 #include "infrastructure/process/ProcessRunner.h"
 
 #include <ui/widgets/video/QtVideoSourceWidget.h>
-#include <viewmodels/VideoSourceViewModel.h>
+#include <viewmodels/video/VideoSourceViewModel.h>
 
 #include <QApplication>
 
 #include "application/interactors/AngleFromVideoInteractor.h"
+#include "application/services/VideoSourceGridService.h"
+#include "application/usecases/settings/ApplyCameraGridSettings.h"
 #include "infrastructure/calculation/angle/CastAnglemeter.h"
 #include "infrastructure/logging/FileLogger.h"
+#include "infrastructure/settings/QtCameraGridSettingsRepository.h"
 #include "ui/widgets/QtMainWindow.h"
 #include "viewmodels/MainWindowViewModel.h"
-#include "viewmodels/VideoSourceGridViewModel.h"
+#include "viewmodels/settings/VideoSourceGridSettingsViewModel.h"
+#include "viewmodels/video/VideoSourceGridViewModel.h"
 
 static QString appStyle()
 {
@@ -146,6 +150,38 @@ QHeaderView::section {
     font-weight: 600;
 }
 
+/* ─────────────────────────────────────────────
+   Secondary button: "Открыть все камеры"
+   ───────────────────────────────────────────── */
+QPushButton#openAllCamerasButton {
+    background: transparent;
+    border: 1px solid palette(mid);
+    border-radius: 4px;
+    padding: 4px 10px;
+    color: palette(button-text);
+}
+
+QPushButton#openAllCamerasButton:hover {
+    background: palette(base);
+}
+
+QPushButton#openAllCamerasButton:pressed {
+    background: palette(midlight);
+}
+
+
+/* ─────────────────────────────────────────────
+   Error state for cameras edit
+   ───────────────────────────────────────────── */
+QLineEdit[error="true"] {
+    border: 1px solid #c74a4a;
+    background: #fff5f5;
+}
+
+QLineEdit[error="true"]:focus {
+    border: 1px solid #b53b3b;
+}
+
 )QSS";
 }
 
@@ -159,7 +195,6 @@ int main(int argc, char *argv[]) {
     using namespace infra::logging;
     using namespace infra::hardware;
     using namespace infra::process;
-    using namespace infra::catalogs;
     using namespace ui::widgets;
     using namespace domain::ports;
     using namespace domain::common;
@@ -174,17 +209,17 @@ int main(int argc, char *argv[]) {
 
     lifecycle.markForward();
 
-    try {
-        FilePrinterCatalog printer_catalog("setup/printers");
-        FileDisplacementCatalog file_displacement_catalog("setup/displacements");
-        FileGaugeCatalog file_gauge_catalog("setup/gauges");
-        logger.info("{}", printer_catalog.list());
-        logger.info("{}", file_displacement_catalog.list());
-        logger.info("{}", file_gauge_catalog.list());
-    }
-    catch (const std::exception& e) {
-        std::cerr << e.what() << std::endl;
-    }
+    // try {
+    //     FilePrinterCatalog printer_catalog("setup/printers");
+    //     FileDisplacementCatalog file_displacement_catalog("setup/displacements");
+    //     FileGaugeCatalog file_gauge_catalog("setup/gauges");
+    //     logger.info("{}", printer_catalog.list());
+    //     logger.info("{}", file_displacement_catalog.list());
+    //     logger.info("{}", file_gauge_catalog.list());
+    // }
+    // catch (const std::exception& e) {
+    //     std::cerr << e.what() << std::endl;
+    // }
 
     // infra::state::InMemoryMeasurementContextStore context_store(*console_logger);
     //
@@ -195,22 +230,22 @@ int main(int argc, char *argv[]) {
         .clock = lifecycle.clock()
     };
 
-    // V4LCameraConfig camera_config { .source = "/dev/video0" };
-    // V4LCamera video_stream(ports, camera_config);
+    V4LCameraConfig camera_config { .source = "/dev/video0" };
+    V4LCamera video_stream(ports, camera_config);
 
     // GStreamerCameraConfig camera_config { .pipe = "v4l2src device=/dev/video0 ! videoconvert ! video/x-raw,format=RGB,width=640,height=480,framerate=30/1 ! appsink name=appsink" };
     // GStreamerCameraConfig camera_config { .pipe = "filesrc location=/media/mint/4CC052E2C052D1B6/Documents/MANOTOM/output.avi ! decodebin ! videorate ! videoconvert ! video/x-raw,format=RGB,width=640,height=480,framerate=30/1 ! appsink name=appsink sync=true" };
     // GStreamerCamera video_stream(ports, camera_config);
 
-    DShowCameraConfig camera_config1 = {
-        .index = 0
-    };
-    DShowCamera video_stream1(ports, camera_config1);
-
-    DShowCameraConfig camera_config2 = {
-        .index = 1
-    };
-    DShowCamera video_stream2(ports, camera_config2);
+    // DShowCameraConfig camera_config1 = {
+    //     .index = 0
+    // };
+    // DShowCamera video_stream1(ports, camera_config1);
+    //
+    // DShowCameraConfig camera_config2 = {
+    //     .index = 1
+    // };
+    // DShowCamera video_stream2(ports, camera_config2);
 
     infra::calculation::CastAnglemeterPorts cast_anglemeter_ports = {
         .logger = *console_logger,
@@ -224,19 +259,19 @@ int main(int argc, char *argv[]) {
     application::interactors::AngleFromVideoInteractor angle_from_video_interactor(angle_from_video_interactor_ports);
     angle_from_video_interactor.start();
 
-    video_stream1.addSink(angle_from_video_interactor);
-    video_stream2.addSink(angle_from_video_interactor);
+    // video_stream1.addSink(angle_from_video_interactor);
+    // video_stream2.addSink(angle_from_video_interactor);
 
 
-    mvvm::VideoSourceViewModel video_source_view_model1(video_stream1);
-    mvvm::VideoSourceViewModel video_source_view_model2(video_stream2);
+    mvvm::VideoSourceViewModel video_source_view_model1(video_stream);
+    mvvm::VideoSourceViewModel video_source_view_model2(video_stream);
 
 
-    // QtVideoSourceWidget widget1(video_source_view_model1);
-    // widget1.show();
-    //
-    // QtVideoSourceWidget widget2(video_source_view_model1);
-    // widget2.show();
+    QtVideoSourceWidget widget1(video_source_view_model1);
+    widget1.show();
+
+    QtVideoSourceWidget widget2(video_source_view_model1);
+    widget2.show();
 
     std::vector<mvvm::VideoSourceGridViewModel::Slot> video_slots {
         {0, 0, video_source_view_model1}, {0, 1, video_source_view_model2},
@@ -246,23 +281,55 @@ int main(int argc, char *argv[]) {
     };
     mvvm::VideoSourceGridViewModel video_source_grid_view_model(video_slots, 4, 2, 4.0/3.0);
 
-    mvvm::MainWindowViewModel main_window_view_model(video_source_grid_view_model);
+
+    infrastructure::settings::QtCameraGridSettingsRepository settings_repository("settings_repo.ini");
+
+    using VideoSource = application::services::VideoSourceGridService::VideoSource;
+    std::vector<VideoSource> video_sources{
+        {.index = 1, .video_source =  video_stream},
+        {.index = 2, .video_source =  video_stream},
+        {.index = 3, .video_source =  video_stream},
+        {.index = 4, .video_source =  video_stream},
+        {.index = 5, .video_source =  video_stream},
+        {.index = 6, .video_source =  video_stream},
+        {.index = 7, .video_source =  video_stream},
+        {.index = 8, .video_source =  video_stream},
+    };
+    application::services::VideoSourceGridService grid_service(video_sources);
+    application::usecases::ApplyCameraGridSettingsPorts grid_settings_ports = {
+        .logger = *console_logger,
+        .settings_repo = settings_repository,
+        .crosshair_listener = video_source_view_model1,
+    };
+    application::usecases::ApplyCameraGridSettingsServices grid_settings_services = {
+        .grid_service = grid_service
+    };
+    application::usecases::ApplyCameraGridSettings grid_settings_use_case(grid_settings_ports, grid_settings_services);
+    mvvm::VideoSourceGridSettingsViewModel settings_view_model(grid_settings_use_case);
+
+    mvvm::MainWindowViewModel main_window_view_model(video_source_grid_view_model, settings_view_model);
 
     ui::QtMainWindow w(main_window_view_model);
     w.resize(1100, 700);
     w.show();
 
-    std::thread thr1([&video_stream1]() {
-        if (!video_stream1.start()) {
-            std::cerr << "video_stream.start() error" << std::endl;
-        }
-    });
+    // std::thread thr1([&video_stream]() {
+        // try {
+        //     video_stream.open();
+        // }
+        // catch (const std::exception& e) {
+        //     std::cerr << e.what() << std::endl;
+        // }
+    // });
 
-    std::thread thr2([&video_stream2]() {
-        if (!video_stream2.start()) {
-            std::cerr << "video_stream.start() error" << std::endl;
-        }
-    });
+    // std::thread thr2([&video_stream2]() {
+    //     try {
+    //         video_stream2.open();
+    //     }
+    //     catch (const std::exception& e) {
+    //         std::cerr << e.what() << std::endl;
+    //     }
+    // });
 
     return app.exec();
 }

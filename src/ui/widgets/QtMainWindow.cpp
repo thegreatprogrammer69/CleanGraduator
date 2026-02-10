@@ -1,10 +1,12 @@
 #include "QtMainWindow.h"
 
 #include "ui/widgets/layout/QtStackPanelWidget.h"
+#include "ui/widgets/settings/QtSettingsWidget.h"
 
 #include <QWidget>
 #include <QHBoxLayout>
 #include <QVBoxLayout>
+#include <QGridLayout>
 #include <QFrame>
 #include <QPushButton>
 #include <QButtonGroup>
@@ -21,95 +23,54 @@
 #include "viewmodels/MainWindowViewModel.h"
 
 
-static QWidget* makeProcessPage(QWidget *parent = nullptr)
+ui::QtMainWindow::QtMainWindow(
+    mvvm::MainWindowViewModel& model,
+    QWidget* parent
+)
+    : QMainWindow(parent)
+    , model_(model)
 {
-    auto *w = new QWidget(parent);
-    auto *l = new QVBoxLayout(w);
-    l->setContentsMargins(14, 14, 14, 14);
-    l->setSpacing(10);
-
-    auto *title = new QLabel(QStringLiteral("Процесс"), w);
-    title->setObjectName("pageTitle");
-
-    auto *hint = new QLabel(QStringLiteral("Здесь можно показывать статус, логи, прогресс, управление запуском и т.д."), w);
-    hint->setObjectName("hintText");
-    hint->setWordWrap(true);
-
-    l->addWidget(title);
-    l->addWidget(hint);
-    l->addStretch(1);
-    return w;
-}
-
-static QWidget* makeSettingsPage(QWidget *parent = nullptr)
-{
-    auto *w = new QWidget(parent);
-    auto *l = new QVBoxLayout(w);
-    l->setContentsMargins(14, 14, 14, 14);
-    l->setSpacing(10);
-
-    auto *title = new QLabel(QStringLiteral("Настройки"), w);
-    title->setObjectName("pageTitle");
-
-    auto *hint = new QLabel(QStringLiteral("Здесь — параметры камер, сеть, запись, раскладка и т.п."), w);
-    hint->setObjectName("hintText");
-    hint->setWordWrap(true);
-
-    l->addWidget(title);
-    l->addWidget(hint);
-    l->addStretch(1);
-    return w;
-}
-
-static QPushButton* makeSegmentButton(const QString &text, QWidget *parent = nullptr)
-{
-    auto *b = new QPushButton(text, parent);
-    b->setObjectName("segmentBtn");
-    b->setCheckable(true);
-    b->setCursor(Qt::PointingHandCursor);
-    return b;
-}
-
-ui::QtMainWindow::QtMainWindow(mvvm::MainWindowViewModel& model, QWidget *parent)
-    : QMainWindow(parent), model_(model)
-{
-    auto *central = new QWidget(this);
+    /* ================= Central ================= */
+    auto* central = new QWidget(this);
     central->setObjectName("centralWidget");
     setCentralWidget(central);
 
     /* ================= Левая часть: камеры ================= */
-    const double aspectWH = 4.0 / 3.0;
-    m_cameras = new widgets::QtVideoSourceGridWidget(model.videoSourceGridModel(), this);
+    m_cameras =
+        new widgets::QtVideoSourceGridWidget(
+            model_.videoSourceGridModel(),
+            this
+        );
 
     /* ================= Правая часть ================= */
-    auto *rightPanel = new QWidget(central);
+    auto* rightPanel = new QWidget(central);
     rightPanel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
-    auto *rightLayout = new QVBoxLayout(rightPanel);
+    auto* rightLayout = new QVBoxLayout(rightPanel);
     rightLayout->setContentsMargins(0, 0, 0, 0);
     rightLayout->setSpacing(10);
 
-    /* ========= StackPanelWidget (табы + стек) ========= */
-    auto *panel = new ui::widgets::QtStackPanelWidget(rightPanel);
+    /* ================= StackPanel ================= */
+    auto* panel = new ui::widgets::QtStackPanelWidget(rightPanel);
 
     /* =================================================
-     * =============== PAGE: ПРОЦЕСС ====================
+     * ================= PAGE: ПРОЦЕСС ==================
      * ================================================= */
-    auto *processPage = new QWidget();
-    auto *processLayout = new QVBoxLayout(processPage);
+    auto* processPage = new QWidget();
+    auto* processLayout = new QVBoxLayout(processPage);
     processLayout->setContentsMargins(0, 0, 0, 0);
     processLayout->setSpacing(10);
 
-    /* ----- Карточка 1: таблица ----- */
-    auto *tableCard = new QFrame(processPage);
+    /* ----- Карточка: таблица ----- */
+    auto* tableCard = new QFrame(processPage);
     tableCard->setObjectName("contentCard");
     tableCard->setAttribute(Qt::WA_StyledBackground, true);
     tableCard->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
-    auto *tableLayout = new QVBoxLayout(tableCard);
+    auto* tableLayout = new QVBoxLayout(tableCard);
     tableLayout->setContentsMargins(12, 12, 12, 12);
 
-    auto *table = new QTableWidget(8, 16, tableCard);
+    auto* table = new QTableWidget(8, 16, tableCard);
     table->horizontalHeader()->setStretchLastSection(true);
     table->verticalHeader()->setVisible(false);
     table->setSelectionMode(QAbstractItemView::NoSelection);
@@ -117,34 +78,31 @@ ui::QtMainWindow::QtMainWindow(mvvm::MainWindowViewModel& model, QWidget *parent
 
     tableLayout->addWidget(table);
 
-    /* ----- Карточка 2: панель управления ----- */
-    auto *controlCard = new QFrame(processPage);
+    /* ----- Карточка: управление ----- */
+    auto* controlCard = new QFrame(processPage);
     controlCard->setObjectName("contentCard");
     controlCard->setAttribute(Qt::WA_StyledBackground, true);
     controlCard->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Minimum);
 
-    auto *controlLayout = new QGridLayout(controlCard);
+    auto* controlLayout = new QGridLayout(controlCard);
     controlLayout->setContentsMargins(12, 12, 12, 12);
     controlLayout->setSpacing(12);
 
-    /* Направление двигателя */
-    auto *engineDir = new QGroupBox("Направление двигателя");
-    auto *dirLayout = new QHBoxLayout(engineDir);
-    dirLayout->addWidget(new QRadioButton("Вперёд"));
-    dirLayout->addWidget(new QRadioButton("Назад"));
+    auto* engineDir = new QGroupBox(tr("Направление двигателя"));
+    auto* dirLayout = new QHBoxLayout(engineDir);
+    dirLayout->addWidget(new QRadioButton(tr("Вперёд")));
+    dirLayout->addWidget(new QRadioButton(tr("Назад")));
 
-    /* Управление двигателем */
-    auto *engineCtrl = new QGroupBox("Управление двигателем");
-    auto *engLayout = new QVBoxLayout(engineCtrl);
-    engLayout->addWidget(new QPushButton("Старт"));
-    engLayout->addWidget(new QPushButton("Стоп"));
+    auto* engineCtrl = new QGroupBox(tr("Управление двигателем"));
+    auto* engLayout = new QVBoxLayout(engineCtrl);
+    engLayout->addWidget(new QPushButton(tr("Старт")));
+    engLayout->addWidget(new QPushButton(tr("Стоп")));
 
-    /* Управление клапанами */
-    auto *valveCtrl = new QGroupBox("Управление клапанами");
-    auto *valveLayout = new QVBoxLayout(valveCtrl);
-    valveLayout->addWidget(new QPushButton("Открыть впускной"));
-    valveLayout->addWidget(new QPushButton("Открыть выпускной"));
-    valveLayout->addWidget(new QPushButton("Закрыть оба"));
+    auto* valveCtrl = new QGroupBox(tr("Управление клапанами"));
+    auto* valveLayout = new QVBoxLayout(valveCtrl);
+    valveLayout->addWidget(new QPushButton(tr("Открыть впускной")));
+    valveLayout->addWidget(new QPushButton(tr("Открыть выпускной")));
+    valveLayout->addWidget(new QPushButton(tr("Закрыть оба")));
 
     controlLayout->addWidget(engineDir,  0, 0);
     controlLayout->addWidget(engineCtrl, 1, 0);
@@ -153,18 +111,52 @@ ui::QtMainWindow::QtMainWindow(mvvm::MainWindowViewModel& model, QWidget *parent
     processLayout->addWidget(tableCard, 1);
     processLayout->addWidget(controlCard, 0);
 
-    /* ================= PAGE: НАСТРОЙКИ ================= */
-    auto *settingsPage = new QWidget();
-    // позже можно наполнить
+    /* =================================================
+     * ================= PAGE: НАСТРОЙКИ ================
+     * ================================================= */
+    auto* settingsPage = new QWidget();
+    auto* settingsLayout = new QVBoxLayout(settingsPage);
+    settingsLayout->setContentsMargins(0, 0, 0, 0);
+    settingsLayout->setSpacing(10);
 
-    /* ========= Добавляем страницы как табы ========= */
-    panel->addTab(processPage,  "Процесс");
-    panel->addTab(settingsPage, "Настройки");
+    /* ----- Карточка: настройки ----- */
+    auto* settingsCard = new QFrame(settingsPage);
+    settingsCard->setObjectName("contentCard");
+    settingsCard->setAttribute(Qt::WA_StyledBackground, true);
+    settingsCard->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Minimum);
 
-    /* ================= Сборка ================= */
+    auto* settingsCardLayout = new QVBoxLayout(settingsCard);
+    settingsCardLayout->setContentsMargins(12, 12, 12, 12);
+    settingsCardLayout->setSpacing(8);
+
+    QtSettingsWidgetViewModels settingsModels {
+        model_.videoSourceGridSettingsViewModel()
+    };
+
+    auto* settingsWidget =
+        new QtSettingsWidget(settingsModels, settingsCard);
+
+    connect(
+        settingsWidget,
+        &QtSettingsWidget::crosshairAppearanceRequested,
+        this,
+        [] {
+            // TODO: открыть диалог внешнего вида перекрестия
+        }
+    );
+
+    settingsCardLayout->addWidget(settingsWidget);
+    settingsLayout->addWidget(settingsCard);
+    settingsLayout->addStretch(1);
+
+    /* ================= Tabs ================= */
+    panel->addTab(processPage,  tr("Процесс"));
+    panel->addTab(settingsPage, tr("Настройки"));
+
     rightLayout->addWidget(panel, 1);
 
-    auto *root = new QHBoxLayout(central);
+    /* ================= Root ================= */
+    auto* root = new QHBoxLayout(central);
     root->setContentsMargins(8, 8, 8, 8);
     root->setSpacing(8);
 

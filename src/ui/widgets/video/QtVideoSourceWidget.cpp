@@ -2,7 +2,7 @@
 #include <cstring>
 
 #include "domain/core/video/VideoFrame.h"
-
+#include "viewmodels/video/VideoSourceViewModel.h"
 
 using namespace ui::widgets;
 using namespace domain::common;
@@ -11,9 +11,13 @@ QtVideoSourceWidget::QtVideoSourceWidget(mvvm::VideoSourceViewModel& model, QWid
     frame_sub_ = model.frame.subscribe([this] (const auto& a) {
          setVideoFrame(a.new_value);
     });
+    crosshair_sub_ = model.crosshair.subscribe([this] (const auto& a) {
+        current_crosshair_ = a.new_value;
+    });
 }
 
 void QtVideoSourceWidget::setVideoFrame(VideoFramePtr frame) {
+    std::lock_guard lock(mutex_);
     current_frame_ = frame;
     update();
 }
@@ -47,6 +51,8 @@ void QtVideoSourceWidget::resizeGL(int w, int h) {
 
 void QtVideoSourceWidget::paintGL() {
     if (!shaderInited_) return;
+
+    std::lock_guard lock(mutex_);
 
     const auto frame = current_frame_;
     if (!frame)
@@ -160,9 +166,16 @@ void QtVideoSourceWidget::drawQuad() {
 
     program_.bind();
 
+    // Закругленные края
     const float dpr = devicePixelRatioF();
     program_.setUniformValue("uSize", QVector2D(width() * dpr, height() * dpr));
     program_.setUniformValue("uRadius", 12.0f * dpr);
+
+    // Перекрестие
+    program_.setUniformValue("uCrosshairVisible", current_crosshair_.visible);
+    program_.setUniformValue("uCrosshairRadius", current_crosshair_.radius);
+    program_.setUniformValue("uCrosshairColor1", current_crosshair_.color.color1);
+    program_.setUniformValue("uCrosshairColor2", current_crosshair_.color.color2);
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, texture_);
@@ -204,95 +217,147 @@ void QtVideoSourceWidget::initShader() {
     // Фрагментник: RGB passthrough или YUYV->RGB на GPU.
     // uFormat: 0=RGB, 1=YUYV(packed RGBA: Y0 U Y1 V)
     static const char *fs = R"(
-        #version 120
-        varying vec2 vTex;
+#version 120
 
-        uniform sampler2D uTex;
-        uniform int  uFormat;
-        uniform int  uWidth;
-        uniform int  uHeight;
-        uniform int  uPackedWidth; // для YUYV = width/2, для RGB = width
+varying vec2 vTex;
 
-        uniform vec2 uSize;     // размер виджета в пикселях
-        uniform float uRadius; // радиус скругления в пикселях
+uniform sampler2D uTex;
+uniform int  uFormat;
+uniform int  uWidth;
+uniform int  uHeight;
+uniform int  uPackedWidth; // YUYV = width/2, RGB = width
 
-        bool insideRoundedRect(vec2 p, vec2 size, float r)
-        {
-            vec2 q = abs(p - size * 0.5) - (size * 0.5 - vec2(r));
-            return length(max(q, 0.0)) <= r;
-        }
+uniform vec2  uSize;     // размер виджета в пикселях
+uniform float uRadius;   // радиус скругления
 
-        vec3 yuvToRgb601Limited(float y, float u, float v)
-        {
-            // BT.601 limited range (обычно для видео)
-            y = 1.16438356 * (y - 16.0/255.0);
-            u = u - 0.5;
-            v = v - 0.5;
+// перекрестие / кольцо
+uniform int   uCrosshairVisible;
+uniform float uCrosshairRadius;   // 0..1
+uniform vec3  uCrosshairColor1;
+uniform vec3  uCrosshairColor2;
 
-            float r = y + 1.59602678 * v;
-            float g = y - 0.39176229 * u - 0.81296765 * v;
-            float b = y + 2.01723214 * u;
 
-            return clamp(vec3(r,g,b), 0.0, 1.0);
-        }
+// ------------------------------------------------------------
+// Rounded rect
+bool insideRoundedRect(vec2 p, vec2 size, float r)
+{
+    vec2 q = abs(p - size * 0.5) - (size * 0.5 - vec2(r));
+    return length(max(q, 0.0)) <= r;
+}
 
-        vec3 sampleYuyvNearest(float xPix, float yPix)
-        {
-            // xPix,yPix в пикселях (0..width-1 / 0..height-1)
-            xPix = clamp(xPix, 0.0, float(uWidth  - 1));
-            yPix = clamp(yPix, 0.0, float(uHeight - 1));
 
-            float x0   = floor(xPix);
-            float y0   = floor(yPix);
+// ------------------------------------------------------------
+// YUV -> RGB
+vec3 yuvToRgb601Limited(float y, float u, float v)
+{
+    y = 1.16438356 * (y - 16.0/255.0);
+    u = u - 0.5;
+    v = v - 0.5;
 
-            float pair = floor(x0 * 0.5);          // x/2
-            float odd  = mod(x0, 2.0);             // 0 или 1
+    float r = y + 1.59602678 * v;
+    float g = y - 0.39176229 * u - 0.81296765 * v;
+    float b = y + 2.01723214 * u;
 
-            float tx = (pair + 0.5) / float(uPackedWidth);
-            float ty = (y0   + 0.5) / float(uHeight);
+    return clamp(vec3(r,g,b), 0.0, 1.0);
+}
 
-            vec4 yuyv = texture2D(uTex, vec2(tx, ty)); // rgba = Y0 U Y1 V (нормализовано)
+vec3 sampleYuyvNearest(float xPix, float yPix)
+{
+    xPix = clamp(xPix, 0.0, float(uWidth  - 1));
+    yPix = clamp(yPix, 0.0, float(uHeight - 1));
 
-            float Y = mix(yuyv.r, yuyv.b, odd);
-            return yuvToRgb601Limited(Y, yuyv.g, yuyv.a);
-        }
+    float x0   = floor(xPix);
+    float y0   = floor(yPix);
 
-        void main()
-        {
-            vec2 fragPos = vTex * uSize;
+    float pair = floor(x0 * 0.5);
+    float odd  = mod(x0, 2.0);
 
-            if (!insideRoundedRect(fragPos, uSize, uRadius)) {
-                gl_FragColor = vec4(243./255., 244./255., 246/255., 1.0);
-                return;
-            }
+    float tx = (pair + 0.5) / float(uPackedWidth);
+    float ty = (y0   + 0.5) / float(uHeight);
 
-            if (uFormat == 0) {
-                gl_FragColor = vec4(texture2D(uTex, vTex).rgb, 1.0);
-                return;
-            }
+    vec4 yuyv = texture2D(uTex, vec2(tx, ty)); // Y0 U Y1 V
 
-            // Bilinear в RGB домене (4 выборки), чтобы корректно масштабировать
-            float sx = vTex.x * float(uWidth)  - 0.5;
-            float sy = vTex.y * float(uHeight) - 0.5;
+    float Y = mix(yuyv.r, yuyv.b, odd);
+    return yuvToRgb601Limited(Y, yuyv.g, yuyv.a);
+}
 
-            float x0 = floor(sx);
-            float y0 = floor(sy);
 
-            float fx = fract(sx);
-            float fy = fract(sy);
+// ------------------------------------------------------------
+// Center ring (12 px: 4 c1 → 4 c2 → 4 c1)
+vec4 drawCenterRing(vec2 fragPos)
+{
+    if (uCrosshairVisible == 0 || uCrosshairRadius <= 0.0)
+        return vec4(0.0);
 
-            vec3 c00 = sampleYuyvNearest(x0,     y0);
-            vec3 c10 = sampleYuyvNearest(x0 + 1, y0);
-            vec3 c01 = sampleYuyvNearest(x0,     y0 + 1);
-            vec3 c11 = sampleYuyvNearest(x0 + 1, y0 + 1);
+    vec2 center = uSize * 0.5;
+    float dist  = length(fragPos - center);
 
-            vec3 c0 = mix(c00, c10, fx);
-            vec3 c1 = mix(c01, c11, fx);
-            vec3 rgb = mix(c0, c1, fy);
+    float maxR  = min(uSize.x, uSize.y) * 0.5;
+    float ringR = uCrosshairRadius * maxR;
 
-            gl_FragColor = vec4(rgb, 1.0);
-        }
-    )";
+    float halfThickness = 6.0; // 12px total
+    float d = abs(dist - ringR);
+
+    if (d > halfThickness)
+        return vec4(0.0);
+
+    float t = d + halfThickness; // 0..12
+
+    vec3 color;
+    if (t < 4.0)
+        color = uCrosshairColor1;
+    else if (t < 8.0)
+        color = uCrosshairColor2;
+    else
+        color = uCrosshairColor1;
+
+    return vec4(color, 1.0);
+}
+
+
+// ------------------------------------------------------------
+void main()
+{
+    vec2 fragPos = vTex * uSize;
+
+    if (!insideRoundedRect(fragPos, uSize, uRadius)) {
+        gl_FragColor = vec4(243.0/255.0, 244.0/255.0, 246.0/255.0, 1.0);
+        return;
+    }
+
+    vec4 baseColor;
+
+    if (uFormat == 0) {
+        baseColor = vec4(texture2D(uTex, vTex).rgb, 1.0);
+    } else {
+        float sx = vTex.x * float(uWidth)  - 0.5;
+        float sy = vTex.y * float(uHeight) - 0.5;
+
+        float x0 = floor(sx);
+        float y0 = floor(sy);
+
+        float fx = fract(sx);
+        float fy = fract(sy);
+
+        vec3 c00 = sampleYuyvNearest(x0,     y0);
+        vec3 c10 = sampleYuyvNearest(x0 + 1, y0);
+        vec3 c01 = sampleYuyvNearest(x0,     y0 + 1);
+        vec3 c11 = sampleYuyvNearest(x0 + 1, y0 + 1);
+
+        vec3 c0 = mix(c00, c10, fx);
+        vec3 c1 = mix(c01, c11, fx);
+
+        baseColor = vec4(mix(c0, c1, fy), 1.0);
+    }
+
+    // overlay кольца
+    vec4 ring = drawCenterRing(fragPos);
+    if (ring.a > 0.0)
+        baseColor.rgb = mix(baseColor.rgb, ring.rgb, ring.a);
+
+    gl_FragColor = baseColor;
+}
+)";
 
     program_.addShaderFromSourceCode(QOpenGLShader::Vertex, vs);
     program_.addShaderFromSourceCode(QOpenGLShader::Fragment, fs);

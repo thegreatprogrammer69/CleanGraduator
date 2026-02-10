@@ -2,7 +2,7 @@
 #define CLEANGRADUATOR_IDisplacementCATALOG_H
 #include <optional>
 #include <vector>
-#include "application/dto/DisplacementRecord.h"
+#include "../../../dto/common/DisplacementRecord.h"
 
 namespace application::ports {
     struct IDisplacementCatalog {

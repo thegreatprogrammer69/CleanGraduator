@@ -31,7 +31,7 @@ V4LCamera::V4LCamera(CameraPorts ports, V4LCameraConfig config)
     : logger_(ports.logger), ports_(ports), config_(std::move(config)) {}
 
 V4LCamera::~V4LCamera() {
-    stop();
+    close();
 }
 
 void V4LCamera::addSink(domain::ports::IVideoSink& sink) {
@@ -44,27 +44,30 @@ void V4LCamera::removeSink(domain::ports::IVideoSink& sink) {
     sinks_.erase(std::remove(sinks_.begin(), sinks_.end(), &sink), sinks_.end());
 }
 
-bool V4LCamera::start() {
-    if (running_.load()) return true;
+void V4LCamera::open() {
+    auto abort_opening = [this]() {
+        this->close();
+        throw std::runtime_error(this->logger_.lastError());
+    };
+
+    if (running_.load()) return;
 
     fd_ = ::open(config_.source.c_str(), O_RDWR | O_NONBLOCK, 0);
     if (fd_ < 0) {
-        logger_.error("logger_open failed: {}", std::strerror(errno));
-        return false;
+        logger_.error("V4LCamera::open() error: open failed: {}", std::strerror(errno));
+        abort_opening();
     }
 
     // Проверим capability
     v4l2_capability cap{};
     if (xioctl(fd_, VIDIOC_QUERYCAP, &cap) < 0) {
-        logger_.error("logger_VIDIOC_QUERYCAP failed: {}", std::strerror(errno));
-        stop();
-        return false;
+        logger_.error("V4LCamera::open() error: VIDIOC_QUERYCAP failed: {}", std::strerror(errno));
+        abort_opening();
     }
     if (!(cap.capabilities & V4L2_CAP_VIDEO_CAPTURE) ||
         !(cap.capabilities & V4L2_CAP_STREAMING)) {
-        logger_.error("logger_device does not support capture/streaming");
-        stop();
-        return false;
+        logger_.error("V4LCamera::open() error: device does not support capture/streaming");
+        abort_opening();
     }
 
     // Формат: YUYV 640x480
@@ -76,9 +79,8 @@ bool V4LCamera::start() {
     fmt.fmt.pix.field = V4L2_FIELD_ANY;
 
     if (xioctl(fd_, VIDIOC_S_FMT, &fmt) < 0) {
-        logger_.error("logger_VIDIOC_S_FMT failed: {}", std::strerror(errno));
-        stop();
-        return false;
+        logger_.error("V4LCamera::open() error: VIDIOC_S_FMT failed: {}", std::strerror(errno));
+        abort_opening();
     }
 
     // FPS: 30
@@ -88,7 +90,7 @@ bool V4LCamera::start() {
     parm.parm.capture.timeperframe.denominator = config_.fps;
 
     if (xioctl(fd_, VIDIOC_S_PARM, &parm) < 0) {
-        logger_.warn("logger_VIDIOC_S_PARM failed (device may ignore): {}", std::strerror(errno));
+        logger_.warn("V4LCamera::open() error: VIDIOC_S_PARM failed (device may ignore): {}", std::strerror(errno));
         // не фейлим — некоторые драйверы игнорируют
     }
 
@@ -99,14 +101,12 @@ bool V4LCamera::start() {
     req.memory = V4L2_MEMORY_MMAP;
 
     if (xioctl(fd_, VIDIOC_REQBUFS, &req) < 0) {
-        logger_.error("logger_VIDIOC_REQBUFS failed: {}", std::strerror(errno));
-        stop();
-        return false;
+        logger_.error("V4LCamera::open() error: VIDIOC_REQBUFS failed: {}", std::strerror(errno));
+        abort_opening();
     }
     if (req.count < 2) {
-        logger_.error("logger_insufficient buffer memory");
-        stop();
-        return false;
+        logger_.error("V4LCamera::open() error: insufficient buffer memory");
+        abort_opening();
     }
 
     buffers_.resize(req.count);
@@ -118,9 +118,8 @@ bool V4LCamera::start() {
         buf.index = i;
 
         if (xioctl(fd_, VIDIOC_QUERYBUF, &buf) < 0) {
-            logger_.error("logger_VIDIOC_QUERYBUF failed: {}", std::strerror(errno));
-            stop();
-            return false;
+            logger_.error("V4LCamera::open() error: VIDIOC_QUERYBUF failed: {}", std::strerror(errno));
+            abort_opening();
         }
 
         buffers_[i].length = buf.length;
@@ -134,9 +133,8 @@ bool V4LCamera::start() {
         );
 
         if (buffers_[i].start == MAP_FAILED) {
-            logger_.error("logger_mmap failed: {}", std::strerror(errno));
-            stop();
-            return false;
+            logger_.error("V4LCamera::open() error: mmap failed: {}", std::strerror(errno));
+            abort_opening();
         }
     }
 
@@ -148,27 +146,27 @@ bool V4LCamera::start() {
         buf.index = i;
 
         if (xioctl(fd_, VIDIOC_QBUF, &buf) < 0) {
-            logger_.error("logger_VIDIOC_QBUF failed: {}", std::strerror(errno));
-            stop();
-            return false;
+            logger_.error("V4LCamera::open() error: VIDIOC_QBUF failed: {}", std::strerror(errno));
+            abort_opening();
         }
     }
 
     // Старт стриминга
     v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     if (xioctl(fd_, VIDIOC_STREAMON, &type) < 0) {
-        logger_.error("logger_VIDIOC_STREAMON failed: {}", std::strerror(errno));
-        stop();
-        return false;
+        logger_.error("V4LCamera::open() error: VIDIOC_STREAMON failed: {}", std::strerror(errno));
+        abort_opening();
     }
 
     running_.store(true);
     thread_ = std::thread(&V4LCamera::captureLoop, this);
-    logger_.info("Camera {} successfully opened", config_.source);
-    return true;
+    logger_.info("camera {} successfully opened", config_.source);
+    return;
 }
 
-void V4LCamera::stop() {
+void V4LCamera::close() {
+    logger_.info("closing camera {}", config_.source);
+
     bool wasRunning = running_.exchange(false);
 
     if (thread_.joinable()) {
@@ -192,6 +190,8 @@ void V4LCamera::stop() {
         ::close(fd_);
         fd_ = -1;
     }
+
+    logger_.info("camera {} successfully closed", config_.source);
 
     (void)wasRunning;
 }

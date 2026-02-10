@@ -1,9 +1,9 @@
 set(SOURCES
 
 
-        catalogs/FileDisplacementCatalog.cpp
-        catalogs/FileGaugeCatalog.cpp
-        catalogs/FilePrinterCatalog.cpp
+#        catalogs/FileDisplacementCatalog.cpp
+#        catalogs/FileGaugeCatalog.cpp
+#        catalogs/FilePrinterCatalog.cpp
 
         calculation/angle/CastAnglemeter.cpp
         calculation/angle/detail/cast_anglemeter.cpp
@@ -18,6 +18,8 @@ set(SOURCES
 
         process/ProcessLifecycle.cpp
         process/ProcessRunner.cpp
+
+        settings/QtCameraGridSettingsRepository.cpp
 )
 
 if(WIN32)
@@ -39,8 +41,6 @@ elseif(UNIX)
             platform/sleep/sleep_linux.cpp
             camera/linux/v4l/V4LCamera.cpp
             camera/linux/gstreamer/GStreamerCamera.cpp
-            settings/FileUserSettingsRepository.h
-            settings/FileUserSettingsRepository.cpp
     )
 endif()
 
@@ -74,6 +74,7 @@ target_include_directories(infrastructure
 target_link_libraries(infrastructure
         PUBLIC
         domain
+        Qt5::Core
         ${GSTREAMER_LIBRARIES}
 )
 

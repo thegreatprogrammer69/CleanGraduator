@@ -22,8 +22,8 @@ public:
     explicit V4LCamera(CameraPorts ports, V4LCameraConfig config);
     ~V4LCamera() override;
 
-    bool start() override;
-    void stop() override;
+    void open() override;
+    void close() override;
     void addSink(domain::ports::IVideoSink& sink) override;
     void removeSink(domain::ports::IVideoSink& sink) override;
 

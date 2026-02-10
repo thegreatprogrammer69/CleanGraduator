@@ -2,12 +2,12 @@
 #define CLEANGRADUATOR_IGAUGECATALOG_H
 #include <optional>
 #include <vector>
-#include "application/dto/GaugeRecord.h"
+#include "../../../dto/common/GaugeInfo.h"
 
 namespace application::ports {
     struct IGaugeCatalog {
-        virtual std::vector<dto::GaugeRecord> list() const = 0;
-        virtual std::optional<dto::GaugeRecord> at(dto::GaugeRecordId idx) const = 0;
+        virtual std::vector<dto::GaugeInfo> list() const = 0;
+        virtual std::optional<dto::GaugeInfo> at(dto::GaugeRecordId idx) const = 0;
         virtual ~IGaugeCatalog() = default;
     };
 }
