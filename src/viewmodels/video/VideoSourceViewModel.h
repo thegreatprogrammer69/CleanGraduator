@@ -4,6 +4,7 @@
 #include "application/dto/settings/camera_grid/VideoSourceCrosshair.h"
 #include "application/fmt/fmt_application.h"
 #include "application/ports/outbound/video/IVideoSourceCrosshairListener.h"
+#include "application/ports/outbound/video/IVideoSourceLifecycleObserver.h"
 #include "domain/ports/outbound/IVideoSink.h"
 
 namespace domain::ports {
@@ -11,10 +12,16 @@ namespace domain::ports {
 }
 
 namespace mvvm {
-    class VideoSourceViewModel final : domain::ports::IVideoSink, public application::ports::IVideoSourceCrosshairListener {
+    class VideoSourceViewModel final
+        : domain::ports::IVideoSink
+        , protected application::ports::IVideoSourceCrosshairListener
+        , protected application::ports::IVideoSourceLifecycleObserver
+    {
+
     public:
         Observable<domain::common::VideoFramePtr> frame;
         Observable<application::dto::VideoSourceCrosshair> crosshair;
+        Observable<bool> is_opened;
 
     public:
         explicit VideoSourceViewModel(domain::ports::IVideoSource& video_source);
@@ -23,6 +30,9 @@ namespace mvvm {
     protected:
         // IVideoSourceCrosshairPort
         void onCrosshairChanged(const application::dto::VideoSourceCrosshair&) override;
+
+        void onSourceOpened() override;
+        void onSourceClosed() override;
 
     private:
         // IVideoSink
