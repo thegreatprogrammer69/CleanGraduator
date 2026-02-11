@@ -8,7 +8,7 @@
 #include <memory>
 #include <mutex>
 
-#include "application/dto/settings/camera_grid/VideoSourceCrosshair.h"
+#include "application/dto/settings/grid/VideoSourceCrosshair.h"
 #include "domain/core/video/PixelFormat.h"
 #include "viewmodels/Observable.h"
 

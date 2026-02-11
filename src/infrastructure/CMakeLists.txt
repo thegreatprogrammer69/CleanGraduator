@@ -24,6 +24,12 @@ set(SOURCES
         settings/QtCameraGridSettingsRepository.cpp
 )
 
+if (WIN32)
+    add_definitions(-DPLATFORM_WINDOWS)
+elseif (UNIX)
+    add_definitions(-DPLATFORM_LINUX)
+endif ()
+
 if(WIN32)
     message(STATUS "Configuring for Windows")
     add_definitions(-DPLATFORM_WINDOWS)
@@ -31,8 +37,8 @@ if(WIN32)
             platform/com/ComPort_windows.cpp
             platform/lpt/LptPort_windows.cpp
             platform/sleep/sleep_windows.cpp
-            camera/windows/dshow/DShowCamera.cpp
-            camera/windows/dshow/SampleGrabberCB.cpp
+            video/windows/dshow/DShowCamera.cpp
+            video/windows/dshow/SampleGrabberCB.cpp
     )
 elseif(UNIX)
     message(STATUS "Configuring for Linux")
@@ -41,8 +47,8 @@ elseif(UNIX)
             platform/com/ComPort_linux.cpp
             platform/lpt/LptPort_linux.cpp
             platform/sleep/sleep_linux.cpp
-            camera/linux/v4l/V4LCamera.cpp
-            camera/linux/gstreamer/GStreamerCamera.cpp
+            video/linux/v4l/V4LCamera.cpp
+            video/linux/gstreamer/GStreamerCamera.cpp
     )
 endif()
 

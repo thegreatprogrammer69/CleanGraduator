@@ -33,7 +33,7 @@ void AppBootstrap::initialize() {
     processRunner_ = InfrastructureModule::createProcessRunner(lifecycle_);
     lifecycle_.markForward();
 
-    infra::camera::CameraPorts cameraPorts{
+    infra::camera::VideoSourcePorts cameraPorts{
         .logger = *logger_,
         .clock = lifecycle_.clock(),
     };
@@ -53,16 +53,21 @@ void AppBootstrap::initialize() {
     sourceViewModels_ = ViewModelsModule::createVideoSourceViewModels(videoSources);
     gridViewModel_ = ViewModelsModule::createGridViewModel(sourceViewModels_);
 
-    settingsRepository_ = InfrastructureModule::createSettingsRepository(configDirectory_);
-    gridService_ = ViewModelsModule::createGridService(videoSources);
-    settingsUseCase_ = ViewModelsModule::createSettingsUseCase(
-        *logger_,
-        *settingsRepository_,
-        *gridService_,
-        *sourceViewModels_.front());
-    settingsViewModel_ = ViewModelsModule::createSettingsViewModel(*settingsUseCase_);
-    mainWindowViewModel_ = ViewModelsModule::createMainWindowViewModel(*gridViewModel_, *settingsViewModel_);
+    std::vector<application::ports::IVideoSourceCrosshairListener*> crosshairListeners{};
+    std::vector<application::ports::IVideoSourceLifecycleObserver*> videoSourceLifecycleObservers{};
+    for (const auto& sourceViewModel : sourceViewModels_) {
+        crosshairListeners.push_back(sourceViewModel.get());
+        videoSourceLifecycleObservers.push_back(sourceViewModel.get());
+    }
 
+    settingsRepository_ = InfrastructureModule::createSettingsRepository(configDirectory_);
+
+    gridService_ = ViewModelsModule::createGridService(*settingsRepository_, videoSources, crosshairListeners, videoSourceLifecycleObservers);
+
+    gridSettingsUseCase_ = ViewModelsModule::createCameraGridSettingsUseCase(*logger_,*gridService_);
+    gridSettingsViewModel_ = ViewModelsModule::createCameraGridSettingsViewModel(*gridSettingsUseCase_);
+
+    mainWindowViewModel_ = ViewModelsModule::createMainWindowViewModel(*gridViewModel_, *gridSettingsViewModel_);
     const auto windowConfig = UiModule::loadWindowConfig(configDirectory_);
     mainWindow_ = UiModule::createMainWindow(*mainWindowViewModel_, windowConfig);
 

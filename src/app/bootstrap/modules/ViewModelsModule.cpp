@@ -44,29 +44,37 @@ std::unique_ptr<mvvm::VideoSourceGridViewModel> ViewModelsModule::createGridView
 }
 
 std::unique_ptr<application::services::VideoSourceGridService> ViewModelsModule::createGridService(
-    std::vector<domain::ports::IVideoSource*> sources)
+    application::ports::IVideoSourceGridSettingsRepository& settings_repo,
+    std::vector<domain::ports::IVideoSource*> video_sources,
+    std::vector<application::ports::IVideoSourceCrosshairListener*> crosshair_listeners,
+    std::vector<application::ports::IVideoSourceLifecycleObserver*> lifecycle_observers)
 {
     using VideoSource = application::services::VideoSourceGridService::VideoSource;
     std::vector<VideoSource> videoSources;
-    videoSources.reserve(sources.size());
+    videoSources.reserve(video_sources.size());
 
-    for (size_t index = 0; index < sources.size(); ++index) {
-        videoSources.push_back(VideoSource{.index = static_cast<int>(index + 1), .video_source = *sources.at(index)});
+    for (size_t index = 0; index < video_sources.size(); ++index) {
+        videoSources.push_back(VideoSource{
+            .index = static_cast<int>(index + 1),
+            .video_source = *video_sources.at(index),
+            .crosshair_listener = *crosshair_listeners.at(index),
+            .lifecycle_observer = *lifecycle_observers.at(index),
+        });
     }
 
-    return std::make_unique<application::services::VideoSourceGridService>(std::move(videoSources));
+    application::services::VideoSourceGridServicePorts ports{
+        .settings_repo = settings_repo
+    };
+
+    return std::make_unique<application::services::VideoSourceGridService>(ports, std::move(videoSources));
 }
 
-std::unique_ptr<application::usecases::ApplyCameraGridSettings> ViewModelsModule::createSettingsUseCase(
+std::unique_ptr<application::usecases::ApplyCameraGridSettings> ViewModelsModule::createCameraGridSettingsUseCase(
     domain::ports::ILogger& logger,
-    application::ports::IVideoSourceGridSettingsRepository& settingsRepository,
-    application::services::VideoSourceGridService& gridService,
-    mvvm::VideoSourceViewModel& crosshairListener)
+    application::services::VideoSourceGridService& gridService)
 {
     application::usecases::ApplyCameraGridSettingsPorts ports{
-        .logger = logger,
-        .settings_repo = settingsRepository,
-        .crosshair_listener = crosshairListener,
+        .logger = logger
     };
 
     application::usecases::ApplyCameraGridSettingsServices services{
@@ -76,7 +84,7 @@ std::unique_ptr<application::usecases::ApplyCameraGridSettings> ViewModelsModule
     return std::make_unique<application::usecases::ApplyCameraGridSettings>(ports, services);
 }
 
-std::unique_ptr<mvvm::VideoSourceGridSettingsViewModel> ViewModelsModule::createSettingsViewModel(
+std::unique_ptr<mvvm::VideoSourceGridSettingsViewModel> ViewModelsModule::createCameraGridSettingsViewModel(
     application::usecases::ApplyCameraGridSettings& useCase)
 {
     return std::make_unique<mvvm::VideoSourceGridSettingsViewModel>(useCase);

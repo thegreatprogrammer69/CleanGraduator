@@ -3,9 +3,9 @@
 #include <stdexcept>
 #include <string>
 
-#include "infrastructure/camera/linux/gstreamer/GStreamerCamera.h"
-#include "infrastructure/camera/linux/v4l/V4LCamera.h"
-#include "infrastructure/camera/windows/dshow/DShowCamera.h"
+#include "infrastructure/video/linux/gstreamer/GStreamerCamera.h"
+#include "infrastructure/video/linux/v4l/V4LCamera.h"
+#include "infrastructure/video/windows/dshow/DShowCamera.h"
 #include "infrastructure/logging/ConsoleLogger.h"
 #include "infrastructure/logging/FileLogger.h"
 #include "infrastructure/process/ProcessRunner.h"
@@ -50,7 +50,7 @@ std::unique_ptr<domain::ports::ILogger> InfrastructureModule::createLogger(const
 
 std::vector<std::unique_ptr<domain::ports::IVideoSource>> InfrastructureModule::createVideoSources(
     const std::string& configDirectory, const std::string& fileName,
-    const infra::camera::CameraPorts& ports)
+    const infra::camera::VideoSourcePorts& ports)
 {
     std::vector<std::unique_ptr<domain::ports::IVideoSource>> result;
 

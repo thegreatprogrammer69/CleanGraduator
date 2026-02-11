@@ -203,13 +203,21 @@ void QtVideoSourceWidget::drawQuad(bool noVideo) {
     program_.release();
 }
 
+#include <QDir>
 void QtVideoSourceWidget::initShader() {
     if (shaderInited_) {
         return;
     }
 
-    const auto vs = loadTextResource(":/ui/shaders/video_source.vert");
-    const auto fs = loadTextResource(":/ui/shaders/video_source.frag");
+    QDir dir(":/");
+
+    QStringList list = dir.entryList(QDir::Files);
+    for (const QString &file : list) {
+        qDebug() << file;
+    }
+
+    const auto vs = loadTextResource(":/ui/widgets/video/shaders/video_source.vert");
+    const auto fs = loadTextResource(":/ui/widgets/video/shaders/video_source.frag");
 
     if (vs.isEmpty() || fs.isEmpty()) {
         return;

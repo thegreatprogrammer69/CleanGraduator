@@ -76,8 +76,8 @@ private:
 
     std::unique_ptr<application::ports::IVideoSourceGridSettingsRepository> settingsRepository_;
     std::unique_ptr<application::services::VideoSourceGridService> gridService_;
-    std::unique_ptr<application::usecases::ApplyCameraGridSettings> settingsUseCase_;
-    std::unique_ptr<mvvm::VideoSourceGridSettingsViewModel> settingsViewModel_;
+    std::unique_ptr<application::usecases::ApplyCameraGridSettings> gridSettingsUseCase_;
+    std::unique_ptr<mvvm::VideoSourceGridSettingsViewModel> gridSettingsViewModel_;
     std::unique_ptr<mvvm::MainWindowViewModel> mainWindowViewModel_;
 
     std::unique_ptr<ui::QtMainWindow> mainWindow_;

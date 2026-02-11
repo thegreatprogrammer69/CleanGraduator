@@ -1,13 +1,15 @@
 #ifndef CLEANGRADUATOR_ICameraGridSettingsRepository_H
 #define CLEANGRADUATOR_ICameraGridSettingsRepository_H
-#include "application/dto/UserSettings.h"
 
 namespace application::ports {
 
     struct IVideoSourceGridSettingsRepository {
         virtual ~IVideoSourceGridSettingsRepository() = default;
-        virtual dto::UserSettings load() const = 0;
-        virtual void save(const dto::UserSettings& settings) = 0;
+
+        virtual dto::VideoSourceGridSettings loadGridSettings() const = 0;
+        virtual void saveGridSettings(const dto::VideoSourceGridSettings& settings) = 0;
+
+
     };
 
 } // namespace application::ports

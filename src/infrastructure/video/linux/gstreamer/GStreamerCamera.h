@@ -10,7 +10,7 @@
 #include "domain/fmt/FmtLogger.h"
 #include "domain/ports/inbound/IVideoSource.h"
 #include "GStreamerCameraConfig.h"
-#include "infrastructure/camera/CameraPorts.h"
+#include "infrastructure/video/VideoSourcePorts.h"
 
 typedef struct _GstElement GstElement;
 typedef struct _GstBus     GstBus;
@@ -21,7 +21,7 @@ namespace infra::camera {
 
     class GStreamerCamera final : public domain::ports::IVideoSource {
     public:
-        explicit GStreamerCamera(const CameraPorts& ports, GStreamerCameraConfig config);
+        explicit GStreamerCamera(const VideoSourcePorts& ports, GStreamerCameraConfig config);
         ~GStreamerCamera() override;
 
         void open() override;
@@ -36,7 +36,7 @@ namespace infra::camera {
     private:
         fmt::FmtLogger logger_;
 
-        const CameraPorts& ports_;
+        const VideoSourcePorts& ports_;
         GStreamerCameraConfig config_;
 
         std::mutex sinks_mutex_;

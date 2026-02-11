@@ -5,107 +5,96 @@
 
 namespace infrastructure::settings {
 
-QtCameraGridSettingsRepository::QtCameraGridSettingsRepository(std::string iniFilePath)
-    : path_(std::move(iniFilePath))
-{
-}
-
-application::dto::UserSettings QtCameraGridSettingsRepository::load() const
-{
-    QSettings settings(QString::fromStdString(path_), QSettings::IniFormat);
-
-    application::dto::UserSettings result{};
-
-    // CameraGrid
-    settings.beginGroup("CameraGrid");
-
-    // VideoSourceGridString
+    application::dto::VideoSourceGridSettings
+    QtCameraGridSettingsRepository::loadGridSettings() const
     {
-        const auto gridString =
-            settings.value("GridString", "").toString().toStdString();
-        result.camera_grid.grid_string =
-            application::dto::VideoSourceGridString(gridString);
+        if (cache_.has_value()) {
+            return *cache_;
+        }
+
+        cache_ = loadFromFile();
+        return *cache_;
     }
 
-    // Open cameras at startup
-    result.camera_grid.open_cameras_at_startup =
-        settings.value("OpenCamerasAtStartup", false).toBool();
 
-    // Crosshair
-    settings.beginGroup("Crosshair");
+    application::dto::VideoSourceGridSettings
+    QtCameraGridSettingsRepository::loadFromFile() const
+    {
+        QSettings settings(QString::fromStdString(path_), QSettings::IniFormat);
 
-    result.camera_grid.crosshair.visible =
-        settings.value("Visible", false).toBool();
+        application::dto::VideoSourceGridSettings result{};
 
-    result.camera_grid.crosshair.radius =
-        settings.value("Radius", 0.1f).toFloat();
+        settings.beginGroup("CameraGrid");
 
-    // Crosshair colors
-    settings.beginGroup("Color");
+        const auto gridString =
+            settings.value("GridString", "").toString().toStdString();
 
-    result.camera_grid.crosshair.color.color1 =
-        settings.value("Outside", 0xFFFFFFFF).toUInt();
+        result.grid_string =
+            application::dto::VideoSourceGridString(gridString);
 
-    result.camera_grid.crosshair.color.color2 =
-        settings.value("Inside", 0x000000FF).toUInt();
+        result.open_cameras_at_startup =
+            settings.value("OpenCamerasAtStartup", false).toBool();
 
-    settings.endGroup(); // Color
-    settings.endGroup(); // Crosshair
-    settings.endGroup(); // CameraGrid
+        settings.beginGroup("Crosshair");
 
-    return result;
-}
+        result.crosshair.visible =
+            settings.value("Visible", false).toBool();
 
-void QtCameraGridSettingsRepository::save(const application::dto::UserSettings& settingsData)
-{
-    QSettings settings(QString::fromStdString(path_), QSettings::IniFormat);
+        result.crosshair.radius =
+            settings.value("Radius", 0.1f).toFloat();
 
-    // CameraGrid
-    settings.beginGroup("CameraGrid");
+        settings.beginGroup("Color");
 
-    settings.setValue(
-        "GridString",
-        QString::fromStdString(
-            settingsData.camera_grid.grid_string.toString()
-        )
-    );
+        result.crosshair.color.color1 =
+            settings.value("Outside", 0xFFFFFFFF).toUInt();
 
-    settings.setValue(
-        "OpenCamerasAtStartup",
-        settingsData.camera_grid.open_cameras_at_startup
-    );
+        result.crosshair.color.color2 =
+            settings.value("Inside", 0x000000FF).toUInt();
 
-    // Crosshair
-    settings.beginGroup("Crosshair");
+        settings.endGroup(); // Color
+        settings.endGroup(); // Crosshair
+        settings.endGroup(); // CameraGrid
 
-    settings.setValue(
-        "Visible",
-        settingsData.camera_grid.crosshair.visible
-    );
+        return result;
+    }
 
-    settings.setValue(
-        "Radius",
-        settingsData.camera_grid.crosshair.radius
-    );
 
-    // Crosshair colors
-    settings.beginGroup("Color");
+    void QtCameraGridSettingsRepository::saveGridSettings(
+        const application::dto::VideoSourceGridSettings& settingsData)
+    {
+        QSettings settings(QString::fromStdString(path_), QSettings::IniFormat);
 
-    settings.setValue(
-        "Outside",
-        settingsData.camera_grid.crosshair.color.color1
-    );
+        settings.beginGroup("CameraGrid");
 
-    settings.setValue(
-        "Inside",
-        settingsData.camera_grid.crosshair.color.color2
-    );
+        settings.setValue(
+            "GridString",
+            QString::fromStdString(settingsData.grid_string.toString())
+        );
 
-    settings.endGroup(); // Color
-    settings.endGroup(); // Crosshair
-    settings.endGroup(); // CameraGrid
+        settings.setValue(
+            "OpenCamerasAtStartup",
+            settingsData.open_cameras_at_startup
+        );
 
-    settings.sync();
-}
+        settings.beginGroup("Crosshair");
+
+        settings.setValue("Visible", settingsData.crosshair.visible);
+        settings.setValue("Radius", settingsData.crosshair.radius);
+
+        settings.beginGroup("Color");
+
+        settings.setValue("Outside", settingsData.crosshair.color.color1);
+        settings.setValue("Inside", settingsData.crosshair.color.color2);
+
+        settings.endGroup();
+        settings.endGroup();
+        settings.endGroup();
+
+        settings.sync();
+
+        // ---- Update cache ----
+        cache_ = settingsData;
+    }
+
 
 } // namespace infrastructure::settings

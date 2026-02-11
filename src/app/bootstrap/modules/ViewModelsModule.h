@@ -5,7 +5,7 @@
 #include <vector>
 
 #include "application/services/VideoSourceGridService.h"
-#include "application/usecases/settings/ApplyCameraGridSettings.h"
+#include "application/usecases/settings/ApplyGridString.h"
 
 namespace domain::ports {
 struct IVideoSource;
@@ -30,15 +30,16 @@ struct ViewModelsModule {
         const std::vector<std::unique_ptr<mvvm::VideoSourceViewModel>>& sourceViewModels);
 
     static std::unique_ptr<application::services::VideoSourceGridService> createGridService(
-        std::vector<domain::ports::IVideoSource*> sources);
+        application::ports::IVideoSourceGridSettingsRepository& settings_repo,
+        std::vector<domain::ports::IVideoSource*> video_sources,
+        std::vector<application::ports::IVideoSourceCrosshairListener*> crosshair_listeners,
+        std::vector<application::ports::IVideoSourceLifecycleObserver*> lifecycle_observers);
 
-    static std::unique_ptr<application::usecases::ApplyCameraGridSettings> createSettingsUseCase(
+    static std::unique_ptr<application::usecases::ApplyCameraGridSettings> createCameraGridSettingsUseCase(
         domain::ports::ILogger& logger,
-        application::ports::IVideoSourceGridSettingsRepository& settingsRepository,
-        application::services::VideoSourceGridService& gridService,
-        mvvm::VideoSourceViewModel& crosshairListener);
+        application::services::VideoSourceGridService& gridService);
 
-    static std::unique_ptr<mvvm::VideoSourceGridSettingsViewModel> createSettingsViewModel(
+    static std::unique_ptr<mvvm::VideoSourceGridSettingsViewModel> createCameraGridSettingsViewModel(
         application::usecases::ApplyCameraGridSettings& useCase);
 
     static std::unique_ptr<mvvm::MainWindowViewModel> createMainWindowViewModel(

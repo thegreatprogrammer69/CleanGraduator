@@ -1,6 +1,6 @@
 #ifndef CLEANGRADUATOR_SETTINGSVIEWMODEL_H
 #define CLEANGRADUATOR_SETTINGSVIEWMODEL_H
-#include "application/dto/settings/camera_grid/VideoSourceGridSettings.h"
+#include "application/dto/settings/grid/VideoSourceGridSettings.h"
 #include "viewmodels/Observable.h"
 
 

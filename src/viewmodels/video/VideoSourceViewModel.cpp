@@ -1,33 +1,41 @@
 #include "VideoSourceViewModel.h"
 
-#include <iostream>
-#include <ostream>
-
+#include "domain/events/IEventBus.h"
+#include "domain/events/video/VideoSourceClosed.h"
+#include "domain/events/video/VideoSourceOpened.h"
+#include "domain/events/video/VideoSourceOpenFailed.h"
 #include "domain/ports/inbound/IVideoSource.h"
 
-mvvm::VideoSourceViewModel::VideoSourceViewModel(domain::ports::IVideoSource &video_source)
+using namespace mvvm;
+using namespace domain::events;
+
+VideoSourceViewModel::VideoSourceViewModel(domain::ports::IVideoSource& video_source, domain::events::IEventBus& event_bus)
     : video_source_(video_source)
+    , event_bus_(event_bus)
 {
     video_source_.addSink(*this);
+    event_bus_.addListener(*this);
 }
 
-mvvm::VideoSourceViewModel::~VideoSourceViewModel() {
+VideoSourceViewModel::~VideoSourceViewModel() {
     video_source_.removeSink(*this);
+    event_bus_.removeListener(*this);
 }
 
-void mvvm::VideoSourceViewModel::onVideoFrame(const domain::common::Timestamp &, domain::common::VideoFramePtr _frame) {
-    std::cout << "VideoSourceViewModel::onVideoFrame()" << std::endl;
+void VideoSourceViewModel::onVideoFrame(const domain::common::Timestamp &, domain::common::VideoFramePtr _frame) {
     frame.set(_frame);
 }
 
-void mvvm::VideoSourceViewModel::onCrosshairChanged(const application::dto::VideoSourceCrosshair& _crosshair) {
-    crosshair.set(_crosshair);
-}
+void VideoSourceViewModel::onEvent(const Event *event) {
 
-void mvvm::VideoSourceViewModel::onSourceOpened() {
-    is_opened.set(true);
-}
-
-void mvvm::VideoSourceViewModel::onSourceClosed() {
-    is_opened.set(false);
+    if (event->type() == EventType::VideoSourceClosed) {
+        is_opened.set(false);
+    }
+    else if (event->type() == EventType::VideoSourceOpened) {
+        is_opened.set(true);
+    }
+    else if (const auto* e = dynamic_cast<const VideoSourceOpenFailed*>(event); e != nullptr){
+        is_opened.set(false);
+        error.set(e->reason);
+    }
 }

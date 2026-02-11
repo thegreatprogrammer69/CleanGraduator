@@ -1,4 +1,4 @@
-add_library(ui STATIC
+add_library(ui SHARED
         widgets/layout/QtStackPanelWidget.cpp
         widgets/layout/QtStackPanelWidget.h
 

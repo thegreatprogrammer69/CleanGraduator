@@ -6,7 +6,7 @@
 
 #include "domain/ports/outbound/ILogger.h"
 #include "domain/ports/inbound/IVideoSource.h"
-#include "infrastructure/camera/CameraPorts.h"
+#include "infrastructure/video/VideoSourcePorts.h"
 #include "infrastructure/process/ProcessLifecycle.h"
 
 namespace application::ports {
@@ -33,7 +33,7 @@ struct InfrastructureModule {
     static std::unique_ptr<domain::ports::ILogger> createLogger(const LoggerConfig& config);
 
     static std::vector<std::unique_ptr<domain::ports::IVideoSource>> createVideoSources(
-        const std::string &configDirectory, const std::string &fileName, const infra::camera::CameraPorts &ports);
+        const std::string &configDirectory, const std::string &fileName, const infra::camera::VideoSourcePorts &ports);
 
 
     static std::unique_ptr<application::ports::IVideoSourceGridSettingsRepository> createSettingsRepository(

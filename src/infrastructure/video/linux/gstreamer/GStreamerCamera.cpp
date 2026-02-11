@@ -121,7 +121,7 @@ void logBusMessages(fmt::FmtLogger& logger, GstBus* bus, std::atomic<bool>& runn
 
 } // namespace
 
-GStreamerCamera::GStreamerCamera(const CameraPorts& ports, GStreamerCameraConfig config)
+GStreamerCamera::GStreamerCamera(const VideoSourcePorts& ports, GStreamerCameraConfig config)
     : logger_(ports.logger), ports_(ports), config_(std::move(config)) {}
 
 GStreamerCamera::~GStreamerCamera() {

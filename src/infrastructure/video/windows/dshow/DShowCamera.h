@@ -7,13 +7,13 @@
 #include "domain/ports/outbound/ILogger.h"
 #include "DShowCameraConfig.h"
 #include "domain/fmt/FmtLogger.h"
-#include "infrastructure/camera/CameraPorts.h"
+#include "infrastructure/video/VideoSourcePorts.h"
 
 namespace infra::camera {
 
 class DShowCamera final : public domain::ports::IVideoSource {
 public:
-    explicit DShowCamera(CameraPorts ports, DShowCameraConfig config);
+    explicit DShowCamera(VideoSourcePorts ports, DShowCameraConfig config);
     ~DShowCamera() override;
     void open() override;
     void close() override;

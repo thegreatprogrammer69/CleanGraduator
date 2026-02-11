@@ -9,7 +9,7 @@ namespace domain::ports {
 
 namespace infra::camera {
 
-struct CameraPorts {
+struct VideoSourcePorts {
     domain::ports::ILogger& logger;
     domain::ports::IClock& clock;
 };

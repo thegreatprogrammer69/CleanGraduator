@@ -1,6 +1,6 @@
 #include "VideoSourceGridSettingsViewModel.h"
 
-#include "application/usecases/settings/ApplyCameraGridSettings.h"
+#include "application/usecases/settings/ApplyGridString.h"
 
 mvvm::VideoSourceGridSettingsViewModel::VideoSourceGridSettingsViewModel(application::usecases::ApplyCameraGridSettings &use_case)
     : use_case_(use_case)
