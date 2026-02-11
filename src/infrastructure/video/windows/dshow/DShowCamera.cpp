@@ -7,8 +7,16 @@
 
 #include "DShowCamera.h"
 #include "SampleGrabberCB.h"
+#include "domain/core/video/VideoFrame.h"
+#include "domain/events/EventCategory.h"
+#include "domain/events/IEventBus.h"
+#include "domain/events/video/VideoSourceFrameCaptured.h"
+#include "domain/events/video/VideoSourceClosed.h"
+#include "domain/events/video/VideoSourceOpened.h"
+#include "domain/events/video/VideoSourceOpenFailed.h"
 
-namespace infra::camera {
+using namespace domain::events;
+using namespace infra::camera;
 
 static CComPtr<IBaseFilter> CreateCaptureFilterByIndex(int index);
 
@@ -54,9 +62,10 @@ struct DShowCamera::DShowCameraImpl {
     }
 };
 
-DShowCamera::DShowCamera(CameraPorts ports, DShowCameraConfig config)
+DShowCamera::DShowCamera(VideoSourcePorts ports, DShowCameraConfig config)
     : logger_(ports.logger)
     , clock_(ports.clock)
+    , event_bus_(ports.event_bus)
     , config_(config)
 {
     logger_.info("DShowCamera constructor called: camera index={}", config_.index);
@@ -64,24 +73,6 @@ DShowCamera::DShowCamera(CameraPorts ports, DShowCameraConfig config)
 
 DShowCamera::~DShowCamera() {
     logger_.info("DShowCamera destructor called");
-}
-
-void DShowCamera::addSink(domain::ports::IVideoSink &sink) {
-    logger_.info("addSink: {}", static_cast<void*>(&sink));
-
-    std::lock_guard lock(sinks_mutex_);
-    sinks_.push_back(&sink);
-
-    logger_.info("addSink: total sinks={}", sinks_.size());
-}
-
-void DShowCamera::removeSink(domain::ports::IVideoSink &sink) {
-    logger_.info("removeSink: {}", static_cast<void*>(&sink));
-
-    std::lock_guard lock(sinks_mutex_);
-    sinks_.erase(std::remove(sinks_.begin(), sinks_.end(), &sink), sinks_.end());
-
-    logger_.info("removeSink: total sinks={}", sinks_.size());
 }
 
 void DShowCamera::open() {
@@ -214,12 +205,15 @@ void DShowCamera::open() {
     }
 
     logger_.info("DShowCamera started successfully");
+
+    event_bus_.publish(VideoSourceOpened{});
 }
 
 void DShowCamera::close() {
     logger_.info("DShowCamera::stop()");
     impl_.reset();
     logger_.info("DShowCamera stopped");
+    event_bus_.publish(VideoSourceClosed{});
 }
 
 void DShowCamera::onFrame(double time, BYTE* data, long size) {
@@ -237,15 +231,9 @@ void DShowCamera::onFrame(double time, BYTE* data, long size) {
 
     const auto ts = clock_.now();
 
-    std::vector<domain::ports::IVideoSink*> sinks_copy;
-    {
-        std::lock_guard lock(sinks_mutex_);
-        sinks_copy = sinks_;
-    }
-
-    for (auto* sink : sinks_copy) {
-        sink->onVideoFrame(ts, frame);
-    }
+    VideoSourceFrameCaptured event;
+    event.frame = frame;
+    event_bus_.publish(event);
 }
 
 
@@ -281,6 +269,4 @@ static CComPtr<IBaseFilter> CreateCaptureFilterByIndex(int index) {
     }
 
     return nullptr;
-}
-
 }

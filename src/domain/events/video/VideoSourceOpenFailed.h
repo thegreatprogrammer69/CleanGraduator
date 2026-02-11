@@ -5,10 +5,9 @@
 #include "domain/events/Event.h"
 
 namespace domain::events {
-    struct VideoSourceOpenFailed final : Event {
+    struct VideoSourceOpenFiled final : VideoEvent {
         std::string reason;
-        EventType type() const override { return EventType::VideoSourceOpenFailed; }
-        ~VideoSourceOpenFailed() override = default;
+        VideoEventType type() const override { return VideoEventType::VideoSourceOpenFailed; }
     };
 }
 

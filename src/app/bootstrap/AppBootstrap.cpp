@@ -10,7 +10,6 @@
 #include "app/bootstrap/modules/ViewModelsModule.h"
 #include "domain/ports/inbound/IVideoSource.h"
 #include "domain/ports/inbound/IAngleCalculator.h"
-#include "application/ports/outbound/settings/IVideoSourceGridSettingsRepository.h"
 #include "viewmodels/video/VideoSourceGridViewModel.h"
 #include "viewmodels/video/VideoSourceViewModel.h"
 #include "viewmodels/settings/VideoSourceGridSettingsViewModel.h"
@@ -53,16 +52,8 @@ void AppBootstrap::initialize() {
     sourceViewModels_ = ViewModelsModule::createVideoSourceViewModels(videoSources);
     gridViewModel_ = ViewModelsModule::createGridViewModel(sourceViewModels_);
 
-    std::vector<application::ports::IVideoSourceCrosshairListener*> crosshairListeners{};
-    std::vector<application::ports::IVideoSourceLifecycleObserver*> videoSourceLifecycleObservers{};
-    for (const auto& sourceViewModel : sourceViewModels_) {
-        crosshairListeners.push_back(sourceViewModel.get());
-        videoSourceLifecycleObservers.push_back(sourceViewModel.get());
-    }
 
     settingsRepository_ = InfrastructureModule::createSettingsRepository(configDirectory_);
-
-    gridService_ = ViewModelsModule::createGridService(*settingsRepository_, videoSources, crosshairListeners, videoSourceLifecycleObservers);
 
     gridSettingsUseCase_ = ViewModelsModule::createCameraGridSettingsUseCase(*logger_,*gridService_);
     gridSettingsViewModel_ = ViewModelsModule::createCameraGridSettingsViewModel(*gridSettingsUseCase_);

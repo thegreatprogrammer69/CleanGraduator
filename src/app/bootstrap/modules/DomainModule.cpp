@@ -28,7 +28,7 @@ std::unique_ptr<domain::ports::IAngleCalculator> DomainModule::createAnglemeter(
     domain::ports::ILogger& logger,
     const AnglemeterConfig& config)
 {
-    infra::calculation::CastAnglemeterPorts ports{.logger = logger};
+    infra::calculation::AnglemeterPorts ports{.logger = logger};
 
     CastAnglemeterConfig castConfig{};
     castConfig.bright_lim = config.brightLim;

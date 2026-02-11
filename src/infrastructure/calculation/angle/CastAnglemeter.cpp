@@ -1,7 +1,7 @@
 #include "CastAnglemeter.h"
 #include "detail/cast_anglemeter.h"
 
-using namespace infra::calculation;
+using namespace infra::calc;
 
 struct CastAnglemeter::CastAnglemeterImpl {
     explicit CastAnglemeterImpl(CastAnglemeterConfig config) {
@@ -18,7 +18,7 @@ struct CastAnglemeter::CastAnglemeterImpl {
     anglemeter_t* am;
 };
 
-CastAnglemeter::CastAnglemeter(CastAnglemeterPorts ports, CastAnglemeterConfig config)
+CastAnglemeter::CastAnglemeter(AnglemeterPorts ports, CastAnglemeterConfig config)
     : impl_(std::make_unique<CastAnglemeterImpl>(config))
     , logger_(ports.logger)
 {

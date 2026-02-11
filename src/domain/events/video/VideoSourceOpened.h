@@ -3,9 +3,10 @@
 #include "domain/events/Event.h"
 
 namespace domain::events {
-    struct VideoSourceOpened final : Event {
-        EventType type() const override { return EventType::VideoSourceOpened; }
+    struct VideoSourceOpened final : VideoEvent {
+        VideoEventType type() const override { return VideoEventType::VideoSourceOpened; }
     };
+}
 }
 
 #endif //CLEANGRADUATOR_VIDEOSOURCEOPENED_H

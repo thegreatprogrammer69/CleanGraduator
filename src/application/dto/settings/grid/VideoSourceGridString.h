@@ -10,6 +10,8 @@ namespace application::dto {
 
     class VideoSourceGridString {
     public:
+        VideoSourceGridString() = default;
+
         static VideoSourceGridString fromIndexes(std::vector<int> indexes) {
             std::sort(indexes.begin(), indexes.end());
 

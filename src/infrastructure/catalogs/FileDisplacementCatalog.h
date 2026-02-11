@@ -3,7 +3,7 @@
 
 
 #include <string>
-#include "application/ports/outbound/catalog/IDisplacementCatalog.h"
+#include "application/ports/catalog/IDisplacementCatalog.h"
 
 namespace infra::catalogs {
     class FileDisplacementCatalog final : public application::ports::IDisplacementCatalog {

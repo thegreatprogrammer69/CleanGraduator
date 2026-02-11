@@ -28,10 +28,10 @@ void VideoSourceViewModel::onVideoFrame(const domain::common::Timestamp &, domai
 
 void VideoSourceViewModel::onEvent(const Event *event) {
 
-    if (event->type() == EventType::VideoSourceClosed) {
+    if (event->type() == EventCategory::VideoSourceClosed) {
         is_opened.set(false);
     }
-    else if (event->type() == EventType::VideoSourceOpened) {
+    else if (event->type() == EventCategory::VideoSourceOpened) {
         is_opened.set(true);
     }
     else if (const auto* e = dynamic_cast<const VideoSourceOpenFailed*>(event); e != nullptr){

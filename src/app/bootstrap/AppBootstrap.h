@@ -20,7 +20,7 @@ class AngleFromVideoInteractor;
 }
 
 namespace application::services {
-class VideoSourceGridService;
+class CameraGridService;
 }
 
 namespace application::usecases {
@@ -75,7 +75,7 @@ private:
     std::unique_ptr<mvvm::VideoSourceGridViewModel> gridViewModel_;
 
     std::unique_ptr<application::ports::IVideoSourceGridSettingsRepository> settingsRepository_;
-    std::unique_ptr<application::services::VideoSourceGridService> gridService_;
+    std::unique_ptr<application::services::CameraGridService> gridService_;
     std::unique_ptr<application::usecases::ApplyCameraGridSettings> gridSettingsUseCase_;
     std::unique_ptr<mvvm::VideoSourceGridSettingsViewModel> gridSettingsViewModel_;
     std::unique_ptr<mvvm::MainWindowViewModel> mainWindowViewModel_;

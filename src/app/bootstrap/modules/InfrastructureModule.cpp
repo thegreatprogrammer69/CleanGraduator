@@ -9,7 +9,7 @@
 #include "infrastructure/logging/ConsoleLogger.h"
 #include "infrastructure/logging/FileLogger.h"
 #include "infrastructure/process/ProcessRunner.h"
-#include "infrastructure/settings/QtCameraGridSettingsRepository.h"
+#include "infrastructure/settings/IGridSettingsRepository.h"
 #include "infrastructure/utils/ini/IniFile.h"
 
 using utils::ini::IniFile;
@@ -105,7 +105,7 @@ std::unique_ptr<application::ports::IVideoSourceGridSettingsRepository> Infrastr
     const auto filePath = configDirectory + "/settings_repository.ini";
     const auto ini = loadIniOrThrow(filePath);
     const auto repositoryPath = ini["settings_repository"].getString("path", "settings_repo.ini");
-    return std::make_unique<infrastructure::settings::QtCameraGridSettingsRepository>(repositoryPath);
+    return std::make_unique<infrastructure::settings::IGridSettingsRepository>(repositoryPath);
 }
 
 std::unique_ptr<domain::ports::IProcessLifecycleObserver> InfrastructureModule::createProcessRunner(infra::process::ProcessLifecycle& lifecycle) {

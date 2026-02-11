@@ -14,7 +14,7 @@ namespace application::ports {
 }
 
 namespace infrastructure::settings {
-class QtCameraGridSettingsRepository;
+class IGridSettingsRepository;
 }
 
 namespace infra::process {

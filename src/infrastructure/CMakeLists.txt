@@ -21,7 +21,7 @@ set(SOURCES
         process/ProcessLifecycle.cpp
         process/ProcessRunner.cpp
 
-        settings/QtCameraGridSettingsRepository.cpp
+        settings/IGridSettingsRepository.cpp
 )
 
 if (WIN32)
@@ -49,6 +49,11 @@ elseif(UNIX)
             platform/sleep/sleep_linux.cpp
             video/linux/v4l/V4LCamera.cpp
             video/linux/gstreamer/GStreamerCamera.cpp
+            factory/AngleCalculatorFactory.h
+            factory/AngleCalculatorFactory.cpp
+            factory/CalibrationCalculatorFactory.cpp
+            factory/CalibrationCalculatorFactory.h
+            ../events/video/VideoSourceCrosshairChanged.h
     )
 endif()
 

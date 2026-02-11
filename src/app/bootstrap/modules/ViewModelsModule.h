@@ -4,7 +4,7 @@
 #include <memory>
 #include <vector>
 
-#include "application/services/VideoSourceGridService.h"
+#include "application/services/CameraGridService.h"
 #include "application/usecases/settings/ApplyGridString.h"
 
 namespace domain::ports {
@@ -12,7 +12,7 @@ struct IVideoSource;
 }
 
 namespace infrastructure::settings {
-class QtCameraGridSettingsRepository;
+class IGridSettingsRepository;
 }
 
 namespace mvvm {
@@ -29,7 +29,7 @@ struct ViewModelsModule {
     static std::unique_ptr<mvvm::VideoSourceGridViewModel> createGridViewModel(
         const std::vector<std::unique_ptr<mvvm::VideoSourceViewModel>>& sourceViewModels);
 
-    static std::unique_ptr<application::services::VideoSourceGridService> createGridService(
+    static std::unique_ptr<application::services::CameraGridService> createGridService(
         application::ports::IVideoSourceGridSettingsRepository& settings_repo,
         std::vector<domain::ports::IVideoSource*> video_sources,
         std::vector<application::ports::IVideoSourceCrosshairListener*> crosshair_listeners,
@@ -37,7 +37,7 @@ struct ViewModelsModule {
 
     static std::unique_ptr<application::usecases::ApplyCameraGridSettings> createCameraGridSettingsUseCase(
         domain::ports::ILogger& logger,
-        application::services::VideoSourceGridService& gridService);
+        application::services::CameraGridService& gridService);
 
     static std::unique_ptr<mvvm::VideoSourceGridSettingsViewModel> createCameraGridSettingsViewModel(
         application::usecases::ApplyCameraGridSettings& useCase);

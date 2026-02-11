@@ -6,6 +6,7 @@
 #include "domain/ports/outbound/IClock.h"
 #include "domain/ports/outbound/ILogger.h"
 #include "DShowCameraConfig.h"
+#include "domain/events/IEventListener.h"
 #include "domain/fmt/FmtLogger.h"
 #include "infrastructure/video/VideoSourcePorts.h"
 
@@ -17,8 +18,7 @@ public:
     ~DShowCamera() override;
     void open() override;
     void close() override;
-    void addSink(domain::ports::IVideoSink& sink) override;
-    void removeSink(domain::ports::IVideoSink& sink) override;
+
 
     // вызывается из SampleGrabberCB
     void onFrame(double time, unsigned char* data, long size);
@@ -29,11 +29,9 @@ private:
 
     fmt::FmtLogger logger_;
     domain::ports::IClock& clock_;
+    domain::events::IEventBus& event_bus_;
 
     DShowCameraConfig config_;
-
-    std::mutex sinks_mutex_;
-    std::vector<domain::ports::IVideoSink*> sinks_;
 };
 
 }

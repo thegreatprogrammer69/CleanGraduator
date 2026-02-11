@@ -5,7 +5,7 @@
 
 #include <stdexcept>
 
-#include "infrastructure/settings/QtCameraGridSettingsRepository.h"
+#include "infrastructure/settings/IGridSettingsRepository.h"
 #include "viewmodels/MainWindowViewModel.h"
 #include "viewmodels/settings/VideoSourceGridSettingsViewModel.h"
 #include "viewmodels/video/VideoSourceGridViewModel.h"
@@ -43,13 +43,13 @@ std::unique_ptr<mvvm::VideoSourceGridViewModel> ViewModelsModule::createGridView
     return std::make_unique<mvvm::VideoSourceGridViewModel>(std::move(slots), 4, 2, 4.0 / 3.0);
 }
 
-std::unique_ptr<application::services::VideoSourceGridService> ViewModelsModule::createGridService(
+std::unique_ptr<application::services::CameraGridService> ViewModelsModule::createGridService(
     application::ports::IVideoSourceGridSettingsRepository& settings_repo,
     std::vector<domain::ports::IVideoSource*> video_sources,
     std::vector<application::ports::IVideoSourceCrosshairListener*> crosshair_listeners,
     std::vector<application::ports::IVideoSourceLifecycleObserver*> lifecycle_observers)
 {
-    using VideoSource = application::services::VideoSourceGridService::VideoSource;
+    using VideoSource = application::services::CameraGridService::VideoSource;
     std::vector<VideoSource> videoSources;
     videoSources.reserve(video_sources.size());
 
@@ -66,12 +66,12 @@ std::unique_ptr<application::services::VideoSourceGridService> ViewModelsModule:
         .settings_repo = settings_repo
     };
 
-    return std::make_unique<application::services::VideoSourceGridService>(ports, std::move(videoSources));
+    return std::make_unique<application::services::CameraGridService>(ports, std::move(videoSources));
 }
 
 std::unique_ptr<application::usecases::ApplyCameraGridSettings> ViewModelsModule::createCameraGridSettingsUseCase(
     domain::ports::ILogger& logger,
-    application::services::VideoSourceGridService& gridService)
+    application::services::CameraGridService& gridService)
 {
     application::usecases::ApplyCameraGridSettingsPorts ports{
         .logger = logger

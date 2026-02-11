@@ -12,11 +12,16 @@ namespace mvvm {
 
     class VideoSourceGridSettingsViewModel {
     public:
-        Observable<application::dto::VideoSourceGridSettings> settings;
-        Observable<std::string> error;
+        Observable<application::dto::VideoSourceCrosshair> crosshair{};
+        Observable<application::dto::VideoSourceGridString> string{};
+        Observable<bool> open_cameras_at_startup{};
+        Observable<std::string> error{};
 
     public:
-        explicit VideoSourceGridSettingsViewModel(application::usecases::ApplyCameraGridSettings& use_case);
+        explicit VideoSourceGridSettingsViewModel(
+            application::dto::VideoSourceGridSettings settings,
+            application::usecases::ApplyCameraGridSettings& use_case
+        );
         ~VideoSourceGridSettingsViewModel();
 
         void applySettings();
