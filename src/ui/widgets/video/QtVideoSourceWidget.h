@@ -4,7 +4,9 @@
 #include <QOpenGLWidget>
 #include <QOpenGLFunctions_2_1>
 #include <QOpenGLShaderProgram>
-#include <QTimer>
+
+#include <memory>
+#include <mutex>
 
 #include "application/dto/settings/camera_grid/VideoSourceCrosshair.h"
 #include "domain/core/video/PixelFormat.h"
@@ -41,7 +43,7 @@ namespace ui::widgets {
         void initShader();
         void initTextureIfNeeded(const domain::common::VideoFrame& frame);
         void uploadFramePBO(const domain::common::VideoFrame& frame);
-        void drawQuad();
+        void drawQuad(bool noVideo);
 
     private:
         std::mutex mutex_;
@@ -49,6 +51,9 @@ namespace ui::widgets {
         mvvm::Observable<domain::common::VideoFramePtr>::Subscription frame_sub_;
         application::dto::VideoSourceCrosshair current_crosshair_;
         mvvm::Observable<application::dto::VideoSourceCrosshair>::Subscription crosshair_sub_;
+        mvvm::Observable<bool>::Subscription is_opened_sub_;
+
+        bool is_source_opened_{false};
 
         GLuint texture_{0};
         GLuint pbo_[2]{0, 0};
@@ -67,8 +72,6 @@ namespace ui::widgets {
 
         GLenum glUploadFormat_{GL_RGB};
 
-        QTimer repaintTimer_;
-        std::chrono::steady_clock::time_point lastFrameTime_ = std::chrono::steady_clock::now();
     };
 
 }

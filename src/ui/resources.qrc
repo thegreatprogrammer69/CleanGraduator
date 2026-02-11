@@ -1,0 +1,6 @@
+<RCC>
+    <qresource prefix="/ui">
+        <file>widgets/video/shaders/video_source.vert</file>
+        <file>widgets/video/shaders/video_source.frag</file>
+    </qresource>
+</RCC>

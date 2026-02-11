@@ -6,6 +6,7 @@ add_library(ui STATIC
         widgets/video/QtVideoSourceGridWidget.h
         widgets/video/QtVideoSourceWidget.cpp
         widgets/video/QtVideoSourceWidget.h
+        resources.qrc
 
         widgets/settings/QtCameraGridSettingsWidget.cpp
         widgets/settings/QtCameraGridSettingsWidget.h
