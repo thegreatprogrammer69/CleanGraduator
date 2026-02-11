@@ -76,20 +76,20 @@ std::vector<std::unique_ptr<domain::ports::IVideoSource>> InfrastructureModule::
             continue;
         }
 #elif defined(PLATFORM_LINUX)
-        if (config.implementation == "v4l") {
+        if (backend == "v4l") {
             infra::camera::V4LCameraConfig cameraConfig{};
-            cameraConfig.source = config.source;
-            cameraConfig.width = config.width;
-            cameraConfig.height = config.height;
-            cameraConfig.fps = config.fps;
-            return std::make_unique<infra::camera::V4LCamera>(ports, cameraConfig);
+            cameraConfig.source = section.getString("source", "");
+            cameraConfig.width = section.getInt("width", 0);
+            cameraConfig.height = section.getInt("height", 0);
+            cameraConfig.fps = section.getInt("fps", 0);
+            result.push_back(std::make_unique<infra::camera::V4LCamera>(ports, cameraConfig));
             continue;
         }
 
-        if (config.implementation == "gstreamer") {
+        if (backend == "gstreamer") {
             infra::camera::GStreamerCameraConfig cameraConfig{};
-            cameraConfig.pipe = config.pipeline;
-            return std::make_unique<infra::camera::GStreamerCamera>(ports, cameraConfig);
+            cameraConfig.pipe = section.getString("pipe", "");
+            result.push_back(std::make_unique<infra::camera::GStreamerCamera>(ports, cameraConfig));
             continue;
         }
 #endif
