@@ -3,17 +3,17 @@
 
 #include <string>
 #include <vector>
-#include "application/ports/outbound/catalog/IGaugeCatalog.h"
+#include "application/ports/outbound/IGaugeCatalog.h"
 
 namespace infra::catalogs {
     class FileGaugeCatalog final : public application::ports::IGaugeCatalog {
     public:
         explicit FileGaugeCatalog(std::string filePath);
-        std::vector<application::model::GaugeRecord> list() const override;
-        std::optional<application::model::GaugeRecord> at(int idx) const override;
+        std::vector<application::models::Gauge> list() const override;
+        std::optional<application::models::Gauge> at(int idx) const override;
 
     private:
-        std::vector<application::model::GaugeRecord> gauges_;
+        std::vector<application::models::Gauge> gauges_;
     };
 }
 

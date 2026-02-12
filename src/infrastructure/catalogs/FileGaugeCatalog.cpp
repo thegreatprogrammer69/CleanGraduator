@@ -99,22 +99,22 @@ FileGaugeCatalog::FileGaugeCatalog(std::string filePath) {
             }
         }
 
-        gauges_.push_back(application::model::GaugeRecord{
+        gauges_.push_back(application::models::Gauge{
             .name = std::move(name),
             .values = std::move(values)
         });
     }
 }
 
-std::vector<application::model::GaugeRecord> FileGaugeCatalog::list() const {
+std::vector<application::models::Gauge> FileGaugeCatalog::list() const {
     return gauges_;
 }
 
-std::optional<application::model::GaugeRecord> FileGaugeCatalog::at(int idx) const {
-    if (idx >= 0 && idx < gauges_.size()) {
+std::optional<application::models::Gauge> FileGaugeCatalog::at(int idx) const {
+    if (idx >= 0 && idx < static_cast<int>(gauges_.size())) {
         return gauges_.at(idx);
     }
     return std::nullopt;
 }
 
-} // namespace infrastructure::catalogs
+} // namespace infra::catalogs

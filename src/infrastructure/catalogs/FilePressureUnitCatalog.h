@@ -5,7 +5,7 @@
 #include <vector>
 #include <optional>
 
-#include "application/ports/outbound/catalog/IPressureUnitCatalog.h"
+#include "application/ports/outbound/IPressureUnitCatalog.h"
 
 namespace infra::catalogs {
 
@@ -14,11 +14,11 @@ namespace infra::catalogs {
     public:
         explicit FilePressureUnitCatalog(std::string filePath);
 
-        std::vector<application::model::PressureUnitRecord> list() const override;
-        std::optional<application::model::PressureUnitRecord> at(int idx) const override;
+        std::vector<application::models::PressureUnit> list() const override;
+        std::optional<application::models::PressureUnit> at(int idx) const override;
 
     private:
-        std::vector<application::model::PressureUnitRecord> units_;
+        std::vector<application::models::PressureUnit> units_;
     };
 
 }

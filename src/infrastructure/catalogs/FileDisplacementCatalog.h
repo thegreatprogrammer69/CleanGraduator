@@ -8,11 +8,11 @@ namespace infra::catalogs {
     class FileDisplacementCatalog final : public application::ports::IDisplacementCatalog {
     public:
         explicit FileDisplacementCatalog(std::string filePath);
-        std::vector<application::model::DisplacementRecord> list() const override;
-        std::optional<application::model::DisplacementRecord> at(int idx) const override;
+        std::vector<application::models::Displacement> list() const override;
+        std::optional<application::models::Displacement> at(int idx) const override;
 
     private:
-        std::vector<application::model::DisplacementRecord> displacements_;
+        std::vector<application::models::Displacement> displacements_;
     };
 }
 #endif //CLEANGRADUATOR_FILEDISPLACEMENTCATALOG_H

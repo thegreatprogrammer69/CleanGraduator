@@ -51,21 +51,21 @@ namespace infra::catalogs {
 
             if (name.empty() || path.empty()) continue;
 
-            printers_.push_back(application::model::PrinterRecord{
+            printers_.push_back(application::models::Printer{
                 .name = std::move(name),
                 .path = std::move(path)
             });
         }
     }
 
-    std::vector<application::model::PrinterRecord> FilePrinterCatalog::list() const {
+    std::vector<application::models::Printer> FilePrinterCatalog::list() const {
         return printers_;
     }
 
-    std::optional<application::model::PrinterRecord> FilePrinterCatalog::at(int idx) const {
-        if (idx >= 0 && idx < printers_.size()) {
+    std::optional<application::models::Printer> FilePrinterCatalog::at(int idx) const {
+        if (idx >= 0 && idx < static_cast<int>(printers_.size())) {
             return printers_.at(idx);
         }
         return std::nullopt;
     }
-} // namespace infrastructure::catalogs
+} // namespace infra::catalogs

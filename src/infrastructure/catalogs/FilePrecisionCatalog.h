@@ -5,7 +5,7 @@
 #include <vector>
 #include <optional>
 
-#include "application/ports/outbound/catalog/IPrecisionCatalog.h"
+#include "application/ports/outbound/IPrecisionCatalog.h"
 
 namespace infra::catalogs {
 
@@ -14,11 +14,11 @@ namespace infra::catalogs {
     public:
         explicit FilePrecisionCatalog(std::string filePath);
 
-        std::vector<application::model::PrecisionRecord> list() const override;
-        std::optional<application::model::PrecisionRecord> at(int idx) const override;
+        std::vector<application::models::Precision> list() const override;
+        std::optional<application::models::Precision> at(int idx) const override;
 
     private:
-        std::vector<application::model::PrecisionRecord> precisions_;
+        std::vector<application::models::Precision> precisions_;
     };
 
 }
