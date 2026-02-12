@@ -230,7 +230,7 @@ void GStreamerCamera::close() {
         pipeline_ = nullptr;
     }
 
-    notifier_.notifyClosed();
+    notifier_.notifyClosed({});
 }
 
 void GStreamerCamera::addObserver(domain::ports::IVideoSourceObserver &o) {

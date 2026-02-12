@@ -2,6 +2,7 @@
 
 #include <stdexcept>
 
+#include "application/ports/outbound/ILoggerFactory.h"
 #include "domain/ports/inbound/IVideoSource.h"
 #include "infrastructure/video/linux/v4l/V4LCamera.h"
 #include "infrastructure/video/linux/v4l/V4LCameraConfig.h"
@@ -15,16 +16,16 @@ namespace {
     utils::ini::IniFile loadIniOrThrow(const std::string& path) {
         utils::ini::IniFile ini;
         if (!ini.load(path)) {
-            throw std::runtime_error("VideoSourceFactory: failed to load config: " + path);
+            throw std::runtime_error("VideoSourceFactory: failed to load setup: " + path);
         }
         return ini;
     }
 }
 
-infra::repo::VideoSourceFactory::VideoSourceFactory(const std::string& ini_path, camera::VideoSourcePorts ports)
-    : ini_path_(ini_path), ports_(ports)
+infra::repo::VideoSourceFactory::VideoSourceFactory(const std::string& ini_path, domain::ports::IClock& clock,
+            application::ports::ILoggerFactory& logger_factory)
+    : ini_path_(ini_path), clock_(clock), logger_factory_(logger_factory)
 {
-
 }
 
 infra::repo::VideoSourceFactory::~VideoSourceFactory() {
@@ -51,24 +52,42 @@ std::vector<std::unique_ptr<domain::ports::IVideoSource>> infra::repo::VideoSour
             config.width = section.getInt("width", 480);
             config.height = section.getInt("height", 640);
             config.fps = section.getInt("fps", 30);
-            result.push_back(std::make_unique<camera::V4LCamera>(ports_, config));
+
+            camera::VideoSourcePorts ports{
+                .logger = *logger_factory_.create(),
+                .clock = clock_
+            };
+
+            result.push_back(std::make_unique<camera::V4LCamera>(ports, config));
             continue;
         }
         else if (backend == "gst" || backend == "gstreamer") {
             camera::GStreamerCameraConfig config{};
             config.pipe = section.getString("pipe", "");
-            result.push_back(std::make_unique<camera::GStreamerCamera>(ports_, config));
+
+            camera::VideoSourcePorts ports{
+                .logger = *logger_factory_.create(),
+                .clock = clock_
+            };
+
+            result.push_back(std::make_unique<camera::GStreamerCamera>(ports, config));
             continue;
         }
 
-#elifdef PLATFORM_WINDOWS
+#elif defined PLATFORM_WINDOWS
         if (backend == "dshow") {
             camera::DShowCameraConfig config{};
-            config.index = section.getString("index", "");
+            config.index = section.getInt("index", 0);
             config.width = section.getInt("width", 480);
             config.height = section.getInt("height", 640);
             config.fps = section.getInt("fps", 30);
-            result.push_back(std::make_unique<camera::DShowCamera>(ports_, config));
+
+            camera::VideoSourcePorts ports{
+                .logger = *logger_factory_.create(),
+                .clock = clock_
+            };
+
+            result.push_back(std::make_unique<camera::DShowCamera>(ports, config));
             continue;
 ;        }
 #endif

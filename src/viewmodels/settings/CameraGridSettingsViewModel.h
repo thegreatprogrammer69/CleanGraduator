@@ -4,7 +4,7 @@
 
 #include "viewmodels/Observable.h"
 
-namespace application::services {
+namespace application::orchestrators {
     class VideoSourceManager;
 }
 
@@ -16,7 +16,7 @@ namespace mvvm {
     class CameraGridSettingsViewModel {
     public:
         CameraGridSettingsViewModel(application::usecase::OpenSelectedCameras& open_use_sase,
-            application::services::VideoSourceManager& manager);
+            application::orchestrators::VideoSourceManager& manager);
 
         Observable<std::string> cameraInput;
 
@@ -26,7 +26,7 @@ namespace mvvm {
 
     private:
         application::usecase::OpenSelectedCameras& open_use_sase_;
-        application::services::VideoSourceManager& manager_;
+        application::orchestrators::VideoSourceManager& manager_;
     };
 }
 

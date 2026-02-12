@@ -2,20 +2,20 @@
 #define CLEANGRADUATOR_OPENSELECTEDCAMERAS_H
 #include <string>
 
-namespace application::services {
+namespace application::orchestrators {
     class VideoSourceManager;
 }
 
 namespace application::usecase {
     class OpenSelectedCameras {
     public:
-        explicit OpenSelectedCameras(services::VideoSourceManager& manager)
+        explicit OpenSelectedCameras(orchestrators::VideoSourceManager& manager)
             : manager_(manager) {}
 
         void execute(const std::string& input);
 
     private:
-        services::VideoSourceManager& manager_;
+        orchestrators::VideoSourceManager& manager_;
     };
 }
 

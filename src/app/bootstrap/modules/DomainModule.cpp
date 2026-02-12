@@ -13,7 +13,7 @@ DomainModule::AnglemeterConfig DomainModule::loadAnglemeterConfig(const std::str
     IniFile ini;
     const auto path = configDirectory + "/anglemeter.ini";
     if (!ini.load(path)) {
-        throw std::runtime_error("Failed to load config: " + path);
+        throw std::runtime_error("Failed to load setup: " + path);
     }
 
     AnglemeterConfig config;

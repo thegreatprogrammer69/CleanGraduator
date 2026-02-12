@@ -4,7 +4,7 @@
 #include <vector>
 
 namespace domain::common {
-    struct VideoSourceOpenError;
+    struct VideoSourceError;
     struct VideoFramePacket;
 }
 
@@ -19,8 +19,8 @@ namespace infra::camera::detail {
         void removeObserver(domain::ports::IVideoSourceObserver& observer);
         void notifyFrame(const domain::common::VideoFramePacket& frame);
         void notifyOpened();
-        void notifyOpenFailed(const domain::common::VideoSourceOpenError& error);
-        void notifyClosed();
+        void notifyOpenFailed(const domain::common::VideoSourceError& error);
+        void notifyClosed(const domain::common::VideoSourceError& error);
 
     private:
         std::vector<domain::ports::IVideoSourceObserver*> observers_;

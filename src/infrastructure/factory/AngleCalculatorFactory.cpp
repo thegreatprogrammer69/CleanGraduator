@@ -8,7 +8,7 @@ namespace {
     utils::ini::IniFile loadIniOrThrow(const std::string& path) {
         utils::ini::IniFile ini;
         if (!ini.load(path)) {
-            throw std::runtime_error("VideoSourceFactory: failed to load config: " + path);
+            throw std::runtime_error("VideoSourceFactory: failed to load setup: " + path);
         }
         return ini;
     }
@@ -24,16 +24,15 @@ infra::repo::AngleCalculatorFactory::~AngleCalculatorFactory() {
 }
 
 
-std::vector<std::unique_ptr<domain::ports::IAngleCalculator>> infra::repo::AngleCalculatorFactory::load() {
+std::unique_ptr<domain::ports::IAngleCalculator> infra::repo::AngleCalculatorFactory::load() {
     auto ini = loadIniOrThrow(ini_path_);
 
-    std::vector<std::unique_ptr<domain::ports::IAngleCalculator>> result;
-
-    for (int cam_idx = 0; cam_idx < 8; cam_idx++) {
-        const auto section_name = "anglemeter_" + std::to_string(cam_idx);
+        const auto section_name = "anglemeter";
         auto section = ini[section_name];
 
-        if (!ini.hasSection(section_name)) break;
+        if (!ini.hasSection(section_name)) {
+            throw std::runtime_error("has no section anglemeter");
+        }
 
         std::string algorithm = section.getString("algorithm", "");
 
@@ -42,12 +41,8 @@ std::vector<std::unique_ptr<domain::ports::IAngleCalculator>> infra::repo::Angle
             config.bright_lim = section.getInt("bright_lim", config.bright_lim);
             config.max_pairs = section.getInt("max_pairs", config.max_pairs);
             config.scan_step = section.getInt("scan_step", config.scan_step);
-            result.push_back(std::make_unique<calc::CastAnglemeter>(ports_, config));
-            continue;
+            return std::make_unique<calc::CastAnglemeter>(ports_, config);
         }
 
         throw std::runtime_error("unknown anglemeter algorithm: " + algorithm);
-    }
-
-    return result;
 }

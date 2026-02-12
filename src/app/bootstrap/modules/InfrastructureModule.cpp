@@ -18,7 +18,7 @@ namespace {
 IniFile loadIniOrThrow(const std::string& path) {
     IniFile ini;
     if (!ini.load(path)) {
-        throw std::runtime_error("Failed to load config: " + path);
+        throw std::runtime_error("Failed to load setup: " + path);
     }
     return ini;
 }

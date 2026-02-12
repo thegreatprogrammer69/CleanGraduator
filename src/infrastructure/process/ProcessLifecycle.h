@@ -16,10 +16,10 @@ class ProcessLifecycle final : public domain::ports::IProcessLifecycle {
     using State = domain::common::ProcessLifecycleState;
     using Observer = domain::ports::IProcessLifecycleObserver;
 public:
-    explicit ProcessLifecycle(
-        State initial = State::Idle);
+    explicit ProcessLifecycle(State initial = State::Idle);
+    ~ProcessLifecycle() override;
 
-    domain::ports::IClock& clock();
+    domain::ports::IClock& clock() override;
 
     bool canStart() const override;
     bool canStop() const override;
@@ -35,6 +35,7 @@ public:
 private:
     void setState(State newState);
     void notify() const;
+
 
 private:
     clock::SessionClock clock_;

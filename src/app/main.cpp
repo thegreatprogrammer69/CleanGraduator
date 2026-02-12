@@ -1,3 +1,4 @@
+#include <iostream>
 #include <QApplication>
 #include <QTextStream>
 #include <QFile>
@@ -8,7 +9,7 @@
 namespace {
     QString appStyle()
     {
-        QFile file("../../../config/style.qss");
+        QFile file("../../../styles/style.qss");
         if (!file.open(QFile::ReadOnly | QFile::Text)) {
             return QString(); // или логирование ошибки
         }
@@ -22,17 +23,19 @@ int main(int argc, char *argv[]) {
     QApplication app(argc, argv);
     app.setStyleSheet(appStyle());
 
-    const std::string configDirectory = (argc > 1) ? argv[1] : "../../../config/bootstrap";
+    const std::string setup_dir = (argc > 1) ? argv[1] : "../../../setup";
+    const std::string catalog_dir = (argc > 1) ? argv[1] : "../../../catalog";
+    const std::string log_dir = (argc > 1) ? argv[1] : "../../../logs";
 
-    // try {
-        AppBootstrap bootstrap(configDirectory);
+    try {
+        AppBootstrap bootstrap(setup_dir, catalog_dir, log_dir);
         bootstrap.initialize();
         auto& window = bootstrap.mainWindow();
         window.show();
-    // }
-    // catch (const std::exception& e) {
-    //     std::cerr << e.what() << std::endl;
-    // }
+    }
+    catch (const std::exception& e) {
+        std::cerr << e.what() << std::endl;
+    }
 
     return app.exec();
 }

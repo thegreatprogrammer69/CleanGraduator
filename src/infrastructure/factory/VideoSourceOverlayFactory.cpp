@@ -13,7 +13,7 @@ utils::ini::IniFile loadIniOrThrow(const std::string& path)
     utils::ini::IniFile ini;
     if (!ini.load(path))
         throw std::runtime_error(
-            "VideoSourceOverlayFactory: failed to load config: " + path);
+            "VideoSourceOverlayFactory: failed to load setup: " + path);
 
     return ini;
 }

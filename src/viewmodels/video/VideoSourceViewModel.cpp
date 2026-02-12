@@ -1,7 +1,7 @@
 #include "VideoSourceViewModel.h"
 
-#include "domain/core/video/VideoFramePacket.h"
-#include "domain/core/video/VideoSourceOpenError.h"
+#include "../../domain/core/common/VideoFramePacket.h"
+#include "../../domain/core/common/VideoSourceError.h"
 #include "domain/ports/inbound/IVideoSource.h"
 
 using namespace mvvm;
@@ -20,13 +20,14 @@ void VideoSourceViewModel::onVideoSourceOpened() {
     is_opened.set(true);
 }
 
-void VideoSourceViewModel::onVideoSourceOpenFailed(const domain::common::VideoSourceOpenError & err) {
+void VideoSourceViewModel::onVideoSourceOpenFailed(const domain::common::VideoSourceError & err) {
     is_opened.set(false);
-    error.set(err.message);
+    error.set(err.reason);
 }
 
-void VideoSourceViewModel::onVideoSourceClosed() {
+void VideoSourceViewModel::onVideoSourceClosed(const domain::common::VideoSourceError &err) {
     is_opened.set(false);
+    error.set(err.reason);
 }
 
 void VideoSourceViewModel::onVideoFrame(const domain::common::VideoFramePacket& frame_packet) {

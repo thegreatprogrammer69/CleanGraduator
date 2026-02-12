@@ -1,11 +1,14 @@
 #ifndef CLEANGRADUATOR_IPROCESSLIFECYCLE_H
 #define CLEANGRADUATOR_IPROCESSLIFECYCLE_H
 #include "domain/ports/outbound/IProcessLifecycleObserver.h"
+#include "domain/ports/outbound/IClock.h"
 
 
 namespace domain::ports {
     struct IProcessLifecycle {
         virtual ~IProcessLifecycle() = default;
+
+        virtual IClock& clock() = 0;
 
         virtual bool canStart() const = 0;
         virtual bool canStop() const = 0;

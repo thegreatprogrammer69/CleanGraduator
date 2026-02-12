@@ -9,17 +9,6 @@
 #include "infrastructure/video/VideoSourcePorts.h"
 #include "infrastructure/process/ProcessLifecycle.h"
 
-namespace application::ports {
-    struct IVideoSourceGridSettingsRepository;
-}
-
-namespace infrastructure::settings {
-class IGridSettingsRepository;
-}
-
-namespace infra::process {
-class ProcessRunner;
-}
 
 struct InfrastructureModule {
     struct LoggerConfig {

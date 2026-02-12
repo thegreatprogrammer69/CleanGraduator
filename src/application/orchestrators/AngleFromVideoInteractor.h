@@ -12,7 +12,7 @@ namespace domain::ports {
     struct IAngleCalculator;
 }
 
-namespace application::interactors {
+namespace application::orchestrators {
 
     class AngleFromVideoInteractor final
         : public domain::ports::IVideoSourceObserver
@@ -20,9 +20,14 @@ namespace application::interactors {
     {
     public:
         explicit AngleFromVideoInteractor(AngleFromVideoInteractorPorts ports);
+        ~AngleFromVideoInteractor() override;
 
         // IVideoSink
         void onVideoFrame(const domain::common::VideoFramePacket&) override;
+
+        void onVideoSourceOpened() override;
+        void onVideoSourceOpenFailed(const domain::common::VideoSourceError &) override;
+        void onVideoSourceClosed(const domain::common::VideoSourceError &) override;
 
         // IAngleSource
         void start() override;
@@ -31,6 +36,7 @@ namespace application::interactors {
         void removeSink(domain::ports::IAngleSink& sink) override;
 
     private:
+        domain::ports::IVideoSource& video_source_;
         domain::ports::IAngleCalculator& anglemeter_;
         fmt::FmtLogger logger_;
 

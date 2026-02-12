@@ -8,14 +8,10 @@
 #include "DShowCamera.h"
 #include "SampleGrabberCB.h"
 #include "domain/core/video/VideoFrame.h"
-#include "domain/events/EventCategory.h"
-#include "domain/events/IEventBus.h"
-#include "domain/events/video/VideoSourceFrameCaptured.h"
-#include "domain/events/video/VideoSourceClosed.h"
-#include "domain/events/video/VideoSourceOpened.h"
-#include "domain/events/video/VideoSourceOpenFailed.h"
+#include "domain/core/common/VideoFramePacket.h"
+#include "domain/core/common/VideoSourceError.h"
+#include "domain/ports/outbound/IClock.h"
 
-using namespace domain::events;
 using namespace infra::camera;
 
 static CComPtr<IBaseFilter> CreateCaptureFilterByIndex(int index);
@@ -57,7 +53,7 @@ struct DShowCamera::DShowCameraImpl {
         null_renderer.Release();
 
         if (com_initialized) {
-            CoUninitialize();
+            // CoUninitialize();
         }
     }
 };
@@ -65,7 +61,6 @@ struct DShowCamera::DShowCameraImpl {
 DShowCamera::DShowCamera(VideoSourcePorts ports, DShowCameraConfig config)
     : logger_(ports.logger)
     , clock_(ports.clock)
-    , event_bus_(ports.event_bus)
     , config_(config)
 {
     logger_.info("DShowCamera constructor called: camera index={}", config_.index);
@@ -77,7 +72,8 @@ DShowCamera::~DShowCamera() {
 
 void DShowCamera::open() {
     auto abort_opening = [this]() {
-        throw std::runtime_error(this->logger_.lastError());
+        const domain::common::VideoSourceError err {this->logger_.lastError()};
+        notifier_.notifyOpenFailed(err);
     };
 
     logger_.info("DShowCamera::start() begin");
@@ -87,7 +83,7 @@ void DShowCamera::open() {
     HRESULT hr = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED | COINIT_SPEED_OVER_MEMORY);
     if (FAILED(hr)) {
         logger_.error("CoInitializeEx failed: hr=0x{:08X}", hr);
-        abort_opening();
+        abort_opening(); return;
     }
     impl_->com_initialized = true;
     logger_.info("COM initialized");
@@ -95,19 +91,19 @@ void DShowCamera::open() {
     hr = impl_->graph.CoCreateInstance(CLSID_FilterGraph);
     if (FAILED(hr)) {
         logger_.error("Create FilterGraph failed: hr=0x{:08X}", hr);
-        abort_opening();
+        abort_opening(); return;
     }
 
     hr = impl_->capture.CoCreateInstance(CLSID_CaptureGraphBuilder2);
     if (FAILED(hr)) {
         logger_.error("Create CaptureGraphBuilder2 failed: hr=0x{:08X}", hr);
-        abort_opening();
+        abort_opening(); return;
     }
 
     hr = impl_->capture->SetFiltergraph(impl_->graph);
     if (FAILED(hr)) {
         logger_.error("SetFiltergraph failed: hr=0x{:08X}", hr);
-        abort_opening();
+        abort_opening(); return; return;
     }
 
     impl_->graph.QueryInterface(&impl_->control);
@@ -115,26 +111,26 @@ void DShowCamera::open() {
 
     impl_->source_filter = CreateCaptureFilterByIndex(config_.index);
     if (!impl_->source_filter) {
-        logger_.error("Failed to create capture filter, index={}", config_.index);
-        abort_opening();
+        logger_.error("Device not found, index={}", config_.index);
+        abort_opening(); return;
     }
 
     hr = impl_->graph->AddFilter(impl_->source_filter, L"Video Source");
     if (FAILED(hr)) {
         logger_.error("Add source filter failed: hr=0x{:08X}", hr);
-        abort_opening();
+        abort_opening(); return;
     }
 
     hr = impl_->grabber_filter.CoCreateInstance(CLSID_SampleGrabber);
     if (FAILED(hr)) {
         logger_.error("Create SampleGrabber filter failed: hr=0x{:08X}", hr);
-        abort_opening();
+        abort_opening(); return;
     }
 
     hr = impl_->grabber_filter.QueryInterface(&impl_->grabber);
     if (FAILED(hr)) {
         logger_.error("Query SampleGrabber interface failed: hr=0x{:08X}", hr);
-        abort_opening();
+        abort_opening(); return;
     }
 
     AM_MEDIA_TYPE mt{};
@@ -147,25 +143,25 @@ void DShowCamera::open() {
     hr = impl_->grabber->SetMediaType(&mt);
     if (FAILED(hr)) {
         logger_.error("SetMediaType failed: hr=0x{:08X}", hr);
-        abort_opening();
+        abort_opening(); return;
     }
 
     hr = impl_->graph->AddFilter(impl_->grabber_filter, L"SampleGrabber");
     if (FAILED(hr)) {
         logger_.error("Add SampleGrabber failed: hr=0x{:08X}", hr);
-        abort_opening();
+        abort_opening(); return;
     }
 
     hr = impl_->null_renderer.CoCreateInstance(CLSID_NullRenderer);
     if (FAILED(hr)) {
         logger_.error("Create NullRenderer failed: hr=0x{:08X}", hr);
-        abort_opening();
+        abort_opening(); return;
     }
 
     hr = impl_->graph->AddFilter(impl_->null_renderer, L"NullRenderer");
     if (FAILED(hr)) {
         logger_.error("Add NullRenderer failed: hr=0x{:08X}", hr);
-        abort_opening();
+        abort_opening(); return;
     }
 
     hr = impl_->capture->RenderStream(
@@ -177,7 +173,7 @@ void DShowCamera::open() {
     );
     if (FAILED(hr)) {
         logger_.error("RenderStream failed: hr=0x{:08X}", hr);
-        abort_opening();
+        abort_opening(); return;
     }
 
     AM_MEDIA_TYPE mt_out{};
@@ -201,19 +197,27 @@ void DShowCamera::open() {
     hr = impl_->control->Run();
     if (FAILED(hr)) {
         logger_.error("Graph Run failed: hr=0x{:08X}", hr);
-        abort_opening();
+        abort_opening(); return;
     }
 
     logger_.info("DShowCamera started successfully");
 
-    event_bus_.publish(VideoSourceOpened{});
+    notifier_.notifyOpened();
 }
 
 void DShowCamera::close() {
     logger_.info("DShowCamera::stop()");
     impl_.reset();
     logger_.info("DShowCamera stopped");
-    event_bus_.publish(VideoSourceClosed{});
+    notifier_.notifyClosed({});
+}
+
+void DShowCamera::addObserver(domain::ports::IVideoSourceObserver &o) {
+    notifier_.addObserver(o);
+}
+
+void DShowCamera::removeObserver(domain::ports::IVideoSourceObserver &o) {
+    notifier_.removeObserver(o);
 }
 
 void DShowCamera::onFrame(double time, BYTE* data, long size) {
@@ -231,9 +235,11 @@ void DShowCamera::onFrame(double time, BYTE* data, long size) {
 
     const auto ts = clock_.now();
 
-    VideoSourceFrameCaptured event;
-    event.frame = frame;
-    event_bus_.publish(event);
+    VideoFramePacket packet;
+    packet.frame = frame;
+    packet.timestamp = ts;
+
+    notifier_.notifyFrame(packet);
 }
 
 

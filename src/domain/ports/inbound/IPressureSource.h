@@ -1,6 +1,6 @@
 #ifndef UNTITLED_IPRESSURESENSOR_H
 #define UNTITLED_IPRESSURESENSOR_H
-#include "domain/ports/outbound/IPressureSink.h"
+#include "domain/ports/outbound/IPressureSourceObserver.h"
 
 
 namespace domain::ports {
@@ -8,8 +8,8 @@ namespace domain::ports {
         virtual ~IPressureSource() = default;
         virtual bool start() = 0;
         virtual void stop() = 0;
-        virtual void addSink(IPressureSink& sink) = 0;
-        virtual void removeSink(IPressureSink& sink) = 0;
+        virtual void addObserver(IPressureSourceObserver& observer) = 0;
+        virtual void removeObserver(IPressureSourceObserver& observer) = 0;
     };
 }
 

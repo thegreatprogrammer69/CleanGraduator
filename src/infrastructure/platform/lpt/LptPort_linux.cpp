@@ -16,7 +16,7 @@ LptPort::LptPort(unsigned short address) {
     }
 
     if (ioperm(address_, 3, 1) != 0) {
-        throw std::runtime_error("ioperm failed (check kernel config and privileges)");
+        throw std::runtime_error("ioperm failed (check kernel setup and privileges)");
     }
 }
 

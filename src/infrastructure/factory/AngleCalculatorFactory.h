@@ -14,7 +14,7 @@ namespace infra::repo {
         explicit AngleCalculatorFactory(const std::string& ini_path, calc::AnglemeterPorts ports);
         ~AngleCalculatorFactory();
 
-        std::vector<std::unique_ptr<domain::ports::IAngleCalculator>> load();
+        std::unique_ptr<domain::ports::IAngleCalculator> load();
 
     private:
         std::string ini_path_;

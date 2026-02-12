@@ -2,7 +2,12 @@
 
 #include "domain/ports/inbound/IVideoSource.h"
 
-using namespace application::services;
+using namespace application::orchestrators;
+
+VideoSourceManager::VideoSourceManager(ports::IVideoSourceStorage &storage)
+    : storage_(storage)
+{
+}
 
 void VideoSourceManager::open(const std::vector<int>& ids)
 {

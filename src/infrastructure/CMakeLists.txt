@@ -12,8 +12,12 @@ set(SOURCES
         calculation/angle/CastAnglemeter.cpp
         calculation/angle/detail/cast_anglemeter.cpp
 
-        hardware/dm5002/DM5002RFPressureSensor.cpp
-        hardware/g540/G540LPT.cpp
+        video/VideoSourceNotifier.cpp
+
+        pressure/PressureSourceNotifier.cpp
+        pressure/dm5002/DM5002RFPressureSensor.cpp
+
+        motor/g540/G540LPT.cpp
 
         logging/ConsoleLogger.cpp
         logging/FileLogger.cpp
@@ -22,8 +26,6 @@ set(SOURCES
 
         process/ProcessLifecycle.cpp
         process/ProcessRunner.cpp
-
-        settings/QtComponentSettingsRepository.cpp
 
         overlay/crosshair/CrosshairVideoOverlay.cpp
 
@@ -62,6 +64,8 @@ elseif(UNIX)
             factory/AngleCalculatorFactory.cpp
             factory/CalibrationCalculatorFactory.cpp
             factory/CalibrationCalculatorFactory.h
+            pressure/PressureSourceNotifier.cpp
+            pressure/PressureSourceNotifier.h
     )
 endif()
 

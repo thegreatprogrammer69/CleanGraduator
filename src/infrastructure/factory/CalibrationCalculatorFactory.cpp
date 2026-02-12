@@ -9,7 +9,7 @@ namespace {
     utils::ini::IniFile loadIniOrThrow(const std::string& path) {
         utils::ini::IniFile ini;
         if (!ini.load(path)) {
-            throw std::runtime_error("CalibrationCalculatorFactory: failed to load config: " + path);
+            throw std::runtime_error("CalibrationCalculatorFactory: failed to load setup: " + path);
         }
         return ini;
     }

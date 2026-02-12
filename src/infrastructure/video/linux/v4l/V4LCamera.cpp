@@ -240,7 +240,7 @@ void V4LCamera::captureLoop() {
             break;
         }
     }
-    notifier_.notifyClosed();
+    notifier_.notifyClosed({});
 }
 
 void V4LCamera::dispatchFrame(const uint8_t* data, size_t size) {

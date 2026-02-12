@@ -3,8 +3,8 @@
 #include <string>
 
 namespace domain::common {
-    struct VideoSourceOpenError {
-        std::string message;   // опционально
+    struct VideoSourceError {
+        std::string reason;
     };
 }
 

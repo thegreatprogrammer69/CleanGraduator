@@ -9,7 +9,7 @@ UiModule::WindowConfig UiModule::loadWindowConfig(const std::string& configDirec
     utils::ini::IniFile ini;
     const auto path = configDirectory + "/window.ini";
     if (!ini.load(path)) {
-        throw std::runtime_error("Failed to load config: " + path);
+        throw std::runtime_error("Failed to load setup: " + path);
     }
 
     WindowConfig config;

@@ -2,15 +2,21 @@
 #include "domain/ports/inbound/IAngleCalculator.h"
 #include <algorithm>
 
-#include "domain/core/video/VideoFramePacket.h"
+#include "domain/core/common/VideoFramePacket.h"
+#include "domain/ports/inbound/IVideoSource.h"
 
-
-namespace application::interactors {
+namespace application::orchestrators {
     AngleFromVideoInteractor::AngleFromVideoInteractor(AngleFromVideoInteractorPorts ports)
-        : anglemeter_(ports.anglemeter)
+        : video_source_(ports.video_source)
+        , anglemeter_(ports.anglemeter)
         , logger_(ports.logger)
     {
         logger_.info("constructor called");
+        video_source_.addObserver(*this);
+    }
+
+    AngleFromVideoInteractor::~AngleFromVideoInteractor() {
+        video_source_.removeObserver(*this);
     }
 
     void AngleFromVideoInteractor::start() {
@@ -72,4 +78,13 @@ namespace application::interactors {
         }
     }
 
+    void AngleFromVideoInteractor::onVideoSourceOpened() {
+    }
+
+    void AngleFromVideoInteractor::onVideoSourceOpenFailed(const domain::common::VideoSourceError &) {
+    }
+
+    void AngleFromVideoInteractor::onVideoSourceClosed(const domain::common::VideoSourceError &) {
+
+    }
 } // namespace application

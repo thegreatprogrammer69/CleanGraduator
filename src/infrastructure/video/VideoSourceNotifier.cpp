@@ -27,12 +27,12 @@ void VideoSourceNotifier::notifyOpened() {
         o->onVideoSourceOpened();
 }
 
-void VideoSourceNotifier::notifyOpenFailed(const VideoSourceOpenError &error) {
+void VideoSourceNotifier::notifyOpenFailed(const VideoSourceError &error) {
     for (auto* o : observers_)
         o->onVideoSourceOpenFailed(error);
 }
 
-void VideoSourceNotifier::notifyClosed() {
+void VideoSourceNotifier::notifyClosed(const VideoSourceError& error) {
     for (auto* o : observers_)
-        o->onVideoSourceClosed();
+        o->onVideoSourceClosed(error);
 }

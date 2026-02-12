@@ -5,6 +5,9 @@ namespace infra::process {
 
 ProcessLifecycle::ProcessLifecycle(const State initial): state_(initial) {}
 
+ProcessLifecycle::~ProcessLifecycle() {
+}
+
 domain::ports::IClock & ProcessLifecycle::clock() {
     return clock_;
 }

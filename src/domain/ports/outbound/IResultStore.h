@@ -2,16 +2,17 @@
 #define CLEANGRADUATOR_IRESULTSTORE_H
 
 namespace domain::common {
-    class Result;
+    class CalibrationResult;
 }
 
 namespace domain::ports {
-    class IResultObserver;
+    class IResultStoreObserver;
     struct IResultStore {
         virtual ~IResultStore() = default;
-        virtual common::Result& current() = 0;
+        virtual common::CalibrationResult& current() = 0;
         virtual void save() = 0;
-        virtual void addObserver(IResultObserver&) = 0;
+        virtual void addObserver(IResultStoreObserver&) = 0;
+        virtual void removeObserver(IResultStoreObserver&) = 0;
     };
 }
 

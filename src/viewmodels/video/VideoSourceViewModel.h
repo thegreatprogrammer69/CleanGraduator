@@ -25,8 +25,8 @@ namespace mvvm {
         // IVideoSourceObserver
         void onVideoFrame(const domain::common::VideoFramePacket &) override;
         void onVideoSourceOpened() override;
-        void onVideoSourceOpenFailed(const domain::common::VideoSourceOpenError &) override;
-        void onVideoSourceClosed() override;
+        void onVideoSourceOpenFailed(const domain::common::VideoSourceError &) override;
+        void onVideoSourceClosed(const domain::common::VideoSourceError &) override;
 
     private:
         domain::ports::IVideoSource &video_source_;

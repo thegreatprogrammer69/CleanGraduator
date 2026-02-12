@@ -10,14 +10,8 @@ namespace application::interactors {
 class AngleFromVideoInteractor;
 }
 
-namespace domain::ports {
-class IAngleCalculator;
-class ILogger;
-}
 
-namespace infra::calculation {
-class CastAnglemeter;
-}
+
 
 struct DomainModule {
     struct AnglemeterConfig {

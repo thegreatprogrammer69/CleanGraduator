@@ -2,11 +2,11 @@ add_library(application STATIC
         fmt/fmt_application.cpp
 
         orchestrators/AngleFromVideoInteractor.cpp
-        orchestrators/PersistentConfigurator.cpp
         orchestrators/VideoSourceManager.cpp
 
         usecases/settings/ConfigureComponent.cpp
         usecases/settings/OpenSelectedCameras.cpp
+        ports/outbound/ILoggerFactory.h
 
 )
 

@@ -3,7 +3,7 @@
 #include "application/ports/outbound/IVideoSourceStorage.h"
 
 
-namespace application::services {
+namespace application::orchestrators {
     class VideoSourceManager {
     public:
         explicit VideoSourceManager(ports::IVideoSourceStorage& storage);
