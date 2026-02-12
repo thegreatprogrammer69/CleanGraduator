@@ -11,13 +11,13 @@
 #include "domain/ports/inbound/IVideoSource.h"
 #include "GStreamerCameraConfig.h"
 #include "infrastructure/video/VideoSourcePorts.h"
+#include "infrastructure/video/VideoSourceNotifier.h"
 
 typedef struct _GstElement GstElement;
 typedef struct _GstBus     GstBus;
 typedef struct _GstSample  GstSample;
 
 namespace infra::camera {
-
 
     class GStreamerCamera final : public domain::ports::IVideoSource {
     public:
@@ -26,21 +26,20 @@ namespace infra::camera {
 
         void open() override;
         void close() override;
-        void addSink(domain::ports::IVideoSink& sink) override;
-        void removeSink(domain::ports::IVideoSink& sink) override;
+        void addObserver(domain::ports::IVideoSourceObserver&) override;
+        void removeObserver(domain::ports::IVideoSourceObserver&) override;
 
     private:
         void captureLoop();
         void dispatchSample(GstSample* sample);
 
     private:
+        detail::VideoSourceNotifier notifier_;
+
         fmt::FmtLogger logger_;
 
         const VideoSourcePorts& ports_;
         GStreamerCameraConfig config_;
-
-        std::mutex sinks_mutex_;
-        std::vector<domain::ports::IVideoSink*> sinks_;
 
         std::atomic<bool> running_{false};
         std::thread thread_;

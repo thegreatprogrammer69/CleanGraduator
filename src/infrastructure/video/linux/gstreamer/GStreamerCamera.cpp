@@ -3,11 +3,16 @@
 #include <cstring>
 #include <mutex>
 #include <algorithm>
+#include <memory>
 
 #include <gst/gst.h>
 #include <gst/app/gstappsink.h>
 
 #include "domain/core/measurement/Timestamp.h"
+#include "domain/core/video/PixelFormat.h"
+#include "domain/core/video/VideoFrame.h"
+#include "domain/core/video/VideoFramePacket.h"
+#include "domain/core/video/VideoSourceOpenError.h"
 #include "domain/ports/outbound/IClock.h"
 
 namespace infra::camera {
@@ -128,20 +133,11 @@ GStreamerCamera::~GStreamerCamera() {
     close();
 }
 
-void GStreamerCamera::addSink(domain::ports::IVideoSink& sink) {
-    std::lock_guard<std::mutex> lock(sinks_mutex_);
-    sinks_.push_back(&sink);
-}
-
-void GStreamerCamera::removeSink(domain::ports::IVideoSink& sink) {
-    std::lock_guard<std::mutex> lock(sinks_mutex_);
-    sinks_.erase(std::remove(sinks_.begin(), sinks_.end(), &sink), sinks_.end());
-}
-
 void GStreamerCamera::open() {
     auto abort_opening = [this]() {
         this->close();
-        throw std::runtime_error(this->logger_.lastError());
+        const domain::common::VideoSourceOpenError err{logger_.lastError()};
+        notifier_.notifyOpenFailed(err);
     };
 
     if (running_.load()) return;
@@ -203,7 +199,8 @@ void GStreamerCamera::open() {
     thread_ = std::thread(&GStreamerCamera::captureLoop, this);
 
     logger_.info("GStreamerCamera started: {}", config_.pipe);
-    return;
+
+    notifier_.notifyOpened();
 }
 
 void GStreamerCamera::close() {
@@ -232,6 +229,16 @@ void GStreamerCamera::close() {
         gst_object_unref(pipeline_);
         pipeline_ = nullptr;
     }
+
+    notifier_.notifyClosed();
+}
+
+void GStreamerCamera::addObserver(domain::ports::IVideoSourceObserver &o) {
+    notifier_.addObserver(o);
+}
+
+void GStreamerCamera::removeObserver(domain::ports::IVideoSourceObserver &o) {
+    notifier_.removeObserver(o);
 }
 
 void GStreamerCamera::captureLoop() {
@@ -252,6 +259,8 @@ void GStreamerCamera::captureLoop() {
         dispatchSample(sample);
         gst_sample_unref(sample);
     }
+
+    notifier_.notifyClosed();
 }
 
 void GStreamerCamera::dispatchSample(GstSample* sample) {
@@ -281,15 +290,12 @@ void GStreamerCamera::dispatchSample(GstSample* sample) {
 
     const domain::common::Timestamp ts = ports_.clock.now();
 
-    std::vector<domain::ports::IVideoSink*> sinks_copy;
-    {
-        std::lock_guard<std::mutex> lock(sinks_mutex_);
-        sinks_copy = sinks_;
-    }
+    domain::common::VideoFramePacket packet{
+        .timestamp = ts,
+        .frame = frame,
+    };
 
-    for (auto* sink : sinks_copy) {
-        sink->onVideoFrame(ts, frame);
-    }
+    notifier_.notifyFrame(packet);
 }
 
 } // namespace infra::camera

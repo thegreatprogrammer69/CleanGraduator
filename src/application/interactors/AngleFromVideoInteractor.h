@@ -4,7 +4,7 @@
 #include <vector>
 
 #include "domain/ports/inbound/IAngleSource.h"
-#include "domain/ports/outbound/IVideoSink.h"
+#include "domain/ports/outbound/IVideoSourceObserver.h"
 #include "AngleFromVideoInteractorPorts.h"
 #include "domain/fmt/FmtLogger.h"
 
@@ -15,7 +15,7 @@ namespace domain::ports {
 namespace application::interactors {
 
     class AngleFromVideoInteractor final
-        : public domain::ports::IVideoSink
+        : public domain::ports::IVideoSourceObserver
         , public domain::ports::IAngleSource
     {
     public:

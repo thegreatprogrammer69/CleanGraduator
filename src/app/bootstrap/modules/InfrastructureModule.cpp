@@ -9,7 +9,7 @@
 #include "infrastructure/logging/ConsoleLogger.h"
 #include "infrastructure/logging/FileLogger.h"
 #include "infrastructure/process/ProcessRunner.h"
-#include "infrastructure/settings/IGridSettingsRepository.h"
+#include "infrastructure/settings/ISettingsRepository.h"
 #include "infrastructure/utils/ini/IniFile.h"
 
 using utils::ini::IniFile;

@@ -1,7 +1,5 @@
 #ifndef CLEANGRADUATOR_VIDEOSOURCEGRIDVIEWMODEL_H
 #define CLEANGRADUATOR_VIDEOSOURCEGRIDVIEWMODEL_H
-#include <map>
-#include <memory>
 #include <vector>
 
 namespace mvvm {

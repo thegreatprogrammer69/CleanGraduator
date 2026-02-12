@@ -37,6 +37,8 @@ namespace utils::ini {
         bool load(const std::string& path);
         bool save(const std::string& path) const;
 
+        const std::unordered_map<std::string, IniSection>& sections() const;
+
         IniSection& operator[](const std::string& section);
         const IniSection& operator[](const std::string& section) const;
 

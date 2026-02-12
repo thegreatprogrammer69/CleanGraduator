@@ -5,7 +5,7 @@
 
 #include <stdexcept>
 
-#include "infrastructure/settings/IGridSettingsRepository.h"
+#include "infrastructure/settings/ISettingsRepository.h"
 #include "viewmodels/MainWindowViewModel.h"
 #include "viewmodels/settings/VideoSourceGridSettingsViewModel.h"
 #include "viewmodels/video/VideoSourceGridViewModel.h"

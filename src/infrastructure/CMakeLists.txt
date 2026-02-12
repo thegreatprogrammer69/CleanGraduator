@@ -1,9 +1,11 @@
 set(SOURCES
 
 
-#        catalogs/FileDisplacementCatalog.cpp
-#        catalogs/FileGaugeCatalog.cpp
-#        catalogs/FilePrinterCatalog.cpp
+        catalogs/FileDisplacementCatalog.cpp
+        catalogs/FileGaugeCatalog.cpp
+        catalogs/FilePrinterCatalog.cpp
+        catalogs/FilePrecisionCatalog.cpp
+        catalogs/FilePressureUnitCatalog.cpp
 
         utils/ini/IniFile.cpp
 
@@ -21,7 +23,14 @@ set(SOURCES
         process/ProcessLifecycle.cpp
         process/ProcessRunner.cpp
 
-        settings/IGridSettingsRepository.cpp
+        settings/QtComponentSettingsRepository.cpp
+
+        overlay/crosshair/CrosshairVideoOverlay.cpp
+
+        factory/AngleCalculatorFactory.cpp
+        factory/CalibrationCalculatorFactory.cpp
+        factory/VideoSourceFactory.cpp
+        factory/VideoSourceOverlayFactory.cpp
 )
 
 if (WIN32)

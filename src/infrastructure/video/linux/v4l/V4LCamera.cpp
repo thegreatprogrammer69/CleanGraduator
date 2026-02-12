@@ -13,6 +13,9 @@
 #include <linux/videodev2.h>
 
 #include "domain/core/measurement/Timestamp.h"
+#include "domain/core/video/VideoFrame.h"
+#include "domain/core/video/VideoFramePacket.h"
+#include "domain/core/video/VideoSourceOpenError.h"
 #include "domain/ports/outbound/IClock.h"
 #include "domain/ports/outbound/ILogger.h"
 
@@ -34,20 +37,11 @@ V4LCamera::~V4LCamera() {
     close();
 }
 
-void V4LCamera::addSink(domain::ports::IVideoSink& sink) {
-    std::lock_guard<std::mutex> lock(sinks_mutex_);
-    sinks_.push_back(&sink);
-}
-
-void V4LCamera::removeSink(domain::ports::IVideoSink& sink) {
-    std::lock_guard<std::mutex> lock(sinks_mutex_);
-    sinks_.erase(std::remove(sinks_.begin(), sinks_.end(), &sink), sinks_.end());
-}
-
 void V4LCamera::open() {
     auto abort_opening = [this]() {
         this->close();
-        throw std::runtime_error(this->logger_.lastError());
+        const domain::common::VideoSourceOpenError err{logger_.lastError()};
+        notifier_.notifyOpenFailed(err);
     };
 
     if (running_.load()) return;
@@ -161,7 +155,8 @@ void V4LCamera::open() {
     running_.store(true);
     thread_ = std::thread(&V4LCamera::captureLoop, this);
     logger_.info("camera {} successfully opened", config_.source);
-    return;
+
+    notifier_.notifyOpened();
 }
 
 void V4LCamera::close() {
@@ -194,6 +189,14 @@ void V4LCamera::close() {
     logger_.info("camera {} successfully closed", config_.source);
 
     (void)wasRunning;
+}
+
+void V4LCamera::addObserver(domain::ports::IVideoSourceObserver &o) {
+    notifier_.addObserver(o);
+}
+
+void V4LCamera::removeObserver(domain::ports::IVideoSourceObserver &o) {
+    notifier_.removeObserver(o);
 }
 
 void V4LCamera::captureLoop() {
@@ -237,6 +240,7 @@ void V4LCamera::captureLoop() {
             break;
         }
     }
+    notifier_.notifyClosed();
 }
 
 void V4LCamera::dispatchFrame(const uint8_t* data, size_t size) {
@@ -250,17 +254,12 @@ void V4LCamera::dispatchFrame(const uint8_t* data, size_t size) {
 
     const domain::common::Timestamp ts = ports_.clock.now();
 
-    std::vector<domain::ports::IVideoSink*> sinks_copy;
-    {
-        std::lock_guard<std::mutex> lock(sinks_mutex_);
-        sinks_copy = sinks_;
-    }
+    domain::common::VideoFramePacket packet{
+        .timestamp = ts,
+        .frame = frame,
+    };
 
-    // logger_.info("Frame captured: {}", *frame);
-
-    for (auto* sink : sinks_copy) {
-        sink->onVideoFrame(ts, frame);
-    }
+    notifier_.notifyFrame(packet);
 }
 
 }

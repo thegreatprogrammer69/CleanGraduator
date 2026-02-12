@@ -156,6 +156,10 @@ bool IniFile::save(const std::string& path) const {
     return true;
 }
 
+const std::unordered_map<std::string, IniSection> & IniFile::sections() const {
+    return sections_;
+}
+
 IniSection& IniFile::operator[](const std::string& section) {
     return sections_[section];
 }

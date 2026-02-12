@@ -1,13 +1,9 @@
 #ifndef CLEANGRADUATOR_DSHOWVIDEOSTREAM_H
 #define CLEANGRADUATOR_DSHOWVIDEOSTREAM_H
-#include <mutex>
-#include <vector>
+
 #include "domain/ports/inbound/IVideoSource.h"
-#include "domain/ports/outbound/IClock.h"
-#include "domain/ports/outbound/ILogger.h"
-#include "DShowCameraConfig.h"
-#include "domain/events/IEventListener.h"
 #include "domain/fmt/FmtLogger.h"
+#include "DShowCameraConfig.h"
 #include "infrastructure/video/VideoSourcePorts.h"
 
 namespace infra::camera {

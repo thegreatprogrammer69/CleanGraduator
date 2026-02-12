@@ -1,7 +1,4 @@
-add_library(domain STATIC fmt/fmt_domain.cpp
-        events/video/VideoSourceFrameCaptured.h
-        events/video/VideoEvent.h
-        events/video/VideoEventType.h)
+add_library(domain STATIC fmt/fmt_domain.cpp)
 
 
 target_include_directories(domain

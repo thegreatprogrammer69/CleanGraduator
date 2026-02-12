@@ -1,6 +1,7 @@
 #ifndef CLEANGRADUATOR_OBSERVABLE_H
 #define CLEANGRADUATOR_OBSERVABLE_H
 
+#include <any>
 #include <atomic>
 #include <cstdint>
 #include <functional>
@@ -202,9 +203,13 @@ public:
 
             // Определим "changed" для семантики Observable
             // Здесь используем оператор== если доступен, иначе считаем changed=true всегда.
-            if constexpr (has_equal<T>::value) {
+            if constexpr (std::is_same_v<T, std::unordered_map<std::string, std::any>>) {
+                changed = true; // не сравниваем
+            }
+            else if constexpr (has_equal<T>::value) {
                 changed = !(value_ == proposed);
-            } else {
+            }
+            else {
                 changed = true;
             }
 

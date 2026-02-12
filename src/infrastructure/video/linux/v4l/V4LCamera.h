@@ -12,8 +12,13 @@
 #include "domain/fmt/FmtLogger.h"
 #include "domain/ports/inbound/IVideoSource.h"
 #include "V4LCameraConfig.h"
+#include "infrastructure/video/VideoSourceNotifier.h"
 #include "infrastructure/video/VideoSourcePorts.h"
 
+
+namespace domain::ports {
+    struct IVideoSourceObserver;
+}
 
 namespace infra::camera {
 
@@ -24,21 +29,20 @@ public:
 
     void open() override;
     void close() override;
-    void addSink(domain::ports::IVideoSink& sink) override;
-    void removeSink(domain::ports::IVideoSink& sink) override;
+    void addObserver(domain::ports::IVideoSourceObserver&) override;
+    void removeObserver(domain::ports::IVideoSourceObserver&) override;
 
 private:
     void captureLoop();
     void dispatchFrame(const uint8_t* data, size_t size);
 
 private:
+    detail::VideoSourceNotifier notifier_;
+
     fmt::FmtLogger logger_;
 
     VideoSourcePorts ports_;
     V4LCameraConfig config_;
-
-    std::mutex sinks_mutex_;
-    std::vector<domain::ports::IVideoSink*> sinks_;
 
     std::atomic<bool> running_{false};
     std::thread thread_;

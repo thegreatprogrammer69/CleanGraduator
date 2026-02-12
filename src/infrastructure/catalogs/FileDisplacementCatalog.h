@@ -1,9 +1,8 @@
 #ifndef CLEANGRADUATOR_FILEDISPLACEMENTCATALOG_H
 #define CLEANGRADUATOR_FILEDISPLACEMENTCATALOG_H
 
-
 #include <string>
-#include "application/ports/catalog/IDisplacementCatalog.h"
+#include "application/ports/outbound/IDisplacementCatalog.h"
 
 namespace infra::catalogs {
     class FileDisplacementCatalog final : public application::ports::IDisplacementCatalog {
