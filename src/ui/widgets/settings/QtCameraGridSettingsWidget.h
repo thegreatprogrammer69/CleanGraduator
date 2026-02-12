@@ -4,11 +4,10 @@
 
 #include <QWidget>
 
-#include "application/dto/settings/grid/VideoSourceGridSettings.h"
 #include "viewmodels/Observable.h"
 
 namespace mvvm {
-    class VideoSourceGridSettingsViewModel;
+    class CameraGridSettingsViewModel;
 }
 
 class QLineEdit;
@@ -20,7 +19,7 @@ class QtCameraGridSettingsWidget final : public QWidget {
 
 public:
     explicit QtCameraGridSettingsWidget(
-        mvvm::VideoSourceGridSettingsViewModel& model,
+        mvvm::CameraGridSettingsViewModel& model,
         QWidget* parent = nullptr
     );
 
@@ -35,18 +34,13 @@ private:
     void connectViewModel();
 
 private:
-    mvvm::VideoSourceGridSettingsViewModel& model_;
-
-    mvvm::Observable<application::dto::VideoSourceGridSettings>::Subscription settingsSub_;
-    mvvm::Observable<std::string>::Subscription errorSub_;
+    mvvm::CameraGridSettingsViewModel& model_;
+    mvvm::Observable<std::string>::Subscription cameraInputSub_;
 
     QLineEdit*   camerasEdit_{nullptr};
     QPushButton* openButton_{nullptr};
     QPushButton* openAllButton_{nullptr};
-
-    QCheckBox* autoOpenCheckBox_{nullptr};
-    QCheckBox* drawCrosshairCheckBox_{nullptr};
-    QPushButton* crosshairAppearanceButton_{nullptr};
+    QPushButton* closeAllButton_{nullptr};
 };
 
 

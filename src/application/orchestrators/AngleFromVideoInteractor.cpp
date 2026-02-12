@@ -2,6 +2,7 @@
 #include "domain/ports/inbound/IAngleCalculator.h"
 #include <algorithm>
 
+#include "domain/core/video/VideoFramePacket.h"
 
 
 namespace application::interactors {
@@ -51,7 +52,7 @@ namespace application::interactors {
         logger_.info("sink removed");
     }
 
-    void AngleFromVideoInteractor::onVideoFrame(const domain::common::Timestamp &ts, domain::common::VideoFramePtr frame) {
+    void AngleFromVideoInteractor::onVideoFrame(const domain::common::VideoFramePacket& packet) {
         std::vector<domain::ports::IAngleSink*> localSinks;
 
         {
@@ -61,13 +62,13 @@ namespace application::interactors {
         }
 
         domain::common::AnglemeterInput input;
-        input.frame = frame;
+        input.frame = packet.frame;
         const auto angle = anglemeter_.calculate(input);
 
-        logger_.info("frame accepted, angle calculated (ts={}, angle={})", ts, angle);
+        logger_.info("frame accepted, angle calculated (ts={}, angle={})", packet.timestamp, angle);
 
         for (auto* sink : localSinks) {
-            sink->onAngle(ts, angle);
+            sink->onAngle(packet.timestamp, angle);
         }
     }
 

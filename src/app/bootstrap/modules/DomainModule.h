@@ -4,7 +4,7 @@
 #include <memory>
 #include <string>
 
-#include "application/interactors/AngleFromVideoInteractorPorts.h"
+#include "application/orchestrators/AngleFromVideoInteractorPorts.h"
 
 namespace application::interactors {
 class AngleFromVideoInteractor;

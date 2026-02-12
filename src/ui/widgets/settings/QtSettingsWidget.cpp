@@ -29,7 +29,7 @@ void QtSettingsWidget::buildUi() {
     cameraGridLayout->setSpacing(8);
 
     cameraGridWidget_ =
-        new QtCameraGridSettingsWidget(models_.videoSourceGrid, cameraGridGroup);
+        new QtCameraGridSettingsWidget(models_.cameraGridSettings, cameraGridGroup);
 
     cameraGridLayout->addWidget(cameraGridWidget_);
 

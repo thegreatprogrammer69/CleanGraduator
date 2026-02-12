@@ -1,7 +1,7 @@
 #ifndef CLEANGRADUATOR_CALIBRATIONINPUT_H
 #define CLEANGRADUATOR_CALIBRATIONINPUT_H
-#include "PressurePoints.h"
 #include "TimeSeries.h"
+#include "CalibrationPoints.h"
 
 namespace domain::common {
 

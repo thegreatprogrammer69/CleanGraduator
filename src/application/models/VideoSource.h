@@ -7,8 +7,8 @@ namespace domain::ports {
 
 namespace application::models {
     struct VideoSource {
-        domain::ports::IVideoSource& video_source;
         int id;
+        domain::ports::IVideoSource& video_source;
     };
 }
 

@@ -3,7 +3,7 @@
 #include <stdexcept>
 #include <vector>
 
-#include "application/interactors/AngleFromVideoInteractor.h"
+#include "application/orchestrators/AngleFromVideoInteractor.h"
 #include "app/bootstrap/modules/DomainModule.h"
 #include "app/bootstrap/modules/InfrastructureModule.h"
 #include "app/bootstrap/modules/UiModule.h"

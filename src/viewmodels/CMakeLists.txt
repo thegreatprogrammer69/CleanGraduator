@@ -2,7 +2,9 @@ add_library(viewmodels STATIC
         video/VideoSourceViewModel.cpp
         video/VideoSourceGridViewModel.cpp
 
-        settings/VideoSourceGridSettingsViewModel.cpp
+        settings/CameraGridSettingsViewModel.cpp
+
+        component/ComponentConfigViewModel.cpp
 
         MainWindowViewModel.cpp
 )

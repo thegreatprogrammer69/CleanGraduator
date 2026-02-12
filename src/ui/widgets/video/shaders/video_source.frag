@@ -13,11 +13,6 @@ uniform int uNoVideo;
 uniform vec2  uSize;
 uniform float uRadius;
 
-uniform int   uCrosshairVisible;
-uniform float uCrosshairRadius;
-uniform vec3  uCrosshairColor1;
-uniform vec3  uCrosshairColor2;
-
 bool insideRoundedRect(vec2 p, vec2 size, float r)
 {
     vec2 q = abs(p - size * 0.5) - (size * 0.5 - vec2(r));
@@ -55,36 +50,6 @@ vec3 sampleYuyvNearest(float xPix, float yPix)
 
     float Y = mix(yuyv.r, yuyv.b, odd);
     return yuvToRgb601Limited(Y, yuyv.g, yuyv.a);
-}
-
-vec4 drawCenterRing(vec2 fragPos)
-{
-    if (uCrosshairVisible == 0 || uCrosshairRadius <= 0.0)
-        return vec4(0.0);
-
-    vec2 center = uSize * 0.5;
-    float dist  = length(fragPos - center);
-
-    float maxR  = min(uSize.x, uSize.y) * 0.5;
-    float ringR = uCrosshairRadius * maxR;
-
-    float halfThickness = 6.0;
-    float d = abs(dist - ringR);
-
-    if (d > halfThickness)
-        return vec4(0.0);
-
-    float t = d + halfThickness;
-
-    vec3 color;
-    if (t < 4.0)
-        color = uCrosshairColor1;
-    else if (t < 8.0)
-        color = uCrosshairColor2;
-    else
-        color = uCrosshairColor1;
-
-    return vec4(color, 1.0);
 }
 
 void main()
@@ -125,10 +90,6 @@ void main()
 
         baseColor = vec4(mix(c0, c1, fy), 1.0);
     }
-
-    vec4 ring = drawCenterRing(fragPos);
-    if (ring.a > 0.0)
-        baseColor.rgb = mix(baseColor.rgb, ring.rgb, ring.a);
 
     gl_FragColor = baseColor;
 }

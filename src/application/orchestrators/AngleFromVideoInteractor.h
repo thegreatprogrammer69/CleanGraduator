@@ -22,7 +22,7 @@ namespace application::interactors {
         explicit AngleFromVideoInteractor(AngleFromVideoInteractorPorts ports);
 
         // IVideoSink
-        void onVideoFrame(const domain::common::Timestamp &, domain::common::VideoFramePtr) override;
+        void onVideoFrame(const domain::common::VideoFramePacket&) override;
 
         // IAngleSource
         void start() override;

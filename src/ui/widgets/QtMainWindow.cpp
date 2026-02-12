@@ -130,7 +130,7 @@ ui::QtMainWindow::QtMainWindow(
     settingsCardLayout->setSpacing(8);
 
     QtSettingsWidgetViewModels settingsModels {
-        model_.videoSourceGridSettingsViewModel()
+        model_.cameraGridSettingsViewModel()
     };
 
     auto* settingsWidget =

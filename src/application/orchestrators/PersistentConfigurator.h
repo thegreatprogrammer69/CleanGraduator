@@ -2,6 +2,10 @@
 #define CLEANGRADUATOR_PERSISTENTCONFIGURATOR_H
 
 
+namespace application::models {
+    struct ComponentSettings;
+}
+
 namespace application::ports {
     class IComponentSettingsRepository;
     class IRuntimeConfigurator;
@@ -16,10 +20,7 @@ namespace application::ineractors {
 
         void loadAndApply();
 
-        void save(const settings::ComponentSettings& settings)
-        {
-            repo_.save(settings);
-        }
+        void save(const models::ComponentSettings& settings);
 
     private:
         ports::IRuntimeConfigurator& configurator_;

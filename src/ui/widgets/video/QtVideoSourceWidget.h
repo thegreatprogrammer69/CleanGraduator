@@ -8,7 +8,6 @@
 #include <memory>
 #include <mutex>
 
-#include "application/dto/settings/grid/VideoSourceCrosshair.h"
 #include "domain/core/video/PixelFormat.h"
 #include "viewmodels/Observable.h"
 
@@ -49,8 +48,6 @@ namespace ui::widgets {
         std::mutex mutex_;
         domain::common::VideoFramePtr current_frame_;
         mvvm::Observable<domain::common::VideoFramePtr>::Subscription frame_sub_;
-        application::dto::VideoSourceCrosshair current_crosshair_;
-        mvvm::Observable<application::dto::VideoSourceCrosshair>::Subscription crosshair_sub_;
         mvvm::Observable<bool>::Subscription is_opened_sub_;
 
         bool is_source_opened_{false};

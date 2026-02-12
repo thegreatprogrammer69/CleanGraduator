@@ -5,7 +5,6 @@
 #include "domain/ports/outbound/IVideoSourceObserver.h"
 #include "viewmodels/Observable.h"
 #include "domain/core/video/VideoFrame.h"
-#include "application/settings/video/CrosshairSettings.h"
 
 namespace domain::ports {
     struct IVideoSource;
@@ -15,7 +14,6 @@ namespace mvvm {
     class VideoSourceViewModel final : domain::ports::IVideoSourceObserver {
     public:
         Observable<domain::common::VideoFramePtr> frame{};
-        Observable<application::settings::CrosshairSettings> crosshair{};
         Observable<bool> is_opened{false};
         Observable<std::string> error{};
 

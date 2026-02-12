@@ -6,14 +6,14 @@
 
 
 namespace mvvm {
-    class VideoSourceGridSettingsViewModel;
+    class CameraGridSettingsViewModel;
 }
 
 class QtCameraGridSettingsWidget;
 class QGroupBox;
 
 struct QtSettingsWidgetViewModels {
-    mvvm::VideoSourceGridSettingsViewModel& videoSourceGrid;
+    mvvm::CameraGridSettingsViewModel& cameraGridSettings;
 };
 
 class QtSettingsWidget final : public QWidget {

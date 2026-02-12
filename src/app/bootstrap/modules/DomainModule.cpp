@@ -2,7 +2,7 @@
 
 #include <stdexcept>
 
-#include "application/interactors/AngleFromVideoInteractor.h"
+#include "application/orchestrators/AngleFromVideoInteractor.h"
 #include "infrastructure/calculation/angle/CastAnglemeter.h"
 #include "infrastructure/calculation/angle/CastAnglemeterConfig.h"
 #include "infrastructure/utils/ini/IniFile.h"

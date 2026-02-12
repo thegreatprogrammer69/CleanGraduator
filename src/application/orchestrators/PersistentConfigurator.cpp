@@ -15,8 +15,11 @@ application::ineractors::PersistentConfigurator::PersistentConfigurator(
 void application::ineractors::PersistentConfigurator::loadAndApply() {
     auto settings = repo_.load();
 
-    for (auto& [name, value] : settings.values)
+    for (auto& entry : settings.values)
     {
+        const auto& name = entry.first;
+        const auto& value = entry.second;
+
         std::visit([&](auto&& v) {
             using T = std::decay_t<decltype(v)>;
 
@@ -28,4 +31,10 @@ void application::ineractors::PersistentConfigurator::loadAndApply() {
                 configurator_.setText(name, v);
         }, value);
     }
+}
+
+
+
+void application::ineractors::PersistentConfigurator::save(const models::ComponentSettings &settings) {
+    repo_.save(settings);
 }

@@ -28,11 +28,7 @@ QtVideoSourceWidget::QtVideoSourceWidget(mvvm::VideoSourceViewModel& model, QWid
     frame_sub_ = model.frame.subscribe([this](const auto& a) {
         setVideoFrame(a.new_value);
     });
-    crosshair_sub_ = model.crosshair.subscribe([this](const auto& a) {
-        std::lock_guard lock(mutex_);
-        current_crosshair_ = a.new_value;
-        update();
-    });
+
     is_opened_sub_ = model.is_opened.subscribe([this](const auto& a) {
         std::lock_guard lock(mutex_);
         is_source_opened_ = a.new_value;
@@ -173,11 +169,6 @@ void QtVideoSourceWidget::drawQuad(bool noVideo) {
     const float dpr = devicePixelRatioF();
     program_.setUniformValue("uSize", QVector2D(width() * dpr, height() * dpr));
     program_.setUniformValue("uRadius", 12.0f * dpr);
-
-    program_.setUniformValue("uCrosshairVisible", current_crosshair_.visible);
-    program_.setUniformValue("uCrosshairRadius", current_crosshair_.radius);
-    program_.setUniformValue("uCrosshairColor1", current_crosshair_.color.color1);
-    program_.setUniformValue("uCrosshairColor2", current_crosshair_.color.color2);
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, texture_);

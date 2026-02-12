@@ -62,7 +62,6 @@ elseif(UNIX)
             factory/AngleCalculatorFactory.cpp
             factory/CalibrationCalculatorFactory.cpp
             factory/CalibrationCalculatorFactory.h
-            ../events/video/VideoSourceCrosshairChanged.h
     )
 endif()
 

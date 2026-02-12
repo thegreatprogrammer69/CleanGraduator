@@ -34,7 +34,7 @@ inline bool operator==(const application::models::ConfigSchema& lhs, const appli
 
     for (int i = 0; i < lhs.size(); ++i)
     {
-        if (lhs[i].get() != rhs[i].get())
+        if (lhs[i] != rhs[i])
             return false;
     }
 

@@ -1,11 +1,12 @@
 add_library(application STATIC
         fmt/fmt_application.cpp
 
-        interactors/AngleFromVideoInteractor.cpp
+        orchestrators/AngleFromVideoInteractor.cpp
+        orchestrators/PersistentConfigurator.cpp
+        orchestrators/VideoSourceManager.cpp
 
-        usecases/settings/ChangeGridSettings.cpp
-
-        usecases/settings/grid/CameraGridUseCase.cpp
+        usecases/settings/ConfigureComponent.cpp
+        usecases/settings/OpenSelectedCameras.cpp
 
 )
 
