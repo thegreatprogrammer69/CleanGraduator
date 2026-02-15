@@ -6,6 +6,8 @@ add_library(application STATIC
 
         usecases/settings/ConfigureComponent.cpp
 
+        services/calibration/CalibrationPolicyService.cpp
+
         usecases/cameras/OpenSelectedCameras.cpp
         usecases/cameras/CloseAllCameras.cpp
         usecases/cameras/OpenAllCameras.cpp

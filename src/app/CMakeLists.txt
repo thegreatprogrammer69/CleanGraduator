@@ -10,6 +10,9 @@ endif ()
         bootstrap/UseCasesBootstrap.cpp
         bootstrap/ViewModelsBootstrap.cpp
         bootstrap/UiBootstrap.cpp
+        bootstrap/assemblers/RuntimeAssembler.cpp
+        bootstrap/assemblers/CatalogsAssembler.cpp
+        bootstrap/assemblers/SourcesAssembler.cpp
 )
 
 target_link_libraries(CleanGraduator

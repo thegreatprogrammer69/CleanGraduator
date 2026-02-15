@@ -1,5 +1,9 @@
 #include "LinearCalibrationCalculator.h"
+
 #include <cmath>
+
+#include "domain/core/calibration/CalibrationInput.h"
+#include "domain/core/calibration/CalibrationResult.h"
 
 using namespace infra::calc;
 using namespace domain::common;
@@ -12,8 +16,9 @@ namespace {
     };
 
     calculateForPointResult calculateForPoint(
-        AngleSeries angle_series,
-        PressureSeries pressure_series,
+        const double pressure_point,
+        const AngleSeries& angle_series,
+        const PressureSeries& pressure_series,
         const LinearCalibrationCalculatorConfig& config
     )
 {
@@ -53,9 +58,6 @@ namespace {
     idx_t angle_to   = a_time.size();
 
     // 1) Находим диапазон давлений [pressure_point - over, pressure_point + over]
-    // pressure_point берём как центр диапазона
-    const double pressure_point = 0.0; // <-- предполагаю, что ты задаёшь его извне раньше
-
     for (idx_t i = 0; i < p_value.size(); ++i) {
         if (p_value[i] > pressure_point - config.overlap) {
             pressure_from = i;
@@ -226,16 +228,19 @@ LinearCalibrationCalculator::LinearCalibrationCalculator(CalibrationCalculatorPo
 }
 
 CalibrationResult LinearCalibrationCalculator::calculate(const CalibrationInput &input) const {
-    logger_.info("start linear calibration for points {}, with {} angles and {} pressures", input.points, input.angles.size(), input.pressures.size());
+    logger_.info("start linear calibration for {} target points", input.points.size());
 
     CalibrationResult result;
-    for (int i = 0; i < input.pressures.size(); i++) {
-        const auto [severity, message, angle] = calculateForPoint(input.angles, input.pressures, config_);
-        result.addMeasurement(angle);
-        result.markLast(severity, message);
-        logger_.info("point {}: angle={}, severity={}, message='{}'", i, angle, severity, message);
+    if (input.points.empty()) {
+        result.addMeasurement(0.0);
+        result.markLast(CalibrationCellSeverity::Error, "target calibration point is required");
+        return result;
     }
 
-    logger_.info("calibration finished");
+    const auto [severity, message, angle] = calculateForPoint(input.points.front(), input.angles, input.pressures, config_);
+    result.addMeasurement(angle);
+    result.markLast(severity, message);
+
+    logger_.info("point {}: angle={}, severity={}, message='{}'", input.points.front(), angle, severity, message);
     return result;
 }

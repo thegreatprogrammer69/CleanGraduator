@@ -14,6 +14,10 @@ namespace application::orchestrators {
     class VideoSourceManager;
 }
 
+namespace application::services {
+    class CalibrationPolicyService;
+}
+
 namespace application::ports {
     struct ILogSourcesStorage;
     struct IInfoSettingsStorage;
@@ -67,6 +71,7 @@ public:
     // Угломер и калибратор
     std::unique_ptr<domain::ports::IAngleCalculator> anglemeter;
     std::unique_ptr<domain::ports::ICalibrationCalculator> calibrator;
+    std::unique_ptr<application::services::CalibrationPolicyService> calibration_policy;
 
     ////////////////////////////////////////////////////////////////////////////////////////
     // Видеокамеры
@@ -110,40 +115,6 @@ private:
     std::string setup_dir_;
     std::string catalogs_dir_;
     std::string logs_dir_;
-
-    ////////////////////////////////////////////////////////////////////////////////////////
-    void createLogSourcesStorage();
-
-    ////////////////////////////////////////////////////////////////////////////////////////
-    void createLifecycle();
-    void createClock();
-
-    ////////////////////////////////////////////////////////////////////////////////////////
-    void createAnglemeter();
-    void createCalibrator();
-
-    ////////////////////////////////////////////////////////////////////////////////////////
-    void createVideoSources();
-    void createAngleSources();
-    void createVideoSourcesStorage();
-    void createVideoSourcesManager();
-
-    ////////////////////////////////////////////////////////////////////////////////////////
-    void createPressureSource();
-
-    ////////////////////////////////////////////////////////////////////////////////////////
-    void createDisplacementCatalog();
-    void createPrinterCatalog();
-    void createPrecisionCatalog();
-    void createPressureUnitCatalog();
-    void createGaugeCatalog();
-
-    ////////////////////////////////////////////////////////////////////////////////////////
-    void createInfoSettingsStorage();
-
-    ////////////////////////////////////////////////////////////////////////////////////////
-    void createProcessRunner();
-
 
 };
 
