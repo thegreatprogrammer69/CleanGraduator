@@ -2,8 +2,6 @@
 #define UNTITLED_ILOGGER_H
 
 #include <string>
-#include "domain/fmt/fmt.h"
-
 
 namespace domain::ports {
     struct ILogger {

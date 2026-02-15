@@ -1,5 +1,7 @@
 #include "AngleFromVideoInteractor.h"
 #include "domain/ports/inbound/IAngleCalculator.h"
+#include "domain/core/inputs/AnglemeterInput.h"
+#include "domain/core/measurement/Angle.h"
 #include <algorithm>
 
 #include "domain/core/common/VideoFramePacket.h"

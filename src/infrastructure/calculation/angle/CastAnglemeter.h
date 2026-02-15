@@ -1,10 +1,13 @@
 #ifndef CLEANGRADUATOR_CASTANGLEMETER_H
 #define CLEANGRADUATOR_CASTANGLEMETER_H
 #include "domain/ports/inbound/IAngleCalculator.h"
+#include "domain/core/inputs/AnglemeterInput.h"
+#include "domain/core/measurement/Angle.h"
 #include "CastAnglemeterConfig.h"
 #include "AnglemeterPorts.h"
 #include "domain/fmt/Logger.h"
 #include <vector>
+#include <memory>
 
 namespace infra::calc {
     class CastAnglemeter : public domain::ports::IAngleCalculator {

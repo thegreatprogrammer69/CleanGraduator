@@ -1,7 +1,10 @@
 #ifndef UNTITLED_IANGLEMETER_H
 #define UNTITLED_IANGLEMETER_H
-#include "domain/core/measurement/Angle.h"
-#include "domain/core/inputs/AnglemeterInput.h"
+
+namespace domain::common {
+    class Angle;
+    struct AnglemeterInput;
+}
 
 namespace domain::ports {
     struct IAngleCalculator {
