@@ -29,23 +29,23 @@ void QtInfoSettingsWidget::buildUi() {
     printerCombo_ = new QComboBox(this);
 
     for (const auto& value : model_.displacements()) {
-        displacementCombo_->addItem(QString::fromStdString(value));
+        displacementCombo_->addItem(QString::fromUtf8(value.c_str()));
     }
 
     for (const auto& value : model_.gauges()) {
-        gaugeCombo_->addItem(QString::fromStdString(value));
+        gaugeCombo_->addItem(QString::fromUtf8(value.c_str()));
     }
 
     for (const auto& value : model_.precisions()) {
-        precisionCombo_->addItem(QString::fromStdString(value));
+        precisionCombo_->addItem(QString::fromUtf8(value.c_str()));
     }
 
     for (const auto& value : model_.pressureUnits()) {
-        pressureUnitCombo_->addItem(QString::fromStdString(value));
+        pressureUnitCombo_->addItem(QString::fromUtf8(value.c_str()));
     }
 
     for (const auto& value : model_.printers()) {
-        printerCombo_->addItem(QString::fromStdString(value));
+        printerCombo_->addItem(QString::fromUtf8(value.c_str()));
     }
 
     layout->addRow(tr("Перемещение"), displacementCombo_);

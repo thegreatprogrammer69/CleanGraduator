@@ -2,6 +2,9 @@
 
 #include "domain/core/measurement/PressureUnit.h"
 
+#include <codecvt>
+#include <locale>
+
 using namespace mvvm;
 using namespace application::ports;
 
@@ -73,5 +76,6 @@ void InfoSettingsViewModel::loadSelection() {
 }
 
 std::string InfoSettingsViewModel::toUtf8(const std::wstring& value) {
-    return std::string(value.begin(), value.end());
+    std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> conv;
+    return conv.to_bytes(value);
 }

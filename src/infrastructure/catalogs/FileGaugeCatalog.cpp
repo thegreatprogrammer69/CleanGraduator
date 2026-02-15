@@ -1,8 +1,9 @@
 #include "FileGaugeCatalog.h"
 
 #include <algorithm>
+#include <cctype>
+#include <charconv>
 #include <codecvt>
-#include <cwctype>
 #include <fstream>
 #include <locale>
 #include <sstream>
@@ -11,124 +12,110 @@
 #include "application/fmt/fmt_application.h"
 
 namespace {
-
-inline std::string to_utf8(const std::wstring& ws) {
+std::wstring from_utf8(std::string_view s) {
     std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> conv;
-    return conv.to_bytes(ws);
+    return conv.from_bytes(s.data(), s.data() + s.size());
 }
 
-inline void trim(std::wstring& s) {
-    auto notSpace = [](wchar_t ch) { return !std::iswspace(ch); };
+void trim(std::string& s) {
+    auto notSpace = [](unsigned char ch) { return !std::isspace(ch); };
     s.erase(s.begin(), std::find_if(s.begin(), s.end(), notSpace));
     s.erase(std::find_if(s.rbegin(), s.rend(), notSpace).base(), s.end());
 }
 
-inline std::vector<std::wstring> split(const std::wstring& s, wchar_t delim) {
-    std::vector<std::wstring> out;
-    std::wstringstream ss(s);
-    std::wstring item;
+std::vector<std::string> split(const std::string& s, char delim) {
+    std::vector<std::string> out;
+    std::stringstream ss(s);
+    std::string item;
     while (std::getline(ss, item, delim)) out.push_back(item);
     return out;
 }
 
-    inline bool tryParseDouble(const std::wstring& token, double& out) {
-    try {
-        std::wstring normalized = token;
+bool tryParseDouble(std::string token, double& out) {
+    std::replace(token.begin(), token.end(), ',', '.');
+    trim(token);
 
-        // нормализуем разделитель
-        std::replace(normalized.begin(), normalized.end(), L',', L'.');
+    auto result = std::from_chars(
+        token.data(),
+        token.data() + token.size(),
+        out
+    );
 
-        // парсим в C-locale
-        std::string utf8 = to_utf8(normalized);
-        std::istringstream iss(utf8);
-        iss.imbue(std::locale::classic());
-
-        iss >> out;
-
-        return !iss.fail() && iss.eof();
-    } catch (...) {
-        return false;
-    }
+    return result.ec == std::errc() &&
+           result.ptr == token.data() + token.size();
 }
-} // namespace
+}
 
 namespace infra::catalogs {
 
 FileGaugeCatalog::FileGaugeCatalog(FileGaugeCatalogPorts ports, std::string filePath)
     : logger_(ports.logger)
 {
-    std::wifstream in(filePath);
+    std::ifstream in(filePath, std::ios::binary);
     if (!in.is_open()) {
         logger_.error("Failed to open gauge catalog file: {}", filePath);
         throw std::runtime_error("failed to open file: " + filePath);
     }
 
-    in.imbue(std::locale(""));
-
-    std::wstring line;
+    std::string line;
+    bool first_line = true;
 
     while (std::getline(in, line)) {
-        trim(line);
-        if (line.empty() || line[0] == L'#') continue;
+        if (first_line) {
+            first_line = false;
+            if (line.size() >= 3 &&
+                static_cast<unsigned char>(line[0]) == 0xEF &&
+                static_cast<unsigned char>(line[1]) == 0xBB &&
+                static_cast<unsigned char>(line[2]) == 0xBF) {
+                line.erase(0, 3);
+            }
+        }
 
-        auto parts = split(line, L';');
+        trim(line);
+        if (line.empty() || line[0] == '#') continue;
+
+        auto parts = split(line, ';');
         if (parts.size() < 2) {
-            logger_.error("Failed to parse gauge line: {}", to_utf8(line));
+            logger_.error("Failed to parse gauge line: {}", line);
             continue;
         }
 
-        std::wstring name = parts[0];
-        trim(name);
-        if (name.empty()) {
-            logger_.error("Gauge name is empty in line: {}", to_utf8(line));
+        std::string name_utf8 = parts[0];
+        trim(name_utf8);
+        if (name_utf8.empty()) {
+            logger_.error("Gauge name is empty in line: {}", line);
             continue;
         }
 
         std::vector<double> values;
 
-        if (parts.size() == 2) {
-            std::wstring valuesPart = parts[1];
-            trim(valuesPart);
+        for (size_t i = 1; i < parts.size(); ++i) {
+            auto token = parts[i];
+            trim(token);
+            if (token.empty()) continue;
 
-            auto byComma = split(valuesPart, L',');
-            for (auto& t : byComma) {
-                trim(t);
-                if (t.empty()) continue;
-                double v{};
-                if (tryParseDouble(t, v)) values.push_back(v);
-                else logger_.error("Failed to parse gauge value '{}' in line: {}", to_utf8(t), to_utf8(line));
-            }
-
-            if (values.empty()) {
-                std::wstringstream ss(valuesPart);
-                std::wstring tok;
-                while (ss >> tok) {
-                    double v{};
-                    if (tryParseDouble(tok, v)) values.push_back(v);
-                    else logger_.error("Failed to parse gauge value '{}' in line: {}", to_utf8(tok), to_utf8(line));
-                }
-            }
-        } else {
-            for (size_t i = 1; i < parts.size(); ++i) {
-                auto t = parts[i];
-                trim(t);
-                if (t.empty()) continue;
-                double v{};
-                if (tryParseDouble(t, v)) values.push_back(v);
-                else logger_.error("Failed to parse gauge value '{}' in line: {}", to_utf8(t), to_utf8(line));
+            double v{};
+            if (tryParseDouble(token, v)) {
+                values.push_back(v);
+            } else {
+                logger_.error("Failed to parse gauge value '{}' in line: {}", token, line);
             }
         }
 
         if (values.empty()) {
-            logger_.error("Gauge has no valid values in line: {}", to_utf8(line));
+            logger_.error("Gauge has no valid values in line: {}", line);
             continue;
         }
 
-        gauges_.push_back(application::models::Gauge{
-            .name = std::move(name),
-            .values = std::move(values)
-        });
-        logger_.info("Loaded gauge model: {}", gauges_.back());
+        try {
+            gauges_.push_back(application::models::Gauge{
+                .name = from_utf8(name_utf8),
+                .values = std::move(values)
+            });
+            logger_.info("Loaded gauge model: {}", gauges_.back());
+        } catch (const std::range_error&) {
+            logger_.error("Invalid UTF-8 in gauge line: {}", line);
+        }
     }
 }
 
