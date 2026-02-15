@@ -1,7 +1,7 @@
 #ifndef CLEANGRADUATOR_CHRONOSESSIONCLOCK_H
 #define CLEANGRADUATOR_CHRONOSESSIONCLOCK_H
 
-#include "domain/ports/outbound/IClock.h"
+#include "../../domain/ports/clock/IClock.h"
 #include <chrono>
 
 namespace infra::clock {

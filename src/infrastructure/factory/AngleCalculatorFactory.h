@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-#include "domain/ports/inbound/IAngleCalculator.h"
+#include "../../domain/ports/angle/IAngleCalculator.h"
 #include "infrastructure/calculation/angle/AnglemeterPorts.h"
 
 namespace infra::repo {

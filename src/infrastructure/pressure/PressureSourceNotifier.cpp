@@ -1,6 +1,6 @@
 #include "PressureSourceNotifier.h"
 
-#include "domain/ports/outbound/IPressureSourceObserver.h"
+#include "../../domain/ports/pressure/IPressureSourceObserver.h"
 
 using namespace infra::pressure::detail;
 using namespace domain::ports;

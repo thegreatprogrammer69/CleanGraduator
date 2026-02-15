@@ -1,7 +1,7 @@
 #ifndef CLEANGRADUATOR_DSHOWVIDEOSTREAM_H
 #define CLEANGRADUATOR_DSHOWVIDEOSTREAM_H
 
-#include "domain/ports/inbound/IVideoSource.h"
+#include "../../../../domain/ports/video/IVideoSource.h"
 #include "domain/fmt/Logger.h"
 #include "DShowCameraConfig.h"
 #include "infrastructure/video/VideoSourceNotifier.h"

@@ -5,8 +5,8 @@
 #include <algorithm>
 
 #include "domain/core/process/ProcessLifecycleState.h"
-#include "domain/ports/inbound/IProcessLifecycle.h"
-#include "domain/ports/outbound/IProcessLifecycleObserver.h"
+#include "domain/ports/lifecycle/IProcessLifecycle.h"
+#include "domain/ports/lifecycle/IProcessLifecycleObserver.h"
 #include "infrastructure/clock/SessionClock.h"
 
 
@@ -19,7 +19,7 @@ public:
     explicit ProcessLifecycle(State initial = State::Idle);
     ~ProcessLifecycle() override;
 
-    domain::ports::IClock& clock() override;
+    domain::ports::IClock& clock();
 
     bool canStart() const override;
     bool canStop() const override;

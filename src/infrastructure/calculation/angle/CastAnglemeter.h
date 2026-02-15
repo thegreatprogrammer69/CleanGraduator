@@ -1,6 +1,6 @@
 #ifndef CLEANGRADUATOR_CASTANGLEMETER_H
 #define CLEANGRADUATOR_CASTANGLEMETER_H
-#include "domain/ports/inbound/IAngleCalculator.h"
+#include "../../../domain/ports/angle/IAngleCalculator.h"
 #include "CastAnglemeterConfig.h"
 #include "AnglemeterPorts.h"
 #include "domain/fmt/Logger.h"

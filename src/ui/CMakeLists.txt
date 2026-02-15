@@ -1,4 +1,6 @@
-add_library(ui SHARED
+add_library(ui STATIC
+        resources.qrc
+
         widgets/layout/QtStackPanelWidget.cpp
         widgets/layout/QtStackPanelWidget.h
 
@@ -15,11 +17,11 @@ add_library(ui SHARED
         widgets/settings/QtSettingsWidget.h
 
         widgets/logging/QtLogViewerWidget.cpp
+        widgets/logging/QtLogViewerWidget.h
 
         widgets/QtMainWindow.cpp
         widgets/QtMainWindow.h
 
-        resources.qrc
 )
 
 target_include_directories(ui

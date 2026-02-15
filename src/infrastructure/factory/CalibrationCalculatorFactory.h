@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-#include "domain/ports/inbound/ICalibrationCalculator.h"
+#include "../../domain/ports/calibration/ICalibrationCalculator.h"
 #include "infrastructure/calculation/calibration/CalibrationCalculatorPorts.h"
 
 namespace infra::repo {

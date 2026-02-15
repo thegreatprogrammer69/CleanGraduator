@@ -1,4 +1,6 @@
 cmake-*/
+logs/
+setup/
 .idea
 *.7z
 *.zip

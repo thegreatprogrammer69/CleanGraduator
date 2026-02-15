@@ -2,7 +2,7 @@
 #define CLEANGRADUATOR_FMTLOGGER_H
 
 #include <utility>
-#include "domain/ports/outbound/ILogger.h"
+#include "domain/ports/logging/ILogger.h"
 #include "fmt.h"
 
 

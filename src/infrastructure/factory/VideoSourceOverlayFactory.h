@@ -6,7 +6,7 @@
 #include <string>
 #include <vector>
 
-#include "domain/ports/inbound/IVideoSourceOverlay.h"
+#include "../../domain/ports/video/IVideoSourceOverlay.h"
 #include "infrastructure/overlay/VideoOverlayPorts.h"
 
 namespace infra::repo {

@@ -2,7 +2,7 @@
 #define CLEANGRADUATOR_G540LPTCONFIG_H
 
 namespace infra::hardware {
-    struct G540LptConfig {
+    struct G540LptMotorDriverConfig {
         unsigned short lpt_port;
 
         unsigned char byte_open_input_flap;

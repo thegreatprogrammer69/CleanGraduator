@@ -1,7 +1,7 @@
 #ifndef UNTITLED_FILELOGGER_H
 #define UNTITLED_FILELOGGER_H
 
-#include "domain/ports/outbound/ILogger.h"
+#include "domain/ports/logging/ILogger.h"
 #include <fstream>
 #include <mutex>
 

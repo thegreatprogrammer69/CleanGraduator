@@ -10,7 +10,7 @@
 #include <algorithm>
 
 #include "domain/fmt/Logger.h"
-#include "domain/ports/inbound/IVideoSource.h"
+#include "../../../../domain/ports/video/IVideoSource.h"
 #include "V4LCameraConfig.h"
 #include "infrastructure/video/VideoSourceNotifier.h"
 #include "infrastructure/video/VideoSourcePorts.h"

@@ -1,7 +1,7 @@
 #include "NamedMultiLogger.h"
 
 #include "../../application/ports/outbound/logging/ILogSink.h"
-#include "domain/ports/outbound/IClock.h"
+#include "../../domain/ports/clock/IClock.h"
 
 static constexpr size_t MAX_LOGS_HISTORY = 482;
 

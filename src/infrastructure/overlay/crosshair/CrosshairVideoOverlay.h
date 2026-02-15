@@ -1,6 +1,6 @@
 #ifndef CLEANGRADUATOR_CROSSHAIRVIDEOOVERLAY_H
 #define CLEANGRADUATOR_CROSSHAIRVIDEOOVERLAY_H
-#include "domain/ports/inbound/IVideoSourceOverlay.h"
+#include "../../../domain/ports/video/IVideoSourceOverlay.h"
 #include "CrosshairVideoOverlayConfig.h"
 
 namespace infra::overlay {

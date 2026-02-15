@@ -1,9 +1,9 @@
 #include "AngleFromVideoInteractor.h"
-#include "domain/ports/inbound/IAngleCalculator.h"
+#include "../../domain/ports/angle/IAngleCalculator.h"
 #include <algorithm>
 
 #include "domain/core/common/VideoFramePacket.h"
-#include "domain/ports/inbound/IVideoSource.h"
+#include "../../domain/ports/video/IVideoSource.h"
 
 namespace application::orchestrators {
     AngleFromVideoInteractor::AngleFromVideoInteractor(AngleFromVideoInteractorPorts ports)

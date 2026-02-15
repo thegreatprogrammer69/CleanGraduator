@@ -2,7 +2,7 @@
 #define CLEANGRADUATOR_VIDEOSOURCEVIEWMODEL_H
 #include <string>
 
-#include "domain/ports/outbound/IVideoSourceObserver.h"
+#include "../../domain/ports/video/IVideoSourceObserver.h"
 #include "viewmodels/Observable.h"
 #include "domain/core/video/VideoFrame.h"
 

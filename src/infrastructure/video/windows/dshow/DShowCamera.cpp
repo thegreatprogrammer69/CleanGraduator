@@ -10,7 +10,7 @@
 #include "domain/core/video/VideoFrame.h"
 #include "domain/core/common/VideoFramePacket.h"
 #include "domain/core/common/VideoSourceError.h"
-#include "domain/ports/outbound/IClock.h"
+#include "../../../../domain/ports/clock/IClock.h"
 
 using namespace infra::camera;
 

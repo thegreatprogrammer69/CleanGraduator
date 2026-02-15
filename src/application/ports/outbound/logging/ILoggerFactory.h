@@ -1,6 +1,6 @@
 #ifndef CLEANGRADUATOR_ILOGGERFACTORY_H
 #define CLEANGRADUATOR_ILOGGERFACTORY_H
-#include "domain/ports/outbound/ILogger.h"
+#include "domain/ports/logging/ILogger.h"
 
 namespace application::ports {
     struct ILoggerFactory {

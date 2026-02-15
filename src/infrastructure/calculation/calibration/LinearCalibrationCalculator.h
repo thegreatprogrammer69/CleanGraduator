@@ -3,7 +3,7 @@
 #include "LinearCalibrationCalculatorConfig.h"
 #include "CalibrationCalculatorPorts.h"
 #include "domain/fmt/Logger.h"
-#include "domain/ports/inbound/ICalibrationCalculator.h"
+#include "../../../domain/ports/calibration/ICalibrationCalculator.h"
 
 namespace infra::calc {
     class LinearCalibrationCalculator : public domain::ports::ICalibrationCalculator {

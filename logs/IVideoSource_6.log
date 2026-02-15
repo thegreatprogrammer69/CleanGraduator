@@ -93,3 +93,104 @@
 [ERROR] V4LCamera::open() error: open failed: Нет такого файла или каталога
 [ERROR] V4LCamera::open() error: open failed: Нет такого файла или каталога
 [ERROR] V4LCamera::open() error: open failed: Нет такого файла или каталога
+[INFO] DShowCamera constructor called: camera index=6
+[INFO] DShowCamera destructor called
+[INFO] DShowCamera constructor called: camera index=6
+[INFO] DShowCamera constructor called: camera index=6
+[INFO] DShowCamera destructor called
+[INFO] DShowCamera constructor called: camera index=6
+[INFO] DShowCamera::start() begin
+[INFO] COM initialized
+[INFO] Graph and control interfaces created
+[ERROR] Device not found, index=6
+[INFO] DShowCamera destructor called
+[INFO] DShowCamera constructor called: camera index=6
+[INFO] DShowCamera constructor called: camera index=6
+[INFO] DShowCamera constructor called: camera index=6
+[INFO] DShowCamera::start() begin
+[INFO] COM initialized
+[INFO] Graph and control interfaces created
+[ERROR] Device not found, index=6
+[INFO] DShowCamera destructor called
+[INFO] DShowCamera constructor called: camera index=6
+[INFO] DShowCamera::start() begin
+[INFO] COM initialized
+[INFO] Graph and control interfaces created
+[ERROR] Device not found, index=6
+[INFO] DShowCamera destructor called
+[INFO] DShowCamera constructor called: camera index=6
+[INFO] DShowCamera::start() begin
+[INFO] COM initialized
+[INFO] Graph and control interfaces created
+[ERROR] Device not found, index=6
+[INFO] DShowCamera constructor called: camera index=6
+[INFO] DShowCamera::start() begin
+[INFO] COM initialized
+[INFO] Graph and control interfaces created
+[ERROR] Device not found, index=6
+[INFO] DShowCamera::start() begin
+[INFO] COM initialized
+[INFO] Graph and control interfaces created
+[ERROR] Device not found, index=6
+[INFO] DShowCamera destructor called
+[INFO] DShowCamera constructor called: camera index=6
+[INFO] DShowCamera::start() begin
+[INFO] COM initialized
+[INFO] Graph and control interfaces created
+[ERROR] Device not found, index=6
+[INFO] DShowCamera::start() begin
+[INFO] COM initialized
+[INFO] Graph and control interfaces created
+[ERROR] Device not found, index=6
+[INFO] DShowCamera constructor called: camera index=6
+[INFO] DShowCamera::start() begin
+[INFO] COM initialized
+[INFO] Graph and control interfaces created
+[ERROR] Device not found, index=6
+[INFO] DShowCamera destructor called
+[INFO] DShowCamera constructor called: camera index=6
+[INFO] DShowCamera destructor called
+[INFO] DShowCamera constructor called: camera index=6
+[INFO] DShowCamera::start() begin
+[INFO] COM initialized
+[INFO] Graph and control interfaces created
+[ERROR] Device not found, index=6
+[INFO] DShowCamera destructor called
+[INFO] DShowCamera constructor called: camera index=6
+[INFO] DShowCamera::start() begin
+[INFO] COM initialized
+[INFO] Graph and control interfaces created
+[ERROR] Device not found, index=6
+[INFO] DShowCamera destructor called
+[INFO] DShowCamera constructor called: camera index=6
+[INFO] DShowCamera::start() begin
+[INFO] COM initialized
+[INFO] Graph and control interfaces created
+[ERROR] Device not found, index=6
+[INFO] DShowCamera::start() begin
+[INFO] COM initialized
+[INFO] Graph and control interfaces created
+[ERROR] Device not found, index=6
+[INFO] DShowCamera::start() begin
+[INFO] COM initialized
+[INFO] Graph and control interfaces created
+[ERROR] Device not found, index=6
+[INFO] DShowCamera destructor called
+[INFO] DShowCamera constructor called: camera index=6
+[INFO] DShowCamera::start() begin
+[INFO] COM initialized
+[INFO] Graph and control interfaces created
+[ERROR] Device not found, index=6
+[INFO] DShowCamera destructor called
+[INFO] DShowCamera constructor called: camera index=6
+[INFO] DShowCamera::start() begin
+[INFO] COM initialized
+[INFO] Graph and control interfaces created
+[ERROR] Device not found, index=6
+[INFO] DShowCamera destructor called
+[INFO] DShowCamera constructor called: camera index=6
+[INFO] DShowCamera::start() begin
+[INFO] COM initialized
+[INFO] Graph and control interfaces created
+[ERROR] Device not found, index=6
+[INFO] DShowCamera destructor called

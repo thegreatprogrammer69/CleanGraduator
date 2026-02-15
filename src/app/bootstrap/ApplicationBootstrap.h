@@ -32,7 +32,6 @@ namespace infra::logging {
 
 namespace domain::ports {
     struct IResultStore;
-    struct IPressureActuator;
     struct IPressureSource;
     class ICalibrationCalculator;
     struct IAngleCalculator;
@@ -82,7 +81,7 @@ public:
 
     ////////////////////////////////////////////////////////////////////////////////////////
     // Задатчик давления. Делавет весь процесс градуировки
-    std::unique_ptr<domain::ports::IPressureActuator> pressure_actuator;
+    // std::unique_ptr<domain::ports::IPressureActuator> pressure_actuator;
 
     ////////////////////////////////////////////////////////////////////////////////////////
     // Хранение результата

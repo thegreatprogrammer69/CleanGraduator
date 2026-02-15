@@ -1,6 +1,6 @@
 #ifndef CLEANGRADUATOR_IANGLESOURCE_H
 #define CLEANGRADUATOR_IANGLESOURCE_H
-#include "domain/ports/outbound/IAngleSink.h"
+#include "IAngleSink.h"
 
 
 namespace domain::ports {

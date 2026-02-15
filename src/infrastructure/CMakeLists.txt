@@ -16,7 +16,7 @@ set(SOURCES
         pressure/PressureSourceNotifier.cpp
         pressure/dm5002/DM5002RFPressureSensor.cpp
 
-        motor/g540/G540LPT.cpp
+        motor/g540/as_lpt/G540LptMotorDriver.cpp
 
         logging/ConsoleLogger.cpp
         logging/FileLogger.cpp

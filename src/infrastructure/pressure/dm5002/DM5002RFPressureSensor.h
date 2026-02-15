@@ -2,7 +2,7 @@
 #define UNTITLED_WINDM5002PRESSURESENSOR_H
 
 #include <memory>
-#include <domain/ports/inbound/IPressureSource.h>
+#include <domain/ports/pressure/IPressureSource.h>
 #include "DM5002RFConfig.h"
 #include "PressureSourcePorts.h"
 #include "domain/core/measurement/Pressure.h"

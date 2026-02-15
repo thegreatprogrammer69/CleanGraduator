@@ -4,7 +4,7 @@
 #include <memory>
 #include <string>
 
-#include "domain/ports/inbound/IPressureSource.h"
+#include "../../domain/ports/pressure/IPressureSource.h"
 #include "infrastructure/pressure/dm5002/PressureSourcePorts.h"
 
 namespace infra::repo {

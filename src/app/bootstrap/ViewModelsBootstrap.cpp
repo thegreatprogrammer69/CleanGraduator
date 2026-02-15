@@ -60,40 +60,51 @@ void ViewModelsBootstrap::createVideoSourceGrid() {
 }
 
 void ViewModelsBootstrap::createCameraGridSettings() {
-    CameraGridSettingsViewModelDeps deps;
-    deps.open_selected = *use_cases_.open_selected_cameras;
-    deps.open_all = *use_cases_.open_all_cameras;
-    deps.close_all = *use_cases_.close_all_cameras;
+    CameraGridSettingsViewModelDeps deps {
+        *use_cases_.open_selected_cameras,
+        *use_cases_.open_all_cameras,
+        *use_cases_.close_all_cameras,
+    };
     camera_grid_settings = std::make_unique<CameraGridSettingsViewModel>(deps);
 }
 
 void ViewModelsBootstrap::createInfoSettings() {
-    InfoSettingsViewModelDeps deps;
-    deps.storage = *app_.info_settings_storage;
-    deps.displacement_catalog = *app_.displacement_catalog;
-    deps.gauge_catalog = *app_.gauge_catalog;
-    deps.precision_catalog = *app_.precision_catalog;
-    deps.pressure_unit_catalog = *app_.pressure_unit_catalog;
-    deps.printer_catalog = *app_.printer_catalog;
+    InfoSettingsViewModelDeps deps{
+        *app_.info_settings_storage,
+        *app_.displacement_catalog,
+        *app_.gauge_catalog,
+        *app_.precision_catalog,
+        *app_.pressure_unit_catalog,
+        *app_.printer_catalog,
+    };
 
-    info_settings = std::make_unique<InfoSettingsViewModel>(deps);
+    info_settings =
+        std::make_unique<InfoSettingsViewModel>(deps);
 }
+
 
 void ViewModelsBootstrap::createSettings() {
-    SettingsViewModelDeps deps;
-    deps.camera_grid = *camera_grid_settings;
-    deps.info_settings = *info_settings;
-    settings = std::make_unique<SettingsViewModel>(deps);
+    SettingsViewModelDeps deps{
+        *camera_grid_settings,
+        *info_settings,
+    };
+
+    settings =
+        std::make_unique<SettingsViewModel>(deps);
 }
+
 
 void ViewModelsBootstrap::createLogViewer() {
     log_viewer = std::make_unique<LogViewerViewModel>(*app_.log_sources_storage);
 }
 
 void ViewModelsBootstrap::createMainWindow() {
-    MainWindowViewModelDeps deps;
-    deps.log_viewer = *log_viewer;
-    deps.grid = *video_source_grid;
-    deps.settings = *settings;
-    main_window = std::make_unique<MainWindowViewModel>(deps);
+    MainWindowViewModelDeps deps{
+        *log_viewer,
+        *video_source_grid,
+        *settings,
+    };
+
+    main_window =
+        std::make_unique<MainWindowViewModel>(deps);
 }

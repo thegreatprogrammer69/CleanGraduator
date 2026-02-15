@@ -22,7 +22,7 @@
 #include "infrastructure/logging/ConsoleLogger.h"
 #include "infrastructure/logging/FileLogger.h"
 #include "infrastructure/logging/NamedMultiLogger.h"
-#include "infrastructure/motor/g540/G540LPT.h"
+#include "../../infrastructure/motor/g540/as_lpt/G540LptMotorDriver.h"
 #include "infrastructure/overlay/crosshair/CrosshairVideoOverlay.h"
 #include "infrastructure/platform/com/ComPort.h"
 #include "infrastructure/pressure/PressureSourceNotifier.h"
@@ -32,9 +32,9 @@
 #include "infrastructure/storage/VideoAngleSourcesStorage.h"
 #include "infrastructure/storage/LogSourcesStorage.h"
 #include "viewmodels/settings/SettingsViewModel.h"
-#include "domain/ports/inbound/IVideoSource.h"
-#include "domain/ports/inbound/IPressureActuator.h"
-#include "domain/ports/outbound/IResultStore.h"
+#include "../../domain/ports/video/IVideoSource.h"
+
+#include "../../domain/ports/calibration/IResultStore.h"
 #include "infrastructure/process/ProcessRunner.h"
 
 using namespace mvvm;
@@ -131,11 +131,13 @@ void ApplicationBootstrap::createLogSourcesStorage() {
 }
 
 void ApplicationBootstrap::createLifecycle() {
-    process_lifecycle = std::make_unique<ProcessLifecycle>();
+    auto* lifecycle = new ProcessLifecycle();
+    session_clock = &lifecycle->clock();
+    process_lifecycle = std::unique_ptr<ProcessLifecycle>(lifecycle);
 }
 
 void ApplicationBootstrap::createClock() {
-    session_clock = &process_lifecycle->clock();
+
     uptime_clock = std::make_unique<UptimeClock>();
 }
 
@@ -148,25 +150,32 @@ void ApplicationBootstrap::createVideoSources() {
 // В случае кластера из RepkaPI можно сделать разветвление в цикле for
 void ApplicationBootstrap::createAngleSources() {
     int idx = 1;
+
     for (const auto& video_source : video_sources) {
-        AngleFromVideoInteractorPorts ports;
-        ports.logger = createLogger("IAngleSource_" + std::to_string(idx));
-        ports.anglemeter = *anglemeter;
-        ports.video_source = *video_source;
-        auto angle_source = std::make_unique<AngleFromVideoInteractor>(ports);
-        angle_sources.emplace_back(std::move(angle_source));
-        idx++;
+        AngleFromVideoInteractorPorts ports{
+            createLogger("IAngleSource_" + std::to_string(idx)),
+            *anglemeter,
+            *video_source
+        };
+
+        angle_sources.emplace_back(
+            std::make_unique<AngleFromVideoInteractor>(ports)
+        );
+
+        ++idx;
     }
 }
 
 void ApplicationBootstrap::createVideoSourcesStorage() {
     auto storage = std::make_unique<VideoAngleSourcesStorage>();
 
-    for (int i = 0; i < video_sources.size(); i++) {
-        VideoAngleSource source;
-        source.id = i + 1;
-        source.angle_source = *angle_sources[i];
-        source.video_source = *video_sources[i];
+    for (std::size_t i = 0; i < video_sources.size(); ++i) {
+        VideoAngleSource source{
+            static_cast<int>(i + 1),
+            *angle_sources[i],
+            *video_sources[i]
+        };
+
         storage->add(source);
     }
 
@@ -174,75 +183,129 @@ void ApplicationBootstrap::createVideoSourcesStorage() {
 }
 
 void ApplicationBootstrap::createVideoSourcesManager() {
-    video_source_manager = std::make_unique<VideoSourceManager>(*videoangle_sources_storage);
+    video_source_manager =
+        std::make_unique<VideoSourceManager>(
+            *videoangle_sources_storage
+        );
 }
 
 void ApplicationBootstrap::createAnglemeter() {
-    AnglemeterPorts ports;
-    ports.logger = createLogger("IAngleCalculator");
-    AngleCalculatorFactory factory(setup_dir_ + "/anglemeter.ini", ports);
+    AnglemeterPorts ports{
+        createLogger("IAngleCalculator")
+    };
+
+    AngleCalculatorFactory factory(
+        setup_dir_ + "/anglemeter.ini",
+        ports
+    );
+
     anglemeter = factory.load();
 }
 
 void ApplicationBootstrap::createCalibrator() {
-    CalibrationCalculatorPorts ports;
-    ports.logger = createLogger("ICalibrationCalculator");
-    CalibrationCalculatorFactory factory(setup_dir_ + "/calibrator.ini", ports);
+    CalibrationCalculatorPorts ports{
+        createLogger("ICalibrationCalculator")
+    };
+
+    CalibrationCalculatorFactory factory(
+        setup_dir_ + "/calibrator.ini",
+        ports
+    );
+
     calibrator = factory.load();
 }
 
 void ApplicationBootstrap::createPressureSource() {
-    PressureSourcePorts ports;
-    ports.logger = createLogger("IPressureSource");
-    ports.clock = *session_clock;
-    PressureSourceFactory factory(setup_dir_ + "/pressure_source.ini", ports);
+    PressureSourcePorts ports{
+        createLogger("IPressureSource"),
+        *session_clock
+    };
+
+    PressureSourceFactory factory(
+        setup_dir_ + "/pressure_source.ini",
+        ports
+    );
+
     pressure_source = factory.load();
 }
 
 void ApplicationBootstrap::createDisplacementCatalog() {
-    FileDisplacementCatalogPorts ports;
-    ports.logger = createLogger("IDisplacementCatalog");
-    displacement_catalog = std::make_unique<FileDisplacementCatalog>(ports, catalogs_dir_ + "/displacements");
+    FileDisplacementCatalogPorts ports{
+        createLogger("IDisplacementCatalog")
+    };
+
+    displacement_catalog =
+        std::make_unique<FileDisplacementCatalog>(
+            ports,
+            catalogs_dir_ + "/displacements"
+        );
 }
 
 void ApplicationBootstrap::createPrinterCatalog() {
-    FilePrinterCatalogPorts ports;
-    ports.logger = createLogger("IPrinterCatalog");
-    printer_catalog = std::make_unique<FilePrinterCatalog>(ports, catalogs_dir_ + "/printers");
+    FilePrinterCatalogPorts ports{
+        createLogger("IPrinterCatalog")
+    };
+
+    printer_catalog =
+        std::make_unique<FilePrinterCatalog>(
+            ports,
+            catalogs_dir_ + "/printers"
+        );
 }
 
 void ApplicationBootstrap::createPrecisionCatalog() {
-    FilePrecisionCatalogPorts ports;
-    ports.logger = createLogger("IPrecisionCatalog");
-    precision_catalog = std::make_unique<FilePrecisionCatalog>(ports, catalogs_dir_ + "/precision_classes");
+    FilePrecisionCatalogPorts ports{
+        createLogger("IPrecisionCatalog")
+    };
+
+    precision_catalog =
+        std::make_unique<FilePrecisionCatalog>(
+            ports,
+            catalogs_dir_ + "/precision_classes"
+        );
 }
 
 void ApplicationBootstrap::createPressureUnitCatalog() {
-    FilePressureUnitCatalogPorts ports;
-    ports.logger = createLogger("IPressureUnitCatalog");
-    pressure_unit_catalog = std::make_unique<FilePressureUnitCatalog>(ports, catalogs_dir_ + "/pressure_units");
+    FilePressureUnitCatalogPorts ports{
+        createLogger("IPressureUnitCatalog")
+    };
+
+    pressure_unit_catalog =
+        std::make_unique<FilePressureUnitCatalog>(
+            ports,
+            catalogs_dir_ + "/pressure_units"
+        );
 }
 
 void ApplicationBootstrap::createGaugeCatalog() {
-    FileGaugeCatalogPorts ports;
-    ports.logger = createLogger("IGaugeCatalog");
-    gauge_catalog = std::make_unique<FileGaugeCatalog>(ports, catalogs_dir_ + "/gauges");
+    FileGaugeCatalogPorts ports{
+        createLogger("IGaugeCatalog")
+    };
+
+    gauge_catalog =
+        std::make_unique<FileGaugeCatalog>(
+            ports,
+            catalogs_dir_ + "/gauges"
+        );
 }
 
 void ApplicationBootstrap::createInfoSettingsStorage() {
-    QtInfoSettingsStorageCatalogs catalogs;
-    catalogs.displacement_catalog = *displacement_catalog;
-    catalogs.gauge_catalog = *gauge_catalog;
-    catalogs.precision_catalog = *precision_catalog;
-    catalogs.pressure_unit_catalog = *pressure_unit_catalog;
-    catalogs.printer_catalog = *printer_catalog;
+    QtInfoSettingsStorageCatalogs catalogs{
+        *displacement_catalog,
+        *gauge_catalog,
+        *precision_catalog,
+        *pressure_unit_catalog,
+        *printer_catalog
+    };
 
-    info_settings_storage = std::make_unique<QtInfoSettingsStorage>(
-        "CleanGraduator",
-        "CleanGraduator",
-        catalogs
-    );
+    info_settings_storage =
+        std::make_unique<QtInfoSettingsStorage>(
+            "CleanGraduator",
+            "CleanGraduator",
+            catalogs
+        );
 }
+
 
 void ApplicationBootstrap::createProcessRunner() {
     process_runner = std::make_unique<ProcessRunner>(createLogger("ProcessRunner"), *process_lifecycle);

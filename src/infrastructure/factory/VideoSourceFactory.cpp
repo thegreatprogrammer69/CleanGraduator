@@ -3,7 +3,7 @@
 #include <stdexcept>
 
 #include "../../application/ports/outbound/logging/ILoggerFactory.h"
-#include "domain/ports/inbound/IVideoSource.h"
+#include "../../domain/ports/video/IVideoSource.h"
 #include "infrastructure/video/linux/v4l/V4LCamera.h"
 #include "infrastructure/video/linux/v4l/V4LCameraConfig.h"
 #include "infrastructure/video/linux/gstreamer/GStreamerCamera.h"
@@ -79,11 +79,12 @@ std::vector<std::unique_ptr<domain::ports::IVideoSource>> infra::repo::VideoSour
             config.height = section.getInt("height", 640);
             config.fps = section.getInt("fps", 30);
 
-            camera::VideoSourcePorts ports;
-            ports.logger = *logger_factory_.create();
-            ports.clock = clock_;
+            camera::VideoSourcePorts ports {
+                *logger_factory_.create(),
+                    clock_
+            };
 
-            result.push_back(std::make_unique<camera::DShowCamera>(ports, config));
+            result.push_back(std::make_unique<camera::DShowCamera>(std::move(ports), config));
             continue;
 ;        }
 #endif

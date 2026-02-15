@@ -1,6 +1,6 @@
 #ifndef UNTITLED_CONSOLELOGGER_H
 #define UNTITLED_CONSOLELOGGER_H
-#include <domain/ports/outbound/ILogger.h>
+#include <domain/ports/logging/ILogger.h>
 #include <iostream>
 
 namespace infra::logging {

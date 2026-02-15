@@ -8,7 +8,7 @@
 #include <string>
 
 #include "domain/fmt/Logger.h"
-#include "domain/ports/inbound/IVideoSource.h"
+#include "../../../../domain/ports/video/IVideoSource.h"
 #include "GStreamerCameraConfig.h"
 #include "infrastructure/video/VideoSourcePorts.h"
 #include "infrastructure/video/VideoSourceNotifier.h"

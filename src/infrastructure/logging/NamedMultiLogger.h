@@ -6,7 +6,7 @@
 
 #include "../../application/models/logging/LogEntry.h"
 #include "application/ports/outbound/logging/ILogSource.h"
-#include "domain/ports/outbound/ILogger.h"
+#include "domain/ports/logging/ILogger.h"
 
 namespace domain::ports {
     struct IClock;

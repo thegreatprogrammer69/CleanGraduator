@@ -3,8 +3,8 @@
 #include <mutex>
 #include <vector>
 
-#include "domain/ports/inbound/IAngleSource.h"
-#include "domain/ports/outbound/IVideoSourceObserver.h"
+#include "../../domain/ports/angle/IAngleSource.h"
+#include "../../domain/ports/video/IVideoSourceObserver.h"
 #include "AngleFromVideoInteractorPorts.h"
 #include "domain/fmt/Logger.h"
 

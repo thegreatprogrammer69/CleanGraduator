@@ -2,7 +2,7 @@
 
 #include "../../domain/core/common/VideoFramePacket.h"
 #include "../../domain/core/common/VideoSourceError.h"
-#include "domain/ports/inbound/IVideoSource.h"
+#include "../../domain/ports/video/IVideoSource.h"
 
 using namespace mvvm;
 

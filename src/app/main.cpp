@@ -7,6 +7,7 @@
 #include "bootstrap/UiBootstrap.h"
 #include "bootstrap/UseCasesBootstrap.h"
 #include "bootstrap/ViewModelsBootstrap.h"
+#include "../domain/ports/angle/IAngleSource.h"
 #include "ui/widgets/QtMainWindow.h"
 
 namespace {
@@ -24,6 +25,9 @@ namespace {
 
 int main(int argc, char *argv[]) {
     QApplication app(argc, argv);
+
+    Q_INIT_RESOURCE(resources);
+
     app.setStyleSheet(appStyle());
 
     const std::string setup_dir = (argc > 1) ? argv[1] : "../../../setup";
@@ -44,6 +48,9 @@ int main(int argc, char *argv[]) {
         ui_bootstrap.initialize();
 
         ui_bootstrap.main_window->show();
+
+        application_bootstrap.angle_sources[0]->start();
+        application_bootstrap.angle_sources[1]->start();
 
         return app.exec();
     }

@@ -2,7 +2,7 @@
 
 #include <set>
 
-#include "domain/ports/inbound/IVideoSource.h"
+#include "../../domain/ports/video/IVideoSource.h"
 
 using namespace application::orchestrators;
 

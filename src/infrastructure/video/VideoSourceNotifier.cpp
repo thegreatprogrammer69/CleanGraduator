@@ -1,6 +1,6 @@
 #include "VideoSourceNotifier.h"
 
-#include "domain/ports/outbound/IVideoSourceObserver.h"
+#include "../../domain/ports/video/IVideoSourceObserver.h"
 
 using namespace infra::camera::detail;
 using namespace domain::ports;

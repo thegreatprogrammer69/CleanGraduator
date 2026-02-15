@@ -69,7 +69,7 @@ void main()
     vec4 baseColor;
 
     if (uFormat == 0) {
-        baseColor = vec4(texture2D(uTex, vTex).rgb, 1.0);
+        baseColor = vec4(texture2D(uTex, vTex).bgr, 1.0);
     } else {
         float sx = vTex.x * float(uWidth)  - 0.5;
         float sy = vTex.y * float(uHeight) - 0.5;
