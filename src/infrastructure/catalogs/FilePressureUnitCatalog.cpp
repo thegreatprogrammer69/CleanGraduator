@@ -1,9 +1,19 @@
 #include "FilePressureUnitCatalog.h"
 
+#include <codecvt>
 #include <fstream>
 #include <locale>
 #include <stdexcept>
 #include <unordered_map>
+
+#include "application/fmt/fmt_application.h"
+
+namespace {
+inline std::string to_utf8(const std::wstring& ws) {
+    std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> conv;
+    return conv.to_bytes(ws);
+}
+}
 
 namespace infra::catalogs {
 
@@ -22,9 +32,12 @@ const std::unordered_map<std::wstring, domain::common::PressureUnit> unitMap = {
     {L"kgf_m2", domain::common::PressureUnit::kgf_m2}};
 }
 
-FilePressureUnitCatalog::FilePressureUnitCatalog(std::string filePath) {
+FilePressureUnitCatalog::FilePressureUnitCatalog(FilePressureUnitCatalogPorts ports, std::string filePath)
+    : logger_(ports.logger)
+{
     std::wifstream file(filePath);
     if (!file.is_open()) {
+        logger_.error("Failed to open pressure unit catalog file: {}", filePath);
         throw std::runtime_error("failed to open file: " + filePath);
     }
 
@@ -38,10 +51,12 @@ FilePressureUnitCatalog::FilePressureUnitCatalog(std::string filePath) {
 
         auto it = unitMap.find(line);
         if (it == unitMap.end()) {
+            logger_.error("Unknown pressure unit in line: {}", to_utf8(line));
             continue;
         }
 
         units_.push_back(PressureUnit{.unit = it->second});
+        logger_.info("Loaded pressure unit model: {}", units_.back());
     }
 }
 

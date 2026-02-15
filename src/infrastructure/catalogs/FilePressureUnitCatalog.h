@@ -6,19 +6,29 @@
 #include <optional>
 
 #include "../../application/ports/outbound/catalogs/IPressureUnitCatalog.h"
+#include "domain/fmt/Logger.h"
+
+namespace domain::ports {
+    struct ILogger;
+}
 
 namespace infra::catalogs {
+
+    struct FilePressureUnitCatalogPorts {
+        domain::ports::ILogger& logger;
+    };
 
     class FilePressureUnitCatalog final
         : public application::ports::IPressureUnitCatalog {
     public:
-        explicit FilePressureUnitCatalog(std::string filePath);
+        explicit FilePressureUnitCatalog(FilePressureUnitCatalogPorts ports, std::string filePath);
 
         std::vector<application::models::PressureUnit> list() const override;
         std::optional<application::models::PressureUnit> at(int idx) const override;
 
     private:
         std::vector<application::models::PressureUnit> units_;
+        fmt::Logger logger_;
     };
 
 }

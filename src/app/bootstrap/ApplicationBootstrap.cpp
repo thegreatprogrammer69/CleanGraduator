@@ -377,15 +377,31 @@ void ApplicationBootstrap::createDisplacementCatalog() {
 }
 
 void ApplicationBootstrap::createPrinterCatalog() {
+    FilePrinterCatalogPorts ports {
+        .logger = createLogger("IPrinterCatalog"),
+    };
+    printer_catalog = std::make_unique<FilePrinterCatalog>(ports, catalogs_dir_ + "/printers");
 }
 
 void ApplicationBootstrap::createPrecisionCatalog() {
+    FilePrecisionCatalogPorts ports {
+        .logger = createLogger("IPrecisionCatalog"),
+    };
+    precision_catalog = std::make_unique<FilePrecisionCatalog>(ports, catalogs_dir_ + "/precision_classes");
 }
 
 void ApplicationBootstrap::createPressureUnitCatalog() {
+    FilePressureUnitCatalogPorts ports {
+        .logger = createLogger("IPressureUnitCatalog"),
+    };
+    pressure_unit_catalog = std::make_unique<FilePressureUnitCatalog>(ports, catalogs_dir_ + "/pressure_units");
 }
 
 void ApplicationBootstrap::createGaugeCatalog() {
+    FileGaugeCatalogPorts ports {
+        .logger = createLogger("IGaugeCatalog"),
+    };
+    gauge_catalog = std::make_unique<FileGaugeCatalog>(ports, catalogs_dir_ + "/gauges");
 }
 
 void ApplicationBootstrap::createSettingsStorage() {
