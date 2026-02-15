@@ -11,7 +11,7 @@ namespace application::ports {
     struct ILogSource {
         virtual ~ILogSource() = default;
 
-        virtual const std::vector<models::LogEntry>& history() const = 0;
+        virtual std::vector<models::LogEntry> history() const = 0;
         virtual void addSink(ILogSink& sink) = 0;
         virtual void removeSink(ILogSink& sink) = 0;
     };

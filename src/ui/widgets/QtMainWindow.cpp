@@ -4,7 +4,9 @@
 #include "ui/widgets/settings/QtSettingsWidget.h"
 
 #include <QWidget>
+#include <QMenuBar>
 #include <QHBoxLayout>
+#include <QDockWidget>
 #include <QVBoxLayout>
 #include <QGridLayout>
 #include <QFrame>
@@ -19,6 +21,7 @@
 #include <QTableWidget>
 #include <QHeaderView>
 
+#include "logging/QtLogViewerWidget.h"
 #include "video/QtVideoSourceGridWidget.h"
 #include "viewmodels/MainWindowViewModel.h"
 
@@ -30,6 +33,14 @@ ui::QtMainWindow::QtMainWindow(
     : QMainWindow(parent)
     , model_(model)
 {
+    // Dock с логами
+    createLogDock(model_.logViewerViewModel());
+
+    // Меню View → Logs
+    auto* viewMenu = menuBar()->addMenu(tr("Диагностика"));
+    viewMenu->addAction(log_dock_->toggleViewAction());
+
+
     /* ================= Central ================= */
     auto* central = new QWidget(this);
     central->setObjectName("centralWidget");
@@ -159,4 +170,18 @@ ui::QtMainWindow::QtMainWindow(
 
     root->addWidget(m_cameras);
     root->addWidget(rightPanel, 1);
+}
+
+void ui::QtMainWindow::createLogDock(mvvm::LogViewerViewModel& log_vm)
+{
+    log_widget_ = new QtLogViewerWidget(log_vm);
+
+    log_dock_ = new QDockWidget(tr("Просмотрщик логов"), this);
+    log_dock_->setWidget(log_widget_);
+
+    log_dock_->setAllowedAreas(Qt::AllDockWidgetAreas);
+    addDockWidget(Qt::BottomDockWidgetArea, log_dock_);
+
+    log_dock_->setFloating(true);
+    log_dock_->hide();
 }

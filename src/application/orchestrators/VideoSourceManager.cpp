@@ -47,13 +47,15 @@ void VideoSourceManager::open(const std::vector<int>& ids)
 
 void VideoSourceManager::openAll()
 {
-    closeAll();
-    opened_.clear();
+    std::set current_ids(opened_.begin(), opened_.end());
 
     for (auto& vs : storage_.all())
     {
-        vs.video_source.open();
-        opened_.push_back(vs.id);
+        if (current_ids.count(vs.id) != 0)
+            continue; // уже открыт
+
+        if (vs.video_source.open())
+            opened_.push_back(vs.id);
     }
 }
 

@@ -49,7 +49,7 @@ void NamedMultiLogger::error(const std::string &msg) {
     pushLog(LogLevel::Error, msg);
 }
 
-const std::vector<application::models::LogEntry> & NamedMultiLogger::history() const {
+std::vector<LogEntry> NamedMultiLogger::history() const {
     std::lock_guard lock(logs_mutex_);
     return {logs_.begin(), logs_.end()};
 }

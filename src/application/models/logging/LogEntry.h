@@ -7,9 +7,13 @@
 
 namespace application::models {
     struct LogEntry {
-        domain::common::Timestamp timestamp;
-        LogLevel level;
-        std::string message;
+        domain::common::Timestamp timestamp{};
+        LogLevel level = LogLevel::Info;
+        std::string message{};
+
+        bool operator==(const LogEntry& other) const {
+            return timestamp == other.timestamp;
+        }
     };
 }
 

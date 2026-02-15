@@ -9,7 +9,15 @@ namespace application::ports {
 namespace application::models {
     struct LogSource {
         std::string name;
-        ports::ILogSource& source;
+        ports::ILogSource* source;
+
+        bool operator == (const LogSource& o) const {
+            return name == o.name;
+        }
+
+        bool operator != (const LogSource& o) const {
+            return !(*this == o);
+        }
     };
 }
 

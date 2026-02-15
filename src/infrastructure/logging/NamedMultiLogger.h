@@ -28,7 +28,7 @@ namespace infra::logging {
         void warn(const std::string &msg) override;
         void error(const std::string &msg) override;
 
-        const std::vector<application::models::LogEntry>& history() const override;
+        std::vector<application::models::LogEntry> history() const override;
         void addSink(application::ports::ILogSink& sink) override;
         void removeSink(application::ports::ILogSink& sink) override;
 

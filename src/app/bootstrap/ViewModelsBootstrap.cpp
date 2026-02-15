@@ -2,6 +2,7 @@
 
 #include "ApplicationBootstrap.h"
 #include "UseCasesBootstrap.h"
+#include "viewmodels/logging/LogViewerViewModel.h"
 
 using namespace mvvm;
 
@@ -19,6 +20,8 @@ void ViewModelsBootstrap::initialize() {
 
     createCameraGridSettings();
     createSettings();
+
+    createLogViewer();
 
     createMainWindow();
 }
@@ -65,10 +68,15 @@ void ViewModelsBootstrap::createSettings() {
     settings = std::make_unique<SettingsViewModel>(deps);
 }
 
+void ViewModelsBootstrap::createLogViewer() {
+    log_viewer = std::make_unique<LogViewerViewModel>(*app_.log_sources_storage);
+}
+
 void ViewModelsBootstrap::createMainWindow() {
      MainWindowViewModelDeps deps {
+         .log_viewer = *log_viewer,
          .grid = *video_source_grid,
-         .settings = *settings
+         .settings = *settings,
      };
      main_window = std::make_unique<MainWindowViewModel>(deps);
 }

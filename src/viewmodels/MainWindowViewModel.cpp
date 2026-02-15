@@ -9,6 +9,10 @@ mvvm::MainWindowViewModel::MainWindowViewModel(MainWindowViewModelDeps deps)
 mvvm::MainWindowViewModel::~MainWindowViewModel() {
 }
 
+mvvm::LogViewerViewModel & mvvm::MainWindowViewModel::logViewerViewModel() {
+    return deps_.log_viewer;
+}
+
 mvvm::VideoSourceGridViewModel & mvvm::MainWindowViewModel::videoSourceGridViewModel() {
     return deps_.grid;
 }

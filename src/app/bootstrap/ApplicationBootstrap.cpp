@@ -120,10 +120,10 @@ ILogger & ApplicationBootstrap::createLogger(const std::string &logger_name) {
 
     LogSource log_source {
         .name = logger_name,
-        .source = multi_logger_ref
+        .source = &multi_logger_ref
     };
 
-    log_sources_storage->addLogSource(log_source);
+    dynamic_cast<LogSourcesStorage*>(log_sources_storage.get())->addLogSource(log_source);
 
     return multi_logger_ref;
 }

@@ -5,6 +5,8 @@ add_library(viewmodels STATIC
         settings/CameraGridSettingsViewModel.cpp
         settings/SettingsViewModel.cpp
 
+        logging/LogViewerViewModel.cpp
+
         component/ComponentConfigViewModel.cpp
 
         MainWindowViewModel.cpp

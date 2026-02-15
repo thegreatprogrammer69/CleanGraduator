@@ -27,6 +27,9 @@ public:
     std::unique_ptr<mvvm::CameraGridSettingsViewModel> camera_grid_settings;
     std::unique_ptr<mvvm::SettingsViewModel> settings;
 
+    // Просмотрщик логов
+    std::unique_ptr<mvvm::LogViewerViewModel> log_viewer;
+
     // Главное окно
     std::unique_ptr<mvvm::MainWindowViewModel> main_window;
 
@@ -39,6 +42,8 @@ private:
 
     void createCameraGridSettings();
     void createSettings();
+
+    void createLogViewer();
 
     void createMainWindow();
 };

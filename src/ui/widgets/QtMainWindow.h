@@ -1,12 +1,19 @@
 #ifndef CLEANGRADUATOR_MAINWINDOW_H
 #define CLEANGRADUATOR_MAINWINDOW_H
+
 #include <QMainWindow>
+
+class QDockWidget;
 
 namespace mvvm {
     class MainWindowViewModel;
+    class LogViewerViewModel;
 }
 
 namespace ui {
+
+    class QtLogViewerWidget;
+
     namespace widgets {
         class QtVideoSourceGridWidget;
         class QtStackPanelWidget;
@@ -15,13 +22,21 @@ namespace ui {
     class QtMainWindow final : public QMainWindow {
         Q_OBJECT
     public:
-        explicit QtMainWindow(mvvm::MainWindowViewModel& model, QWidget *parent = nullptr);
+        explicit QtMainWindow(
+            mvvm::MainWindowViewModel& model,
+            QWidget *parent = nullptr
+        );
 
     private:
-        widgets::QtVideoSourceGridWidget *m_cameras = nullptr;
+        void createLogDock(mvvm::LogViewerViewModel& log_vm);
+
+    private:
+        widgets::QtVideoSourceGridWidget* m_cameras = nullptr;
+        QtLogViewerWidget* log_widget_ = nullptr;
+        QDockWidget* log_dock_ = nullptr;
+
         mvvm::MainWindowViewModel& model_;
     };
 }
 
-
-#endif //CLEANGRADUATOR_MAINWINDOW_H
+#endif

@@ -13,6 +13,8 @@ add_library(ui SHARED
         widgets/settings/QtSettingsWidget.cpp
         widgets/settings/QtSettingsWidget.h
 
+        widgets/logging/QtLogViewerWidget.cpp
+
         widgets/QtMainWindow.cpp
         widgets/QtMainWindow.h
 )

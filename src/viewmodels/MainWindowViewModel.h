@@ -3,10 +3,12 @@
 
 
 namespace mvvm {
+    class LogViewerViewModel;
     class SettingsViewModel;
     class VideoSourceGridViewModel;
 
     struct MainWindowViewModelDeps {
+        LogViewerViewModel &log_viewer;
         VideoSourceGridViewModel &grid;
         SettingsViewModel &settings;
     };
@@ -15,6 +17,7 @@ namespace mvvm {
     public:
         explicit MainWindowViewModel(MainWindowViewModelDeps deps);
         ~MainWindowViewModel();
+        LogViewerViewModel& logViewerViewModel();
         VideoSourceGridViewModel& videoSourceGridViewModel();
         SettingsViewModel& settingsViewModel();
 

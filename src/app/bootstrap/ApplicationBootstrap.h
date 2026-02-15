@@ -15,6 +15,7 @@ namespace application::orchestrators {
 }
 
 namespace application::ports {
+    struct ILogSourcesStorage;
     struct ISettingsStorage;
     struct IPrinterCatalog;
     struct IPressureUnitCatalog;
@@ -24,9 +25,6 @@ namespace application::ports {
     struct IVideoAngleSourcesStorage;
 }
 
-namespace infra::storage {
-    class LogSourcesStorage;
-}
 
 namespace infra::logging {
     class NamedMultiLogger;
@@ -56,7 +54,7 @@ public:
 
     ////////////////////////////////////////////////////////////////////////////////////////
     // Логеры
-    std::unique_ptr<infra::storage::LogSourcesStorage> log_sources_storage;
+    std::unique_ptr<application::ports::ILogSourcesStorage> log_sources_storage;
     std::vector<std::unique_ptr<domain::ports::ILogger>> loggers;
 
     ////////////////////////////////////////////////////////////////////////////////////////
