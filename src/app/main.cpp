@@ -3,7 +3,7 @@
 #include <QTextStream>
 #include <QFile>
 
-#include "app/bootstrap/ApplicationBootstrap.h"
+#include "bootstrap/ApplicationBootstrap.h"
 #include "bootstrap/UiBootstrap.h"
 #include "bootstrap/UseCasesBootstrap.h"
 #include "bootstrap/ViewModelsBootstrap.h"

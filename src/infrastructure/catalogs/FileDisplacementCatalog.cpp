@@ -82,10 +82,10 @@ FileDisplacementCatalog::FileDisplacementCatalog(FileDisplacementCatalogPorts po
         }
 
         try {
-            displacements_.push_back(Displacement{
-                .id = id,
-                .name = from_utf8(namePart),
-            });
+            Displacement d;
+            d.id = id;
+            d.name = from_utf8(namePart);
+            displacements_.push_back(d);
             logger_.info("Loaded displacement model: {}", displacements_.back());
         } catch (const std::range_error&) {
             logger_.error("Invalid UTF-8 in displacement line: {}", line);

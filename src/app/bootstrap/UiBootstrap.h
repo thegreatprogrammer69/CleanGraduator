@@ -2,8 +2,9 @@
 #define CLEANGRADUATOR_UIBOOTSTRAP_H
 #include <memory>
 
-#include "ui/widgets/QtMainWindow.h"
-
+namespace ui {
+    class QtMainWindow;
+}
 
 class ViewModelsBootstrap;
 
@@ -14,7 +15,7 @@ public:
 
     void initialize();
 
-    std::unique_ptr<QMainWindow> main_window;
+    std::unique_ptr<ui::QtMainWindow> main_window;
 
 private:
     ViewModelsBootstrap& view_models_;

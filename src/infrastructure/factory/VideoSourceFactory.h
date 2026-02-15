@@ -4,13 +4,13 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include "infrastructure/video/VideoSourcePorts.h"
 
 namespace application::ports {
     struct ILoggerFactory;
 }
 
 namespace domain::ports {
+    struct IClock;
     struct IVideoSource;
 }
 

@@ -3,6 +3,12 @@
 #include "ApplicationBootstrap.h"
 #include "UseCasesBootstrap.h"
 #include "viewmodels/logging/LogViewerViewModel.h"
+#include "viewmodels/MainWindowViewModel.h"
+#include "viewmodels/settings/CameraGridSettingsViewModel.h"
+#include "viewmodels/settings/InfoSettingsViewModel.h"
+#include "viewmodels/settings/SettingsViewModel.h"
+#include "viewmodels/video/VideoSourceGridViewModel.h"
+#include "viewmodels/video/VideoSourceViewModel.h"
 
 using namespace mvvm;
 

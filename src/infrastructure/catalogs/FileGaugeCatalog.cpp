@@ -108,10 +108,10 @@ FileGaugeCatalog::FileGaugeCatalog(FileGaugeCatalogPorts ports, std::string file
         }
 
         try {
-            gauges_.push_back(application::models::Gauge{
-                .name = from_utf8(name_utf8),
-                .values = std::move(values)
-            });
+            application::models::Gauge g;
+            g.name = from_utf8(name_utf8);
+            g.values = std::move(values);
+            gauges_.push_back(g);
             logger_.info("Loaded gauge model: {}", gauges_.back());
         } catch (const std::range_error&) {
             logger_.error("Invalid UTF-8 in gauge line: {}", line);

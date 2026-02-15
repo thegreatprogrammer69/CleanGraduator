@@ -4,6 +4,7 @@
 #include <QMainWindow>
 
 class QDockWidget;
+class QWidget;
 
 namespace mvvm {
     class MainWindowViewModel;
@@ -26,6 +27,7 @@ namespace ui {
             mvvm::MainWindowViewModel& model,
             QWidget *parent = nullptr
         );
+        ~QtMainWindow() override;
 
     private:
         void createLogDock(mvvm::LogViewerViewModel& log_vm);

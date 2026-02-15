@@ -67,7 +67,9 @@ FilePressureUnitCatalog::FilePressureUnitCatalog(FilePressureUnitCatalogPorts po
             continue;
         }
 
-        units_.push_back(PressureUnit{.unit = it->second});
+        PressureUnit pu;
+        pu.unit = it->second;
+        units_.push_back(pu);
         logger_.info("Loaded pressure unit model: {}", units_.back());
     }
 }

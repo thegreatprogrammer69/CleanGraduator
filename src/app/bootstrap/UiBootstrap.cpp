@@ -1,6 +1,6 @@
 #include "UiBootstrap.h"
-
 #include "ViewModelsBootstrap.h"
+#include "ui/widgets/QtMainWindow.h"
 
 UiBootstrap::UiBootstrap(ViewModelsBootstrap &view_models)
     : view_models_(view_models)
@@ -15,5 +15,5 @@ void UiBootstrap::initialize() {
 }
 
 void UiBootstrap::createMainWindow() {
-    main_window = std::make_unique<ui::QtMainWindow>(*view_models_.main_window);
+    main_window = std::make_unique<ui::QtMainWindow>(*view_models_.main_window, nullptr);
 }

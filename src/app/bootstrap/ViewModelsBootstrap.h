@@ -3,12 +3,15 @@
 #include <memory>
 #include <vector>
 
-#include "viewmodels/MainWindowViewModel.h"
-#include "viewmodels/settings/CameraGridSettingsViewModel.h"
-#include "viewmodels/settings/InfoSettingsViewModel.h"
-#include "viewmodels/settings/SettingsViewModel.h"
-#include "viewmodels/video/VideoSourceGridViewModel.h"
-#include "viewmodels/video/VideoSourceViewModel.h"
+namespace mvvm {
+    class MainWindowViewModel;
+    class LogViewerViewModel;
+    class SettingsViewModel;
+    class InfoSettingsViewModel;
+    class CameraGridSettingsViewModel;
+    class VideoSourceGridViewModel;
+    class VideoSourceViewModel;
+}
 
 class UseCasesBootstrap;
 class ApplicationBootstrap;

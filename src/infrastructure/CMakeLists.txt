@@ -1,6 +1,4 @@
 set(SOURCES
-
-
         catalogs/FileDisplacementCatalog.cpp
         catalogs/FileGaugeCatalog.cpp
         catalogs/FilePrinterCatalog.cpp
@@ -41,6 +39,8 @@ set(SOURCES
         factory/VideoSourceFactory.cpp
         factory/VideoSourceOverlayFactory.cpp
         factory/PressureSourceFactory.cpp
+
+
 )
 
 if (WIN32)
@@ -68,12 +68,6 @@ elseif(UNIX)
             platform/sleep/sleep_linux.cpp
             video/linux/v4l/V4LCamera.cpp
             video/linux/gstreamer/GStreamerCamera.cpp
-            factory/AngleCalculatorFactory.h
-            factory/AngleCalculatorFactory.cpp
-            factory/CalibrationCalculatorFactory.cpp
-            factory/CalibrationCalculatorFactory.h
-            pressure/PressureSourceNotifier.cpp
-            pressure/PressureSourceNotifier.h
     )
 endif()
 

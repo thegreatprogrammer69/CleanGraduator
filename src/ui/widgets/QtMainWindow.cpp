@@ -1,8 +1,5 @@
 #include "QtMainWindow.h"
 
-#include "ui/widgets/layout/QtStackPanelWidget.h"
-#include "ui/widgets/settings/QtSettingsWidget.h"
-
 #include <QWidget>
 #include <QMenuBar>
 #include <QHBoxLayout>
@@ -21,10 +18,12 @@
 #include <QTableWidget>
 #include <QHeaderView>
 
+#include "ui/widgets/layout/QtStackPanelWidget.h"
+#include "ui/widgets/settings/QtSettingsWidget.h"
+
 #include "logging/QtLogViewerWidget.h"
 #include "video/QtVideoSourceGridWidget.h"
 #include "viewmodels/MainWindowViewModel.h"
-
 
 ui::QtMainWindow::QtMainWindow(
     mvvm::MainWindowViewModel& model,
@@ -170,6 +169,9 @@ ui::QtMainWindow::QtMainWindow(
 
     root->addWidget(m_cameras);
     root->addWidget(rightPanel, 1);
+}
+
+ui::QtMainWindow::~QtMainWindow() {
 }
 
 void ui::QtMainWindow::createLogDock(mvvm::LogViewerViewModel& log_vm)
