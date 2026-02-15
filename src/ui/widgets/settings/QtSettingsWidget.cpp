@@ -4,6 +4,7 @@
 #include <QGroupBox>
 
 #include "QtCameraGridSettingsWidget.h"
+#include "QtInfoSettingsWidget.h"
 #include "viewmodels/settings/SettingsViewModel.h"
 
 QtSettingsWidget::QtSettingsWidget(
@@ -22,7 +23,15 @@ void QtSettingsWidget::buildUi() {
     mainLayout->setContentsMargins(8, 8, 8, 8);
     mainLayout->setSpacing(12);
 
-    // ── Camera grid settings ────────────────────────────────────────
+    auto* infoSettingsGroup = new QGroupBox(tr("Параметры"), this);
+    auto* infoSettingsLayout = new QVBoxLayout(infoSettingsGroup);
+    infoSettingsLayout->setContentsMargins(8, 8, 8, 8);
+    infoSettingsLayout->setSpacing(8);
+
+    infoSettingsWidget_ = new QtInfoSettingsWidget(model_.infoSettingsViewModel(), infoSettingsGroup);
+    infoSettingsLayout->addWidget(infoSettingsWidget_);
+    mainLayout->addWidget(infoSettingsGroup);
+
     auto* cameraGridGroup = new QGroupBox(tr("Камеры"), this);
 
     auto* cameraGridLayout = new QVBoxLayout(cameraGridGroup);

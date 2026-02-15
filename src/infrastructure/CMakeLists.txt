@@ -33,6 +33,7 @@ set(SOURCES
         overlay/crosshair/CrosshairVideoOverlay.cpp
 
         storage/QtSettingsStorage.cpp
+        storage/QtInfoSettingsStorage.cpp
         storage/VideoAngleSourcesStorage.cpp
         storage/LogSourcesStorage.cpp
 

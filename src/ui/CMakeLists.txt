@@ -10,6 +10,8 @@ add_library(ui SHARED
 
         widgets/settings/QtCameraGridSettingsWidget.cpp
         widgets/settings/QtCameraGridSettingsWidget.h
+        widgets/settings/QtInfoSettingsWidget.cpp
+        widgets/settings/QtInfoSettingsWidget.h
         widgets/settings/QtSettingsWidget.cpp
         widgets/settings/QtSettingsWidget.h
 

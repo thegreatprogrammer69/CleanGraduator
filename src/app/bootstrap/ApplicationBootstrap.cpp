@@ -1,5 +1,4 @@
 #include "ApplicationBootstrap.h"
-#include "ApplicationBootstrap.h"
 
 #include <stdexcept>
 #include <vector>
@@ -30,6 +29,7 @@
 #include "infrastructure/pressure/dm5002/PressureSourcePorts.h"
 #include "infrastructure/process/ProcessLifecycle.h"
 #include "infrastructure/storage/QtSettingsStorage.h"
+#include "infrastructure/storage/QtInfoSettingsStorage.h"
 #include "infrastructure/storage/VideoAngleSourcesStorage.h"
 #include "infrastructure/storage/LogSourcesStorage.h"
 #include "viewmodels/settings/SettingsViewModel.h"
@@ -100,6 +100,8 @@ void ApplicationBootstrap::initialize() {
     createVideoSourcesManager();
 
     createPressureSource();
+
+    createSettingsStorage();
 }
 
 ILogger & ApplicationBootstrap::createLogger(const std::string &logger_name) {
@@ -243,6 +245,20 @@ void ApplicationBootstrap::createGaugeCatalog() {
 
 void ApplicationBootstrap::createSettingsStorage() {
     settings_storage = std::make_unique<QtSettingsStorage>("CleanGraduator", "CleanGraduator");
+
+    QtInfoSettingsStorageCatalogs catalogs {
+        .displacement_catalog = *displacement_catalog,
+        .gauge_catalog = *gauge_catalog,
+        .precision_catalog = *precision_catalog,
+        .pressure_unit_catalog = *pressure_unit_catalog,
+        .printer_catalog = *printer_catalog,
+    };
+
+    info_settings_storage = std::make_unique<QtInfoSettingsStorage>(
+        "CleanGraduator",
+        "CleanGraduator",
+        catalogs
+    );
 }
 
 void ApplicationBootstrap::createProcessRunner() {

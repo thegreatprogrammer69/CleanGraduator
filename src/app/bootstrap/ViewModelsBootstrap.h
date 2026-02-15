@@ -5,6 +5,7 @@
 
 #include "viewmodels/MainWindowViewModel.h"
 #include "viewmodels/settings/CameraGridSettingsViewModel.h"
+#include "viewmodels/settings/InfoSettingsViewModel.h"
 #include "viewmodels/settings/SettingsViewModel.h"
 #include "viewmodels/video/VideoSourceGridViewModel.h"
 #include "viewmodels/video/VideoSourceViewModel.h"
@@ -19,18 +20,15 @@ public:
 
     void initialize();
 
-    // Сетка камер
     std::vector<std::unique_ptr<mvvm::VideoSourceViewModel>> video_source_view_models;
     std::unique_ptr<mvvm::VideoSourceGridViewModel> video_source_grid;
 
-    // Настройки
     std::unique_ptr<mvvm::CameraGridSettingsViewModel> camera_grid_settings;
+    std::unique_ptr<mvvm::InfoSettingsViewModel> info_settings;
     std::unique_ptr<mvvm::SettingsViewModel> settings;
 
-    // Просмотрщик логов
     std::unique_ptr<mvvm::LogViewerViewModel> log_viewer;
 
-    // Главное окно
     std::unique_ptr<mvvm::MainWindowViewModel> main_window;
 
 private:
@@ -41,6 +39,7 @@ private:
     void createVideoSourceGrid();
 
     void createCameraGridSettings();
+    void createInfoSettings();
     void createSettings();
 
     void createLogViewer();
