@@ -2,6 +2,7 @@
 
 #include <QComboBox>
 #include <QFormLayout>
+#include <QLabel>
 
 #include "viewmodels/settings/InfoSettingsViewModel.h"
 
@@ -48,11 +49,18 @@ void QtInfoSettingsWidget::buildUi() {
         printerCombo_->addItem(QString::fromUtf8(value.c_str()));
     }
 
-    layout->addRow(tr("Перемещение"), displacementCombo_);
-    layout->addRow(tr("Манометр"), gaugeCombo_);
-    layout->addRow(tr("Класс точности"), precisionCombo_);
-    layout->addRow(tr("Ед. давления"), pressureUnitCombo_);
-    layout->addRow(tr("Принтер"), printerCombo_);
+    auto addRow = [&](const QString& text, QWidget* field)
+    {
+        auto* label = new QLabel(text, this);
+        label->setProperty("variant", "big");
+        layout->addRow(label, field);
+    };
+
+    addRow(tr("Манометр"), gaugeCombo_);
+    addRow(tr("Ед. давления"), pressureUnitCombo_);
+    addRow(tr("Класс точности"), precisionCombo_);
+    addRow(tr("Подставка"), displacementCombo_);
+    addRow(tr("Принтер"), printerCombo_);
 }
 
 void QtInfoSettingsWidget::connectUi() {

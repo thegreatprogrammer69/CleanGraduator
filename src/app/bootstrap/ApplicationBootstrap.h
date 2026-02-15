@@ -16,7 +16,6 @@ namespace application::orchestrators {
 
 namespace application::ports {
     struct ILogSourcesStorage;
-    struct ISettingsStorage;
     struct IInfoSettingsStorage;
     struct IPrinterCatalog;
     struct IPressureUnitCatalog;
@@ -100,7 +99,6 @@ public:
 
     ////////////////////////////////////////////////////////////////////////////////////////
     // Сохранение настроек
-    std::unique_ptr<application::ports::ISettingsStorage> settings_storage;
     std::unique_ptr<application::ports::IInfoSettingsStorage> info_settings_storage;
 
 
@@ -141,7 +139,7 @@ private:
     void createGaugeCatalog();
 
     ////////////////////////////////////////////////////////////////////////////////////////
-    void createSettingsStorage();
+    void createInfoSettingsStorage();
 
     ////////////////////////////////////////////////////////////////////////////////////////
     void createProcessRunner();

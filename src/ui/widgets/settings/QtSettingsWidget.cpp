@@ -23,6 +23,7 @@ void QtSettingsWidget::buildUi() {
     mainLayout->setContentsMargins(8, 8, 8, 8);
     mainLayout->setSpacing(12);
 
+
     auto* infoSettingsGroup = new QGroupBox(tr("Параметры"), this);
     auto* infoSettingsLayout = new QVBoxLayout(infoSettingsGroup);
     infoSettingsLayout->setContentsMargins(8, 8, 8, 8);
@@ -30,10 +31,9 @@ void QtSettingsWidget::buildUi() {
 
     infoSettingsWidget_ = new QtInfoSettingsWidget(model_.infoSettingsViewModel(), infoSettingsGroup);
     infoSettingsLayout->addWidget(infoSettingsWidget_);
-    mainLayout->addWidget(infoSettingsGroup);
+
 
     auto* cameraGridGroup = new QGroupBox(tr("Камеры"), this);
-
     auto* cameraGridLayout = new QVBoxLayout(cameraGridGroup);
     cameraGridLayout->setContentsMargins(8, 8, 8, 8);
     cameraGridLayout->setSpacing(8);
@@ -43,7 +43,9 @@ void QtSettingsWidget::buildUi() {
 
     cameraGridLayout->addWidget(cameraGridWidget_);
 
+
     mainLayout->addWidget(cameraGridGroup);
+    mainLayout->addWidget(infoSettingsGroup);
 
     mainLayout->addStretch();
 }

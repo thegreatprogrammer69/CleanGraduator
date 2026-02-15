@@ -28,7 +28,6 @@
 #include "infrastructure/pressure/PressureSourceNotifier.h"
 #include "infrastructure/pressure/dm5002/PressureSourcePorts.h"
 #include "infrastructure/process/ProcessLifecycle.h"
-#include "infrastructure/storage/QtSettingsStorage.h"
 #include "infrastructure/storage/QtInfoSettingsStorage.h"
 #include "infrastructure/storage/VideoAngleSourcesStorage.h"
 #include "infrastructure/storage/LogSourcesStorage.h"
@@ -101,7 +100,7 @@ void ApplicationBootstrap::initialize() {
 
     createPressureSource();
 
-    createSettingsStorage();
+    createInfoSettingsStorage();
 }
 
 ILogger & ApplicationBootstrap::createLogger(const std::string &logger_name) {
@@ -243,9 +242,7 @@ void ApplicationBootstrap::createGaugeCatalog() {
     gauge_catalog = std::make_unique<FileGaugeCatalog>(ports, catalogs_dir_ + "/gauges");
 }
 
-void ApplicationBootstrap::createSettingsStorage() {
-    settings_storage = std::make_unique<QtSettingsStorage>("CleanGraduator", "CleanGraduator");
-
+void ApplicationBootstrap::createInfoSettingsStorage() {
     QtInfoSettingsStorageCatalogs catalogs {
         .displacement_catalog = *displacement_catalog,
         .gauge_catalog = *gauge_catalog,

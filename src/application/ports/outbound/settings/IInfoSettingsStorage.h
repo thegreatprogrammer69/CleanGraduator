@@ -1,8 +1,6 @@
 #ifndef CLEANGRADUATOR_IINFOSETTINGSSTORAGE_H
 #define CLEANGRADUATOR_IINFOSETTINGSSTORAGE_H
 
-#include "ISettingsStorage.h"
-
 namespace application::ports {
     struct InfoSettingsData {
         int displacement_idx{0};
@@ -12,10 +10,10 @@ namespace application::ports {
         int printer_idx{0};
     };
 
-    struct IInfoSettingsStorage : ISettingsStorage {
+    struct IInfoSettingsStorage  {
         virtual InfoSettingsData loadInfoSettings() = 0;
         virtual void saveInfoSettings(const InfoSettingsData& data) = 0;
-        ~IInfoSettingsStorage() override = default;
+        virtual ~IInfoSettingsStorage() = default;
     };
 }
 
