@@ -31,19 +31,25 @@ inline std::vector<std::wstring> split(const std::wstring& s, wchar_t delim) {
     return out;
 }
 
-inline bool tryParseDouble(const std::wstring& token, double& out) {
+    inline bool tryParseDouble(const std::wstring& token, double& out) {
     try {
-        size_t idx = 0;
-        out = std::stod(token, &idx);
-        for (; idx < token.size(); ++idx) {
-            if (!std::iswspace(token[idx])) return false;
-        }
-        return true;
+        std::wstring normalized = token;
+
+        // нормализуем разделитель
+        std::replace(normalized.begin(), normalized.end(), L',', L'.');
+
+        // парсим в C-locale
+        std::string utf8 = to_utf8(normalized);
+        std::istringstream iss(utf8);
+        iss.imbue(std::locale::classic());
+
+        iss >> out;
+
+        return !iss.fail() && iss.eof();
     } catch (...) {
         return false;
     }
 }
-
 } // namespace
 
 namespace infra::catalogs {

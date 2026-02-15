@@ -14,10 +14,12 @@ public:
 
     void initialize();
 
-    std::unique_ptr<ui::QtMainWindow> main_window;
+    std::unique_ptr<QMainWindow> main_window;
 
 private:
     ViewModelsBootstrap& view_models_;
+
+    void createMainWindow();
 };
 
 

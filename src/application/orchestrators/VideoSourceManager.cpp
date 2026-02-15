@@ -6,7 +6,7 @@
 
 using namespace application::orchestrators;
 
-VideoSourceManager::VideoSourceManager(ports::IVideoSourcesStorage &storage)
+VideoSourceManager::VideoSourceManager(ports::IVideoAngleSourcesStorage &storage)
     : storage_(storage)
 {
 }

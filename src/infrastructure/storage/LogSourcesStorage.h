@@ -6,7 +6,7 @@
 namespace infra::storage {
     class LogSourcesStorage final : public application::ports::ILogSourcesStorage {
     public:
-        void add(application::models::LogSource source);
+        void addLogSource(application::models::LogSource source);
 
         // ILogSourcesStorage
         std::vector<std::string> all() const override;

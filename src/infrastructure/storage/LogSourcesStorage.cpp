@@ -4,7 +4,7 @@
 
 #include "application/ports/outbound/logging/ILogSource.h"
 
-void infra::storage::LogSourcesStorage::add(application::models::LogSource source) {
+void infra::storage::LogSourcesStorage::addLogSource(application::models::LogSource source) {
     sources_.emplace(source.name, source);
 }
 
@@ -20,5 +20,8 @@ std::vector<std::string> infra::storage::LogSourcesStorage::all() const {
 
 std::optional<application::models::LogSource> infra::storage::LogSourcesStorage::at(const std::string &name) const {
     auto it = sources_.find(name);
-    return it != sources_.end() ? it->second : std::nullopt;
+    if (it != sources_.end()) {
+        return it->second;
+    }
+    return std::nullopt;
 }

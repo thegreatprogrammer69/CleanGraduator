@@ -11,15 +11,18 @@ using namespace application::models;
 using namespace infra::logging;
 
 NamedMultiLogger::NamedMultiLogger(
-    std::vector<ILogger*> loggers,
     IClock &clock,
     std::string name)
-        : name_(std::move(name)), loggers_(std::move(loggers)), clock_(clock)
+        : name_(std::move(name)), clock_(clock)
 
 {
 }
 
 NamedMultiLogger::~NamedMultiLogger() {
+}
+
+void NamedMultiLogger::addLogger(ILogger &logger) {
+    loggers_.push_back(&logger);
 }
 
 void NamedMultiLogger::info(const std::string &msg) {
@@ -44,10 +47,6 @@ void NamedMultiLogger::error(const std::string &msg) {
     }
 
     pushLog(LogLevel::Error, msg);
-}
-
-const std::string & NamedMultiLogger::name() const {
-    return name_;
 }
 
 const std::vector<application::models::LogEntry> & NamedMultiLogger::history() const {

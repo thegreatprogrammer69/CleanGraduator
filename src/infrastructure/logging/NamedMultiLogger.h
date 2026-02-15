@@ -19,8 +19,10 @@ namespace application::ports {
 namespace infra::logging {
     class NamedMultiLogger final : public domain::ports::ILogger, public application::ports::ILogSource {
     public:
-        explicit NamedMultiLogger(std::vector<ILogger*> loggers, domain::ports::IClock& clock, std::string name);
+        explicit NamedMultiLogger(domain::ports::IClock& clock, std::string name);
         ~NamedMultiLogger() override;
+
+        void addLogger(ILogger& logger);
 
         void info(const std::string &msg) override;
         void warn(const std::string &msg) override;
@@ -35,7 +37,7 @@ namespace infra::logging {
 
     private:
         const std::string name_;
-        const std::vector<ILogger*> loggers_;
+        std::vector<ILogger*> loggers_;
         domain::ports::IClock& clock_;
 
         mutable std::mutex logs_mutex_;

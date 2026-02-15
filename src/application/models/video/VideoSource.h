@@ -2,12 +2,14 @@
 #define CLEANGRADUATOR_VIDEOSOURCE_H
 
 namespace domain::ports {
+    struct IAngleSource;
     struct IVideoSource;
 }
 
 namespace application::models {
-    struct VideoSource {
+    struct VideoAngleSource {
         int id;
+        domain::ports::IAngleSource& angle_source;
         domain::ports::IVideoSource& video_source;
     };
 }

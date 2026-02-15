@@ -22,8 +22,10 @@ set(SOURCES
 
         logging/ConsoleLogger.cpp
         logging/FileLogger.cpp
+        logging/NamedMultiLogger.cpp
 
         clock/SessionClock.cpp
+        clock/UptimeClock.cpp
 
         process/ProcessLifecycle.cpp
         process/ProcessRunner.cpp
@@ -31,7 +33,8 @@ set(SOURCES
         overlay/crosshair/CrosshairVideoOverlay.cpp
 
         storage/QtSettingsStorage.cpp
-        storage/VideoSourcesStorage.cpp
+        storage/VideoAngleSourcesStorage.cpp
+        storage/LogSourcesStorage.cpp
 
         factory/AngleCalculatorFactory.cpp
         factory/CalibrationCalculatorFactory.cpp

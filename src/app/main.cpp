@@ -4,6 +4,9 @@
 #include <QFile>
 
 #include "app/bootstrap/ApplicationBootstrap.h"
+#include "bootstrap/UiBootstrap.h"
+#include "bootstrap/UseCasesBootstrap.h"
+#include "bootstrap/ViewModelsBootstrap.h"
 #include "ui/widgets/QtMainWindow.h"
 
 namespace {
@@ -28,10 +31,20 @@ int main(int argc, char *argv[]) {
     const std::string log_dir = (argc > 1) ? argv[1] : "../../../logs";
 
     try {
-        AppBootstrap bootstrap(setup_dir, catalog_dir, log_dir);
-        bootstrap.initialize();
-        auto& window = bootstrap.mainWindow();
-        window.show();
+        ApplicationBootstrap application_bootstrap(setup_dir, catalog_dir, log_dir);
+        application_bootstrap.initialize();
+
+        UseCasesBootstrap use_cases_bootstrap(application_bootstrap);
+        use_cases_bootstrap.initialize();
+
+        ViewModelsBootstrap view_models_bootstrap(application_bootstrap, use_cases_bootstrap);
+        view_models_bootstrap.initialize();
+
+        UiBootstrap ui_bootstrap(view_models_bootstrap);
+        ui_bootstrap.initialize();
+
+        ui_bootstrap.main_window->show();
+
         return app.exec();
     }
     catch (const std::exception& e) {

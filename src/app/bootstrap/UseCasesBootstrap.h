@@ -2,17 +2,19 @@
 #define CLEANGRADUATOR_USECASESBOOTSTRAP_H
 #include <memory>
 
-#include "application/usecases/cameras/CloseAllCameras.h"
-#include "application/usecases/cameras/OpenAllCameras.h"
-#include "application/usecases/cameras/OpenSelectedCameras.h"
+
+namespace application::usecase {
+    class CloseAllCameras;
+    class OpenAllCameras;
+    class OpenSelectedCameras;
+}
 
 class ApplicationBootstrap;
 
 class UseCasesBootstrap {
 public:
-    explicit UseCasesBootstrap(ApplicationBootstrap& application)
-        : application_(application)
-    {}
+    explicit UseCasesBootstrap(ApplicationBootstrap& application);
+    ~UseCasesBootstrap();
 
     void initialize();
 
@@ -25,10 +27,11 @@ public:
     // std::unique_ptr<application::usecase::ConfigureComponent> configure_component;
 
 private:
-    ApplicationBootstrap& application_;
-    std::unique_ptr<application::usecase::OpenSelectedCameras> createOpenSelectedCameras();
-    std::unique_ptr<application::usecase::OpenAllCameras> createOpenAllCameras();
-    std::unique_ptr<application::usecase::CloseAllCameras> createCloseAllCameras();
+    ApplicationBootstrap& app_;
+
+    void createOpenSelectedCameras();
+    void createOpenAllCameras();
+    void createCloseAllCameras();
 
 };
 

@@ -1,12 +1,12 @@
 #ifndef CLEANGRADUATOR_VIDEOSOURCEMANAGER_H
 #define CLEANGRADUATOR_VIDEOSOURCEMANAGER_H
-#include "../ports/outbound/video/IVideoSourcesStorage.h"
+#include "../ports/outbound/video/IVideoAngleSourcesStorage.h"
 
 
 namespace application::orchestrators {
     class VideoSourceManager {
     public:
-        explicit VideoSourceManager(ports::IVideoSourcesStorage& storage);
+        explicit VideoSourceManager(ports::IVideoAngleSourcesStorage& storage);
 
         void open(const std::vector<int>& ids);
         void openAll();
@@ -15,7 +15,7 @@ namespace application::orchestrators {
         const std::vector<int>& opened() const;
 
     private:
-        ports::IVideoSourcesStorage& storage_;
+        ports::IVideoAngleSourcesStorage& storage_;
         std::vector<int> opened_;
     };
 }

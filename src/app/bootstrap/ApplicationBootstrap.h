@@ -21,7 +21,7 @@ namespace application::ports {
     struct IPrecisionCatalog;
     struct IGaugeCatalog;
     struct IDisplacementCatalog;
-    struct IVideoSourcesStorage;
+    struct IVideoAngleSourcesStorage;
 }
 
 namespace infra::storage {
@@ -55,32 +55,28 @@ public:
     domain::ports::ILogger& createLogger(const std::string &logger_name);
 
     ////////////////////////////////////////////////////////////////////////////////////////
+    // Логеры
+    std::unique_ptr<infra::storage::LogSourcesStorage> log_sources_storage;
+    std::vector<std::unique_ptr<domain::ports::ILogger>> loggers;
+
+    ////////////////////////////////////////////////////////////////////////////////////////
     // Жизненный цикл и Время
     std::unique_ptr<domain::ports::IProcessLifecycle> process_lifecycle;
     domain::ports::IClock* session_clock;
     std::unique_ptr<domain::ports::IClock> uptime_clock;
 
     ////////////////////////////////////////////////////////////////////////////////////////
-    // Логеры
-    std::vector<std::unique_ptr<domain::ports::ILogger>> loggers;
-    std::vector<std::unique_ptr<infra::logging::NamedMultiLogger>> named_multi_loggers;
-    std::unique_ptr<infra::storage::LogSourcesStorage> log_sources_storage;
+    // Угломер и калибратор
+    std::unique_ptr<domain::ports::IAngleCalculator> anglemeter;
+    std::unique_ptr<domain::ports::ICalibrationCalculator> calibrator;
 
     ////////////////////////////////////////////////////////////////////////////////////////
     // Видеокамеры
     std::vector<std::unique_ptr<domain::ports::IVideoSource>> video_sources;
-    std::unique_ptr<application::ports::IVideoSourcesStorage> video_sources_storage;
+    std::vector<std::unique_ptr<domain::ports::IAngleSource>> angle_sources;
+    std::unique_ptr<application::ports::IVideoAngleSourcesStorage> videoangle_sources_storage;
     // Оркестратор, открывающий и закрывающий камеры по индексам
     std::unique_ptr<application::orchestrators::VideoSourceManager> video_source_manager;
-
-    ////////////////////////////////////////////////////////////////////////////////////////
-    // Источники угла
-    std::vector<std::unique_ptr<domain::ports::IAngleSource>> angle_sources;
-
-    ////////////////////////////////////////////////////////////////////////////////////////
-    // Угломер и калибратор
-    std::unique_ptr<domain::ports::IAngleCalculator> anglemeter;
-    std::unique_ptr<domain::ports::ICalibrationCalculator> calibrator;
 
     ////////////////////////////////////////////////////////////////////////////////////////
     // Источник давления. Может быть какой-то датик давления, например ДМ5002М
@@ -118,17 +114,21 @@ private:
     std::string logs_dir_;
 
     ////////////////////////////////////////////////////////////////////////////////////////
+    void createLogSourcesStorage();
+
+    ////////////////////////////////////////////////////////////////////////////////////////
     void createLifecycle();
     void createClock();
 
     ////////////////////////////////////////////////////////////////////////////////////////
-    void createVideoSources();
-    void createVideoSourceStorage();
-    void createVideoSourceManager();
-
-    ////////////////////////////////////////////////////////////////////////////////////////
     void createAnglemeter();
     void createCalibrator();
+
+    ////////////////////////////////////////////////////////////////////////////////////////
+    void createVideoSources();
+    void createAngleSources();
+    void createVideoSourcesStorage();
+    void createVideoSourcesManager();
 
     ////////////////////////////////////////////////////////////////////////////////////////
     void createPressureSource();

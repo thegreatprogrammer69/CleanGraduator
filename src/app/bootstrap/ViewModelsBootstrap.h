@@ -20,7 +20,7 @@ public:
     void initialize();
 
     // Сетка камер
-    std::vector<std::unique_ptr<mvvm::VideoSourceViewModel>> video_source;
+    std::vector<std::unique_ptr<mvvm::VideoSourceViewModel>> video_source_view_models;
     std::unique_ptr<mvvm::VideoSourceGridViewModel> video_source_grid;
 
     // Настройки
@@ -31,13 +31,16 @@ public:
     std::unique_ptr<mvvm::MainWindowViewModel> main_window;
 
 private:
-    std::vector<std::unique_ptr<mvvm::VideoSourceViewModel>> createVideoSourceViewModels();
-    std::unique_ptr<mvvm::VideoSourceGridViewModel> createVideoSourceGrid();
+    ApplicationBootstrap& app_;
+    UseCasesBootstrap& use_cases_;
 
-    std::unique_ptr<mvvm::CameraGridSettingsViewModel> createCameraGridSettings();
-    std::unique_ptr<mvvm::SettingsViewModel> createSettings();
+    void createVideoSourceViewModels();
+    void createVideoSourceGrid();
 
-    std::unique_ptr<mvvm::MainWindowViewModel> createMainWindow();
+    void createCameraGridSettings();
+    void createSettings();
+
+    void createMainWindow();
 };
 
 #endif //CLEANGRADUATOR_VIEWMODELSBOOTSTRAP_H

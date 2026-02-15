@@ -1,8 +1,10 @@
 #include "ApplicationBootstrap.h"
+#include "ApplicationBootstrap.h"
 
 #include <stdexcept>
 #include <vector>
 
+#include "application/orchestrators/AngleFromVideoInteractor.h"
 #include "application/orchestrators/VideoSourceManager.h"
 #include "application/ports/outbound/logging/ILoggerFactory.h"
 #include "infrastructure/calculation/angle/CastAnglemeter.h"
@@ -20,6 +22,7 @@
 #include "infrastructure/factory/VideoSourceFactory.h"
 #include "infrastructure/logging/ConsoleLogger.h"
 #include "infrastructure/logging/FileLogger.h"
+#include "infrastructure/logging/NamedMultiLogger.h"
 #include "infrastructure/motor/g540/G540LPT.h"
 #include "infrastructure/overlay/crosshair/CrosshairVideoOverlay.h"
 #include "infrastructure/platform/com/ComPort.h"
@@ -27,10 +30,13 @@
 #include "infrastructure/pressure/dm5002/PressureSourcePorts.h"
 #include "infrastructure/process/ProcessLifecycle.h"
 #include "infrastructure/storage/QtSettingsStorage.h"
-#include "infrastructure/storage/VideoSourcesStorage.h"
+#include "infrastructure/storage/VideoAngleSourcesStorage.h"
+#include "infrastructure/storage/LogSourcesStorage.h"
 #include "viewmodels/settings/SettingsViewModel.h"
-
 #include "domain/ports/inbound/IVideoSource.h"
+#include "domain/ports/inbound/IPressureActuator.h"
+#include "domain/ports/outbound/IResultStore.h"
+#include "infrastructure/process/ProcessRunner.h"
 
 using namespace mvvm;
 using namespace domain::ports;
@@ -58,256 +64,73 @@ struct LoggerFactory final : ILoggerFactory {
     ~LoggerFactory() override = default;
     ILogger* create() override {
         cams++;
-        return &app.createLogger("IVideoSource " + std::to_string(cams));
+        return &app.createLogger("IVideoSource_" + std::to_string(cams));
     }
     int cams = -1;
     ApplicationBootstrap& app;
 };
 
+ApplicationBootstrap::ApplicationBootstrap(const std::string &setup_dir, const std::string &catalogs_dir, const std::string &logs_dir)
+    : setup_dir_(setup_dir), catalogs_dir_(catalogs_dir), logs_dir_(logs_dir)
+{
+}
 
-// AppBootstrap::AppBootstrap(const std::string &setup_dir, const std::string &catalogs_dir, const std::string &logs_dir)
-//     : setup_dir_(setup_dir), catalogs_dir_(catalogs_dir), logs_dir_(logs_dir)
-// {
-// }
-//
-// AppBootstrap::~AppBootstrap() {
-// }
-//
-//
-// ILogger& AppBootstrap::createLogger(const std::string &logger_name) {
-//     loggers_.push_back(std::make_unique<ConsoleLogger>());
-//     return *loggers_.back();
-// }
-//
-//
-// std::unique_ptr<IProcessLifecycle> AppBootstrap::createLifecycle() {
-//     return std::make_unique<ProcessLifecycle>();
-// }
-//
-// std::vector<std::unique_ptr<IVideoSource>> AppBootstrap::createVideoSources() {
-//     LoggerFactory logger_factory(*this);
-//     VideoSourceFactory factory(setup_dir_ + "/cameras.ini",process_lifecycle_->clock(), logger_factory);
-//     return factory.load();
-// }
-//
-// std::unique_ptr<IVideoSourcesStorage> AppBootstrap::createVideoSourceStorage() {
-//     std::vector<VideoSource> sources; int id = 1;
-//     for (const auto& video_source : video_sources_) {
-//         VideoSource source {
-//             .id = id,
-//             .video_source = *video_source
-//         };
-//         sources.push_back(source); id++;
-//     }
-//     return std::make_unique<VideoSourcesStorage>(sources);
-// }
-//
-// std::unique_ptr<VideoSourceManager> AppBootstrap::createVideoSourceManager() {
-//     return std::make_unique<VideoSourceManager>(*video_source_storage_);
-// }
-//
-// std::unique_ptr<IAngleCalculator> AppBootstrap::createAnglemeter() {
-//     AnglemeterPorts ports {
-//         .logger = createLogger("IAngleCalculator"),
-//     };
-//     AngleCalculatorFactory factory(setup_dir_ + "/anglemeter.ini", ports);
-//     return factory.load();
-// }
-//
-// std::vector<std::unique_ptr<AngleFromVideoInteractor>> AppBootstrap::createAngleFromVideoInteractors() {
-//     std::vector<std::unique_ptr<AngleFromVideoInteractor>> resut;
-//
-//     int i = 0;
-//     for (const auto& video_source : video_sources_) {
-//         AngleFromVideoInteractorPorts ports {
-//             .logger = createLogger("AngleFromVideoInteractor_" + std::to_string(i)),
-//             .anglemeter = *anglemeter_,
-//             .video_source = *video_source
-//         };
-//         resut.push_back(std::make_unique<AngleFromVideoInteractor>(ports));
-//         i++;
-//     }
-//
-//     return resut;
-// }
-//
-// std::unique_ptr<ICalibrationCalculator> AppBootstrap::createCalibrator() {
-//     CalibrationCalculatorPorts ports {
-//         .logger = createLogger("ICalibrationCalculator"),
-//     };
-//     CalibrationCalculatorFactory factory(setup_dir_ + "/calibrator.ini", ports);
-//     return factory.load();
-// }
-//
-//
-// std::unique_ptr<IPressureSource> AppBootstrap::createPressureSource() {
-//     PressureSourcePorts ports {
-//         .logger = createLogger("IPressureSource"),
-//         .clock = process_lifecycle_->clock()
-//     };
-//     PressureSourceFactory factory(setup_dir_ + "/pressure_source.ini", ports);
-//     return factory.load();
-// }
-//
-// // std::unique_ptr<IResultStore> AppBootstrap::createResultStore() {
-// //
-// //
-// // }
-//
-// std::unique_ptr<IDisplacementCatalog> AppBootstrap::createDisplacementCatalog() {
-//     return std::make_unique<FileDisplacementCatalog>(catalogs_dir_ + "/displacements");
-// }
-//
-// std::unique_ptr<IPrinterCatalog> AppBootstrap::createPrinterCatalog() {
-//     return std::make_unique<FilePrinterCatalog>(catalogs_dir_ + "/printers");
-// }
-//
-// std::unique_ptr<IPrecisionCatalog> AppBootstrap::createPrecisionCatalog() {
-//     return std::make_unique<FilePrecisionCatalog>(catalogs_dir_ + "/precision_classes");
-// }
-//
-// std::unique_ptr<IPressureUnitCatalog> AppBootstrap::createPressureUnitCatalog() {
-//     return std::make_unique<FilePressureUnitCatalog>(catalogs_dir_ + "/pressure_units");
-// }
-//
-// std::unique_ptr<IGaugeCatalog> AppBootstrap::createGaugeCatalog() {
-//     return std::make_unique<FileGaugeCatalog>(catalogs_dir_ + "/gauges");
-// }
-//
-//
-// std::unique_ptr<ISettingsStorage> AppBootstrap::createSettingsStorage() {
-//     return std::make_unique<infra::settings::QtSettingsStorage>("CleanGraduator", "CleanGraduator");
-// }
-//
-//
-// std::unique_ptr<ProcessRunner> AppBootstrap::createProcessRunner() {
-//     return std::make_unique<ProcessRunner>(createLogger("ProcessRunner"), *process_lifecycle_);
-// }
-//
-// std::unique_ptr<OpenSelectedCameras> AppBootstrap::createOpenSelectedCamerasUseCase() {
-//     return std::make_unique<OpenSelectedCameras>(*video_source_manager_);
-// }
-//
-// std::vector<std::unique_ptr<VideoSourceViewModel>> AppBootstrap::createVideoSourceViewModels() {
-//     std::vector<std::unique_ptr<VideoSourceViewModel>> view_models;
-//     for (const auto& video_source : video_sources_) {
-//         view_models.push_back(std::make_unique<VideoSourceViewModel>(*video_source));
-//     }
-//     return view_models;
-// }
-//
-// std::unique_ptr<VideoSourceGridViewModel> AppBootstrap::createVideoSourceGridViewModel() {
-//     constexpr int columns = 2;
-//     constexpr int rows = 4;
-//     constexpr double aspectRatioHW = 4.0 / 3.0;
-//
-//     VideoSourceGridViewModel::Slots vm_slots;
-//     int i = 0;
-//     for (const auto& view_model : video_source_view_models_) {
-//
-//         int row = i % rows;
-//         int col = i / rows;
-//
-//         vm_slots.emplace_back(row, col, *view_model);
-//
-//         ++i;
-//     }
-//
-//     return std::make_unique<VideoSourceGridViewModel>(
-//         vm_slots,
-//         rows,
-//         columns,
-//         aspectRatioHW
-//     );
-// }
-//
-// std::unique_ptr<CameraGridSettingsViewModel> AppBootstrap::createCameraGridSettingsViewModel() {
-//     CameraGridSettingsViewModelDeps deps {};
-//     return std::make_unique<CameraGridSettingsViewModel>();
-// }
-//
-// std::unique_ptr<SettingsViewModel> AppBootstrap::createSettingsViewModel() {
-//     SettingsViewModelDeps deps {
-//         .camera_grid = *camera_grid_settings_view_model_
-//     };
-//     return std::make_unique<SettingsViewModel>(deps);
-// }
-//
-// std::unique_ptr<MainWindowViewModel> AppBootstrap::createMainWindowViewModel() {
-//     MainWindowViewModelDeps deps {
-//         .grid = *video_source_grid_view_model_,
-//         .settings = *settings_view_model_
-//     };
-//     return std::make_unique<MainWindowViewModel>(deps);
-// }
-//
-// std::unique_ptr<ui::QtMainWindow> AppBootstrap::createQtMainWindow() {
-//     return std::make_unique<ui::QtMainWindow>(*main_window_view_model_);
-// }
-//
-//
-// void AppBootstrap::initialize() {
-//
-//     process_lifecycle_ = createLifecycle();
-//
-//     process_runner_ = createProcessRunner();
-//
-//     video_sources_ = createVideoSources();
-//
-//     // Алгоритмя вычисления угла и калибровки
-//     anglemeter_ = createAnglemeter();
-//     calibrator_ = createCalibrator();
-//
-//     // Перехватывает видео с источника и вычисляет угол, один для каждой камеры
-//     angle_from_video_interactors_ = createAngleFromVideoInteractors();
-//
-//     // Датчик давления
-//     pressure_source_ = createPressureSource();
-//
-//     // Каталоги
-//     displacement_catalog_ = createDisplacementCatalog();
-//     printer_catalog_ = createPrinterCatalog();
-//     precision_catalog_ = createPrecisionCatalog();
-//     pressure_unit_catalog_ = createPressureUnitCatalog();
-//     gauge_catalog_ = createGaugeCatalog();
-//
-//
-//     // Storages
-//     video_source_storage_ = createVideoSourceStorage();
-//     settings_storage_ = createSettingsStorage();
-//
-//     // Orchestrators
-//     video_source_manager_ = createVideoSourceManager();
-//
-//
-//     // Use Cases
-//     open_selected_cameras_use_case_ = createOpenSelectedCamerasUseCase();
-//
-//     // ViewModels
-//     video_source_view_models_ = createVideoSourceViewModels();
-//     video_source_grid_view_model_ = createVideoSourceGridViewModel();
-//
-//     // Строка номеров камер
-//     camera_grid_settings_view_model_ = createCameraGridSettingsViewModel();
-//
-//     // Страница настроек
-//     settings_view_model_ = createSettingsViewModel();
-//
-//     // Главное окно
-//     main_window_view_model_ = createMainWindowViewModel();
-//
-//     // Widgets
-//     main_window_ = createQtMainWindow();
-//
-// }
+ApplicationBootstrap::~ApplicationBootstrap() {
 
-// ui::QtMainWindow& AppBootstrap::mainWindow() {
-//     if (!main_window_) {
-//         throw std::runtime_error("AppBootstrap::initialize must be called before mainWindow()");
-//     }
-//
-//     return *main_window_;
-// }
+}
+
+void ApplicationBootstrap::initialize() {
+    createLogSourcesStorage();
+
+    createLifecycle();
+    createClock();
+
+    createDisplacementCatalog();
+    createGaugeCatalog();
+    createPrecisionCatalog();
+    createPrinterCatalog();
+    createPressureUnitCatalog();
+
+    createAnglemeter();
+    createCalibrator();
+
+    createVideoSources();
+    createAngleSources();
+    createVideoSourcesStorage();
+    createVideoSourcesManager();
+
+    createPressureSource();
+}
+
+ILogger & ApplicationBootstrap::createLogger(const std::string &logger_name) {
+    auto multi_logger = std::make_unique<NamedMultiLogger>(*uptime_clock, logger_name);
+
+    auto file_logger = std::make_unique<FileLogger>(logs_dir_ + "/" + logger_name + ".log");
+    multi_logger->addLogger(*file_logger);
+
+    auto console_logger = std::make_unique<ConsoleLogger>();
+    multi_logger->addLogger(*console_logger);
+
+    NamedMultiLogger &multi_logger_ref = *multi_logger;
+
+    loggers.emplace_back(std::move(file_logger));
+    loggers.emplace_back(std::move(console_logger));
+    loggers.emplace_back(std::move(multi_logger));
+
+
+    LogSource log_source {
+        .name = logger_name,
+        .source = multi_logger_ref
+    };
+
+    log_sources_storage->addLogSource(log_source);
+
+    return multi_logger_ref;
+}
+
+void ApplicationBootstrap::createLogSourcesStorage() {
+    log_sources_storage = std::make_unique<LogSourcesStorage>();
+}
 
 void ApplicationBootstrap::createLifecycle() {
     process_lifecycle = std::make_unique<ProcessLifecycle>();
@@ -324,24 +147,38 @@ void ApplicationBootstrap::createVideoSources() {
     video_sources = factory.load();
 }
 
-void ApplicationBootstrap::createVideoSourceStorage() {
-    auto storage = std::make_unique<VideoSourcesStorage>();
-
-    std::vector<VideoSource> sources; int id = 1;
+// В случае кластера из RepkaPI можно сделать разветвление в цикле for
+void ApplicationBootstrap::createAngleSources() {
+    int idx = 1;
     for (const auto& video_source : video_sources) {
-        const VideoSource source {
-            .id = id,
-            .video_source = *video_source
+        AngleFromVideoInteractorPorts ports {
+            .logger = createLogger("IAngleSource_" + std::to_string(idx)),
+            .anglemeter = *anglemeter,
+            .video_source = *video_source,
         };
-        storage->add(source);
-        id++;
+        auto angle_source = std::make_unique<AngleFromVideoInteractor>(ports);
+        angle_sources.emplace_back(std::move(angle_source));
+        idx++;
     }
-
-    video_sources_storage = std::move(storage);
 }
 
-void ApplicationBootstrap::createVideoSourceManager() {
-    video_source_manager = std::make_unique<VideoSourceManager>(*video_sources_storage);
+void ApplicationBootstrap::createVideoSourcesStorage() {
+    auto storage = std::make_unique<VideoAngleSourcesStorage>();
+
+    for (int i = 0; i < video_sources.size(); i++) {
+        const VideoAngleSource source {
+            .id = i + 1,
+            .angle_source = *angle_sources[i],
+            .video_source = *video_sources[i]
+        };
+        storage->add(source);
+    }
+
+    videoangle_sources_storage = std::move(storage);
+}
+
+void ApplicationBootstrap::createVideoSourcesManager() {
+    video_source_manager = std::make_unique<VideoSourceManager>(*videoangle_sources_storage);
 }
 
 void ApplicationBootstrap::createAnglemeter() {
@@ -405,7 +242,9 @@ void ApplicationBootstrap::createGaugeCatalog() {
 }
 
 void ApplicationBootstrap::createSettingsStorage() {
+    settings_storage = std::make_unique<QtSettingsStorage>("CleanGraduator", "CleanGraduator");
 }
 
 void ApplicationBootstrap::createProcessRunner() {
+    process_runner = std::make_unique<ProcessRunner>(createLogger("ProcessRunner"), *process_lifecycle);
 }

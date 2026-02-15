@@ -1,0 +1,55 @@
+[INFO] Loaded gauge model: Gauge{name='М-3ВУКс-16', values=[0, 2, 4, 6, 8, 10, 12, 14, 16]}
+[ERROR] Failed to parse gauge value '0.5' in line: М-3ВУКс-25;0;0.5;1.0;1.5;2.0;2.5
+[ERROR] Failed to parse gauge value '1.0' in line: М-3ВУКс-25;0;0.5;1.0;1.5;2.0;2.5
+[ERROR] Failed to parse gauge value '1.5' in line: М-3ВУКс-25;0;0.5;1.0;1.5;2.0;2.5
+[ERROR] Failed to parse gauge value '2.0' in line: М-3ВУКс-25;0;0.5;1.0;1.5;2.0;2.5
+[ERROR] Failed to parse gauge value '2.5' in line: М-3ВУКс-25;0;0.5;1.0;1.5;2.0;2.5
+[INFO] Loaded gauge model: Gauge{name='М-3ВУКс-25', values=[0]}
+[INFO] Loaded gauge model: Gauge{name='М-3ВУКс-16', values=[0, 2, 4, 6, 8, 10, 12, 14, 16]}
+[ERROR] Failed to parse gauge value '0.5' in line: М-3ВУКс-25;0;0.5;1.0;1.5;2.0;2.5
+[ERROR] Failed to parse gauge value '1.0' in line: М-3ВУКс-25;0;0.5;1.0;1.5;2.0;2.5
+[ERROR] Failed to parse gauge value '1.5' in line: М-3ВУКс-25;0;0.5;1.0;1.5;2.0;2.5
+[ERROR] Failed to parse gauge value '2.0' in line: М-3ВУКс-25;0;0.5;1.0;1.5;2.0;2.5
+[ERROR] Failed to parse gauge value '2.5' in line: М-3ВУКс-25;0;0.5;1.0;1.5;2.0;2.5
+[INFO] Loaded gauge model: Gauge{name='М-3ВУКс-25', values=[0]}
+[INFO] Loaded gauge model: Gauge{name='М-3ВУКс-16', values=[0, 2, 4, 6, 8, 10, 12, 14, 16]}
+[ERROR] Failed to parse gauge value '0.5' in line: М-3ВУКс-25;0;0.5;1.0;1.5;2.0;2.5
+[ERROR] Failed to parse gauge value '1.0' in line: М-3ВУКс-25;0;0.5;1.0;1.5;2.0;2.5
+[ERROR] Failed to parse gauge value '1.5' in line: М-3ВУКс-25;0;0.5;1.0;1.5;2.0;2.5
+[ERROR] Failed to parse gauge value '2.0' in line: М-3ВУКс-25;0;0.5;1.0;1.5;2.0;2.5
+[ERROR] Failed to parse gauge value '2.5' in line: М-3ВУКс-25;0;0.5;1.0;1.5;2.0;2.5
+[INFO] Loaded gauge model: Gauge{name='М-3ВУКс-25', values=[0]}
+[INFO] Loaded gauge: Gauge{name='М-3ВУКс-16', values=[0, 2, 4, 6, 8, 10, 12, 14, 16]}
+[ERROR] Invalid gauge value at line 2
+[ERROR] Invalid gauge value at line 2
+[ERROR] Invalid gauge value at line 2
+[ERROR] Invalid gauge value at line 2
+[ERROR] Invalid gauge value at line 2
+[INFO] Loaded gauge: Gauge{name='М-3ВУКс-25', values=[0]}
+[INFO] Gauge catalog loaded. Total entries: 2
+[INFO] Loaded gauge: Gauge{name='М-3ВУКс-16', values=[0, 2, 4, 6, 8, 10, 12, 14, 16]}
+[INFO] Loaded gauge: Gauge{name='М-3ВУКс-25', values=[0]}
+[INFO] Gauge catalog loaded. Total entries: 2
+[INFO] Loaded gauge: Gauge{name='М-3ВУКс-16', values=[0, 2, 4, 6, 8, 10, 12, 14, 16]}
+[ERROR] Invalid gauge value at line 2
+[INFO] Loaded gauge: Gauge{name='М-3ВУКс-25', values=[0]}
+[INFO] Gauge catalog loaded. Total entries: 2
+[INFO] Loaded gauge model: Gauge{name='М-3ВУКс-16', values=[0, 2, 4, 6, 8, 10, 12, 14, 16]}
+[ERROR] Failed to parse gauge value '0.5' in line: М-3ВУКс-25;0;0.5;1.0;1.5;2.0;2.5
+[ERROR] Failed to parse gauge value '1.0' in line: М-3ВУКс-25;0;0.5;1.0;1.5;2.0;2.5
+[ERROR] Failed to parse gauge value '1.5' in line: М-3ВУКс-25;0;0.5;1.0;1.5;2.0;2.5
+[ERROR] Failed to parse gauge value '2.0' in line: М-3ВУКс-25;0;0.5;1.0;1.5;2.0;2.5
+[ERROR] Failed to parse gauge value '2.5' in line: М-3ВУКс-25;0;0.5;1.0;1.5;2.0;2.5
+[INFO] Loaded gauge model: Gauge{name='М-3ВУКс-25', values=[0]}
+[INFO] Loaded gauge model: Gauge{name='М-3ВУКс-16', values=[0, 2, 4, 6, 8, 10, 12, 14, 16]}
+[INFO] Loaded gauge model: Gauge{name='М-3ВУКс-25', values=[0, 0.5, 1, 1.5, 2, 2.5]}
+[INFO] Loaded gauge model: Gauge{name='М-3ВУКс-16', values=[0, 2, 4, 6, 8, 10, 12, 14, 16]}
+[INFO] Loaded gauge model: Gauge{name='М-3ВУКс-25', values=[0, 0.5, 1, 1.5, 2, 2.5]}
+[INFO] Loaded gauge model: Gauge{name='М-3ВУКс-16', values=[0, 2, 4, 6, 8, 10, 12, 14, 16]}
+[INFO] Loaded gauge model: Gauge{name='М-3ВУКс-25', values=[0, 0.5, 1, 1.5, 2, 2.5]}
+[INFO] Loaded gauge model: Gauge{name='М-3ВУКс-16', values=[0, 2, 4, 6, 8, 10, 12, 14, 16]}
+[INFO] Loaded gauge model: Gauge{name='М-3ВУКс-25', values=[0, 0.5, 1, 1.5, 2, 2.5]}
+[INFO] Loaded gauge model: Gauge{name='М-3ВУКс-16', values=[0, 2, 4, 6, 8, 10, 12, 14, 16]}
+[INFO] Loaded gauge model: Gauge{name='М-3ВУКс-25', values=[0, 0.5, 1, 1.5, 2, 2.5]}
+[INFO] Loaded gauge model: Gauge{name='М-3ВУКс-16', values=[0, 2, 4, 6, 8, 10, 12, 14, 16]}
+[INFO] Loaded gauge model: Gauge{name='М-3ВУКс-25', values=[0, 0.5, 1, 1.5, 2, 2.5]}
