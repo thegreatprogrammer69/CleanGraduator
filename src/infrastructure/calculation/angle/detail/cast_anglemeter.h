@@ -56,6 +56,7 @@ struct anglemeter_t {
 
 void anglemeterCreate(anglemeter_t** am_ptr, anglemeter_config config);
 void anglemeterDestroy(anglemeter_t* am);
+void anglemeterSetConfig(anglemeter_t* am, anglemeter_config config);
 void anglemeterSetImageSize(anglemeter_t* am, int width, int height);
 void anglemeterSetAngleTransformation(anglemeter_t* am, float (*func_ptr)(float));
 void anglemeterRestoreState(anglemeter_t* am);

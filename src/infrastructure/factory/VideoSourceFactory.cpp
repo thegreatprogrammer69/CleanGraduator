@@ -2,7 +2,7 @@
 
 #include <stdexcept>
 
-#include "application/ports/outbound/ILoggerFactory.h"
+#include "../../application/ports/outbound/logging/ILoggerFactory.h"
 #include "domain/ports/inbound/IVideoSource.h"
 #include "infrastructure/video/linux/v4l/V4LCamera.h"
 #include "infrastructure/video/linux/v4l/V4LCameraConfig.h"
@@ -39,9 +39,8 @@ std::vector<std::unique_ptr<domain::ports::IVideoSource>> infra::repo::VideoSour
 
     for (int cam_idx = 0; cam_idx < 8; cam_idx++) {
         const auto section_name = "camera_" + std::to_string(cam_idx);
-        auto section = ini[section_name];
-
         if (!ini.hasSection(section_name)) break;
+        auto section = ini[section_name];
 
         std::string backend = section.getString("backend", "");
 

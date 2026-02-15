@@ -70,7 +70,7 @@ DShowCamera::~DShowCamera() {
     logger_.info("DShowCamera destructor called");
 }
 
-void DShowCamera::open() {
+bool DShowCamera::open() {
     auto abort_opening = [this]() {
         const domain::common::VideoSourceError err {this->logger_.lastError()};
         notifier_.notifyOpenFailed(err);
@@ -83,7 +83,7 @@ void DShowCamera::open() {
     HRESULT hr = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED | COINIT_SPEED_OVER_MEMORY);
     if (FAILED(hr)) {
         logger_.error("CoInitializeEx failed: hr=0x{:08X}", hr);
-        abort_opening(); return;
+        abort_opening(); return false;
     }
     impl_->com_initialized = true;
     logger_.info("COM initialized");
@@ -91,19 +91,19 @@ void DShowCamera::open() {
     hr = impl_->graph.CoCreateInstance(CLSID_FilterGraph);
     if (FAILED(hr)) {
         logger_.error("Create FilterGraph failed: hr=0x{:08X}", hr);
-        abort_opening(); return;
+        abort_opening(); return false;
     }
 
     hr = impl_->capture.CoCreateInstance(CLSID_CaptureGraphBuilder2);
     if (FAILED(hr)) {
         logger_.error("Create CaptureGraphBuilder2 failed: hr=0x{:08X}", hr);
-        abort_opening(); return;
+        abort_opening(); return false;
     }
 
     hr = impl_->capture->SetFiltergraph(impl_->graph);
     if (FAILED(hr)) {
         logger_.error("SetFiltergraph failed: hr=0x{:08X}", hr);
-        abort_opening(); return; return;
+        abort_opening(); return false;
     }
 
     impl_->graph.QueryInterface(&impl_->control);
@@ -112,25 +112,25 @@ void DShowCamera::open() {
     impl_->source_filter = CreateCaptureFilterByIndex(config_.index);
     if (!impl_->source_filter) {
         logger_.error("Device not found, index={}", config_.index);
-        abort_opening(); return;
+        abort_opening(); return false;
     }
 
     hr = impl_->graph->AddFilter(impl_->source_filter, L"Video Source");
     if (FAILED(hr)) {
         logger_.error("Add source filter failed: hr=0x{:08X}", hr);
-        abort_opening(); return;
+        abort_opening(); return false;
     }
 
     hr = impl_->grabber_filter.CoCreateInstance(CLSID_SampleGrabber);
     if (FAILED(hr)) {
         logger_.error("Create SampleGrabber filter failed: hr=0x{:08X}", hr);
-        abort_opening(); return;
+        abort_opening(); return false;
     }
 
     hr = impl_->grabber_filter.QueryInterface(&impl_->grabber);
     if (FAILED(hr)) {
         logger_.error("Query SampleGrabber interface failed: hr=0x{:08X}", hr);
-        abort_opening(); return;
+        abort_opening(); return false;
     }
 
     AM_MEDIA_TYPE mt{};
@@ -143,25 +143,25 @@ void DShowCamera::open() {
     hr = impl_->grabber->SetMediaType(&mt);
     if (FAILED(hr)) {
         logger_.error("SetMediaType failed: hr=0x{:08X}", hr);
-        abort_opening(); return;
+        abort_opening(); return false;
     }
 
     hr = impl_->graph->AddFilter(impl_->grabber_filter, L"SampleGrabber");
     if (FAILED(hr)) {
         logger_.error("Add SampleGrabber failed: hr=0x{:08X}", hr);
-        abort_opening(); return;
+        abort_opening(); return false;
     }
 
     hr = impl_->null_renderer.CoCreateInstance(CLSID_NullRenderer);
     if (FAILED(hr)) {
         logger_.error("Create NullRenderer failed: hr=0x{:08X}", hr);
-        abort_opening(); return;
+        abort_opening(); return false;
     }
 
     hr = impl_->graph->AddFilter(impl_->null_renderer, L"NullRenderer");
     if (FAILED(hr)) {
         logger_.error("Add NullRenderer failed: hr=0x{:08X}", hr);
-        abort_opening(); return;
+        abort_opening(); return false;
     }
 
     hr = impl_->capture->RenderStream(
@@ -173,7 +173,7 @@ void DShowCamera::open() {
     );
     if (FAILED(hr)) {
         logger_.error("RenderStream failed: hr=0x{:08X}", hr);
-        abort_opening(); return;
+        abort_opening(); return false;
     }
 
     AM_MEDIA_TYPE mt_out{};
@@ -197,12 +197,13 @@ void DShowCamera::open() {
     hr = impl_->control->Run();
     if (FAILED(hr)) {
         logger_.error("Graph Run failed: hr=0x{:08X}", hr);
-        abort_opening(); return;
+        abort_opening(); return false;
     }
 
     logger_.info("DShowCamera started successfully");
 
     notifier_.notifyOpened();
+    return true;
 }
 
 void DShowCamera::close() {

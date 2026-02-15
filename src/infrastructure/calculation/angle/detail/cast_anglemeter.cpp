@@ -99,6 +99,13 @@ void anglemeterDestroy(anglemeter_t* am) {
 }
 
 // ------------------------------------
+// Установка нового конфига
+// ------------------------------------
+void anglemeterSetConfig(anglemeter_t* am, anglemeter_config config) {
+    am->config = config;
+}
+
+// ------------------------------------
 // Настройка размеров входного изображения
 // ------------------------------------
 void anglemeterSetImageSize(anglemeter_t* am, const int width, const int height) {

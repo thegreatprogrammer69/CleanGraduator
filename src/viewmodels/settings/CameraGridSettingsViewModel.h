@@ -9,14 +9,21 @@ namespace application::orchestrators {
 }
 
 namespace application::usecase {
+    class CloseAllCameras;
+    class OpenAllCameras;
     class OpenSelectedCameras;
 }
 
 namespace mvvm {
+    struct CameraGridSettingsViewModelDeps {
+        application::usecase::OpenSelectedCameras& open_selected;
+        application::usecase::OpenAllCameras& open_all;
+        application::usecase::CloseAllCameras& close_all;
+    };
+
     class CameraGridSettingsViewModel {
     public:
-        CameraGridSettingsViewModel(application::usecase::OpenSelectedCameras& open_use_sase,
-            application::orchestrators::VideoSourceManager& manager);
+        CameraGridSettingsViewModel(CameraGridSettingsViewModelDeps deps);
 
         Observable<std::string> cameraInput;
 
@@ -25,8 +32,10 @@ namespace mvvm {
         void closeAll();
 
     private:
-        application::usecase::OpenSelectedCameras& open_use_sase_;
-        application::orchestrators::VideoSourceManager& manager_;
+        void setIndexes(const std::vector<int> &indexes);
+
+    private:
+        CameraGridSettingsViewModelDeps deps_;
     };
 }
 

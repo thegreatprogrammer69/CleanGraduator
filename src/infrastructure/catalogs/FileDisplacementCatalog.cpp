@@ -10,7 +10,9 @@ namespace infra::catalogs {
 
 using application::models::Displacement;
 
-FileDisplacementCatalog::FileDisplacementCatalog(std::string filePath) {
+FileDisplacementCatalog::FileDisplacementCatalog(FileDisplacementCatalogPorts ports, std::string filePath)
+    : logger_(ports.logger)
+{
     std::wifstream file(filePath);
     if (!file.is_open()) {
         throw std::runtime_error("failed to open file: " + filePath);

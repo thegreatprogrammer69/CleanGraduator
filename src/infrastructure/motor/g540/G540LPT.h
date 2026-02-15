@@ -5,7 +5,7 @@
 #include "G540LptConfig.h"
 #include "G540Ports.h"
 #include "IG540.h"
-#include "domain/fmt/FmtLogger.h"
+#include "domain/fmt/Logger.h"
 
 namespace infra::hardware {
     class G540LPT : public IG540 {
@@ -32,7 +32,7 @@ namespace infra::hardware {
         std::unique_ptr<G540LptImpl> impl_;
         const G540Ports& ports_;
         G540LptConfig config_;
-        fmt::FmtLogger logger_;
+        fmt::Logger logger_;
     };
 }
 

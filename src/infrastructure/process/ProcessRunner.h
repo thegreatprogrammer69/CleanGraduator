@@ -1,9 +1,11 @@
 #ifndef CLEANGRADUATOR_PROCESSRUNNER_H
 #define CLEANGRADUATOR_PROCESSRUNNER_H
+#include "domain/fmt/Logger.h"
 #include "domain/ports/outbound/IProcessLifecycleObserver.h"
 
 
 namespace domain::ports {
+    struct ILogger;
     class IProcessLifecycle;
 }
 
@@ -14,7 +16,7 @@ class ProcessRunner : public domain::ports::IProcessLifecycleObserver {
     using IProcessLifecycle = domain::ports::IProcessLifecycle;
 
 public:
-    explicit ProcessRunner(IProcessLifecycle& lifecycle);
+    explicit ProcessRunner(domain::ports::ILogger& logger, IProcessLifecycle& lifecycle);
     ~ProcessRunner() override;
 
     void onStateChanged(State newState) override;
@@ -27,6 +29,7 @@ private:
 
 private:
     IProcessLifecycle &lifecycle_;
+    fmt::Logger logger_;
 };
 
 }

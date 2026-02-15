@@ -3,7 +3,7 @@
 
 #include <string>
 #include <vector>
-#include "application/ports/outbound/IGaugeCatalog.h"
+#include "../../application/ports/outbound/catalogs/IGaugeCatalog.h"
 
 namespace infra::catalogs {
     class FileGaugeCatalog final : public application::ports::IGaugeCatalog {

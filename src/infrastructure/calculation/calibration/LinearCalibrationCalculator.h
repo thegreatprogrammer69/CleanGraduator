@@ -2,7 +2,7 @@
 #define CLEANGRADUATOR_LINEARRESULTCALCULATOR_H
 #include "LinearCalibrationCalculatorConfig.h"
 #include "CalibrationCalculatorPorts.h"
-#include "domain/fmt/FmtLogger.h"
+#include "domain/fmt/Logger.h"
 #include "domain/ports/inbound/ICalibrationCalculator.h"
 
 namespace infra::calc {
@@ -13,7 +13,7 @@ namespace infra::calc {
         domain::common::CalibrationResult calculate(const domain::common::CalibrationInput&) const override;
     private:
         LinearCalibrationCalculatorConfig config_;
-        mutable fmt::FmtLogger logger_;
+        mutable fmt::Logger logger_;
     };
 }
 

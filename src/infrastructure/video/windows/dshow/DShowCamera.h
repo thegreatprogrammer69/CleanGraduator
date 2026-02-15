@@ -2,7 +2,7 @@
 #define CLEANGRADUATOR_DSHOWVIDEOSTREAM_H
 
 #include "domain/ports/inbound/IVideoSource.h"
-#include "domain/fmt/FmtLogger.h"
+#include "domain/fmt/Logger.h"
 #include "DShowCameraConfig.h"
 #include "infrastructure/video/VideoSourceNotifier.h"
 #include "infrastructure/video/VideoSourcePorts.h"
@@ -13,7 +13,7 @@ class DShowCamera final : public domain::ports::IVideoSource {
 public:
     explicit DShowCamera(VideoSourcePorts ports, DShowCameraConfig config);
     ~DShowCamera() override;
-    void open() override;
+    bool open() override;
     void close() override;
     void addObserver(domain::ports::IVideoSourceObserver &) override;
     void removeObserver(domain::ports::IVideoSourceObserver &) override;
@@ -26,7 +26,7 @@ private:
     struct DShowCameraImpl;
     std::unique_ptr<DShowCameraImpl> impl_;
 
-    fmt::FmtLogger logger_;
+    fmt::Logger logger_;
     domain::ports::IClock& clock_;
     detail::VideoSourceNotifier notifier_;
 

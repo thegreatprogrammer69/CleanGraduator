@@ -6,7 +6,7 @@
 #include <string>
 #include <any>
 
-#include "application/ports/outbound/IRuntimeConfigurator.h"
+#include "../../application/ports/outbound/settings/IRuntimeConfigurator.h"
 #include "application/usecases/settings/ConfigureComponent.h"
 #include "viewmodels/Observable.h"
 

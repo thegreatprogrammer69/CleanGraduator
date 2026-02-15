@@ -4,14 +4,12 @@
 
 namespace infra::platform {
 
-// Типы функций WinRing0
 using InitializeOlsFunc = BOOL (*)();
 using DeinitializeOlsFunc = VOID (*)();
 using ReadIoPortByteFunc = UCHAR (*)(USHORT);
 using WriteIoPortByteFunc = VOID (*)(USHORT, UCHAR);
 
-class LptPortImpl {
-public:
+struct LptPort::LptPortImpl {
     HMODULE dll = nullptr;
     InitializeOlsFunc initializeOls = nullptr;
     DeinitializeOlsFunc deinitializeOls = nullptr;
@@ -19,66 +17,78 @@ public:
     WriteIoPortByteFunc writeIoPortByte = nullptr;
 };
 
-LptPort::LptPort(unsigned short address) {
-    impl_ = new LptPortImpl();
-    address_ = address;
-
-    impl_->dll = LoadLibraryW(L"WinRing0x64.dll");
-    if (!impl_->dll) {
-        delete impl_;
-        impl_ = nullptr;
-        throw std::runtime_error("Failed to load WinRing0 DLL");
-    }
-
-    impl_->initializeOls =
-        reinterpret_cast<InitializeOlsFunc>(GetProcAddress(impl_->dll, "InitializeOls"));
-    impl_->deinitializeOls =
-        reinterpret_cast<DeinitializeOlsFunc>(GetProcAddress(impl_->dll, "DeinitializeOls"));
-    impl_->readIoPortByte =
-        reinterpret_cast<ReadIoPortByteFunc>(GetProcAddress(impl_->dll, "ReadIoPortByte"));
-    impl_->writeIoPortByte =
-        reinterpret_cast<WriteIoPortByteFunc>(GetProcAddress(impl_->dll, "WriteIoPortByte"));
-
-    if (!impl_->initializeOls ||
-        !impl_->deinitializeOls ||
-        !impl_->readIoPortByte ||
-        !impl_->writeIoPortByte) {
-
-        FreeLibrary(impl_->dll);
-        delete impl_;
-        impl_ = nullptr;
-        throw std::runtime_error("Failed to get WinRing0 functions");
-    }
-
-    if (!impl_->initializeOls()) {
-        FreeLibrary(impl_->dll);
-        delete impl_;
-        impl_ = nullptr;
-        throw std::runtime_error("InitializeOls failed (check driver installation and admin rights)");
-    }
-}
+LptPort::LptPort() noexcept = default;
 
 LptPort::~LptPort() {
+    close();
+}
+
+void LptPort::open(unsigned short address) {
+    if (opened_)
+        throw std::runtime_error("LptPort already opened");
+
+    impl_ = new LptPortImpl();
+
+    impl_->dll = LoadLibraryW(L"WinRing0x64.dll");
+    if (!impl_->dll)
+        throw std::runtime_error("Failed to load WinRing0");
+
+    impl_->initializeOls =
+        reinterpret_cast<InitializeOlsFunc>(
+            GetProcAddress(impl_->dll, "InitializeOls"));
+
+    impl_->deinitializeOls =
+        reinterpret_cast<DeinitializeOlsFunc>(
+            GetProcAddress(impl_->dll, "DeinitializeOls"));
+
+    impl_->readIoPortByte =
+        reinterpret_cast<ReadIoPortByteFunc>(
+            GetProcAddress(impl_->dll, "ReadIoPortByte"));
+
+    impl_->writeIoPortByte =
+        reinterpret_cast<WriteIoPortByteFunc>(
+            GetProcAddress(impl_->dll, "WriteIoPortByte"));
+
+    if (!impl_->initializeOls())
+        throw std::runtime_error("InitializeOls failed");
+
+    address_ = address;
+    opened_ = true;
+}
+
+void LptPort::close() {
+    if (!opened_)
+        return;
+
     if (impl_) {
-        if (impl_->deinitializeOls) {
+        if (impl_->deinitializeOls)
             impl_->deinitializeOls();
-        }
-        if (impl_->dll) {
+
+        if (impl_->dll)
             FreeLibrary(impl_->dll);
-        }
+
         delete impl_;
         impl_ = nullptr;
     }
+
+    opened_ = false;
+}
+
+bool LptPort::isOpen() const noexcept {
+    return opened_;
 }
 
 unsigned char LptPort::read(unsigned short offset) const {
-    if (!impl_ || !impl_->readIoPortByte) return 0;
+    if (!opened_)
+        throw std::runtime_error("LptPort not opened");
+
     return impl_->readIoPortByte(address_ + offset);
 }
 
-    //    void write(unsigned short offset, unsigned char value);
 void LptPort::write(unsigned short offset, unsigned char value) {
-    if (!impl_ || !impl_->writeIoPortByte) return;
+    if (!opened_)
+        throw std::runtime_error("LptPort not opened");
+
     impl_->writeIoPortByte(address_ + offset, value);
 }
 

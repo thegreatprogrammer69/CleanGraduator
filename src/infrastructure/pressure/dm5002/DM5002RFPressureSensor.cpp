@@ -15,14 +15,12 @@
 #include "infrastructure/platform/sleep/sleep.h"
 #include "infrastructure/platform/com/ComPort.h"
 
-namespace infra::hardware {
+namespace infra::pressure {
 
 constexpr int responseLength = 5;
 
 struct DM5002RFPressureSensor::DM5002RFPressureSensorImpl {
-    explicit DM5002RFPressureSensorImpl(const std::string& com_port)
-        : com_port(com_port)
-    {}
+    explicit DM5002RFPressureSensorImpl() {}
 
     unsigned char requestBytes[2] = {0, 1};
     unsigned char responseBytes[64] = {};
@@ -33,15 +31,17 @@ struct DM5002RFPressureSensor::DM5002RFPressureSensorImpl {
     platform::ComPort com_port;
 };
 
-DM5002RFPressureSensor::DM5002RFPressureSensor(const PressureSensorPorts &ports, const DM5002RFConfig& config)
-    : impl_(std::make_unique<DM5002RFPressureSensorImpl>(config.com_port))
+DM5002RFPressureSensor::DM5002RFPressureSensor(const PressureSourcePorts &ports, const DM5002RFConfig& config)
+    : impl_(std::make_unique<DM5002RFPressureSensorImpl>())
     , ports_(ports)
     , config_(config)
     , logger_(ports.logger)
 {
+    logger_.info("constructor called");
 }
 
 DM5002RFPressureSensor::~DM5002RFPressureSensor() {
+    logger_.info("destructor called, stopping...");
     stop();
 }
 
@@ -85,6 +85,17 @@ void DM5002RFPressureSensor::run() {
 
     logger_.info("worker thread started");
 
+    logger_.info("opening COM port");
+
+    try {
+        impl_->com_port.open(config_.com_port);
+    }
+    catch (std::exception &e) {
+        logger_.error("failed to open COM port: {}", e.what());
+        notifier_.notifyOpenFailed({logger_.lastError()});
+        return;
+    }
+
     notifier_.notifyOpened();
 
     int invalid_count = 0;
@@ -119,6 +130,9 @@ void DM5002RFPressureSensor::run() {
         notifier_.notifyPressure(packet);
     }
 
+    logger_.info("closing COM port");
+    impl_->com_port.close();
+
     logger_.info("worker thread stopped");
 
     domain::common::PressureSourceError err{ logger_.lastError() };
@@ -152,7 +166,7 @@ DM5002RFPressureSensor::ReadResult DM5002RFPressureSensor::readPressure() {
         return result;
     }
 
-    result.time_point = ports_.session_clock.now();
+    result.time_point = ports_.clock.now();
 
     logger_.info("pressure response received");
 

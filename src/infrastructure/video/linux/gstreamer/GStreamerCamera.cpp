@@ -11,8 +11,8 @@
 #include "domain/core/measurement/Timestamp.h"
 #include "domain/core/video/PixelFormat.h"
 #include "domain/core/video/VideoFrame.h"
-#include "domain/core/video/VideoFramePacket.h"
-#include "domain/core/video/VideoSourceOpenError.h"
+#include "domain/core/common/VideoFramePacket.h"
+#include "domain/core/common/VideoSourceError.h"
 #include "domain/ports/outbound/IClock.h"
 
 namespace infra::camera {
@@ -92,7 +92,7 @@ domain::common::PixelFormat mapPixelFormat(const char* gstFormat) {
     return domain::common::PixelFormat::YUYV;
 }
 
-void logBusMessages(fmt::FmtLogger& logger, GstBus* bus, std::atomic<bool>& running) {
+void logBusMessages(fmt::Logger& logger, GstBus* bus, std::atomic<bool>& running) {
     if (!bus) return;
 
     for (;;) {
@@ -133,14 +133,14 @@ GStreamerCamera::~GStreamerCamera() {
     close();
 }
 
-void GStreamerCamera::open() {
+bool GStreamerCamera::open() {
     auto abort_opening = [this]() {
         this->close();
-        const domain::common::VideoSourceOpenError err{logger_.lastError()};
+        const domain::common::VideoSourceError err{logger_.lastError()};
         notifier_.notifyOpenFailed(err);
     };
 
-    if (running_.load()) return;
+    if (running_.load()) return false;
 
     ensureGstInit();
 
@@ -155,7 +155,7 @@ void GStreamerCamera::open() {
         logger_.error("GStreamerCamera: gst_parse_launch failed: {}",
                       error ? error->message : "unknown");
         if (error) g_error_free(error);
-        abort_opening();
+        abort_opening(); return false;
     }
     if (error) {
         // parse_launch может вернуть pipeline и warning/error одновременно
@@ -168,7 +168,7 @@ void GStreamerCamera::open() {
     if (!appsink_) {
         logger_.error("GStreamerCamera: appsink not found. "
                       "Pipeline must contain appsink (preferably name=appsink).");
-        abort_opening();
+        abort_opening(); return false;
     }
 
     // Настроим appsink (можно также делать это в строке pipe через свойства)
@@ -184,7 +184,7 @@ void GStreamerCamera::open() {
     GstStateChangeReturn ret = gst_element_set_state(pipeline_, GST_STATE_PLAYING);
     if (ret == GST_STATE_CHANGE_FAILURE) {
         logger_.error("GStreamerCamera: failed to set pipeline to PLAYING");
-        abort_opening();
+        abort_opening(); return false;
     }
 
     // Дождёмся перехода в PLAYING (коротко, чтобы понять что всё ок)
@@ -192,7 +192,7 @@ void GStreamerCamera::open() {
     ret = gst_element_get_state(pipeline_, &state, nullptr, 2 * GST_SECOND);
     if (ret == GST_STATE_CHANGE_FAILURE) {
         logger_.error("GStreamerCamera: pipeline failed to reach PLAYING");
-        abort_opening();
+        abort_opening(); return false;
     }
 
     running_.store(true);
@@ -201,10 +201,11 @@ void GStreamerCamera::open() {
     logger_.info("GStreamerCamera started: {}", config_.pipe);
 
     notifier_.notifyOpened();
+    return true;
 }
 
 void GStreamerCamera::close() {
-    running_.store(false);
+    if (!running_.exchange(false)) return;
 
     // Попросим pipeline остановиться до join — так thread быстрее выйдет из pull_sample
     if (pipeline_) {
@@ -260,7 +261,7 @@ void GStreamerCamera::captureLoop() {
         gst_sample_unref(sample);
     }
 
-    notifier_.notifyClosed();
+    notifier_.notifyClosed({});
 }
 
 void GStreamerCamera::dispatchSample(GstSample* sample) {

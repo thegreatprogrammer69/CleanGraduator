@@ -2,9 +2,11 @@
 #define CLEANGRADUATOR_DM5002CONFIG_H
 #include <string>
 
-struct DM5002RFConfig {
-    std::string com_port;
-    int poll_rate;
-};
+namespace infra::pressure {
+    struct DM5002RFConfig {
+        std::string com_port{};
+        int poll_rate = 10;
+    };
+}
 
 #endif //CLEANGRADUATOR_DM5002CONFIG_H

@@ -9,6 +9,7 @@ set(SOURCES
 
         utils/ini/IniFile.cpp
 
+        calculation/calibration/LinearCalibrationCalculator.cpp
         calculation/angle/CastAnglemeter.cpp
         calculation/angle/detail/cast_anglemeter.cpp
 
@@ -29,10 +30,14 @@ set(SOURCES
 
         overlay/crosshair/CrosshairVideoOverlay.cpp
 
+        storage/QtSettingsStorage.cpp
+        storage/VideoSourcesStorage.cpp
+
         factory/AngleCalculatorFactory.cpp
         factory/CalibrationCalculatorFactory.cpp
         factory/VideoSourceFactory.cpp
         factory/VideoSourceOverlayFactory.cpp
+        factory/PressureSourceFactory.cpp
 )
 
 if (WIN32)

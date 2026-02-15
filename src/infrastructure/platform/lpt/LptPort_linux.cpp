@@ -6,31 +6,54 @@
 
 namespace infra::platform {
 
-LptPort::LptPort(unsigned short address) {
-    impl_ = nullptr;
-    address_ = address;
+    struct LptPort::LptPortImpl {
+        // ничего не нужно
+    };
 
-    // Проверка root
-    if (geteuid() != 0) {
-        throw std::runtime_error("LptPort requires root privileges");
+    LptPort::LptPort() noexcept = default;
+
+    LptPort::~LptPort() {
+        close();
     }
 
-    if (ioperm(address_, 3, 1) != 0) {
-        throw std::runtime_error("ioperm failed (check kernel setup and privileges)");
+    void LptPort::open(unsigned short address) {
+        if (opened_)
+            throw std::runtime_error("LptPort already opened");
+
+        if (geteuid() != 0)
+            throw std::runtime_error("LptPort requires root privileges");
+
+        if (ioperm(address, 3, 1) != 0)
+            throw std::runtime_error("ioperm failed");
+
+        address_ = address;
+        opened_ = true;
     }
-}
 
-LptPort::~LptPort() {
-    // Забираем разрешения обратно
-    ioperm(address_, 3, 0);
-}
+    void LptPort::close() {
+        if (!opened_)
+            return;
 
-unsigned char LptPort::read(unsigned short offset) const {
-    return inb(address_ + offset);
-}
+        ioperm(address_, 3, 0);
+        opened_ = false;
+    }
 
-void LptPort::write(unsigned short offset, unsigned char value) {
-    outb(value, address_ + offset);
-}
+    bool LptPort::isOpen() const noexcept {
+        return opened_;
+    }
+
+    unsigned char LptPort::read(unsigned short offset) const {
+        if (!opened_)
+            throw std::runtime_error("LptPort not opened");
+
+        return inb(address_ + offset);
+    }
+
+    void LptPort::write(unsigned short offset, unsigned char value) {
+        if (!opened_)
+            throw std::runtime_error("LptPort not opened");
+
+        outb(value, address_ + offset);
+    }
 
 }

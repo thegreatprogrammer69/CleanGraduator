@@ -5,8 +5,10 @@ add_library(application STATIC
         orchestrators/VideoSourceManager.cpp
 
         usecases/settings/ConfigureComponent.cpp
-        usecases/settings/OpenSelectedCameras.cpp
-        ports/outbound/ILoggerFactory.h
+
+        usecases/cameras/OpenSelectedCameras.cpp
+        usecases/cameras/CloseAllCameras.cpp
+        usecases/cameras/OpenAllCameras.cpp
 
 )
 

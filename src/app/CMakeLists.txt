@@ -6,9 +6,7 @@ endif ()
 
     add_executable(CleanGraduator
         main.cpp
-        bootstrap/AppBootstrap.cpp
-        bootstrap/AppBootstrap.h
-        bootstrap/DIContainer.h
+        bootstrap/ApplicationBootstrap.cpp
 )
 
 target_link_libraries(CleanGraduator

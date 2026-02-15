@@ -11,8 +11,8 @@
 namespace infra::hardware {
 
     struct G540LPT::G540LptImpl {
-        explicit G540LptImpl(unsigned short lpt_port)
-            : lpt_port(lpt_port)
+        explicit G540LptImpl()
+            : lpt_port()
         { }
 
         platform::LptPort lpt_port;
@@ -28,7 +28,7 @@ namespace infra::hardware {
     };
 
     G540LPT::G540LPT(const G540Ports& ports, const G540LptConfig &config)
-        : impl_(std::make_unique<G540LptImpl>(config.lpt_port))
+        : impl_(std::make_unique<G540LptImpl>())
         , ports_(ports)
         , config_(config)
         , logger_(ports.logger)
@@ -155,6 +155,17 @@ namespace infra::hardware {
 
         logger_.info("worker thread started");
 
+        logger_.info("opening LPT port");
+
+        try {
+            impl_->lpt_port.open(config_.lpt_port);
+        }
+        catch (std::exception &e) {
+            logger_.error("failed to open COM port: {}", e.what());
+            // notifier_.notifyOpenFailed({logger_.lastError()});
+            return;
+        }
+
         while (true)
         {
             if (impl_->emergency.load(std::memory_order_acquire)) break;
@@ -179,6 +190,10 @@ namespace infra::hardware {
             impl_->lpt_port.write(0, step2);
             platform::precise_sleep(half_period);
         }
+
+
+        logger_.info("closing LPT port");
+        impl_->lpt_port.close();
 
         logger_.info("worker thread stopped");
         impl_->stopped.store(true, std::memory_order_release);

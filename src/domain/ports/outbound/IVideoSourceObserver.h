@@ -9,7 +9,7 @@ namespace domain::common {
 namespace domain::ports {
     struct IVideoSourceObserver {
         virtual ~IVideoSourceObserver() = default;
-        virtual void onVideoFrame(const common::VideoFramePacket&) = 0;
+        virtual void onVideoFrame(const common::VideoFramePacket& packet) = 0;
         virtual void onVideoSourceOpened() = 0;
         virtual void onVideoSourceOpenFailed(const common::VideoSourceError&) = 0;
         virtual void onVideoSourceClosed(const common::VideoSourceError&) = 0;

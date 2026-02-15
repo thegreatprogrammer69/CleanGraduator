@@ -3,7 +3,7 @@
 
 #include <string>
 #include <vector>
-#include "application/ports/outbound/IPrinterCatalog.h"
+#include "../../application/ports/outbound/catalogs/IPrinterCatalog.h"
 
 namespace infra::catalogs {
     class FilePrinterCatalog final : public application::ports::IPrinterCatalog {

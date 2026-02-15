@@ -1,6 +1,6 @@
 #include "ConfigureComponent.h"
 
-#include "application/ports/outbound/IRuntimeConfigurator.h"
+#include "../../ports/outbound/settings/IRuntimeConfigurator.h"
 
 using namespace application::usecase;
 using namespace application::ports;

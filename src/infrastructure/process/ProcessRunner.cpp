@@ -5,8 +5,8 @@
 
 namespace infra::process {
 
-ProcessRunner::ProcessRunner(IProcessLifecycle &lifecycle)
-    : lifecycle_(lifecycle)
+ProcessRunner::ProcessRunner(domain::ports::ILogger& logger, IProcessLifecycle &lifecycle)
+    : lifecycle_(lifecycle), logger_(logger)
 {
     lifecycle_.subscribe(*this);
 }

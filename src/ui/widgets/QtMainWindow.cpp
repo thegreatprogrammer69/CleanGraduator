@@ -38,7 +38,7 @@ ui::QtMainWindow::QtMainWindow(
     /* ================= Левая часть: камеры ================= */
     m_cameras =
         new widgets::QtVideoSourceGridWidget(
-            model_.videoSourceGridModel(),
+            model_.videoSourceGridViewModel(),
             this
         );
 
@@ -129,12 +129,9 @@ ui::QtMainWindow::QtMainWindow(
     settingsCardLayout->setContentsMargins(12, 12, 12, 12);
     settingsCardLayout->setSpacing(8);
 
-    QtSettingsWidgetViewModels settingsModels {
-        model_.cameraGridSettingsViewModel()
-    };
 
     auto* settingsWidget =
-        new QtSettingsWidget(settingsModels, settingsCard);
+        new QtSettingsWidget(model_.settingsViewModel(), settingsCard);
 
     connect(
         settingsWidget,

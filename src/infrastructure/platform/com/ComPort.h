@@ -1,23 +1,30 @@
 #ifndef CLEANGRADUATOR_COMPORT_H
 #define CLEANGRADUATOR_COMPORT_H
+
 #include <string>
+#include <cstddef>
 
 namespace infra::platform {
 
-class ComPort final {
-public:
-    explicit ComPort(const std::string& port);
-    ~ComPort();
+    class ComPort final {
+    public:
+        ComPort() noexcept;
+        ~ComPort();
 
-    void flush();
+        void open(const std::string& port);
+        void close();
 
-    std::size_t read(unsigned char* buffer, std::size_t size);
-    std::size_t write(const unsigned char* data, std::size_t size);
+        bool isOpen() const noexcept;
 
-private:
-    struct ComPortImpl* impl_;
-};
+        void flush();
+
+        std::size_t read(unsigned char* buffer, std::size_t size);
+        std::size_t write(const unsigned char* data, std::size_t size);
+
+    private:
+        struct ComPortImpl* impl_ = nullptr;
+    };
 
 }
 
-#endif //CLEANGRADUATOR_COMPORT_H
+#endif

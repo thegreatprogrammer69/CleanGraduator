@@ -3,18 +3,23 @@
 
 
 namespace mvvm {
-    class CameraGridSettingsViewModel;
+    class SettingsViewModel;
     class VideoSourceGridViewModel;
+
+    struct MainWindowViewModelDeps {
+        VideoSourceGridViewModel &grid;
+        SettingsViewModel &settings;
+    };
 
     class MainWindowViewModel {
     public:
-        MainWindowViewModel(VideoSourceGridViewModel& video_source_grid, CameraGridSettingsViewModel& camera_grid_settings);
-        VideoSourceGridViewModel& videoSourceGridModel();
-        CameraGridSettingsViewModel& cameraGridSettingsViewModel();
+        explicit MainWindowViewModel(MainWindowViewModelDeps deps);
+        ~MainWindowViewModel();
+        VideoSourceGridViewModel& videoSourceGridViewModel();
+        SettingsViewModel& settingsViewModel();
 
     private:
-        VideoSourceGridViewModel& video_source_grid_;
-        CameraGridSettingsViewModel& camera_grid_settings_;
+        MainWindowViewModelDeps deps_;
     };
 }
 

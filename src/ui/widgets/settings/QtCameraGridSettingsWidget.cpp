@@ -24,23 +24,27 @@ QtCameraGridSettingsWidget::~QtCameraGridSettingsWidget() = default;
 
 void QtCameraGridSettingsWidget::buildUi()
 {
-    auto* rootLayout = new QVBoxLayout(this);
+    auto* rootLayout = new QHBoxLayout(this);
 
     // Строка ввода камер
-    auto* rowLayout = new QHBoxLayout();
 
-    auto* label = new QLabel("Cameras:");
+
     camerasEdit_ = new QLineEdit();
-
-    rowLayout->addWidget(label);
-    rowLayout->addWidget(camerasEdit_);
+    camerasEdit_->setProperty("variant", "numeric");
+    camerasEdit_->setMinimumWidth(250);
 
     // Кнопки
-    openButton_     = new QPushButton("Open");
-    openAllButton_  = new QPushButton("Open All");
-    closeAllButton_ = new QPushButton("Close All");
+    openButton_     = new QPushButton(tr("Открыть"));
+    openButton_->setMinimumWidth(150);
+    openButton_->setProperty("variant", "primary");
 
-    rootLayout->addLayout(rowLayout);
+    openAllButton_  = new QPushButton(tr("Открыть все"));
+    openAllButton_->setMinimumWidth(150);
+
+    closeAllButton_ = new QPushButton(tr("Закрыть все"));
+    closeAllButton_->setMinimumWidth(150);
+
+    rootLayout->addWidget(camerasEdit_);
     rootLayout->addWidget(openButton_);
     rootLayout->addWidget(openAllButton_);
     rootLayout->addWidget(closeAllButton_);

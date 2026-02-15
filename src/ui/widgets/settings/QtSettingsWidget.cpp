@@ -4,13 +4,14 @@
 #include <QGroupBox>
 
 #include "QtCameraGridSettingsWidget.h"
+#include "viewmodels/settings/SettingsViewModel.h"
 
 QtSettingsWidget::QtSettingsWidget(
-    QtSettingsWidgetViewModels models,
+    mvvm::SettingsViewModel& model,
     QWidget* parent
 )
     : QWidget(parent)
-    , models_(models)
+    , model_(model)
 {
     buildUi();
     connectUi();
@@ -29,7 +30,7 @@ void QtSettingsWidget::buildUi() {
     cameraGridLayout->setSpacing(8);
 
     cameraGridWidget_ =
-        new QtCameraGridSettingsWidget(models_.cameraGridSettings, cameraGridGroup);
+        new QtCameraGridSettingsWidget(model_.cameraGridViewModel(), cameraGridGroup);
 
     cameraGridLayout->addWidget(cameraGridWidget_);
 

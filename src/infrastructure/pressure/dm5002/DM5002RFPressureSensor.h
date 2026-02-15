@@ -4,17 +4,17 @@
 #include <memory>
 #include <domain/ports/inbound/IPressureSource.h>
 #include "DM5002RFConfig.h"
-#include "PressureSensorPorts.h"
+#include "PressureSourcePorts.h"
 #include "domain/core/measurement/Pressure.h"
 #include "domain/core/measurement/Timestamp.h"
-#include "domain/fmt/FmtLogger.h"
+#include "domain/fmt/Logger.h"
 #include "infrastructure/pressure/PressureSourceNotifier.h"
 
-namespace infra::hardware {
+namespace infra::pressure {
 
 class DM5002RFPressureSensor final : public domain::ports::IPressureSource {
 public:
-    DM5002RFPressureSensor(const PressureSensorPorts& ports, const DM5002RFConfig& config);
+    DM5002RFPressureSensor(const PressureSourcePorts& ports, const DM5002RFConfig& config);
     ~DM5002RFPressureSensor() override;
 
     bool start() override;
@@ -34,9 +34,9 @@ private:
 private:
     struct DM5002RFPressureSensorImpl;
     std::unique_ptr<DM5002RFPressureSensorImpl> impl_;
-    const PressureSensorPorts& ports_;
+    const PressureSourcePorts& ports_;
     const DM5002RFConfig& config_;
-    fmt::FmtLogger logger_;
+    fmt::Logger logger_;
     pressure::detail::PressureSourceNotifier notifier_;
 };
 

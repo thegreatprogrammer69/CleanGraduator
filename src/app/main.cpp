@@ -3,7 +3,7 @@
 #include <QTextStream>
 #include <QFile>
 
-#include "app/bootstrap/AppBootstrap.h"
+#include "app/bootstrap/ApplicationBootstrap.h"
 #include "ui/widgets/QtMainWindow.h"
 
 namespace {
@@ -24,7 +24,7 @@ int main(int argc, char *argv[]) {
     app.setStyleSheet(appStyle());
 
     const std::string setup_dir = (argc > 1) ? argv[1] : "../../../setup";
-    const std::string catalog_dir = (argc > 1) ? argv[1] : "../../../catalog";
+    const std::string catalog_dir = (argc > 1) ? argv[1] : "../../../catalogs";
     const std::string log_dir = (argc > 1) ? argv[1] : "../../../logs";
 
     try {
@@ -32,10 +32,9 @@ int main(int argc, char *argv[]) {
         bootstrap.initialize();
         auto& window = bootstrap.mainWindow();
         window.show();
+        return app.exec();
     }
     catch (const std::exception& e) {
         std::cerr << e.what() << std::endl;
     }
-
-    return app.exec();
 }

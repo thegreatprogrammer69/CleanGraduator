@@ -26,21 +26,18 @@ infra::repo::CalibrationCalculatorFactory::CalibrationCalculatorFactory(
 
 infra::repo::CalibrationCalculatorFactory::~CalibrationCalculatorFactory() = default;
 
-std::vector<std::unique_ptr<domain::ports::ICalibrationCalculator>>
-infra::repo::CalibrationCalculatorFactory::load()
+std::unique_ptr<domain::ports::ICalibrationCalculator> infra::repo::CalibrationCalculatorFactory::load()
 {
     auto ini = loadIniOrThrow(ini_path_);
 
     std::vector<std::unique_ptr<domain::ports::ICalibrationCalculator>> result;
-
-    for (int cam_idx = 0; cam_idx < 8; ++cam_idx) {
-        const auto section_name = "calibration_" + std::to_string(cam_idx);
+        const auto section_name = "calibrator";
 
         if (!ini.hasSection(section_name))
-            break;
+            throw std::runtime_error("CalibrationCalculatorFactory: no section found");
 
-        auto section = ini[section_name];
-        std::string algorithm = section.getString("algorithm", "");
+        const auto section = ini[section_name];
+        const std::string algorithm = section.getString("algorithm", "");
 
         if (algorithm == "linear") {
             calc::LinearCalibrationCalculatorConfig config{};
@@ -48,16 +45,10 @@ infra::repo::CalibrationCalculatorFactory::load()
             // Пример чтения параметров (добавь реальные поля конфига)
             config.min_angle_values_in_series = section.getInt("min_angle_values_in_series", config.min_angle_values_in_series);
             config.min_pressure_values_in_series = section.getInt("min_pressure_values_in_series", config.min_pressure_values_in_series);
+            config.overlap = section.getInt("overlap", config.overlap);
 
-            result.push_back(
-                std::make_unique<calc::LinearCalibrationCalculator>(ports_, config)
-            );
-
-            continue;
+            return std::make_unique<calc::LinearCalibrationCalculator>(ports_, config);
         }
 
         throw std::runtime_error("unknown calibration algorithm: " + algorithm);
-    }
-
-    return result;
 }

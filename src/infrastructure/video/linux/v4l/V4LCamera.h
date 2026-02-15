@@ -9,7 +9,7 @@
 #include <memory>
 #include <algorithm>
 
-#include "domain/fmt/FmtLogger.h"
+#include "domain/fmt/Logger.h"
 #include "domain/ports/inbound/IVideoSource.h"
 #include "V4LCameraConfig.h"
 #include "infrastructure/video/VideoSourceNotifier.h"
@@ -27,7 +27,7 @@ public:
     explicit V4LCamera(VideoSourcePorts ports, V4LCameraConfig config);
     ~V4LCamera() override;
 
-    void open() override;
+    bool open() override;
     void close() override;
     void addObserver(domain::ports::IVideoSourceObserver&) override;
     void removeObserver(domain::ports::IVideoSourceObserver&) override;
@@ -39,7 +39,7 @@ private:
 private:
     detail::VideoSourceNotifier notifier_;
 
-    fmt::FmtLogger logger_;
+    fmt::Logger logger_;
 
     VideoSourcePorts ports_;
     V4LCameraConfig config_;

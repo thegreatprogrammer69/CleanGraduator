@@ -5,7 +5,7 @@
 #include <vector>
 #include <optional>
 
-#include "application/ports/outbound/IPrecisionCatalog.h"
+#include "../../application/ports/outbound/catalogs/IPrecisionCatalog.h"
 
 namespace infra::catalogs {
 

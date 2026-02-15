@@ -1,29 +1,49 @@
 #include "VideoSourceManager.h"
 
+#include <set>
+
 #include "domain/ports/inbound/IVideoSource.h"
 
 using namespace application::orchestrators;
 
-VideoSourceManager::VideoSourceManager(ports::IVideoSourceStorage &storage)
+VideoSourceManager::VideoSourceManager(ports::IVideoSourcesStorage &storage)
     : storage_(storage)
 {
 }
 
 void VideoSourceManager::open(const std::vector<int>& ids)
 {
-    closeAll();
+    std::set new_ids(ids.begin(), ids.end());
+    std::set current_ids(opened_.begin(), opened_.end());
+
+    // 1️⃣ Закрыть те, которых больше нет
+    for (int id : current_ids)
+    {
+        if (new_ids.count(id) == 0)
+        {
+            if (auto vs = storage_.at(id))
+                vs->video_source.close();
+        }
+    }
 
     opened_.clear();
 
-    for (int id : ids)
+    // 2️⃣Открыть новые
+    for (int id : new_ids)
     {
         auto vs = storage_.at(id);
         if (!vs) continue;
 
-        vs->video_source.open();
+        if (current_ids.count(id) == 0)
+        {
+            if (!vs->video_source.open())
+                continue;
+        }
+
         opened_.push_back(id);
     }
 }
+
 
 void VideoSourceManager::openAll()
 {

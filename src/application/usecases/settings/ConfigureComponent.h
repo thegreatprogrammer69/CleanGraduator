@@ -1,7 +1,7 @@
 #ifndef CLEANGRADUATOR_CONFIGURECOMPONENT_H
 #define CLEANGRADUATOR_CONFIGURECOMPONENT_H
-#include "domain/fmt/FmtLogger.h"
-#include "application/ports/outbound/IRuntimeConfigurator.h"
+#include "domain/fmt/Logger.h"
+#include "../../ports/outbound/settings/IRuntimeConfigurator.h"
 
 namespace domain::ports {
     struct ILogger;
@@ -22,7 +22,7 @@ namespace application::usecase {
         void invoke(const std::string& action);
 
     private:
-        fmt::FmtLogger logger_;
+        fmt::Logger logger_;
         ports::IRuntimeConfigurator& configurator_;
     };
 }

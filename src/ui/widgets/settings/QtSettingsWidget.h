@@ -6,22 +6,18 @@
 
 
 namespace mvvm {
-    class CameraGridSettingsViewModel;
+    class SettingsViewModel;
 }
 
 class QtCameraGridSettingsWidget;
 class QGroupBox;
-
-struct QtSettingsWidgetViewModels {
-    mvvm::CameraGridSettingsViewModel& cameraGridSettings;
-};
 
 class QtSettingsWidget final : public QWidget {
     Q_OBJECT
 
 public:
     explicit QtSettingsWidget(
-        QtSettingsWidgetViewModels models,
+        mvvm::SettingsViewModel& model,
         QWidget* parent = nullptr
     );
 
@@ -33,7 +29,7 @@ private:
     void connectUi();
 
 private:
-    QtSettingsWidgetViewModels models_;
+    mvvm::SettingsViewModel& model_;
 
     QtCameraGridSettingsWidget* cameraGridWidget_{nullptr};
 };

@@ -6,7 +6,7 @@
 #include "domain/ports/inbound/IAngleSource.h"
 #include "domain/ports/outbound/IVideoSourceObserver.h"
 #include "AngleFromVideoInteractorPorts.h"
-#include "domain/fmt/FmtLogger.h"
+#include "domain/fmt/Logger.h"
 
 namespace domain::ports {
     struct IAngleCalculator;
@@ -15,20 +15,14 @@ namespace domain::ports {
 namespace application::orchestrators {
 
     class AngleFromVideoInteractor final
-        : public domain::ports::IVideoSourceObserver
+        : domain::ports::IVideoSourceObserver
         , public domain::ports::IAngleSource
     {
     public:
         explicit AngleFromVideoInteractor(AngleFromVideoInteractorPorts ports);
         ~AngleFromVideoInteractor() override;
 
-        // IVideoSink
-        void onVideoFrame(const domain::common::VideoFramePacket&) override;
-
-        void onVideoSourceOpened() override;
-        void onVideoSourceOpenFailed(const domain::common::VideoSourceError &) override;
-        void onVideoSourceClosed(const domain::common::VideoSourceError &) override;
-
+    public:
         // IAngleSource
         void start() override;
         void stop() override;
@@ -36,9 +30,16 @@ namespace application::orchestrators {
         void removeSink(domain::ports::IAngleSink& sink) override;
 
     private:
+        // IVideoSink
+        void onVideoFrame(const domain::common::VideoFramePacket&) override;
+        void onVideoSourceOpened() override;
+        void onVideoSourceOpenFailed(const domain::common::VideoSourceError &) override;
+        void onVideoSourceClosed(const domain::common::VideoSourceError &) override;
+
+    private:
         domain::ports::IVideoSource& video_source_;
         domain::ports::IAngleCalculator& anglemeter_;
-        fmt::FmtLogger logger_;
+        fmt::Logger logger_;
 
         std::mutex mutex_;
         bool running_{false};

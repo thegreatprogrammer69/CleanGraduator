@@ -122,7 +122,7 @@ std::ostream& operator<<(std::ostream& os, const ProcessLifecycleState& f) {
     return os;
 }
 
-std::ostream & operator<<(std::ostream &os, CalibrationCellSeverity &f) {
+std::ostream & operator<<(std::ostream &os, const domain::common::CalibrationCellSeverity &f) {
     switch (f) {
         case CalibrationCellSeverity::None:
             os << "None";
@@ -139,3 +139,4 @@ std::ostream & operator<<(std::ostream &os, CalibrationCellSeverity &f) {
     }
     return os;
 }
+

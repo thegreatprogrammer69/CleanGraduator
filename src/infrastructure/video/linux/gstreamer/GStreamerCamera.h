@@ -7,7 +7,7 @@
 #include <vector>
 #include <string>
 
-#include "domain/fmt/FmtLogger.h"
+#include "domain/fmt/Logger.h"
 #include "domain/ports/inbound/IVideoSource.h"
 #include "GStreamerCameraConfig.h"
 #include "infrastructure/video/VideoSourcePorts.h"
@@ -24,7 +24,7 @@ namespace infra::camera {
         explicit GStreamerCamera(const VideoSourcePorts& ports, GStreamerCameraConfig config);
         ~GStreamerCamera() override;
 
-        void open() override;
+        bool open() override;
         void close() override;
         void addObserver(domain::ports::IVideoSourceObserver&) override;
         void removeObserver(domain::ports::IVideoSourceObserver&) override;
@@ -36,7 +36,7 @@ namespace infra::camera {
     private:
         detail::VideoSourceNotifier notifier_;
 
-        fmt::FmtLogger logger_;
+        fmt::Logger logger_;
 
         const VideoSourcePorts& ports_;
         GStreamerCameraConfig config_;

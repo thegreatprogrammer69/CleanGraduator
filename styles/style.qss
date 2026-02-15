@@ -2,7 +2,7 @@
 QMainWindow, QWidget#centralWidget {
     background: #F3F4F6;
     color: #111827;
-    font-family: "Segoe UI", "Inter", "Arial";
+    font-family: "Segoe UI", "DejaVu Sans", "Liberation Sans", "Arial", sans-serif;
     font-size: 13px;
 }
 
@@ -132,14 +132,189 @@ QPushButton#openAllCamerasButton:pressed {
 }
 
 
-/* ─────────────────────────────────────────────
-   Error state for cameras edit
-   ───────────────────────────────────────────── */
+
+
+/* ===== Base button ===== */
+QPushButton {
+    border-radius: 8px;
+    padding: 6px 14px;
+    font-weight: 600;
+    min-height: 28px;
+    border: 1px solid #D1D5DB;
+    background: #FFFFFF;
+    color: #111827;
+}
+
+QPushButton:hover {
+    background: #F3F4F6;
+}
+
+QPushButton:pressed {
+    background: #E5E7EB;
+}
+
+QPushButton:disabled {
+    background: #F9FAFB;
+    color: #9CA3AF;
+    border: 1px solid #E5E7EB;
+}
+
+
+
+QPushButton[variant="primary"] {
+    background: #2563EB;
+    border: 1px solid #1D4ED8;
+    color: #FFFFFF;
+}
+
+QPushButton[variant="primary"]:hover {
+    background: #1D4ED8;
+}
+
+QPushButton[variant="primary"]:pressed {
+    background: #1E40AF;
+}
+
+QPushButton[variant="primary"]:disabled {
+    background: #93C5FD;
+    border: 1px solid #93C5FD;
+    color: #FFFFFF;
+}
+
+
+
+QPushButton[variant="secondary"] {
+    background: #FFFFFF;
+    border: 1px solid #D1D5DB;
+    color: #374151;
+}
+
+QPushButton[variant="secondary"]:hover {
+    background: #F3F4F6;
+}
+
+QPushButton[variant="secondary"]:pressed {
+    background: #E5E7EB;
+}
+
+
+
+QPushButton[variant="danger"] {
+    background: #DC2626;
+    border: 1px solid #B91C1C;
+    color: #FFFFFF;
+}
+
+QPushButton[variant="danger"]:hover {
+    background: #B91C1C;
+}
+
+QPushButton[variant="danger"]:pressed {
+    background: #991B1B;
+}
+
+
+QPushButton[variant="success"] {
+    background: #16A34A;
+    border: 1px solid #15803D;
+    color: #FFFFFF;
+}
+
+QPushButton[variant="success"]:hover {
+    background: #15803D;
+}
+
+QPushButton[variant="success"]:pressed {
+    background: #166534;
+}
+
+/* ===== Base TextInput ===== */
+QLineEdit {
+    background: #FFFFFF;
+    border: 1px solid #D1D5DB;
+    border-radius: 8px;
+    padding: 6px 10px;
+    color: #111827;
+    selection-background-color: #2563EB;
+    selection-color: #FFFFFF;
+}
+
+/* Hover */
+QLineEdit:hover {
+    border: 1px solid #9CA3AF;
+}
+
+/* Focus */
+QLineEdit:focus {
+    border: 1px solid #2563EB;
+}
+
+/* Disabled */
+QLineEdit:disabled {
+    background: #F9FAFB;
+    color: #9CA3AF;
+    border: 1px solid #E5E7EB;
+}
+
+QLineEdit::placeholder {
+    color: #9CA3AF;
+}
+
 QLineEdit[error="true"] {
-    border: 1px solid #c74a4a;
-    background: #fff5f5;
+    border: 1px solid #DC2626;
+    background: #FEF2F2;
 }
 
 QLineEdit[error="true"]:focus {
-    border: 1px solid #b53b3b;
+    border: 1px solid #B91C1C;
+}
+
+QLineEdit[variant="numeric"] {
+    font-size: 24px;
+}
+
+
+/* ===== Base Label ===== */
+QLabel {
+    color: #374151;
+}
+
+QLabel[variant="title"] {
+    font-size: 18px;
+    font-weight: 700;
+    color: #111827;
+}
+
+QLabel[variant="error"] {
+    color: #DC2626;
+    font-weight: 600;
+}
+
+QLabel[variant="success"] {
+    color: #16A34A;
+    font-weight: 600;
+}
+
+
+/* ===== GroupBox ===== */
+QGroupBox {
+    background: #FFFFFF;
+    border: 1px solid #9CA3AF;
+    border-radius: 6px;
+    margin-top: 14px;              /* место под заголовок */
+    padding: 16px 12px 12px 12px;  /* внутренние отступы */
+    font-weight: 600;
+    color: #111827;
+    font-size: 16px;
+}
+
+/* Заголовок */
+QGroupBox::title {
+    subcontrol-origin: margin;
+    subcontrol-position: top left;
+    padding: 0 6px;
+    left: 12px;
+    top: 8px;
+    background: #FFFFFF;
+
 }

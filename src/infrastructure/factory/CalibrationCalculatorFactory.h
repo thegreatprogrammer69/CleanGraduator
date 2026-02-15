@@ -18,7 +18,7 @@ namespace infra::repo {
 
         ~CalibrationCalculatorFactory();
 
-        std::vector<std::unique_ptr<domain::ports::ICalibrationCalculator>> load();
+        std::unique_ptr<domain::ports::ICalibrationCalculator> load();
 
     private:
         std::string ini_path_;
