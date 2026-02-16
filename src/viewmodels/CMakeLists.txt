@@ -7,6 +7,7 @@ add_library(viewmodels STATIC
         settings/SettingsViewModel.cpp
 
         status_bar/AppStatusBarViewModel.cpp
+        status_bar/MotorDriverStatusViewModel.cpp
 
         logging/LogViewerViewModel.cpp
 

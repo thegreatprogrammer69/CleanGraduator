@@ -97,6 +97,7 @@ void ApplicationBootstrap::initialize() {
     createVideoSourcesManager();
 
     createPressureSource();
+    createMotorDriver();
 
     createInfoSettingsStorage();
 }
@@ -227,6 +228,25 @@ void ApplicationBootstrap::createPressureSource() {
     );
 
     pressure_source = factory.load();
+}
+
+
+void ApplicationBootstrap::createMotorDriver() {
+    G540LptMotorDriverConfig config{};
+    config.bit_begin_limit_switch = 1;
+    config.bit_end_limit_switch = 2;
+    config.byte_close_both_flaps = 0;
+    config.byte_open_input_flap = 8;
+    config.byte_open_output_flap = 9;
+    config.lpt_port = 0x385;
+    config.max_freq_hz = 40;
+    config.min_freq_hz = 0;
+
+    G540LptMotorDriverPorts ports{
+        createLogger("IMotorDriver")
+    };
+
+    motor_driver = std::make_unique<G540LptMotorDriver>(ports, config);
 }
 
 void ApplicationBootstrap::createDisplacementCatalog() {

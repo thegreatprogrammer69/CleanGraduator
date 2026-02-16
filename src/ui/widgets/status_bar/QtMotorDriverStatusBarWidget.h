@@ -1,0 +1,49 @@
+#ifndef CLEANGRADUATOR_QTMOTORDRIVERSTATUSBARWIDGET_H
+#define CLEANGRADUATOR_QTMOTORDRIVERSTATUSBARWIDGET_H
+
+#include <QWidget>
+#include <QTimer>
+
+#include "domain/core/motor/motor/MotorDirection.h"
+#include "domain/core/motor/motor/MotorFault.h"
+#include "domain/core/motor/motor/MotorLimitsState.h"
+
+namespace mvvm { class MotorDriverStatusViewModel; }
+
+class QFrame;
+class QLabel;
+
+namespace ui {
+
+    class QtMotorDriverStatusBarWidget final : public QWidget {
+        Q_OBJECT
+    public:
+        explicit QtMotorDriverStatusBarWidget(mvvm::MotorDriverStatusViewModel& vm, QWidget* parent = nullptr);
+        ~QtMotorDriverStatusBarWidget() override;
+
+    private:
+        static QString directionToText(domain::common::MotorDirection direction);
+        static QString faultToText(domain::common::MotorFault fault);
+        static QString runToText(bool is_running);
+        static QString boolToText(bool value);
+
+        void refreshAll();
+
+    private:
+        mvvm::MotorDriverStatusViewModel& vm_;
+
+        QFrame* content_card_{nullptr};
+
+        QLabel* run_value_{nullptr};
+        QLabel* freq_value_{nullptr};
+        QLabel* direction_value_{nullptr};
+        QLabel* home_limit_value_{nullptr};
+        QLabel* end_limit_value_{nullptr};
+        QLabel* fault_value_{nullptr};
+
+        QTimer timer_;
+    };
+
+} // namespace ui
+
+#endif //CLEANGRADUATOR_QTMOTORDRIVERSTATUSBARWIDGET_H

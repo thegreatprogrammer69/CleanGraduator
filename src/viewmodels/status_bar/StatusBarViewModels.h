@@ -3,9 +3,11 @@
 
 namespace mvvm {
     class AppStatusBarViewModel;
+    class MotorDriverStatusViewModel;
 
     struct StatusBarViewModels {
         AppStatusBarViewModel& app_status_bar;
+        MotorDriverStatusViewModel& motor_driver_status;
     };
 }
 

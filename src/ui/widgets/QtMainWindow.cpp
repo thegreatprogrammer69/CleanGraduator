@@ -21,6 +21,7 @@
 #include "ui/widgets/layout/QtStackPanelWidget.h"
 #include "ui/widgets/settings/QtSettingsWidget.h"
 #include "ui/widgets/status_bar/QtAppStatusBarWidget.h"
+#include "ui/widgets/status_bar/QtMotorDriverStatusBarWidget.h"
 
 #include "logging/QtLogViewerWidget.h"
 #include "video/QtVideoSourceGridWidget.h"
@@ -165,9 +166,16 @@ ui::QtMainWindow::QtMainWindow(
 
 
     auto* statusLayout = new QHBoxLayout();
-    QtAppStatusBarWidget* m_statusBar = new QtAppStatusBarWidget(model_.statusBarViewModels().app_status_bar);
-    m_statusBar->setFixedWidth(200);
-    statusLayout->addWidget(m_statusBar, 0);
+    const auto status_models = model_.statusBarViewModels();
+
+    auto* app_status_bar = new QtAppStatusBarWidget(status_models.app_status_bar);
+    app_status_bar->setFixedWidth(220);
+
+    auto* motor_status_bar = new QtMotorDriverStatusBarWidget(status_models.motor_driver_status);
+    motor_status_bar->setFixedWidth(260);
+
+    statusLayout->addWidget(app_status_bar, 0);
+    statusLayout->addWidget(motor_status_bar, 0);
     statusLayout->addStretch();
     rightLayout->addLayout(statusLayout);
 

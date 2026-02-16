@@ -40,6 +40,7 @@ namespace domain::ports {
     struct IClock;
     struct IProcessLifecycle;
     struct ILogger;
+    struct IMotorDriver;
 }
 
 class ApplicationBootstrap {
@@ -78,6 +79,10 @@ public:
     ////////////////////////////////////////////////////////////////////////////////////////
     // Источник давления. Может быть какой-то датик давления, например ДМ5002М
     std::unique_ptr<domain::ports::IPressureSource> pressure_source;
+
+    ////////////////////////////////////////////////////////////////////////////////////////
+    // Драйвер двигателя
+    std::unique_ptr<domain::ports::IMotorDriver> motor_driver;
 
     ////////////////////////////////////////////////////////////////////////////////////////
     // Задатчик давления. Делавет весь процесс градуировки
@@ -129,6 +134,7 @@ private:
 
     ////////////////////////////////////////////////////////////////////////////////////////
     void createPressureSource();
+    void createMotorDriver();
 
     ////////////////////////////////////////////////////////////////////////////////////////
     void createDisplacementCatalog();
