@@ -4,10 +4,8 @@
 namespace domain::common {
     enum class MotorFault {
         None,
-        WatchdogTimeout,
-        ForwardLimit,
-        BackwardLimit,
-        HardwareFailure
+        DriverError,
+        EmergencyStop
     };
 }
 

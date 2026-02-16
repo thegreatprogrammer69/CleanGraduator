@@ -1,5 +1,7 @@
 #include "NamedMultiLogger.h"
 
+#include <algorithm>
+
 #include "../../application/ports/outbound/logging/ILogSink.h"
 #include "../../domain/ports/clock/IClock.h"
 

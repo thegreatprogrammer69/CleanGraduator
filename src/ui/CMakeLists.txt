@@ -16,6 +16,9 @@ add_library(ui STATIC
         widgets/settings/QtSettingsWidget.cpp
         widgets/settings/QtSettingsWidget.h
 
+        widgets/status_bar/QtAppStatusBarWidget.cpp
+        widgets/status_bar/QtAppStatusBarWidget.h
+
         widgets/logging/QtLogViewerWidget.cpp
         widgets/logging/QtLogViewerWidget.h
 

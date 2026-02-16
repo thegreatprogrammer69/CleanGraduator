@@ -9,6 +9,7 @@
 #include "domain/core/measurement/Pressure.h"
 #include "domain/core/measurement/PressureUnit.h"
 #include "domain/core/measurement/Timestamp.h"
+#include "domain/core/motor/motor/MotorDirection.h"
 #include "domain/core/process/ProcessLifecycleState.h"
 #include "domain/core/video/PixelFormat.h"
 #include "domain/core/video/VideoBuffer.h"
@@ -135,6 +136,18 @@ std::ostream & operator<<(std::ostream &os, const domain::common::CalibrationCel
             break;
         case CalibrationCellSeverity::Error:
             os << "Error";
+            break;
+    }
+    return os;
+}
+
+std::ostream & operator<<(std::ostream &os, const domain::common::MotorDirection &f) {
+    switch (f) {
+        case MotorDirection::Forward:
+            os << "Forward";
+            break;
+        case MotorDirection::Backward:
+            os << "Backward";
             break;
     }
     return os;

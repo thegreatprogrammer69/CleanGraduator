@@ -1,7 +1,7 @@
 #ifndef CLEANGRADUATOR_G540LPTCONFIG_H
 #define CLEANGRADUATOR_G540LPTCONFIG_H
 
-namespace infra::hardware {
+namespace infra::motors {
     struct G540LptMotorDriverConfig {
         unsigned short lpt_port;
 

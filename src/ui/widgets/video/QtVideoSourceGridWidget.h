@@ -10,7 +10,7 @@ namespace mvvm {
     class VideoSourceGridViewModel;
 }
 
-namespace ui::widgets {
+namespace ui {
 
     class QtVideoSourceGridWidget final : public QWidget {
         Q_OBJECT

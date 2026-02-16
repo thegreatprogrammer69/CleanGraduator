@@ -1,5 +1,6 @@
 #ifndef CLEANGRADUATOR_MAINWINDOWVIEWMODEL_H
 #define CLEANGRADUATOR_MAINWINDOWVIEWMODEL_H
+#include "status_bar/StatusBarViewModels.h"
 
 
 namespace mvvm {
@@ -11,6 +12,7 @@ namespace mvvm {
         LogViewerViewModel &log_viewer;
         VideoSourceGridViewModel &grid;
         SettingsViewModel &settings;
+        StatusBarViewModels status_bar;
     };
 
     class MainWindowViewModel {
@@ -20,6 +22,7 @@ namespace mvvm {
         LogViewerViewModel& logViewerViewModel();
         VideoSourceGridViewModel& videoSourceGridViewModel();
         SettingsViewModel& settingsViewModel();
+        StatusBarViewModels statusBarViewModels();
 
     private:
         MainWindowViewModelDeps deps_;

@@ -14,7 +14,9 @@ namespace infra::platform {
         bool isOpen() const noexcept;
 
         unsigned char read(unsigned short offset) const;
+        unsigned char read() const;
         void write(unsigned short offset, unsigned char value);
+        void write(unsigned char value);
 
     private:
         struct LptPortImpl;

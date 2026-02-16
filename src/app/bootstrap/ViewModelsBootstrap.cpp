@@ -7,6 +7,7 @@
 #include "viewmodels/settings/CameraGridSettingsViewModel.h"
 #include "viewmodels/settings/InfoSettingsViewModel.h"
 #include "viewmodels/settings/SettingsViewModel.h"
+#include "viewmodels/status_bar/AppStatusBarViewModel.h"
 #include "viewmodels/video/VideoSourceGridViewModel.h"
 #include "viewmodels/video/VideoSourceViewModel.h"
 
@@ -27,6 +28,8 @@ void ViewModelsBootstrap::initialize() {
     createCameraGridSettings();
     createInfoSettings();
     createSettings();
+
+    createStatusBar();
 
     createLogViewer();
 
@@ -93,16 +96,30 @@ void ViewModelsBootstrap::createSettings() {
         std::make_unique<SettingsViewModel>(deps);
 }
 
+void ViewModelsBootstrap::createStatusBar() {
+    AppStatusBarViewModelDeps deps {
+        *app_.process_lifecycle,
+        *app_.session_clock,
+        *app_.uptime_clock
+    };
+
+    app_status_bar = std::make_unique<AppStatusBarViewModel>(deps);
+}
 
 void ViewModelsBootstrap::createLogViewer() {
     log_viewer = std::make_unique<LogViewerViewModel>(*app_.log_sources_storage);
 }
 
 void ViewModelsBootstrap::createMainWindow() {
+    StatusBarViewModels status_bar_view_models {
+        *app_status_bar
+    };
+
     MainWindowViewModelDeps deps{
         *log_viewer,
         *video_source_grid,
         *settings,
+        status_bar_view_models
     };
 
     main_window =

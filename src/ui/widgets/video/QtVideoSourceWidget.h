@@ -20,7 +20,7 @@ namespace domain::common {
     using VideoFramePtr = std::shared_ptr<VideoFrame>;
 }
 
-namespace ui::widgets {
+namespace ui {
 
     class QtVideoSourceWidget final
         : public QOpenGLWidget

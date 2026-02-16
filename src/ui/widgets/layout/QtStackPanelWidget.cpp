@@ -8,7 +8,7 @@
 #include <QStyle>
 #include <QVariant>
 
-using namespace ui::widgets;
+using namespace ui;
 
 static QPushButton* makeTabButton(const QString &text, QWidget *parent)
 {

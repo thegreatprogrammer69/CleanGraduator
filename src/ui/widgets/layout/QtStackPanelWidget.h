@@ -9,7 +9,7 @@ class QHBoxLayout;
 class QStackedWidget;
 class QPushButton;
 
-namespace ui::widgets {
+namespace ui {
     class QtStackPanelWidget : public QWidget
     {
         Q_OBJECT

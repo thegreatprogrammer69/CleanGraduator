@@ -43,17 +43,18 @@ namespace infra::platform {
     }
 
     unsigned char LptPort::read(unsigned short offset) const {
-        if (!opened_)
-            throw std::runtime_error("LptPort not opened");
-
         return inb(address_ + offset);
     }
 
-    void LptPort::write(unsigned short offset, unsigned char value) {
-        if (!opened_)
-            throw std::runtime_error("LptPort not opened");
+    unsigned char LptPort::read() const {
+        return inb(address_);
+    }
 
+    void LptPort::write(unsigned short offset, unsigned char value) {
         outb(value, address_ + offset);
     }
 
+    void LptPort::write(unsigned char value) {
+        outb(value, address_);
+    }
 }

@@ -1,48 +1,56 @@
 #ifndef CLEANGRADUATOR_PROCESSLIFECYCLE_H
 #define CLEANGRADUATOR_PROCESSLIFECYCLE_H
 
-#include <vector>
 #include <algorithm>
+#include <mutex>
+#include <vector>
 
 #include "domain/core/process/ProcessLifecycleState.h"
 #include "domain/ports/lifecycle/IProcessLifecycle.h"
 #include "domain/ports/lifecycle/IProcessLifecycleObserver.h"
 #include "infrastructure/clock/SessionClock.h"
 
-
 namespace infra::process {
 
-class ProcessLifecycle final : public domain::ports::IProcessLifecycle {
-    using State = domain::common::ProcessLifecycleState;
-    using Observer = domain::ports::IProcessLifecycleObserver;
-public:
-    explicit ProcessLifecycle(State initial = State::Idle);
-    ~ProcessLifecycle() override;
+    class ProcessLifecycle final : public domain::ports::IProcessLifecycle {
+    public:
+        explicit ProcessLifecycle(
+            domain::common::ProcessLifecycleState initial =
+                domain::common::ProcessLifecycleState::Idle);
 
-    domain::ports::IClock& clock();
+        ~ProcessLifecycle() override = default;
 
-    bool canStart() const override;
-    bool canStop() const override;
+        // Если тебе нужен доступ к “сессионным” часам процесса
+        domain::ports::IClock& clock();
 
-    void markIdle() override;
-    void markForward() override;
-    void markBackward() override;
-    void markStopping() override;
+        bool canStart() const override;
+        bool canStop() const override;
 
-    State state() const override;
-    void subscribe(Observer& observer) override;
+        void markIdle() override;
+        void markForward() override;
+        void markBackward() override;
+        void markStopping() override;
+        void markEmergencyStopped() override;
 
-private:
-    void setState(State newState);
-    void notify() const;
+        domain::common::ProcessLifecycleState state() const override;
 
+        void addObserver(domain::ports::IProcessLifecycleObserver&) override;
+        void removeObserver(domain::ports::IProcessLifecycleObserver&) override;
 
-private:
-    clock::SessionClock clock_;
-    State state_;
-    std::vector<Observer*> observers_;
-};
+    private:
+        void setState(domain::common::ProcessLifecycleState newState);
+        void notify(domain::common::ProcessLifecycleState newState);
 
-}
+    private:
+        clock::SessionClock clock_;
+
+        mutable std::mutex state_mutex_;
+        domain::common::ProcessLifecycleState state_;
+
+        mutable std::mutex observers_mutex_;
+        std::vector<domain::ports::IProcessLifecycleObserver*> observers_;
+    };
+
+} // namespace infra::process
 
 #endif // CLEANGRADUATOR_PROCESSLIFECYCLE_H

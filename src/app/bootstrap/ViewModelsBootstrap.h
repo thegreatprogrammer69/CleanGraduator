@@ -4,6 +4,7 @@
 #include <vector>
 
 namespace mvvm {
+    class AppStatusBarViewModel;
     class MainWindowViewModel;
     class LogViewerViewModel;
     class SettingsViewModel;
@@ -30,6 +31,8 @@ public:
     std::unique_ptr<mvvm::InfoSettingsViewModel> info_settings;
     std::unique_ptr<mvvm::SettingsViewModel> settings;
 
+    std::unique_ptr<mvvm::AppStatusBarViewModel> app_status_bar;
+
     std::unique_ptr<mvvm::LogViewerViewModel> log_viewer;
 
     std::unique_ptr<mvvm::MainWindowViewModel> main_window;
@@ -44,6 +47,8 @@ private:
     void createCameraGridSettings();
     void createInfoSettings();
     void createSettings();
+
+    void createStatusBar();
 
     void createLogViewer();
 

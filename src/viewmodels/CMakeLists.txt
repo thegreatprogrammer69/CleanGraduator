@@ -6,6 +6,8 @@ add_library(viewmodels STATIC
         settings/InfoSettingsViewModel.cpp
         settings/SettingsViewModel.cpp
 
+        status_bar/AppStatusBarViewModel.cpp
+
         logging/LogViewerViewModel.cpp
 
         component/ComponentConfigViewModel.cpp

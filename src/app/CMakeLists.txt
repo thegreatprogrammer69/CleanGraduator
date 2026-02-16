@@ -6,6 +6,7 @@ endif ()
 
     add_executable(CleanGraduator
         main.cpp
+        test1.cpp
         bootstrap/ApplicationBootstrap.cpp
         bootstrap/UseCasesBootstrap.cpp
         bootstrap/ViewModelsBootstrap.cpp

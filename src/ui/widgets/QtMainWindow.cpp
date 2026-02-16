@@ -20,6 +20,7 @@
 
 #include "ui/widgets/layout/QtStackPanelWidget.h"
 #include "ui/widgets/settings/QtSettingsWidget.h"
+#include "ui/widgets/status_bar/QtAppStatusBarWidget.h"
 
 #include "logging/QtLogViewerWidget.h"
 #include "video/QtVideoSourceGridWidget.h"
@@ -47,7 +48,7 @@ ui::QtMainWindow::QtMainWindow(
 
     /* ================= Левая часть: камеры ================= */
     m_cameras =
-        new widgets::QtVideoSourceGridWidget(
+        new QtVideoSourceGridWidget(
             model_.videoSourceGridViewModel(),
             this
         );
@@ -61,7 +62,7 @@ ui::QtMainWindow::QtMainWindow(
     rightLayout->setSpacing(10);
 
     /* ================= StackPanel ================= */
-    auto* panel = new ui::widgets::QtStackPanelWidget(rightPanel);
+    auto* panel = new ui::QtStackPanelWidget(rightPanel);
 
     /* =================================================
      * ================= PAGE: ПРОЦЕСС ==================
@@ -95,7 +96,7 @@ ui::QtMainWindow::QtMainWindow(
     controlCard->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Minimum);
 
     auto* controlLayout = new QGridLayout(controlCard);
-    controlLayout->setContentsMargins(12, 12, 12, 12);
+    controlLayout->setContentsMargins(12, 8, 8, 8);
     controlLayout->setSpacing(12);
 
     auto* engineDir = new QGroupBox(tr("Направление двигателя"));
@@ -136,7 +137,7 @@ ui::QtMainWindow::QtMainWindow(
     settingsCard->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Minimum);
 
     auto* settingsCardLayout = new QVBoxLayout(settingsCard);
-    settingsCardLayout->setContentsMargins(12, 12, 12, 12);
+    settingsCardLayout->setContentsMargins(12, 8, 8, 8);
     settingsCardLayout->setSpacing(8);
 
 
@@ -161,6 +162,16 @@ ui::QtMainWindow::QtMainWindow(
     panel->addTab(settingsPage, tr("Настройки"));
 
     rightLayout->addWidget(panel, 1);
+
+
+    auto* statusLayout = new QHBoxLayout();
+    QtAppStatusBarWidget* m_statusBar = new QtAppStatusBarWidget(model_.statusBarViewModels().app_status_bar);
+    m_statusBar->setFixedWidth(200);
+    statusLayout->addWidget(m_statusBar, 0);
+    statusLayout->addStretch();
+    rightLayout->addLayout(statusLayout);
+
+
 
     /* ================= Root ================= */
     auto* root = new QHBoxLayout(central);

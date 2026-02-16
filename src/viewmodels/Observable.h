@@ -1,6 +1,7 @@
 #ifndef CLEANGRADUATOR_OBSERVABLE_H
 #define CLEANGRADUATOR_OBSERVABLE_H
 
+#include <string>
 #include <any>
 #include <atomic>
 #include <cstdint>

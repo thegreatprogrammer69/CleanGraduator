@@ -3,9 +3,9 @@
 
 namespace domain::ports {
     struct IDualValveDriver {
-        virtual void moveToIntake() = 0;
-        virtual void moveToExhaust() = 0;
-        virtual void moveToClosed() = 0;
+        virtual void openInputFlap() = 0;
+        virtual void openOutputFlap() = 0;
+        virtual void closeFlaps() = 0;
         virtual ~IDualValveDriver() = default;
     };
 }

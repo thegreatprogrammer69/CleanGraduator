@@ -1,44 +1,46 @@
-#include "../DualValve.h"
+#include "DualValve.h"
 #include "domain/ports/motor/IDualValveDriver.h"
 
-domain::common::DualValve::DualValve(ports::IDualValveDriver &driver): driver_(driver) {}
+using namespace domain::common;
 
-ValvePosition domain::common::DualValve::position() const noexcept {
+DualValve::DualValve(ports::IDualValveDriver &driver): driver_(driver) {}
+
+ValvePosition DualValve::position() const noexcept {
     return state_;
 }
 
-bool domain::common::DualValve::isClosed() const noexcept {
+bool DualValve::isClosed() const noexcept {
     return state_ == ValvePosition::Closed;
 }
 
-bool domain::common::DualValve::isIntakeOpen() const noexcept {
+bool DualValve::isIntakeOpen() const noexcept {
     return state_ == ValvePosition::IntakeOpen;
 }
 
-bool domain::common::DualValve::isExhaustOpen() const noexcept {
+bool DualValve::isExhaustOpen() const noexcept {
     return state_ == ValvePosition::ExhaustOpen;
 }
 
-void domain::common::DualValve::openIntake() {
+void DualValve::openIntake() {
     if (state_ == ValvePosition::IntakeOpen)
         return; // идемпотентность
 
-    driver_.moveToIntake();
+    driver_.openInputFlap();
     state_ = ValvePosition::IntakeOpen;
 }
 
-void domain::common::DualValve::openExhaust() {
+void DualValve::openExhaust() {
     if (state_ == ValvePosition::ExhaustOpen)
         return;
 
-    driver_.moveToExhaust();
+    driver_.openOutputFlap();
     state_ = ValvePosition::ExhaustOpen;
 }
 
-void domain::common::DualValve::close() {
+void DualValve::close() {
     if (state_ == ValvePosition::Closed)
         return;
 
-    driver_.moveToClosed();
+    driver_.closeFlaps();
     state_ = ValvePosition::Closed;
 }

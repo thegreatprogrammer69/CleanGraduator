@@ -33,10 +33,13 @@ CastAnglemeter::~CastAnglemeter() {
 }
 
 domain::common::Angle CastAnglemeter::calculate(const domain::common::AnglemeterInput &input) {
-    float angle;
-    anglemeterSetImageSize(impl_->am, input.frame->width, input.frame->height);
-    anglemeterGetArrowAngle(impl_->am, input.frame->buffer.data, &angle);
-    return domain::common::Angle::fromDegrees(angle);
+    if (input.frame->format == domain::common::PixelFormat::RGB24) {
+        float angle;
+        anglemeterSetImageSize(impl_->am, input.frame->width, input.frame->height);
+        anglemeterGetArrowAngle(impl_->am, input.frame->buffer.data, &angle);
+        return domain::common::Angle::fromDegrees(angle);
+    }
+    return {};
 }
 
 void CastAnglemeter::setBrightLim(int brightLim) {

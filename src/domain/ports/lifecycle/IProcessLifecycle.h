@@ -14,10 +14,12 @@ namespace domain::ports {
         virtual void markForward() = 0;
         virtual void markBackward() = 0;
         virtual void markStopping() = 0;
+        virtual void markEmergencyStopped() = 0;
 
         virtual common::ProcessLifecycleState state() const = 0;
 
-        virtual void subscribe(IProcessLifecycleObserver&) = 0;
+        virtual void addObserver(IProcessLifecycleObserver&) = 0;
+        virtual void removeObserver(IProcessLifecycleObserver&) = 0;
     };
 }
 

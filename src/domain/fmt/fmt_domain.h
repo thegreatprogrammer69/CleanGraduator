@@ -13,6 +13,7 @@ namespace domain::common {
     struct VideoBuffer;
     struct VideoFrame;
     enum class ProcessLifecycleState;
+    enum class MotorDirection;
 }
 
 std::ostream& operator<<(std::ostream& os, const domain::common::Angle& f); // Выводит значение вместе с его текущим Unit
@@ -25,5 +26,6 @@ std::ostream& operator<<(std::ostream& os, const domain::common::VideoBuffer& f)
 std::ostream& operator<<(std::ostream& os, const domain::common::VideoFrame& f);
 std::ostream& operator<<(std::ostream& os, const domain::common::ProcessLifecycleState& f);
 std::ostream& operator<<(std::ostream& os, const domain::common::CalibrationCellSeverity& f);
+std::ostream& operator<<(std::ostream& os, const domain::common::MotorDirection& f);
 
 #endif //CLEANGRADUATOR_FMT_DOMAIN_H

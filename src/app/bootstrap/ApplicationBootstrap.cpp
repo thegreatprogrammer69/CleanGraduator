@@ -49,7 +49,7 @@ using namespace infra::logging;
 using namespace infra::calc;
 using namespace infra::catalogs;
 using namespace infra::pressure;
-using namespace infra::hardware;
+using namespace infra::motors;
 using namespace infra::overlay;
 using namespace infra::platform;
 using namespace infra::repo;

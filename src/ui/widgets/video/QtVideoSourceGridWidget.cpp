@@ -19,7 +19,7 @@ static QFrame* makeTile(mvvm::VideoSourceViewModel& model, QWidget* parent)
     tile->setObjectName("cameraTile");
     tile->setAttribute(Qt::WA_StyledBackground, true);
 
-    auto* video = new ui::widgets::QtVideoSourceWidget(model, tile);
+    auto* video = new ui::QtVideoSourceWidget(model, tile);
     // TODO: привяжите video к vm (если нужно)
     // video->setViewModel(vm);  // пример
 
@@ -33,7 +33,7 @@ static QFrame* makeTile(mvvm::VideoSourceViewModel& model, QWidget* parent)
 
 } // namespace
 
-namespace ui::widgets {
+namespace ui {
 
 QtVideoSourceGridWidget::QtVideoSourceGridWidget(mvvm::VideoSourceGridViewModel& model, QWidget* parent)
     : QWidget(parent)

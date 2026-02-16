@@ -8,7 +8,7 @@
 #include "domain/core/video/VideoFrame.h"
 #include "viewmodels/video/VideoSourceViewModel.h"
 
-using namespace ui::widgets;
+using namespace ui;
 using namespace domain::common;
 
 namespace {

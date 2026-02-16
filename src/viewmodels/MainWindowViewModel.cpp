@@ -21,4 +21,8 @@ mvvm::SettingsViewModel & mvvm::MainWindowViewModel::settingsViewModel() {
     return deps_.settings;
 }
 
+mvvm::StatusBarViewModels mvvm::MainWindowViewModel::statusBarViewModels() {
+    return deps_.status_bar;
+}
+
 

@@ -6,7 +6,8 @@ namespace domain::common {
         Idle,
         Forward,
         Backward,
-        Stopping
+        Stopping,
+        EmergencyStopped
     };
 }
 

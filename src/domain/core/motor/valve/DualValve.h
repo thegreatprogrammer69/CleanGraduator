@@ -1,7 +1,7 @@
 #ifndef CLEANGRADUATOR_DUALVALVE_H
 #define CLEANGRADUATOR_DUALVALVE_H
 
-#include "../ValvePosition.h"
+#include "ValvePosition.h"
 
 namespace domain::ports {
     struct IDualValveDriver;

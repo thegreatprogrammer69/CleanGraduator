@@ -5,7 +5,7 @@ namespace domain::ports {
     class ILogger;
 }
 
-namespace infra::hardware {
+namespace infra::motors {
     struct G540LptMotorDriverPorts {
         domain::ports::ILogger& logger;
     };

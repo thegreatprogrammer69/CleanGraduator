@@ -40,6 +40,7 @@ set(SOURCES
         factory/VideoSourceOverlayFactory.cpp
         factory/PressureSourceFactory.cpp
 
+        motor/g540/as_lpt/G540LptMotorDriver.cpp
 
 )
 
@@ -65,6 +66,7 @@ elseif(UNIX)
     set(PLATFORM_SOURCES
             platform/com/ComPort_linux.cpp
             platform/lpt/LptPort_linux.cpp
+#            platform/lpt/LptPort_console.cpp
             platform/sleep/sleep_linux.cpp
             video/linux/v4l/V4LCamera.cpp
             video/linux/gstreamer/GStreamerCamera.cpp

@@ -3,6 +3,8 @@
 
 #include <QMainWindow>
 
+#include "status_bar/QtAppStatusBarWidget.h"
+
 class QDockWidget;
 class QWidget;
 
@@ -14,11 +16,7 @@ namespace mvvm {
 namespace ui {
 
     class QtLogViewerWidget;
-
-    namespace widgets {
-        class QtVideoSourceGridWidget;
-        class QtStackPanelWidget;
-    }
+    class QtVideoSourceGridWidget;
 
     class QtMainWindow final : public QMainWindow {
         Q_OBJECT
@@ -33,7 +31,8 @@ namespace ui {
         void createLogDock(mvvm::LogViewerViewModel& log_vm);
 
     private:
-        widgets::QtVideoSourceGridWidget* m_cameras = nullptr;
+
+        QtVideoSourceGridWidget* m_cameras = nullptr;
         QtLogViewerWidget* log_widget_ = nullptr;
         QDockWidget* log_dock_ = nullptr;
 
