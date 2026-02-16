@@ -276,9 +276,10 @@ private:
         for (auto* o : copy) fn(*o);
     }
 
-    void notifyStopped()   { notifyAll([](auto& o){ o.onMotorStopped(); }); }
-    void notifyEmergency() { notifyAll([](auto& o){ o.onMotorEmergencyStop(); }); }
-    void notifyFault(domain::common::MotorFault f) { notifyAll([&](auto& o){ o.onMotorFault(f); }); }
+    void notifyStopped()   { notifyAll([](auto& o){ o.onStopped(); }); }
+    void notifyEmergency() { notifyAll([](auto& o){ o.onFault(domain::common::MotorFault::EmergencyStop); }); }
+    void notifyFault(domain::common::MotorFault f) { notifyAll([&](auto& o){ o.onFault(f); }); }
+
 
     // =========================
     // LPT low-level (worker-only)

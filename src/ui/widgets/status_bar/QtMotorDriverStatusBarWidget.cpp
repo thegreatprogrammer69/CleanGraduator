@@ -1,6 +1,7 @@
 #include "QtMotorDriverStatusBarWidget.h"
 
 #include <QFormLayout>
+#include <QVariant>
 #include <QFrame>
 #include <QLabel>
 #include <QVBoxLayout>
