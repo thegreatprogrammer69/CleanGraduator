@@ -1,7 +1,7 @@
 cmake-*/
 logs/
 setup/
-calogs/
+catalogs/
 .idea
 *.7z
 *.zip
