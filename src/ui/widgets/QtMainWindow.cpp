@@ -22,6 +22,7 @@
 #include "ui/widgets/settings/QtSettingsWidget.h"
 #include "ui/widgets/status_bar/QtAppStatusBarWidget.h"
 #include "ui/widgets/status_bar/QtMotorDriverStatusBarWidget.h"
+#include "ui/widgets/status_bar/QtPressureSensorStatusBarWidget.h"
 
 #include "logging/QtLogViewerWidget.h"
 #include "video/QtVideoSourceGridWidget.h"
@@ -174,8 +175,12 @@ ui::QtMainWindow::QtMainWindow(
     auto* motor_status_bar = new QtMotorDriverStatusBarWidget(status_models.motor_driver_status);
     motor_status_bar->setFixedWidth(260);
 
+    auto* pressure_status_bar = new QtPressureSensorStatusBarWidget(status_models.pressure_sensor_status);
+    pressure_status_bar->setFixedWidth(240);
+
     statusLayout->addWidget(app_status_bar, 0);
     statusLayout->addWidget(motor_status_bar, 0);
+    statusLayout->addWidget(pressure_status_bar, 0);
     statusLayout->addStretch();
     rightLayout->addLayout(statusLayout);
 
