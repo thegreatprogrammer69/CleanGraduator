@@ -66,7 +66,9 @@ FilePrecisionCatalog::FilePrecisionCatalog(
         double value{};
 
         if (tryParseDouble(line, value)) {
-            precisions_.push_back(Precision{ .precision = value });
+            Precision precision;
+            precision.precision = value;
+            precisions_.push_back(precision);
             logger_.info("Loaded precision model: {}", precisions_.back());
         } else {
             logger_.error("Failed to parse precision line: {}", line);

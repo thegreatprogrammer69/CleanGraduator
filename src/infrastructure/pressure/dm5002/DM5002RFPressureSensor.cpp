@@ -122,10 +122,9 @@ void DM5002RFPressureSensor::run() {
 
         logger_.info("pressure sample: value={} Pa, ts={}",result.pressure, result.time_point);
 
-        domain::common::PressurePacket packet{
-            .timestamp = result.time_point,
-            .pressure  = result.pressure,
-        };
+        domain::common::PressurePacket packet;
+        packet.timestamp = result.time_point;
+        packet.pressure = result.pressure;
 
         notifier_.notifyPressure(packet);
     }

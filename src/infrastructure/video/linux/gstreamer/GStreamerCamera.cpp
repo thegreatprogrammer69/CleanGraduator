@@ -291,10 +291,9 @@ void GStreamerCamera::dispatchSample(GstSample* sample) {
 
     const domain::common::Timestamp ts = ports_.clock.now();
 
-    domain::common::VideoFramePacket packet{
-        .timestamp = ts,
-        .frame = frame,
-    };
+    domain::common::VideoFramePacket packet;
+    packet.timestamp = ts;
+    packet.frame = frame;
 
     notifier_.notifyFrame(packet);
 }

@@ -77,10 +77,10 @@ FilePrinterCatalog::FilePrinterCatalog(FilePrinterCatalogPorts ports, std::strin
         }
 
         try {
-            printers_.push_back(application::models::Printer{
-                .name = from_utf8(name),
-                .path = from_utf8(path)
-            });
+            application::models::Printer printer;
+            printer.name = from_utf8(name);
+            printer.path = from_utf8(path);
+            printers_.push_back(printer);
             logger_.info("Loaded printer model: {}", printers_.back());
         } catch (const std::range_error&) {
             logger_.error("Invalid UTF-8 in printer line: {}", line);

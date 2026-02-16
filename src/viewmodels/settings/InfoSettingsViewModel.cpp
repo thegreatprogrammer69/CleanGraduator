@@ -22,13 +22,12 @@ const std::vector<std::string>& InfoSettingsViewModel::pressureUnits() const { r
 const std::vector<std::string>& InfoSettingsViewModel::printers() const { return printers_; }
 
 void InfoSettingsViewModel::save() {
-    const InfoSettingsData data {
-        .displacement_idx = selectedDisplacement.get_copy(),
-        .gauge_idx = selectedGauge.get_copy(),
-        .precision_idx = selectedPrecision.get_copy(),
-        .pressure_unit_idx = selectedPressureUnit.get_copy(),
-        .printer_idx = selectedPrinter.get_copy(),
-    };
+    InfoSettingsData data;
+    data.displacement_idx = selectedDisplacement.get_copy();
+    data.gauge_idx = selectedGauge.get_copy();
+    data.precision_idx = selectedPrecision.get_copy();
+    data.pressure_unit_idx = selectedPressureUnit.get_copy();
+    data.printer_idx = selectedPrinter.get_copy();
 
     deps_.storage.saveInfoSettings(data);
 }
