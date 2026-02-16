@@ -29,10 +29,10 @@ namespace fmt {
             logger_.error(last_error_);
         }
 
-        const std::string& lastError() {
+        std::string lastError() {
             auto last_error = last_error_;
             last_error_.clear();
-            return last_error_;
+            return last_error;
         }
 
     private:

@@ -10,6 +10,10 @@
 #include "domain/ports/pressure/IPressureSourceObserver.h"
 #include "viewmodels/Observable.h"
 
+namespace application::models {
+    struct PressureUnit;
+}
+
 namespace domain::ports {
     struct IPressureSource;
 }
@@ -25,7 +29,7 @@ namespace mvvm {
         explicit PressureSensorStatusBarViewModel(PressureSensorStatusBarViewModelDeps deps);
         ~PressureSensorStatusBarViewModel() override;
 
-        double pressureSpeedPaPerSecond() const;
+        domain::common::Pressure pressureSpeedPerSecond() const;
 
         Observable<bool> is_opened{false};
         Observable<domain::common::Pressure> pressure{};
@@ -39,8 +43,13 @@ namespace mvvm {
 
     private:
         domain::ports::IPressureSource& pressure_source_;
+
         std::atomic<double> pressure_speed_pa_per_sec_{0.0};
-        std::optional<domain::common::PressurePacket> last_packet_{};
+        std::atomic<domain::common::PressureUnit> pressure_unit_ = domain::common::PressureUnit::Pa;
+
+        std::optional<domain::common::Pressure> last_pressure_{};
+        std::optional<std::chrono::steady_clock::time_point> last_time_{};
+
     };
 
 } // namespace mvvm

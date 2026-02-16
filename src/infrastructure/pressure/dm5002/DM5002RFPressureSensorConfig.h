@@ -3,7 +3,7 @@
 #include <string>
 
 namespace infra::pressure {
-    struct DM5002RFConfig {
+    struct DM5002RFPressureSensorConfig {
         std::string com_port{};
         int poll_rate = 10;
     };

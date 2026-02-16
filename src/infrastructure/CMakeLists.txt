@@ -15,6 +15,7 @@ set(SOURCES
 
         pressure/PressureSourceNotifier.cpp
         pressure/dm5002/DM5002RFPressureSensor.cpp
+        pressure/dm5002/DM5002PressureSensor.cpp
 
         motor/g540/as_lpt/G540LptMotorDriver.cpp
 
@@ -70,6 +71,9 @@ elseif(UNIX)
             platform/sleep/sleep_linux.cpp
             video/linux/v4l/V4LCamera.cpp
             video/linux/gstreamer/GStreamerCamera.cpp
+            pressure/dm5002/DM5002PressureSensor.h
+            pressure/dm5002/DM5002PressureSensor.cpp
+            pressure/dm5002/DM5002PressureSensorConfig.h
     )
 endif()
 

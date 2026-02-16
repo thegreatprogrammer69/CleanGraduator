@@ -8,6 +8,7 @@
 #include "bootstrap/UseCasesBootstrap.h"
 #include "bootstrap/ViewModelsBootstrap.h"
 #include "../domain/ports/angle/IAngleSource.h"
+#include "domain/ports/pressure/IPressureSource.h"
 #include "ui/widgets/QtMainWindow.h"
 
 namespace {
@@ -51,6 +52,8 @@ int main(int argc, char *argv[]) {
 
         application_bootstrap.angle_sources[0]->start();
         application_bootstrap.angle_sources[1]->start();
+
+        application_bootstrap.pressure_source->start();
 
         return app.exec();
     }

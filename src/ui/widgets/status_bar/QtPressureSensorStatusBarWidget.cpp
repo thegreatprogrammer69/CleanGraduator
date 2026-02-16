@@ -102,7 +102,7 @@ QtPressureSensorStatusBarWidget::QtPressureSensorStatusBarWidget(
         QMetaObject::invokeMethod(this, [this, err] { setErrorText(err); }, Qt::QueuedConnection);
     });
 
-    timer_.setInterval(250);
+    timer_.setInterval(100);
     connect(&timer_, &QTimer::timeout, this, [this] { refreshAll(); });
     timer_.start();
 
@@ -130,10 +130,12 @@ QString QtPressureSensorStatusBarWidget::errorToText(const std::string& err) {
 }
 
 void QtPressureSensorStatusBarWidget::refreshAll() {
-    const auto speed = vm_.pressureSpeedPaPerSecond();
+    const auto speed = vm_.pressureSpeedPerSecond();
     std::stringstream ss;
     ss << speed;
-    speed_value_->setText(QString::fromStdString(ss.str()));
+    auto val = QString::fromStdString(ss.str() + " / sec");
+    if (val[0] != '-') val = " " + val;
+    speed_value_->setText(val);
 }
 
 void QtPressureSensorStatusBarWidget::setOpenedText(bool is_opened) {

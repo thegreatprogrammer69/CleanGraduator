@@ -26,7 +26,7 @@
 #include "infrastructure/overlay/crosshair/CrosshairVideoOverlay.h"
 #include "infrastructure/platform/com/ComPort.h"
 #include "infrastructure/pressure/PressureSourceNotifier.h"
-#include "infrastructure/pressure/dm5002/PressureSourcePorts.h"
+#include "../../infrastructure/pressure/PressureSourcePorts.h"
 #include "infrastructure/process/ProcessLifecycle.h"
 #include "infrastructure/storage/QtInfoSettingsStorage.h"
 #include "infrastructure/storage/VideoAngleSourcesStorage.h"

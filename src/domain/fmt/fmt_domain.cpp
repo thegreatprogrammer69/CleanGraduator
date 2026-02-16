@@ -3,6 +3,7 @@
 #include <chrono>
 #include <ostream>
 
+#include "fmt.h"
 #include "domain/core/calibration/CalibrationCellSeverity.h"
 #include "domain/core/measurement/Angle.h"
 #include "domain/core/measurement/AngleUnit.h"
@@ -36,7 +37,7 @@ std::ostream& operator<<(std::ostream& os, const AngleUnit& f) {
 }
 
 std::ostream& operator<<(std::ostream& os, const Pressure& f) {
-    os << f.value() << ' ' << f.unit();
+    os << fmt::fmt("{:.2f} {}", f.value(), f.unit());
     return os;
 }
 

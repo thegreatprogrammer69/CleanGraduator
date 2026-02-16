@@ -17,25 +17,45 @@ mvvm::PressureSensorStatusBarViewModel::~PressureSensorStatusBarViewModel() {
     pressure_source_.removeObserver(*this);
 }
 
-double mvvm::PressureSensorStatusBarViewModel::pressureSpeedPaPerSecond() const {
-    return pressure_speed_pa_per_sec_.load(std::memory_order_relaxed);
+domain::common::Pressure mvvm::PressureSensorStatusBarViewModel::pressureSpeedPerSecond() const {
+    auto p = domain::common::Pressure::fromPa(
+        pressure_speed_pa_per_sec_.load(std::memory_order_relaxed)
+    );
+    p.setUnit(pressure_unit_.load(std::memory_order_relaxed));
+    return p;
 }
 
-void mvvm::PressureSensorStatusBarViewModel::onPressurePacket(const domain::common::PressurePacket& packet) {
-    if (last_packet_.has_value()) {
-        const auto dt = packet.timestamp.toDuration() - last_packet_->timestamp.toDuration();
-        const auto dt_seconds = std::chrono::duration<double>(dt).count();
+void mvvm::PressureSensorStatusBarViewModel::onPressurePacket(
+    const domain::common::PressurePacket& packet)
+{
+    const auto now = std::chrono::steady_clock::now();
+
+    if (last_pressure_.has_value() && last_time_.has_value()) {
+
+        const auto dt = now - *last_time_;
+        const double dt_seconds = std::chrono::duration<double>(dt).count();
 
         if (dt_seconds > 0.0) {
-            const auto delta_pa = packet.pressure.pa() - last_packet_->pressure.pa();
-            pressure_speed_pa_per_sec_.store(delta_pa / dt_seconds, std::memory_order_relaxed);
+            const double delta_pa =
+                packet.pressure.pa() - last_pressure_->pa();
+
+            pressure_speed_pa_per_sec_.store(
+                delta_pa / dt_seconds,
+                std::memory_order_relaxed
+            );
+
+            pressure_unit_.store(packet.pressure.unit(), std::memory_order_relaxed);
+
         }
     }
 
-    last_packet_ = packet;
+    last_pressure_ = packet.pressure;
+    last_time_ = now;
+
     pressure.set(packet.pressure);
     error.set("");
 }
+
 
 void mvvm::PressureSensorStatusBarViewModel::onPressureSourceOpened() {
     is_opened.set(true);
@@ -51,5 +71,7 @@ void mvvm::PressureSensorStatusBarViewModel::onPressureSourceOpenFailed(const do
 void mvvm::PressureSensorStatusBarViewModel::onPressureSourceClosed(const domain::common::PressureSourceError& err) {
     is_opened.set(false);
     pressure_speed_pa_per_sec_.store(0.0, std::memory_order_relaxed);
+    last_pressure_.reset();
+    last_time_.reset();
     error.set(err.reason);
 }

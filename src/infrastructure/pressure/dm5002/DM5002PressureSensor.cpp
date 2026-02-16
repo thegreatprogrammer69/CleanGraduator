@@ -1,4 +1,4 @@
-#include "DM5002RFPressureSensor.h"
+#include "DM5002PressureSensor.h"
 #include <stdexcept>
 #include <chrono>
 #include <cmath>
@@ -9,7 +9,7 @@
 #include <thread>
 #include <vector>
 
-#include "../../../domain/ports/clock/IClock.h"
+#include "domain/ports/clock/IClock.h"
 #include "domain/core/common/PressurePacket.h"
 #include "domain/core/common/PressureSourceError.h"
 #include "infrastructure/platform/sleep/sleep.h"
@@ -17,12 +17,16 @@
 
 namespace infra::pressure {
 
-constexpr int responseLength = 5;
+constexpr int responseLength = 19;
 
-struct DM5002RFPressureSensor::DM5002RFPressureSensorImpl {
-    explicit DM5002RFPressureSensorImpl() {}
+struct DM5002PressureSensor::DM5002PressureSensorImpl {
+    explicit DM5002PressureSensorImpl() {}
 
-    unsigned char requestBytes[2] = {0, 1};
+    unsigned char requestBytes[12] = {
+        0xFF, 0xFF, 0xFF, 0x82,
+        0xFF, 0xFF, 0xFF, 0xFF,
+        0x00, 0x01, 0x00, 0x83
+    };
     unsigned char responseBytes[64] = {};
 
     std::atomic<bool> stopped{true};
@@ -31,8 +35,8 @@ struct DM5002RFPressureSensor::DM5002RFPressureSensorImpl {
     platform::ComPort com_port;
 };
 
-DM5002RFPressureSensor::DM5002RFPressureSensor(PressureSourcePorts ports, DM5002RFPressureSensorConfig config)
-    : impl_(std::make_unique<DM5002RFPressureSensorImpl>())
+DM5002PressureSensor::DM5002PressureSensor(PressureSourcePorts ports, DM5002PressureSensorConfig config)
+    : impl_(std::make_unique<DM5002PressureSensorImpl>())
     , config_(config)
     , logger_(ports.logger)
     , clock_(ports.clock)
@@ -40,12 +44,12 @@ DM5002RFPressureSensor::DM5002RFPressureSensor(PressureSourcePorts ports, DM5002
     logger_.info("constructor called");
 }
 
-DM5002RFPressureSensor::~DM5002RFPressureSensor() {
+DM5002PressureSensor::~DM5002PressureSensor() {
     logger_.info("destructor called, stopping...");
     stop();
 }
 
-bool DM5002RFPressureSensor::start() {
+bool DM5002PressureSensor::start() {
     using namespace std::chrono;
     if (!impl_->stopped) return false;
 
@@ -57,13 +61,13 @@ bool DM5002RFPressureSensor::start() {
     }
 
     impl_->stopped.store(false, std::memory_order_release);
-    impl_->worker = std::thread(&DM5002RFPressureSensor::run, this);
+    impl_->worker = std::thread(&DM5002PressureSensor::run, this);
 
     logger_.info("worker started");
     return true;
 }
 
-void DM5002RFPressureSensor::stop() {
+void DM5002PressureSensor::stop() {
     using namespace std::chrono;
     if (impl_->stopped) return;
     impl_->stopped.store(true, std::memory_order_release);
@@ -72,15 +76,15 @@ void DM5002RFPressureSensor::stop() {
     logger_.info("worker stopped");
 }
 
-void DM5002RFPressureSensor::addObserver(domain::ports::IPressureSourceObserver &observer) {
+void DM5002PressureSensor::addObserver(domain::ports::IPressureSourceObserver &observer) {
     notifier_.addObserver(observer);
 }
 
-void DM5002RFPressureSensor::removeObserver(domain::ports::IPressureSourceObserver &observer) {
+void DM5002PressureSensor::removeObserver(domain::ports::IPressureSourceObserver &observer) {
     notifier_.removeObserver(observer);
 }
 
-void DM5002RFPressureSensor::run() {
+void DM5002PressureSensor::run() {
     using namespace std::chrono;
 
     logger_.info("worker thread started");
@@ -138,7 +142,7 @@ void DM5002RFPressureSensor::run() {
     notifier_.notifyClosed(err);
 }
 
-DM5002RFPressureSensor::ReadResult DM5002RFPressureSensor::readPressure() {
+DM5002PressureSensor::ReadResult DM5002PressureSensor::readPressure() {
     ReadResult result;
 
     // =================================
@@ -172,10 +176,10 @@ DM5002RFPressureSensor::ReadResult DM5002RFPressureSensor::readPressure() {
     // =================================
     // 3. Извлечение значения давления
     unsigned char pressureBytes[4] = {
-        impl_->responseBytes[4],
-        impl_->responseBytes[3],
-        impl_->responseBytes[2],
-        impl_->responseBytes[1]
+        impl_->responseBytes[17],
+        impl_->responseBytes[16],
+        impl_->responseBytes[15],
+        impl_->responseBytes[14]
     };
 
     float pressure = 0.0F;
@@ -194,7 +198,7 @@ DM5002RFPressureSensor::ReadResult DM5002RFPressureSensor::readPressure() {
 
     // =================================
     // 4. Извлечение единицы измерения и конвертация в Па
-    const unsigned char unitByte = impl_->responseBytes[0];
+    const unsigned char unitByte = impl_->responseBytes[13];
 
     switch (unitByte) {
         case 1:

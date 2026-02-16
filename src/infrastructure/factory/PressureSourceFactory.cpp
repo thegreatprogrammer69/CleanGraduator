@@ -1,7 +1,9 @@
 #include "PressureSourceFactory.h"
 
+#include "infrastructure/pressure/dm5002/DM5002PressureSensor.h"
+#include "infrastructure/pressure/dm5002/DM5002PressureSensorConfig.h"
 #include "infrastructure/pressure/dm5002/DM5002RFPressureSensor.h"
-#include "infrastructure/pressure/dm5002/DM5002RFConfig.h"
+#include "infrastructure/pressure/dm5002/DM5002RFPressureSensorConfig.h"
 #include "infrastructure/utils/ini/IniFile.h"
 
 namespace {
@@ -43,8 +45,8 @@ namespace infra::repo {
 
         const std::string type = section.getString("type", "");
 
-        if (type == "dm5002" || type == "dm5002rf") {
-            pressure::DM5002RFConfig config{};
+        if (type == "dm5002rf") {
+            pressure::DM5002RFPressureSensorConfig config{};
             config.com_port = section.getString("com_port", config.com_port);
             config.poll_rate = section.getInt("poll_rate", config.poll_rate);
 
@@ -52,7 +54,21 @@ namespace infra::repo {
                 throw std::runtime_error("DM5002: com_port is empty");
             }
 
-            return std::make_unique<infra::pressure::DM5002RFPressureSensor>(
+            return std::make_unique<pressure::DM5002RFPressureSensor>(
+                ports_,
+                config
+            );
+        }
+        if (type == "dm5002") {
+            pressure::DM5002PressureSensorConfig config{};
+            config.com_port = section.getString("com_port", config.com_port);
+            config.poll_rate = section.getInt("poll_rate", config.poll_rate);
+
+            if (config.com_port.empty()) {
+                throw std::runtime_error("DM5002: com_port is empty");
+            }
+
+            return std::make_unique<pressure::DM5002PressureSensor>(
                 ports_,
                 config
             );
