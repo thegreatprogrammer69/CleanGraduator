@@ -1,11 +1,13 @@
 #include "QtPressureSensorStatusBarWidget.h"
 
 #include <QFormLayout>
+#include <QVariant>
 #include <QFrame>
 #include <QLabel>
 #include <QMetaObject>
 #include <QVBoxLayout>
 
+#include "domain/fmt/fmt.h"
 #include "viewmodels/status_bar/PressureSensorStatusBarViewModel.h"
 
 namespace ui {
@@ -78,7 +80,7 @@ QtPressureSensorStatusBarWidget::QtPressureSensorStatusBarWidget(
     speed_value_ = makeValue(content_card_);
     error_value_ = makeValue(content_card_);
 
-    form->addRow(makeCaption(tr("Подключение"), content_card_), opened_value_);
+    form->addRow(makeCaption(tr("Состояние"), content_card_), opened_value_);
     form->addRow(makeCaption(tr("Давление"), content_card_), pressure_value_);
     form->addRow(makeCaption(tr("Скорость"), content_card_), speed_value_);
     form->addRow(makeCaption(tr("Ошибка"), content_card_), error_value_);
@@ -129,7 +131,9 @@ QString QtPressureSensorStatusBarWidget::errorToText(const std::string& err) {
 
 void QtPressureSensorStatusBarWidget::refreshAll() {
     const auto speed = vm_.pressureSpeedPaPerSecond();
-    speed_value_->setText(QString::number(speed, 'f', 2) + tr(" Па/с"));
+    std::stringstream ss;
+    ss << speed;
+    speed_value_->setText(QString::fromStdString(ss.str()));
 }
 
 void QtPressureSensorStatusBarWidget::setOpenedText(bool is_opened) {
@@ -138,7 +142,9 @@ void QtPressureSensorStatusBarWidget::setOpenedText(bool is_opened) {
 
 void QtPressureSensorStatusBarWidget::setPressureText() {
     const auto p = vm_.pressure.get_copy();
-    pressure_value_->setText(QString::number(p.kpa(), 'f', 3) + tr(" кПа"));
+    std::stringstream ss;
+    ss << p;
+    pressure_value_->setText(QString::fromStdString(ss.str()));
 }
 
 void QtPressureSensorStatusBarWidget::setErrorText(const std::string& err) {
