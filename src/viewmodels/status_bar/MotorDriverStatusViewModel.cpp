@@ -6,11 +6,7 @@ mvvm::MotorDriverStatusViewModel::MotorDriverStatusViewModel(MotorDriverStatusVi
     : motor_driver_(deps.motor_driver)
 {
     motor_driver_.addObserver(*this);
-
-    const auto current_limits = motor_driver_.limits();
-    home_limit_.store(current_limits.home, std::memory_order_relaxed);
-    end_limit_.store(current_limits.end, std::memory_order_relaxed);
-    fault_.store(motor_driver_.fault(), std::memory_order_relaxed);
+    fault.set(motor_driver_.fault());
 }
 
 mvvm::MotorDriverStatusViewModel::~MotorDriverStatusViewModel() {
@@ -22,22 +18,15 @@ bool mvvm::MotorDriverStatusViewModel::isRunning() const {
 }
 
 int mvvm::MotorDriverStatusViewModel::frequencyHz() const {
-    return frequency_hz_.load(std::memory_order_relaxed);
+    return motor_driver_.frequency();
 }
 
 domain::common::MotorDirection mvvm::MotorDriverStatusViewModel::direction() const {
-    return direction_.load(std::memory_order_relaxed);
+    return motor_driver_.direction();
 }
 
 domain::common::MotorLimitsState mvvm::MotorDriverStatusViewModel::limits() const {
-    return {
-        home_limit_.load(std::memory_order_relaxed),
-        end_limit_.load(std::memory_order_relaxed)
-    };
-}
-
-domain::common::MotorFault mvvm::MotorDriverStatusViewModel::fault() const {
-    return fault_.load(std::memory_order_relaxed);
+    return motor_driver_.limits();
 }
 
 void mvvm::MotorDriverStatusViewModel::onStarted() {
@@ -46,23 +35,9 @@ void mvvm::MotorDriverStatusViewModel::onStarted() {
 
 void mvvm::MotorDriverStatusViewModel::onStopped() {
     is_running_.store(false, std::memory_order_relaxed);
-    frequency_hz_.store(0, std::memory_order_relaxed);
 }
 
-void mvvm::MotorDriverStatusViewModel::onFrequencyChanged(int hz) {
-    frequency_hz_.store(hz, std::memory_order_relaxed);
-}
-
-void mvvm::MotorDriverStatusViewModel::onDirectionChanged(domain::common::MotorDirection dir) {
-    direction_.store(dir, std::memory_order_relaxed);
-}
-
-void mvvm::MotorDriverStatusViewModel::onLimitsChanged(domain::common::MotorLimitsState state) {
-    home_limit_.store(state.home, std::memory_order_relaxed);
-    end_limit_.store(state.end, std::memory_order_relaxed);
-}
-
-void mvvm::MotorDriverStatusViewModel::onFault(domain::common::MotorFault fault) {
-    fault_.store(fault, std::memory_order_relaxed);
+void mvvm::MotorDriverStatusViewModel::onFault(const domain::common::MotorFault& fault) {
+    this->fault.set(fault);
 }
 

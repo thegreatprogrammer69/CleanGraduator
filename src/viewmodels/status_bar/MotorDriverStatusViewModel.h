@@ -7,6 +7,7 @@
 #include "domain/core/motor/motor/MotorFault.h"
 #include "domain/core/motor/motor/MotorLimitsState.h"
 #include "domain/ports/motor/IMotorDriverObserver.h"
+#include "viewmodels/Observable.h"
 
 namespace domain::ports {
     struct IMotorDriver;
@@ -27,24 +28,18 @@ namespace mvvm {
         int frequencyHz() const;
         domain::common::MotorDirection direction() const;
         domain::common::MotorLimitsState limits() const;
-        domain::common::MotorFault fault() const;
+
+        Observable<domain::common::MotorFault> fault{};
 
     protected:
+        // IMotorDriverObserver
         void onStarted() override;
         void onStopped() override;
-        void onFrequencyChanged(int hz) override;
-        void onDirectionChanged(domain::common::MotorDirection dir) override;
-        void onLimitsChanged(domain::common::MotorLimitsState state) override;
-        void onFault(domain::common::MotorFault fault) override;
+        void onFault(const domain::common::MotorFault& fault) override;
 
     private:
+        // В UI 3 состояния - остановлен и движется вперёд/назад
         std::atomic_bool is_running_{false};
-        std::atomic_int frequency_hz_{0};
-        std::atomic<domain::common::MotorDirection> direction_{domain::common::MotorDirection::Forward};
-        std::atomic_bool home_limit_{false};
-        std::atomic_bool end_limit_{false};
-        std::atomic<domain::common::MotorFault> fault_{domain::common::MotorFault::None};
-
         domain::ports::IMotorDriver& motor_driver_;
     };
 

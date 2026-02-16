@@ -4,6 +4,8 @@
 #include <QWidget>
 #include <QTimer>
 
+#include <memory>
+
 #include "domain/core/motor/motor/MotorDirection.h"
 #include "domain/core/motor/motor/MotorFault.h"
 #include "domain/core/motor/motor/MotorLimitsState.h"
@@ -23,11 +25,12 @@ namespace ui {
 
     private:
         static QString directionToText(domain::common::MotorDirection direction);
-        static QString faultToText(domain::common::MotorFault fault);
+        static QString faultToText(const domain::common::MotorFault& fault);
         static QString runToText(bool is_running);
         static QString boolToText(bool value);
 
         void refreshAll();
+        void setFaultText(const domain::common::MotorFault &fault);
 
     private:
         mvvm::MotorDriverStatusViewModel& vm_;
@@ -41,9 +44,13 @@ namespace ui {
         QLabel* end_limit_value_{nullptr};
         QLabel* fault_value_{nullptr};
 
+        // Подписки на Observable держим в .cpp (чтобы не тащить типы в заголовок)
+        struct Subscriptions;
+        std::unique_ptr<Subscriptions> subs_;
+
         QTimer timer_;
     };
 
 } // namespace ui
 
-#endif //CLEANGRADUATOR_QTMOTORDRIVERSTATUSBARWIDGET_H
+#endif // CLEANGRADUATOR_QTMOTORDRIVERSTATUSBARWIDGET_H

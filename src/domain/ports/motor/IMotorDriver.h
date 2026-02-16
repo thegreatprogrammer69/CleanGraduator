@@ -2,6 +2,7 @@
 #define CLEANGRADUATOR_IMOTORDRIVER_H
 #include <chrono>
 
+#include "domain/core/motor/motor/FrequencyLimits.h"
 #include "domain/core/motor/motor/MotorLimitsState.h"
 #include "domain/core/motor/motor/MotorDirection.h"
 #include "domain/core/motor/motor/MotorFault.h"
@@ -21,7 +22,11 @@ namespace domain::ports {
 
         // --- Motion config ---
         virtual void setFrequency(int hz) = 0;
+        virtual int frequency() const = 0;
+        virtual common::FrequencyLimits frequencyLimits() const = 0;
+
         virtual void setDirection(common::MotorDirection dir) = 0;
+        virtual common::MotorDirection direction() const = 0;
 
         // --- Limits ---
         virtual common::MotorLimitsState limits() const = 0;
@@ -33,6 +38,7 @@ namespace domain::ports {
 
         // --- Fault state ---
         virtual common::MotorFault fault() const = 0;
+        virtual void resetFault() = 0;
 
         // --- Observers ---
         virtual void addObserver(IMotorDriverObserver&) = 0;

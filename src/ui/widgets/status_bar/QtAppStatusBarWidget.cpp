@@ -57,6 +57,7 @@ QtAppStatusBarWidget::QtAppStatusBarWidget(mvvm::AppStatusBarViewModel& vm, QWid
         }
         QLabel[role="timeValue"] {
             font-family: "Consolas", "DejaVu Sans Mono", monospace;
+            font-size: 15px;
             letter-spacing: 1px;
         }
         QLabel[role="statusBadge"] {
@@ -76,13 +77,15 @@ QtAppStatusBarWidget::QtAppStatusBarWidget(mvvm::AppStatusBarViewModel& vm, QWid
         row->setContentsMargins(0, 0, 0, 0);
         row->setSpacing(8);
 
-        auto* caption = makeCaption(QStringLiteral("Статус"), content_card_);
+        // auto* caption = makeCaption(tr("Статус"), content_card_);
         statusBadge_ = new QLabel(content_card_);
         statusBadge_->setProperty("role", "statusBadge");
         statusBadge_->setTextInteractionFlags(Qt::TextSelectableByMouse);
+        statusBadge_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+        statusBadge_->setAlignment(Qt::AlignHCenter | Qt::AlignVCenter);
 
-        row->addWidget(caption);
-        row->addWidget(statusBadge_);
+        // row->addWidget(caption);
+        row->addWidget(statusBadge_, 1);
         row->addStretch();
 
         card->addLayout(row);
@@ -101,8 +104,11 @@ QtAppStatusBarWidget::QtAppStatusBarWidget(mvvm::AppStatusBarViewModel& vm, QWid
         sessionValue_ = makeTimeValue(content_card_);
         uptimeValue_  = makeTimeValue(content_card_);
 
-        form->addRow(makeCaption(QStringLiteral("Сессия"), content_card_), sessionValue_);
-        form->addRow(makeCaption(QStringLiteral("Аптайм"), content_card_), uptimeValue_);
+        sessionValue_->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+        uptimeValue_->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+
+        form->addRow(makeCaption(tr("Процесс"), content_card_), sessionValue_);
+        form->addRow(makeCaption(tr("Программа"), content_card_), uptimeValue_);
 
         card->addLayout(form);
     }
@@ -161,12 +167,12 @@ QString QtAppStatusBarWidget::stateToText(domain::common::ProcessLifecycleState 
 {
     using S = domain::common::ProcessLifecycleState;
     switch (s) {
-        case S::Idle:     return QStringLiteral("Ожидание");
-        case S::Forward:  return QStringLiteral("Прямой ход");
-        case S::Backward: return QStringLiteral("Обратный ход");
-        case S::Stopping: return QStringLiteral("Остановка");
+        case S::Idle:     return tr("Ожидание");
+        case S::Forward:  return tr("Прямой ход");
+        case S::Backward: return tr("Обратный ход");
+        case S::Stopping: return tr("Остановка");
     }
-    return QStringLiteral("Неизвестно");
+    return tr("Неизвестно");
 }
 
 QString QtAppStatusBarWidget::stateAccent(domain::common::ProcessLifecycleState s)

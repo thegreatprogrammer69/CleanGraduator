@@ -169,7 +169,7 @@ ui::QtMainWindow::QtMainWindow(
     const auto status_models = model_.statusBarViewModels();
 
     auto* app_status_bar = new QtAppStatusBarWidget(status_models.app_status_bar);
-    app_status_bar->setFixedWidth(220);
+    app_status_bar->setFixedWidth(180);
 
     auto* motor_status_bar = new QtMotorDriverStatusBarWidget(status_models.motor_driver_status);
     motor_status_bar->setFixedWidth(260);

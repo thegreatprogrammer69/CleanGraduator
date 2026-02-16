@@ -24,7 +24,11 @@ namespace infra::motors {
 
         // --- Motion config ---
         void setFrequency(int hz) override;
+        int frequency() const override;
+        domain::common::FrequencyLimits frequencyLimits() const override;
+
         void setDirection(domain::common::MotorDirection dir) override;
+        domain::common::MotorDirection direction() const override;
 
         // --- Limits ---
         domain::common::MotorLimitsState limits() const override;
@@ -36,10 +40,11 @@ namespace infra::motors {
 
         // --- Fault state ---
         domain::common::MotorFault fault() const override;
+        void resetFault() override;
 
         // --- Observers ---
-        void addObserver(domain::ports::IMotorDriverObserver& o);
-        void removeObserver(domain::ports::IMotorDriverObserver& o);
+        void addObserver(domain::ports::IMotorDriverObserver& o) override;
+        void removeObserver(domain::ports::IMotorDriverObserver& o) override;
 
         // --- Extra (из старого кода) ---
         enum class FlapsState { CloseBoth, OpenInput, OpenOutput };
@@ -59,8 +64,8 @@ namespace infra::motors {
         G540LptMotorDriverPorts ports_;
         G540LptMotorDriverConfig config_;
 
-        int current_hz_;
-        domain::common::MotorDirection current_dir_;
+        std::atomic<int> current_hz_;
+        std::atomic<domain::common::MotorDirection> current_dir_;
     };
 }
 

@@ -4,14 +4,13 @@
 #include "infrastructure/platform/sleep/sleep.h"
 
 #include <algorithm>
+#include <atomic>
 #include <condition_variable>
+#include <cstdint>
 #include <mutex>
 #include <thread>
-#include <vector>
-#include <atomic>
-#include <cstdint>
 #include <type_traits>
-
+#include <vector>
 
 #include "domain/ports/motor/IMotorDriverObserver.h"
 
@@ -28,7 +27,6 @@ inline unsigned char invertBusyBit(unsigned char s) {
     return static_cast<unsigned char>(s ^ (1u << 7));
 }
 
-// кодирование лимитов в MotorLimitsState как у тебя (begin/home, end/end)
 inline domain::common::MotorLimitsState toLimitsState(unsigned char state,
                                                       unsigned char beginMask,
                                                       unsigned char endMask)
@@ -39,32 +37,21 @@ inline domain::common::MotorLimitsState toLimitsState(unsigned char state,
     return out;
 }
 
-// Можно ли двигаться с учётом направления и лимитов
 inline bool canMove(domain::common::MotorDirection direction,
-                        const domain::common::MotorLimitsState& limits)
+                    const domain::common::MotorLimitsState& limits)
 {
     using domain::common::MotorDirection;
 
     switch (direction)
     {
         case MotorDirection::Forward:
-            // Движение вперёд запрещено если активен конечный (end) лимит
             return !limits.end;
 
         case MotorDirection::Backward:
-            // Движение назад запрещено если активен начальный (home) лимит
             return !limits.home;
     }
 
     return false;
-}
-
-
-// Подсчёт half-period
-inline std::chrono::steady_clock::duration calculateHalfPeriod(int hz) {
-    using namespace std::chrono;
-    if (hz <= 0) hz = 1;
-    return duration_cast<steady_clock::duration>(seconds(1) / (hz * 2));
 }
 
 } // namespace
@@ -72,13 +59,12 @@ inline std::chrono::steady_clock::duration calculateHalfPeriod(int hz) {
 // ==========================================================
 // Impl
 // ==========================================================
-
-// ==========================================================
-// Impl (no configure(), runLoop() without mutex)
-// Allowed atomics only:
-// requested_running_, requested_emergency_, shutdown_,
-// half_period_ns_, direction_, flaps_dirty_, flaps_state_
-// ==========================================================
+//
+// Поток всегда живёт.
+// В горячем пути (runLoop) не берём мьютексы.
+// Ошибка (fault.error) хранится отдельно и читается только по запросу,
+// чтобы не таскать std::string через атомики.
+//
 
 struct G540LptMotorDriver::G540LptImpl {
     explicit G540LptImpl(G540LptMotorDriver& owner,
@@ -91,9 +77,8 @@ struct G540LptMotorDriver::G540LptImpl {
         , end_mask_(static_cast<unsigned char>(1u << cfg_.bit_end_limit_switch))
         , half_period_ns_(halfPeriodNsCount(clampHz(cfg_.min_freq_hz, cfg_.min_freq_hz, cfg_.max_freq_hz)))
         , direction_(static_cast<DirU>(domain::common::MotorDirection::Forward))
-        , flaps_state_(packInitialState())
+        , shared_state_(packInitialState())
     {
-        // Вариант A: поток всегда жив
         worker_ = std::thread([this]{ threadMain(); });
     }
 
@@ -103,7 +88,6 @@ struct G540LptMotorDriver::G540LptImpl {
     // API (external thread)
     // =========================
     void start() {
-        // start теперь ТОЛЬКО включает движение
         requested_emergency_.store(false, std::memory_order_relaxed);
         requested_running_.store(true, std::memory_order_relaxed);
         cv_.notify_all();
@@ -111,6 +95,7 @@ struct G540LptMotorDriver::G540LptImpl {
 
     void stop() {
         requested_running_.store(false, std::memory_order_relaxed);
+        // stop может не разбудить wait, но если не бежим — и не надо.
         cv_.notify_all();
     }
 
@@ -118,6 +103,21 @@ struct G540LptMotorDriver::G540LptImpl {
         requested_running_.store(false, std::memory_order_relaxed);
         requested_emergency_.store(true, std::memory_order_relaxed);
         cv_.notify_all();
+    }
+
+    void resetFault() {
+        const auto prev = exchangeFaultType(FaultType::None);
+
+        {
+            std::lock_guard lk(fault_mtx_);
+            fault_error_.clear();
+        }
+
+        if (prev != FaultType::None) {
+            domain::common::MotorFault f{};
+            f.type = FaultType::None;
+            notifyFault(f);
+        }
     }
 
     void setDirection(domain::common::MotorDirection d) {
@@ -136,7 +136,7 @@ struct G540LptMotorDriver::G540LptImpl {
     }
 
     domain::common::MotorLimitsState limits() const {
-        const auto st = flaps_state_.load(std::memory_order_relaxed);
+        const auto st = shared_state_.load(std::memory_order_relaxed);
         domain::common::MotorLimitsState out{};
         out.home = (st & LIMIT_HOME_BIT) != 0;
         out.end  = (st & LIMIT_END_BIT)  != 0;
@@ -144,33 +144,41 @@ struct G540LptMotorDriver::G540LptImpl {
     }
 
     domain::common::MotorFault fault() const {
-        const auto st = flaps_state_.load(std::memory_order_relaxed);
-        const auto raw = static_cast<FaultU>((st & FAULT_MASK) >> FAULT_SHIFT);
-        return static_cast<domain::common::MotorFault>(raw);
+        domain::common::MotorFault out{};
+        out.type = faultType();
+
+        if (out.type == FaultType::DriverError) {
+            std::lock_guard lk(fault_mtx_);
+            out.error = fault_error_;
+        } else {
+            out.error.clear();
+        }
+
+        return out;
     }
 
     void addObserver(domain::ports::IMotorDriverObserver& o) {
-        std::lock_guard lk(mtx_);
+        std::lock_guard lk(obs_mtx_);
         observers_.push_back(&o);
     }
 
     void removeObserver(domain::ports::IMotorDriverObserver& o) {
-        std::lock_guard lk(mtx_);
+        std::lock_guard lk(obs_mtx_);
         observers_.erase(std::remove(observers_.begin(), observers_.end(), &o), observers_.end());
     }
 
 private:
-    using Dir    = domain::common::MotorDirection;
-    using DirU   = std::underlying_type_t<Dir>;
-    using Fault  = domain::common::MotorFault;
-    using FaultU = std::underlying_type_t<Fault>;
+    using Dir      = domain::common::MotorDirection;
+    using DirU     = std::underlying_type_t<Dir>;
+    using FaultType = domain::common::MotorFaultType;
+    using FaultU   = std::underlying_type_t<FaultType>;
 
     // =========================
-    // Packed shared state in flaps_state_ (single allowed atomic)
+    // Packed shared state in shared_state_ (single allowed atomic)
     // bits:
     // 0: home limit
     // 1: end limit
-    // 8..23: fault (16 bits)
+    // 8..23: fault type (16 bits)
     // 24..25: flaps (2 bits)
     // =========================
     static constexpr std::uint32_t LIMIT_HOME_BIT = 1u << 0;
@@ -190,8 +198,8 @@ private:
         return ns;
     }
 
-    static constexpr std::uint32_t packFaultBits(Fault f) {
-        return (static_cast<std::uint32_t>(static_cast<FaultU>(f)) & 0xFFFFu) << FAULT_SHIFT;
+    static constexpr std::uint32_t packFaultBits(FaultType t) {
+        return (static_cast<std::uint32_t>(static_cast<FaultU>(t)) & 0xFFFFu) << FAULT_SHIFT;
     }
 
     static constexpr std::uint32_t packFlapsBits(FlapsState s) {
@@ -199,36 +207,47 @@ private:
     }
 
     static constexpr std::uint32_t packInitialState() {
-        return packFaultBits(Fault::None) | packFlapsBits(FlapsState::CloseBoth);
+        return packFaultBits(FaultType::None) | packFlapsBits(FlapsState::CloseBoth);
     }
 
-    FlapsState currentFlaps() const {
-        const auto st = flaps_state_.load(std::memory_order_relaxed);
-        return static_cast<FlapsState>((st & FLAPS_MASK) >> FLAPS_SHIFT);
+    FaultType faultType() const {
+        const auto st  = shared_state_.load(std::memory_order_relaxed);
+        const auto raw = static_cast<FaultU>((st & FAULT_MASK) >> FAULT_SHIFT);
+        return static_cast<FaultType>(raw);
     }
 
-    void setFaultBits(Fault f) {
-        const std::uint32_t newFault = packFaultBits(f);
-        std::uint32_t old = flaps_state_.load(std::memory_order_relaxed);
+    FaultType exchangeFaultType(FaultType t) {
+        const std::uint32_t newBits = packFaultBits(t);
+
+        std::uint32_t old = shared_state_.load(std::memory_order_relaxed);
         for (;;) {
-            const std::uint32_t neu = (old & ~FAULT_MASK) | newFault;
-            if (flaps_state_.compare_exchange_weak(old, neu,
-                                                  std::memory_order_relaxed,
-                                                  std::memory_order_relaxed))
-                return;
+            const auto prevRaw = static_cast<FaultU>((old & FAULT_MASK) >> FAULT_SHIFT);
+            const auto prev    = static_cast<FaultType>(prevRaw);
+
+            const std::uint32_t neu = (old & ~FAULT_MASK) | newBits;
+
+            if (shared_state_.compare_exchange_weak(old, neu,
+                                                   std::memory_order_relaxed,
+                                                   std::memory_order_relaxed))
+                return prev;
         }
     }
 
     void setFlapsBits(FlapsState s) {
         const std::uint32_t newFlaps = packFlapsBits(s);
-        std::uint32_t old = flaps_state_.load(std::memory_order_relaxed);
+        std::uint32_t old = shared_state_.load(std::memory_order_relaxed);
         for (;;) {
             const std::uint32_t neu = (old & ~FLAPS_MASK) | newFlaps;
-            if (flaps_state_.compare_exchange_weak(old, neu,
-                                                  std::memory_order_relaxed,
-                                                  std::memory_order_relaxed))
+            if (shared_state_.compare_exchange_weak(old, neu,
+                                                   std::memory_order_relaxed,
+                                                   std::memory_order_relaxed))
                 return;
         }
+    }
+
+    FlapsState currentFlaps() const {
+        const auto st = shared_state_.load(std::memory_order_relaxed);
+        return static_cast<FlapsState>((st & FLAPS_MASK) >> FLAPS_SHIFT);
     }
 
     // publish limits only when changed (avoid CAS every step)
@@ -243,12 +262,12 @@ private:
         const std::uint32_t newLimitBits =
             (home ? LIMIT_HOME_BIT : 0u) | (end ? LIMIT_END_BIT : 0u);
 
-        std::uint32_t old = flaps_state_.load(std::memory_order_relaxed);
+        std::uint32_t old = shared_state_.load(std::memory_order_relaxed);
         for (;;) {
             const std::uint32_t neu = (old & ~(LIMIT_HOME_BIT | LIMIT_END_BIT)) | newLimitBits;
-            if (flaps_state_.compare_exchange_weak(old, neu,
-                                                  std::memory_order_relaxed,
-                                                  std::memory_order_relaxed))
+            if (shared_state_.compare_exchange_weak(old, neu,
+                                                   std::memory_order_relaxed,
+                                                   std::memory_order_relaxed))
                 return;
         }
     }
@@ -270,16 +289,17 @@ private:
     void notifyAll(Fn&& fn) {
         std::vector<domain::ports::IMotorDriverObserver*> copy;
         {
-            std::lock_guard lk(mtx_);
+            std::lock_guard lk(obs_mtx_);
             copy = observers_;
         }
         for (auto* o : copy) fn(*o);
     }
 
-    void notifyStopped()   { notifyAll([](auto& o){ o.onStopped(); }); }
-    void notifyEmergency() { notifyAll([](auto& o){ o.onFault(domain::common::MotorFault::EmergencyStop); }); }
-    void notifyFault(domain::common::MotorFault f) { notifyAll([&](auto& o){ o.onFault(f); }); }
-
+    void notifyStarted()  { notifyAll([](auto& o){ o.onStarted(); }); }
+    void notifyStopped()  { notifyAll([](auto& o){ o.onStopped(); }); }
+    void notifyFault(const domain::common::MotorFault& f) {
+        notifyAll([&](auto& o){ o.onFault(f); });
+    }
 
     // =========================
     // LPT low-level (worker-only)
@@ -332,13 +352,13 @@ private:
             return;
         }
 
-        // Применим начальное состояние флапсов сразу после открытия порта
+        // применим флапсы сразу после открытия порта
         applyFlaps(currentFlaps());
 
         for (;;) {
-            // Ждём события управления/остановки/клапанов
+            // ждём события управления/остановки/клапанов
             {
-                std::unique_lock lk(mtx_);
+                std::unique_lock lk(cv_mtx_);
                 cv_.wait(lk, [&]{
                     return shutdown_.load(std::memory_order_relaxed)
                         || requested_running_.load(std::memory_order_relaxed)
@@ -363,11 +383,11 @@ private:
 
             // движение включаем только если asked
             if (requested_running_.load(std::memory_order_relaxed)) {
+                notifyStarted();
                 runLoop(); // HOT PATH: no mutex inside
             }
         }
 
-        // На выходе — безопасно гасим выходы
         writeNeutral();
         closePort();
 
@@ -382,9 +402,20 @@ private:
             log_.info("LPT port opened");
             return true;
         } catch (const std::exception& e) {
+            // выставляем fault type + error (error читается только при type == DriverError)
+            exchangeFaultType(FaultType::DriverError);
+            {
+                std::lock_guard lk(fault_mtx_);
+                fault_error_ = e.what();
+            }
+
+            domain::common::MotorFault f{};
+            f.type = FaultType::DriverError;
+            f.error = e.what();
+
             log_.error("failed to open LPT port: {}", e.what());
-            setFaultBits(Fault::DriverError);
-            notifyFault(Fault::DriverError);
+            notifyFault(f);
+
             return false;
         }
     }
@@ -405,10 +436,16 @@ private:
         const auto lim = toLimitsState(st, begin_mask_, end_mask_);
         publishLimitsIfChanged(lim.home, lim.end);
 
-        setFaultBits(Fault::EmergencyStop);
+        const auto prev = exchangeFaultType(FaultType::EmergencyStop);
 
         log_.error("!!! EMERGENCY STOP !!!");
-        notifyEmergency();
+
+        if (prev != FaultType::EmergencyStop) {
+            domain::common::MotorFault f{};
+            f.type = FaultType::EmergencyStop;
+            notifyFault(f);
+        }
+
         notifyStopped();
     }
 
@@ -463,7 +500,7 @@ private:
     platform::LptPort lpt_;
     bool lpt_opened_{false};
 
-    // immutable config (no runtime reconfigure)
+    // immutable config
     const G540LptMotorDriverConfig cfg_;
     const unsigned char begin_mask_;
     const unsigned char end_mask_;
@@ -471,11 +508,19 @@ private:
     // worker-local cache to avoid CAS each iteration
     std::uint8_t last_limits_bits_{0};
 
-    // mutex only for observers + cv wait (НЕ в runLoop)
-    mutable std::mutex mtx_;
+    // CV mutex (только для wait)
+    mutable std::mutex cv_mtx_;
     std::condition_variable cv_;
-    std::thread worker_;
+
+    // observers mutex (редко)
+    mutable std::mutex obs_mtx_;
     std::vector<domain::ports::IMotorDriverObserver*> observers_;
+
+    // fault error (string) mutex (редко)
+    mutable std::mutex fault_mtx_;
+    std::string fault_error_;
+
+    std::thread worker_;
 
     // ====== allowed atomics only ======
     std::atomic<bool> shutdown_{false};
@@ -486,12 +531,8 @@ private:
     std::atomic<DirU> direction_;
 
     std::atomic<bool> flaps_dirty_{false};
-    std::atomic<std::uint32_t> flaps_state_;
+    std::atomic<std::uint32_t> shared_state_;
 };
-
-
-
-
 
 // ==========================================================
 // Driver
@@ -514,7 +555,7 @@ G540LptMotorDriver::G540LptMotorDriver(const G540LptMotorDriverPorts& ports,
 
 G540LptMotorDriver::~G540LptMotorDriver() {
     logger_.info("G540LptMotorDriver destructing");
-    // Impl деструктор сам корректно остановит поток
+    // impl_ корректно остановит поток в своём деструкторе
 }
 
 void G540LptMotorDriver::start() {
@@ -539,10 +580,22 @@ void G540LptMotorDriver::setFrequency(int hz) {
     impl_->setHz(hz);
 }
 
+int G540LptMotorDriver::frequency() const {
+    return current_hz_;
+}
+
+domain::common::FrequencyLimits G540LptMotorDriver::frequencyLimits() const {
+    return { config_.min_freq_hz, config_.max_freq_hz };
+}
+
 void G540LptMotorDriver::setDirection(domain::common::MotorDirection dir) {
     current_dir_ = dir;
     logger_.info("setDirection({})", dir);
     impl_->setDirection(dir);
+}
+
+domain::common::MotorDirection G540LptMotorDriver::direction() const {
+    return current_dir_;
 }
 
 domain::common::MotorLimitsState G540LptMotorDriver::limits() const {
@@ -553,8 +606,13 @@ domain::common::MotorFault G540LptMotorDriver::fault() const {
     return impl_->fault();
 }
 
+void G540LptMotorDriver::resetFault() {
+    logger_.info("resetFault()");
+    impl_->resetFault();
+}
+
 void G540LptMotorDriver::enableWatchdog(std::chrono::milliseconds) {
-    // если нет — no-op
+    // no-op
 }
 
 void G540LptMotorDriver::disableWatchdog() {
@@ -564,7 +622,6 @@ void G540LptMotorDriver::disableWatchdog() {
 void G540LptMotorDriver::feedWatchdog() {
     // no-op
 }
-
 
 void G540LptMotorDriver::addObserver(domain::ports::IMotorDriverObserver& o) {
     impl_->addObserver(o);

@@ -1,8 +1,6 @@
 #ifndef CLEANGRADUATOR_IMOTORDRIVEROBSERVER_H
 #define CLEANGRADUATOR_IMOTORDRIVEROBSERVER_H
-#include "domain/core/motor/motor/MotorDirection.h"
 #include "domain/core/motor/motor/MotorFault.h"
-#include "domain/core/motor/motor/MotorLimitsState.h"
 
 namespace domain::ports {
     struct IMotorDriverObserver {
@@ -10,10 +8,7 @@ namespace domain::ports {
 
         virtual void onStarted() = 0;
         virtual void onStopped() = 0;
-        virtual void onFrequencyChanged(int hz) = 0;
-        virtual void onDirectionChanged(common::MotorDirection dir) = 0;
-        virtual void onLimitsChanged(common::MotorLimitsState state) = 0;
-        virtual void onFault(common::MotorFault fault) = 0;
+        virtual void onFault(const common::MotorFault& fault) = 0;
     };
 }
 
