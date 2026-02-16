@@ -117,10 +117,9 @@ ILogger & ApplicationBootstrap::createLogger(const std::string &logger_name) {
     loggers.emplace_back(std::move(multi_logger));
 
 
-    LogSource log_source {
-        .name = logger_name,
-        .source = &multi_logger_ref
-    };
+    LogSource log_source;
+    log_source.name = logger_name;
+    log_source.source = &multi_logger_ref;
 
     dynamic_cast<LogSourcesStorage*>(log_sources_storage.get())->addLogSource(log_source);
 
@@ -150,11 +149,10 @@ void ApplicationBootstrap::createVideoSources() {
 void ApplicationBootstrap::createAngleSources() {
     int idx = 1;
     for (const auto& video_source : video_sources) {
-        AngleFromVideoInteractorPorts ports {
-            .logger = createLogger("IAngleSource_" + std::to_string(idx)),
-            .anglemeter = *anglemeter,
-            .video_source = *video_source,
-        };
+        AngleFromVideoInteractorPorts ports;
+        ports.logger = createLogger("IAngleSource_" + std::to_string(idx));
+        ports.anglemeter = *anglemeter;
+        ports.video_source = *video_source;
         auto angle_source = std::make_unique<AngleFromVideoInteractor>(ports);
         angle_sources.emplace_back(std::move(angle_source));
         idx++;
@@ -165,11 +163,10 @@ void ApplicationBootstrap::createVideoSourcesStorage() {
     auto storage = std::make_unique<VideoAngleSourcesStorage>();
 
     for (int i = 0; i < video_sources.size(); i++) {
-        const VideoAngleSource source {
-            .id = i + 1,
-            .angle_source = *angle_sources[i],
-            .video_source = *video_sources[i]
-        };
+        VideoAngleSource source;
+        source.id = i + 1;
+        source.angle_source = *angle_sources[i];
+        source.video_source = *video_sources[i];
         storage->add(source);
     }
 
@@ -181,73 +178,64 @@ void ApplicationBootstrap::createVideoSourcesManager() {
 }
 
 void ApplicationBootstrap::createAnglemeter() {
-    const AnglemeterPorts ports {
-        .logger = createLogger("IAngleCalculator"),
-    };
+    AnglemeterPorts ports;
+    ports.logger = createLogger("IAngleCalculator");
     AngleCalculatorFactory factory(setup_dir_ + "/anglemeter.ini", ports);
     anglemeter = factory.load();
 }
 
 void ApplicationBootstrap::createCalibrator() {
-    const CalibrationCalculatorPorts ports {
-        .logger = createLogger("ICalibrationCalculator"),
-    };
+    CalibrationCalculatorPorts ports;
+    ports.logger = createLogger("ICalibrationCalculator");
     CalibrationCalculatorFactory factory(setup_dir_ + "/calibrator.ini", ports);
     calibrator = factory.load();
 }
 
 void ApplicationBootstrap::createPressureSource() {
-    const PressureSourcePorts ports {
-        .logger = createLogger("IPressureSource"),
-        .clock = *session_clock,
-    };
+    PressureSourcePorts ports;
+    ports.logger = createLogger("IPressureSource");
+    ports.clock = *session_clock;
     PressureSourceFactory factory(setup_dir_ + "/pressure_source.ini", ports);
     pressure_source = factory.load();
 }
 
 void ApplicationBootstrap::createDisplacementCatalog() {
-    FileDisplacementCatalogPorts ports {
-        .logger = createLogger("IDisplacementCatalog"),
-    };
+    FileDisplacementCatalogPorts ports;
+    ports.logger = createLogger("IDisplacementCatalog");
     displacement_catalog = std::make_unique<FileDisplacementCatalog>(ports, catalogs_dir_ + "/displacements");
 }
 
 void ApplicationBootstrap::createPrinterCatalog() {
-    FilePrinterCatalogPorts ports {
-        .logger = createLogger("IPrinterCatalog"),
-    };
+    FilePrinterCatalogPorts ports;
+    ports.logger = createLogger("IPrinterCatalog");
     printer_catalog = std::make_unique<FilePrinterCatalog>(ports, catalogs_dir_ + "/printers");
 }
 
 void ApplicationBootstrap::createPrecisionCatalog() {
-    FilePrecisionCatalogPorts ports {
-        .logger = createLogger("IPrecisionCatalog"),
-    };
+    FilePrecisionCatalogPorts ports;
+    ports.logger = createLogger("IPrecisionCatalog");
     precision_catalog = std::make_unique<FilePrecisionCatalog>(ports, catalogs_dir_ + "/precision_classes");
 }
 
 void ApplicationBootstrap::createPressureUnitCatalog() {
-    FilePressureUnitCatalogPorts ports {
-        .logger = createLogger("IPressureUnitCatalog"),
-    };
+    FilePressureUnitCatalogPorts ports;
+    ports.logger = createLogger("IPressureUnitCatalog");
     pressure_unit_catalog = std::make_unique<FilePressureUnitCatalog>(ports, catalogs_dir_ + "/pressure_units");
 }
 
 void ApplicationBootstrap::createGaugeCatalog() {
-    FileGaugeCatalogPorts ports {
-        .logger = createLogger("IGaugeCatalog"),
-    };
+    FileGaugeCatalogPorts ports;
+    ports.logger = createLogger("IGaugeCatalog");
     gauge_catalog = std::make_unique<FileGaugeCatalog>(ports, catalogs_dir_ + "/gauges");
 }
 
 void ApplicationBootstrap::createInfoSettingsStorage() {
-    QtInfoSettingsStorageCatalogs catalogs {
-        .displacement_catalog = *displacement_catalog,
-        .gauge_catalog = *gauge_catalog,
-        .precision_catalog = *precision_catalog,
-        .pressure_unit_catalog = *pressure_unit_catalog,
-        .printer_catalog = *printer_catalog,
-    };
+    QtInfoSettingsStorageCatalogs catalogs;
+    catalogs.displacement_catalog = *displacement_catalog;
+    catalogs.gauge_catalog = *gauge_catalog;
+    catalogs.precision_catalog = *precision_catalog;
+    catalogs.pressure_unit_catalog = *pressure_unit_catalog;
+    catalogs.printer_catalog = *printer_catalog;
 
     info_settings_storage = std::make_unique<QtInfoSettingsStorage>(
         "CleanGraduator",

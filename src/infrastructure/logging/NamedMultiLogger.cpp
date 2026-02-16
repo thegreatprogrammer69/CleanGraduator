@@ -76,11 +76,10 @@ void NamedMultiLogger::removeSink(ILogSink& sink)
 
 void NamedMultiLogger::pushLog(LogLevel level, const std::string& msg)
 {
-    LogEntry log_entry{
-        .timestamp = clock_.now(),
-        .level = level,
-        .message = msg,
-    };
+    LogEntry log_entry;
+    log_entry.timestamp = clock_.now();
+    log_entry.level = level;
+    log_entry.message = msg;
 
     std::vector<ILogSink*> sinks_copy;
 

@@ -52,10 +52,9 @@ std::vector<std::unique_ptr<domain::ports::IVideoSource>> infra::repo::VideoSour
             config.height = section.getInt("height", 640);
             config.fps = section.getInt("fps", 30);
 
-            camera::VideoSourcePorts ports{
-                .logger = *logger_factory_.create(),
-                .clock = clock_
-            };
+            camera::VideoSourcePorts ports;
+            ports.logger = *logger_factory_.create();
+            ports.clock = clock_;
 
             result.push_back(std::make_unique<camera::V4LCamera>(ports, config));
             continue;
@@ -64,10 +63,9 @@ std::vector<std::unique_ptr<domain::ports::IVideoSource>> infra::repo::VideoSour
             camera::GStreamerCameraConfig config{};
             config.pipe = section.getString("pipe", "");
 
-            camera::VideoSourcePorts ports{
-                .logger = *logger_factory_.create(),
-                .clock = clock_
-            };
+            camera::VideoSourcePorts ports;
+            ports.logger = *logger_factory_.create();
+            ports.clock = clock_;
 
             result.push_back(std::make_unique<camera::GStreamerCamera>(ports, config));
             continue;
@@ -81,10 +79,9 @@ std::vector<std::unique_ptr<domain::ports::IVideoSource>> infra::repo::VideoSour
             config.height = section.getInt("height", 640);
             config.fps = section.getInt("fps", 30);
 
-            camera::VideoSourcePorts ports{
-                .logger = *logger_factory_.create(),
-                .clock = clock_
-            };
+            camera::VideoSourcePorts ports;
+            ports.logger = *logger_factory_.create();
+            ports.clock = clock_;
 
             result.push_back(std::make_unique<camera::DShowCamera>(ports, config));
             continue;
