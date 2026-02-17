@@ -8,7 +8,7 @@
 #include "application/models/info/PressureUnit.h"
 #include "application/models/info/Printer.h"
 #include "application/ports/settings/IInfoSettingsStorage.h"
-#include "domain/core/calibration/calculation/GaugePressurePoints.h"
+#include "domain/core/calibration/calculation/PressurePoints.h"
 
 namespace application::models {
     struct Displacement;
@@ -38,7 +38,7 @@ namespace application::orchestrators {
     public:
         explicit CalibrationSettingsQuery(CalibrationSettingsQueryPorts ports);
 
-        std::optional<domain::common::GaugePressurePoints> currentGaugePressurePoints() const;
+        std::optional<domain::common::PressurePoints> currentGaugePressurePoints() const;
         std::optional<domain::common::GaugePrecision> currentPrecision() const;
         std::optional<domain::common::PressureUnit> currentPressureUnit() const;
 

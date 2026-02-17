@@ -1,6 +1,6 @@
 #ifndef CLEANGRADUATOR_ICALIBRATIONMOTIONCONTROLLER_H
 #define CLEANGRADUATOR_ICALIBRATIONMOTIONCONTROLLER_H
-#include "domain/core/calibration/calculation/CalibrationMode.h"
+#include "CalibrationMotionInput.h"
 
 namespace domain::ports {
     struct ICalibrationMotionObserver;
@@ -9,7 +9,7 @@ namespace domain::ports {
         virtual ~ICalibrationMotionController() = default;
 
         // Запуск движения согласно режиму
-        virtual void start(common::CalibrationMode mode) = 0;
+        virtual void start(CalibrationMotionInput) = 0;
 
         // Корректная остановка (штатное завершение)
         virtual void stop() = 0;

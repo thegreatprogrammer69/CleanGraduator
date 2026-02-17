@@ -3,7 +3,7 @@
 #include <iosfwd>
 
 namespace domain::common {
-    struct GaugePressurePoints;
+    struct PressurePoints;
     enum class CalibrationCellSeverity;
     class Angle;
     enum class AngleUnit;
@@ -28,6 +28,6 @@ std::ostream& operator<<(std::ostream& os, const domain::common::VideoFrame& f);
 std::ostream& operator<<(std::ostream& os, const domain::common::ProcessLifecycleState& f);
 std::ostream& operator<<(std::ostream& os, const domain::common::CalibrationCellSeverity& f);
 std::ostream& operator<<(std::ostream& os, const domain::common::MotorDirection& f);
-std::ostream& operator<<(std::ostream& os, const domain::common::GaugePressurePoints& f);
+std::ostream& operator<<(std::ostream& os, const domain::common::PressurePoints& f);
 
 #endif //CLEANGRADUATOR_FMT_DOMAIN_H

@@ -5,7 +5,8 @@
 
 #include "fmt.h"
 #include "../core/calibration/result/CalibrationCellSeverity.h"
-#include "domain/core/calibration/calculation/GaugePressurePoints.h"
+#include "../../application/models/calibration/GaugePressurePoints.h"
+#include "domain/core/calibration/calculation/PressurePoints.h"
 #include "domain/core/measurement/Angle.h"
 #include "domain/core/measurement/AngleUnit.h"
 #include "domain/core/measurement/Pressure.h"
@@ -155,8 +156,8 @@ std::ostream & operator<<(std::ostream &os, const domain::common::MotorDirection
     return os;
 }
 
-std::ostream & operator<<(std::ostream &os, const GaugePressurePoints &f) {
-    os << fmt::fmt("GaugePressurePoints{[{}]}", f.points);
+std::ostream & operator<<(std::ostream &os, const PressurePoints &f) {
+    os << fmt::fmt("GaugePressurePoints{[{}]}", f);
     return os;
 }
 

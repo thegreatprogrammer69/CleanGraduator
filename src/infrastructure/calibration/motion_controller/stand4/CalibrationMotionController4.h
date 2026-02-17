@@ -1,6 +1,6 @@
 #ifndef CLEANGRADUATOR_CALIBRATIONMOTIONCONTROLLER1_H
 #define CLEANGRADUATOR_CALIBRATIONMOTIONCONTROLLER1_H
-#include "CalibrationMotionController1Config.h"
+#include "CalibrationMotionController4Config.h"
 #include "domain/ports/calibration/motion_controller/ICalibrationMotionController.h"
 #include "domain/ports/motor/IMotorDriverObserver.h"
 #include "domain/ports/telemetry/ITelemetrySource.h"
@@ -20,7 +20,7 @@ namespace infra::calib {
         CalibrationMotionController4(CalibrationMotionControllerPorts ports, CalibrationMotionController4Config config);
 
         //ICalibrationMotionController
-        void start(domain::common::CalibrationMode mode) override;
+        void start(domain::ports::CalibrationMotionInput input) override;
         void stop() override;
         void abort() override;
         bool isRunning() const override;

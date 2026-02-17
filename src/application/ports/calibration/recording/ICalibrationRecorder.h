@@ -1,7 +1,7 @@
 #ifndef CLEANGRADUATOR_ICALIBRATIONRECORDER_H
 #define CLEANGRADUATOR_ICALIBRATIONRECORDER_H
 #include "CalibrationRecorderInput.h"
-#include "domain/core/calibration/calculation/CalibrationPhase.h"
+#include "domain/core/calibration/calculation/CalibrationMotionPhase.h"
 #include "domain/core/calibration/recording/CalibrationDataset.h"
 
 namespace application::ports {
@@ -11,7 +11,7 @@ namespace application::ports {
         virtual bool start(CalibrationRecorderInput) = 0;
         virtual void stop() = 0;
 
-        virtual void setPhase(domain::common::CalibrationPhase phase) = 0;
+        virtual void setPhase(domain::common::CalibrationMotionPhase phase) = 0;
 
         virtual domain::common::CalibrationDataset data() const = 0;
 

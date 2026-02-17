@@ -4,6 +4,9 @@ add_library(domain STATIC
 
         core/calibration/recording/CalibrationDataset.cpp
         core/calibration/recording/TimeSeries.cpp
+        core/calibration/calculation/CalibrationMotionPhase.h
+        core/calibration/calculation/PressurePoints.h
+        ports/calibration/motion_controller/CalibrationMotionInput.h
 )
 
 

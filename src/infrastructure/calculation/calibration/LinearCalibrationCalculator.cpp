@@ -226,16 +226,16 @@ LinearCalibrationCalculator::LinearCalibrationCalculator(CalibrationCalculatorPo
 }
 
 CalibrationResult LinearCalibrationCalculator::calculate(const CalibrationCalculatorInput &input) const {
-    logger_.info("start linear calibration for points {}, with {} angles and {} pressures", input.points, input.angles.size(), input.pressures.size());
+    // logger_.info("start linear calibration for points {}, with {} angles and {} pressures", input.points, input.dataset.angleSeries().size(), input.pressures.size());
 
-    CalibrationResult result;
-    for (int i = 0; i < input.pressures.size(); i++) {
-        const auto [severity, message, angle] = calculateForPoint(input.angles, input.pressures, config_);
-        result.addMeasurement(angle);
-        result.markLast(severity, message);
-        logger_.info("point {}: angle={}, severity={}, message='{}'", i, angle, severity, message);
-    }
-
-    logger_.info("calibration finished");
-    return result;
+    // CalibrationResult result;
+    // for (int i = 0; i < input.pressures.size(); i++) {
+    //     // const auto [severity, message, angle] = calculateForPoint(input.angles, input.pressures, config_);
+    //     result.addMeasurement(angle);
+    //     result.markLast(severity, message);
+    //     logger_.info("point {}: angle={}, severity={}, message='{}'", i, angle, severity, message);
+    // }
+    //
+    // logger_.info("calibration finished");
+    // return result;
 }

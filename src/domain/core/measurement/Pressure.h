@@ -33,6 +33,8 @@ public:
     double mpa() const { return to(PressureUnit::MPa); }
     double bar() const { return to(PressureUnit::bar); }
     double atm() const { return to(PressureUnit::atm); }
+    double kgfcm2() const { return to(PressureUnit::kgf_cm2); }
+
 
     double value() const {
         return to(m_unit);

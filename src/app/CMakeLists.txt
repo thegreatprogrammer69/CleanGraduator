@@ -6,12 +6,13 @@ endif ()
 
     add_executable(CleanGraduator
         main.cpp
-        test1.cpp
+        test1.cpp test2.cpp
         bootstrap/ApplicationBootstrap.cpp
         bootstrap/UseCasesBootstrap.cpp
         bootstrap/ViewModelsBootstrap.cpp
         bootstrap/UiBootstrap.cpp
-)
+
+    )
 
 target_link_libraries(CleanGraduator
         PRIVATE

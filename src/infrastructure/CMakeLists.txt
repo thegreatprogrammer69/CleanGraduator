@@ -74,6 +74,12 @@ elseif(UNIX)
             pressure/dm5002/DM5002PressureSensor.h
             pressure/dm5002/DM5002PressureSensor.cpp
             pressure/dm5002/DM5002PressureSensorConfig.h
+            calibration/motion_controller/stand4/stand4logic.h
+            calibration/motion_controller/stand4/FrequencyCalculator.h
+            calibration/motion_controller/stand4/FrequencyCalculator.cpp
+            calibration/motion_controller/stand4/IPressurePointsTrackerObserver.h
+            calibration/motion_controller/stand4/PressurePointsTracker.cpp
+            calibration/motion_controller/stand4/PressurePointsTracker.h
     )
 endif()
 

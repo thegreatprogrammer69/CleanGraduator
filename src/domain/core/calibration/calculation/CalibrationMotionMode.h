@@ -2,7 +2,7 @@
 #define CLEANGRADUATOR_CALIBRATIONMODE_H
 
 namespace domain::common {
-    enum class CalibrationMode {
+    enum class CalibrationMotionMode {
         Full, OnlyForward, OnlyLast
     };
 }

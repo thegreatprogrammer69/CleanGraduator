@@ -19,9 +19,9 @@ CalibrationSettingsQuery::CalibrationSettingsQuery(CalibrationSettingsQueryPorts
     load();
 }
 
-std::optional<domain::common::GaugePressurePoints> CalibrationSettingsQuery::currentGaugePressurePoints() const {
+std::optional<domain::common::PressurePoints> CalibrationSettingsQuery::currentGaugePressurePoints() const {
     if (auto gauge = gauge_catalog_.at(data_.gauge_idx)) {
-        return gauge->points;
+        return gauge->points.poi fdsfsd  sdfnts;
     }
     return std::nullopt;
 }

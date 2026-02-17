@@ -2,7 +2,7 @@
 #define CLEANGRADUATOR_PRESSUREPOINTS_H
 #include <vector>
 
-namespace domain::common {
+namespace application::model {
     struct GaugePressurePoints {
         explicit GaugePressurePoints(std::vector<double> points)
             : points(std::move(points))
