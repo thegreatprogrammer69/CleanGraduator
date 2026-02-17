@@ -20,6 +20,8 @@ add_library(ui STATIC
         widgets/status_bar/QtAppStatusBarWidget.h
         widgets/status_bar/QtMotorDriverStatusBarWidget.cpp
         widgets/status_bar/QtMotorDriverStatusBarWidget.h
+        widgets/status_bar/QtPressureSensorStatusBarWidget.cpp
+        widgets/status_bar/QtPressureSensorStatusBarWidget.h
 
         widgets/logging/QtLogViewerWidget.cpp
         widgets/logging/QtLogViewerWidget.h

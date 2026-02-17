@@ -9,6 +9,7 @@
 #include "viewmodels/settings/SettingsViewModel.h"
 #include "viewmodels/status_bar/AppStatusBarViewModel.h"
 #include "viewmodels/status_bar/MotorDriverStatusViewModel.h"
+#include "viewmodels/status_bar/PressureSensorStatusBarViewModel.h"
 #include "viewmodels/video/VideoSourceGridViewModel.h"
 #include "viewmodels/video/VideoSourceViewModel.h"
 
@@ -32,6 +33,7 @@ void ViewModelsBootstrap::initialize() {
 
     createStatusBar();
     createMotorDriverStatus();
+    createPressureSensorStatus();
 
     createLogViewer();
 
@@ -116,6 +118,14 @@ void ViewModelsBootstrap::createMotorDriverStatus() {
     motor_driver_status = std::make_unique<MotorDriverStatusViewModel>(deps);
 }
 
+void ViewModelsBootstrap::createPressureSensorStatus() {
+    PressureSensorStatusBarViewModelDeps deps{
+        *app_.pressure_source
+    };
+
+    pressure_sensor_status = std::make_unique<PressureSensorStatusBarViewModel>(deps);
+}
+
 void ViewModelsBootstrap::createLogViewer() {
     log_viewer = std::make_unique<LogViewerViewModel>(*app_.log_sources_storage);
 }
@@ -123,7 +133,8 @@ void ViewModelsBootstrap::createLogViewer() {
 void ViewModelsBootstrap::createMainWindow() {
     StatusBarViewModels status_bar_view_models {
         *app_status_bar,
-        *motor_driver_status
+        *motor_driver_status,
+        *pressure_sensor_status
     };
 
     MainWindowViewModelDeps deps{

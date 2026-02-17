@@ -6,6 +6,7 @@
 namespace mvvm {
     class AppStatusBarViewModel;
     class MotorDriverStatusViewModel;
+    class PressureSensorStatusBarViewModel;
     class MainWindowViewModel;
     class LogViewerViewModel;
     class SettingsViewModel;
@@ -34,6 +35,7 @@ public:
 
     std::unique_ptr<mvvm::AppStatusBarViewModel> app_status_bar;
     std::unique_ptr<mvvm::MotorDriverStatusViewModel> motor_driver_status;
+    std::unique_ptr<mvvm::PressureSensorStatusBarViewModel> pressure_sensor_status;
 
     std::unique_ptr<mvvm::LogViewerViewModel> log_viewer;
 
@@ -52,6 +54,7 @@ private:
 
     void createStatusBar();
     void createMotorDriverStatus();
+    void createPressureSensorStatus();
 
     void createLogViewer();
 
