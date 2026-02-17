@@ -110,7 +110,7 @@ FileGaugeCatalog::FileGaugeCatalog(FileGaugeCatalogPorts ports, std::string file
         try {
             application::models::Gauge g;
             g.name = from_utf8(name_utf8);
-            g.values = std::move(values);
+            g.points.points = std::move(values);
             gauges_.push_back(g);
             logger_.info("Loaded gauge model: {}", gauges_.back());
         } catch (const std::range_error&) {

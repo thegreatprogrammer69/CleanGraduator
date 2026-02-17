@@ -2,12 +2,12 @@
 #define CLEANGRADUATOR_GAUGE_H
 
 #include <string>
-#include <vector>
+#include "domain/core/calibration/calculation/GaugePressurePoints.h"
 
 namespace application::models {
     struct Gauge {
         std::wstring name;
-        std::vector<double> values;
+        domain::common::GaugePressurePoints points;
     };
 }
 

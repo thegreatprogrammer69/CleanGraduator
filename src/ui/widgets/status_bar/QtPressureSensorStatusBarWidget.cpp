@@ -61,6 +61,16 @@ QtPressureSensorStatusBarWidget::QtPressureSensorStatusBarWidget(
             font-size: 10px;
             font-weight: 550;
         }
+    QPushButton[role="action"] {
+        font-size: 9px;
+        padding: 0 4px;
+        color: #2563EB;
+        background: transparent;
+        border: none;
+    }
+    QPushButton[role="action"]:hover {
+        text-decoration: underline;
+    }
     )");
 
     auto* card = new QVBoxLayout(content_card_);
@@ -91,6 +101,7 @@ QtPressureSensorStatusBarWidget::QtPressureSensorStatusBarWidget(
     action_button_ = new QPushButton(content_card_);
     action_button_->setProperty("role", "action");
     action_button_->setCursor(Qt::PointingHandCursor);
+    action_button_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     connect(action_button_, &QPushButton::clicked, this, [this] {
         if (vm_.is_opened.get_copy()) {
             vm_.close();
@@ -99,7 +110,7 @@ QtPressureSensorStatusBarWidget::QtPressureSensorStatusBarWidget(
 
         vm_.open();
     });
-    card->addWidget(action_button_, 0, Qt::AlignRight);
+    card->addWidget(action_button_, 1);
 
     root->addWidget(content_card_);
 
@@ -141,7 +152,7 @@ QString QtPressureSensorStatusBarWidget::openedToText(bool is_opened) {
 }
 
 QString QtPressureSensorStatusBarWidget::actionToText(bool is_opened) {
-    return is_opened ? tr("Закрыть") : tr("Открыть");
+    return is_opened ? tr("Отключить") : tr("Включить");
 }
 
 QString QtPressureSensorStatusBarWidget::errorToText(const std::string& err) {

@@ -10,8 +10,8 @@
 #include <vector>
 
 #include "domain/ports/clock/IClock.h"
-#include "domain/core/common/PressurePacket.h"
-#include "domain/core/common/PressureSourceError.h"
+#include "domain/core/pressure/PressurePacket.h"
+#include "domain/core/pressure/PressureSourceError.h"
 #include "infrastructure/platform/sleep/sleep.h"
 #include "infrastructure/platform/com/ComPort.h"
 
@@ -51,21 +51,47 @@ DM5002PressureSensor::~DM5002PressureSensor() {
 
 bool DM5002PressureSensor::start() {
     using namespace std::chrono;
-    if (!impl_->stopped) return false;
 
-    logger_.info("starting worker thread");
+    logger_.info("DM5002PressureSensor::start() called");
 
-    if (impl_->worker.joinable()) {
-        logger_.warn("joining previous worker");
-        impl_->worker.join();
+    const bool wasStopped = impl_->stopped.load(std::memory_order_acquire);
+    logger_.info("current stopped state = {}", wasStopped);
+
+    if (!wasStopped) {
+        logger_.warn("start() aborted: worker already running");
+        return false;
     }
 
-    impl_->stopped.store(false, std::memory_order_release);
-    impl_->worker = std::thread(&DM5002PressureSensor::run, this);
+    const bool wasJoinable = impl_->worker.joinable();
+    logger_.info("worker.joinable() = {}", wasJoinable);
 
-    logger_.info("worker started");
+    if (wasJoinable) {
+        logger_.warn("joining previous worker thread");
+        impl_->worker.join();
+        logger_.info("previous worker joined");
+    }
+
+    logger_.info("setting stopped = false");
+    impl_->stopped.store(false, std::memory_order_release);
+
+    try {
+        logger_.info("creating worker thread");
+        impl_->worker = std::thread(&DM5002PressureSensor::run, this);
+        logger_.info("worker thread successfully created");
+    } catch (const std::exception& ex) {
+        logger_.error("failed to create worker thread: {}", ex.what());
+        impl_->stopped.store(true, std::memory_order_release);
+        return false;
+    } catch (...) {
+        logger_.error("failed to create worker thread: unknown exception");
+        impl_->stopped.store(true, std::memory_order_release);
+        return false;
+    }
+
+    logger_.info("DM5002PressureSensor::start() finished successfully");
     return true;
 }
+
 
 void DM5002PressureSensor::stop() {
     using namespace std::chrono;
@@ -74,6 +100,10 @@ void DM5002PressureSensor::stop() {
     logger_.info("waiting for worker to stop");
     if (impl_->worker.joinable()) impl_->worker.join();
     logger_.info("worker stopped");
+}
+
+bool DM5002PressureSensor::isRunning() const noexcept {
+    return !impl_->stopped.load(std::memory_order_acquire);
 }
 
 void DM5002PressureSensor::addObserver(domain::ports::IPressureSourceObserver &observer) {

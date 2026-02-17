@@ -1,8 +1,8 @@
 #include "VideoSourceViewModel.h"
 
-#include "../../domain/core/common/VideoFramePacket.h"
-#include "../../domain/core/common/VideoSourceError.h"
-#include "../../domain/ports/video/IVideoSource.h"
+#include "domain/core/video/VideoFramePacket.h"
+#include "domain/core/video/VideoSourceError.h"
+#include "domain/ports/video/IVideoSource.h"
 
 using namespace mvvm;
 

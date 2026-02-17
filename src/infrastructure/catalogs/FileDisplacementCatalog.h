@@ -2,7 +2,7 @@
 #define CLEANGRADUATOR_FILEDISPLACEMENTCATALOG_H
 
 #include <string>
-#include "application/ports/outbound/catalogs/IDisplacementCatalog.h"
+#include "application/ports/catalogs/IDisplacementCatalog.h"
 #include "domain/fmt/Logger.h"
 
 namespace domain::ports {

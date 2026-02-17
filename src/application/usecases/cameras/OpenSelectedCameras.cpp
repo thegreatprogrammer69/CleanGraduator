@@ -2,17 +2,25 @@
 
 #include <vector>
 
-#include "application/orchestrators/VideoSourceManager.h"
+#include "../../orchestrators/video/VideoSourceManager.h"
 
 using namespace application::usecase;
+using namespace domain::common;
 
 std::vector<int> OpenSelectedCameras::execute(const std::vector<int>& indexes)
 {
-    manager_.open(indexes);
+    std::vector<AngleSourceId> ids(indexes.begin(), indexes.end());
+
+    manager_.open(ids);
+
+    const auto& opened = manager_.opened();
 
     std::vector<int> corrected;
-    for (auto idx : manager_.opened())
-        corrected.push_back(idx);
+    corrected.reserve(opened.size());
+
+    for (const auto& id : opened)
+        corrected.push_back(id.value);
 
     return corrected;
+
 }

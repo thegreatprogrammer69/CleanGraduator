@@ -5,7 +5,7 @@
 #include <optional>
 #include <string>
 
-#include "domain/core/common/PressurePacket.h"
+#include "domain/core/pressure/PressurePacket.h"
 #include "domain/core/measurement/Pressure.h"
 #include "domain/ports/pressure/IPressureSourceObserver.h"
 #include "viewmodels/Observable.h"

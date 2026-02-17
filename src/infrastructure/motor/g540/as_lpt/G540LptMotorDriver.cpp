@@ -538,7 +538,7 @@ private:
 // Driver
 // ==========================================================
 
-G540LptMotorDriver::G540LptMotorDriver(const G540LptMotorDriverPorts& ports,
+G540LptMotorDriver::G540LptMotorDriver(const MotorDriverPorts& ports,
                                        const G540LptMotorDriverConfig& config)
     : logger_(ports.logger)
     , impl_(std::make_unique<G540LptImpl>(*this, ports.logger, config))

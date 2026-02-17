@@ -5,6 +5,8 @@
 #include <codecvt>
 #include <locale>
 
+#include "domain/fmt/fmt.h"
+
 using namespace mvvm;
 using namespace application::ports;
 
@@ -42,7 +44,7 @@ void InfoSettingsViewModel::loadCatalogs() {
     }
 
     for (const auto& item : deps_.precision_catalog.list()) {
-        precisions_.emplace_back(std::to_string(item.precision));
+        precisions_.emplace_back(fmt::fmt("{:.1f}%", item.precision.value));
     }
 
     for (const auto& item : deps_.pressure_unit_catalog.list()) {

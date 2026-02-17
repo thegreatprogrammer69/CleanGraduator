@@ -5,7 +5,7 @@
 #include <vector>
 #include <optional>
 
-#include "../../application/ports/outbound/catalogs/IPressureUnitCatalog.h"
+#include "application/ports/catalogs/IPressureUnitCatalog.h"
 #include "domain/fmt/Logger.h"
 
 namespace domain::ports {

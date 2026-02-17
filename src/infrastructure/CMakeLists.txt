@@ -2,7 +2,7 @@ set(SOURCES
         catalogs/FileDisplacementCatalog.cpp
         catalogs/FileGaugeCatalog.cpp
         catalogs/FilePrinterCatalog.cpp
-        catalogs/FilePrecisionCatalog.cpp
+        catalogs/FileGaugePrecisionCatalog.cpp
         catalogs/FilePressureUnitCatalog.cpp
 
         utils/ini/IniFile.cpp

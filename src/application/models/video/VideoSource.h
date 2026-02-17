@@ -1,6 +1,8 @@
 #ifndef CLEANGRADUATOR_VIDEOSOURCE_H
 #define CLEANGRADUATOR_VIDEOSOURCE_H
 
+#include "domain/core/angle/AngleSourceId.h"
+
 namespace domain::ports {
     struct IAngleSource;
     struct IVideoSource;
@@ -8,7 +10,7 @@ namespace domain::ports {
 
 namespace application::models {
     struct VideoAngleSource {
-        int id;
+        domain::common::AngleSourceId id;
         domain::ports::IAngleSource& angle_source;
         domain::ports::IVideoSource& video_source;
     };

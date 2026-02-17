@@ -8,6 +8,7 @@ namespace domain::ports {
         virtual ~IPressureSource() = default;
         virtual bool start() = 0;
         virtual void stop() = 0;
+        virtual bool isRunning() const noexcept = 0;
         virtual void addObserver(IPressureSourceObserver& observer) = 0;
         virtual void removeObserver(IPressureSourceObserver& observer) = 0;
     };

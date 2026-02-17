@@ -14,8 +14,8 @@
 
 #include "domain/core/measurement/Timestamp.h"
 #include "domain/core/video/VideoFrame.h"
-#include "domain/core/common/VideoFramePacket.h"
-#include "domain/core/common/VideoSourceError.h"
+#include "domain/core/video/VideoFramePacket.h"
+#include "domain/core/video/VideoSourceError.h"
 #include "domain/ports/clock/IClock.h"
 #include "domain/ports/logging/ILogger.h"
 

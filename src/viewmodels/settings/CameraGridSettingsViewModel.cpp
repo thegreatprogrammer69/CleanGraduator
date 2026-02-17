@@ -2,7 +2,7 @@
 
 #include <set>
 
-#include "application/orchestrators/VideoSourceManager.h"
+#include "../../application/orchestrators/video/VideoSourceManager.h"
 #include "../../application/usecases/cameras/OpenSelectedCameras.h"
 #include "application/usecases/cameras/CloseAllCameras.h"
 #include "application/usecases/cameras/OpenAllCameras.h"

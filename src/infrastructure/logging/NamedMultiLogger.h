@@ -5,7 +5,7 @@
 #include <vector>
 
 #include "../../application/models/logging/LogEntry.h"
-#include "application/ports/outbound/logging/ILogSource.h"
+#include "application/ports/logging/ILogSource.h"
 #include "domain/ports/logging/ILogger.h"
 
 namespace domain::ports {

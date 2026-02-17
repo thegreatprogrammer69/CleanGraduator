@@ -7,7 +7,7 @@
 
 #include "application/models/logging/LogSource.h"
 #include "application/models/logging/LogEntry.h"
-#include "application/ports/outbound/logging/ILogSink.h"
+#include "application/ports/logging/ILogSink.h"
 #include "viewmodels/Observable.h"
 
 namespace application::ports {

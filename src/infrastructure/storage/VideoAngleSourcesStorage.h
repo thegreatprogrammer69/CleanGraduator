@@ -5,7 +5,7 @@
 #include <optional>
 #include <algorithm>
 
-#include "../../application/ports/outbound/video/IVideoAngleSourcesStorage.h"
+#include "application/ports/video/IVideoAngleSourcesStorage.h"
 
 namespace infra::storage {
 
@@ -16,7 +16,7 @@ namespace infra::storage {
 
         void add(application::models::VideoAngleSource source);
         std::vector<application::models::VideoAngleSource> all() override;
-        std::optional<application::models::VideoAngleSource> at(int id) const override;
+        std::optional<application::models::VideoAngleSource> at(domain::common::AngleSourceId id) const override;
 
     private:
         std::vector<application::models::VideoAngleSource> sources_;

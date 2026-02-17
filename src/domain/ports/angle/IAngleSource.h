@@ -8,6 +8,7 @@ namespace domain::ports {
         virtual ~IAngleSource() = default;
         virtual void start() = 0;
         virtual void stop() = 0;
+        virtual bool isRunning() const noexcept = 0;
         virtual void addSink(IAngleSink& sink) = 0;
         virtual void removeSink(IAngleSink& sink) = 0;
     };

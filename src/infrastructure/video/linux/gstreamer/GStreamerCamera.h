@@ -21,7 +21,7 @@ namespace infra::camera {
 
     class GStreamerCamera final : public domain::ports::IVideoSource {
     public:
-        explicit GStreamerCamera(const VideoSourcePorts& ports, GStreamerCameraConfig config);
+        explicit GStreamerCamera(VideoSourcePorts ports, GStreamerCameraConfig config);
         ~GStreamerCamera() override;
 
         bool open() override;
@@ -38,7 +38,7 @@ namespace infra::camera {
 
         fmt::Logger logger_;
 
-        const VideoSourcePorts& ports_;
+        VideoSourcePorts ports_;
         GStreamerCameraConfig config_;
 
         std::atomic<bool> running_{false};

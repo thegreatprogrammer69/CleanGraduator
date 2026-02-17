@@ -1,8 +1,10 @@
 add_library(application STATIC
         fmt/fmt_application.cpp
 
-        orchestrators/AngleFromVideoInteractor.cpp
-        orchestrators/VideoSourceManager.cpp
+        orchestrators/angle/AngleFromVideoInteractor.cpp
+        orchestrators/calibration/recording/CalibrationRecorder.cpp
+        orchestrators/video/VideoSourceManager.cpp
+        orchestrators/settings/CalibrationSettingsQuery.cpp
 
         usecases/settings/ConfigureComponent.cpp
 

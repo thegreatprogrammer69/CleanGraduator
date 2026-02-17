@@ -1,7 +1,7 @@
 #ifndef CLEANGRADUATOR_CONFIGURECOMPONENT_H
 #define CLEANGRADUATOR_CONFIGURECOMPONENT_H
 #include "domain/fmt/Logger.h"
-#include "../../ports/outbound/settings/IRuntimeConfigurator.h"
+#include "application/ports/settings/IRuntimeConfigurator.h"
 
 namespace domain::ports {
     struct ILogger;

@@ -3,14 +3,14 @@
 #include <stdexcept>
 #include <vector>
 
-#include "application/orchestrators/AngleFromVideoInteractor.h"
-#include "application/orchestrators/VideoSourceManager.h"
-#include "application/ports/outbound/logging/ILoggerFactory.h"
+#include "../../application/orchestrators/angle/AngleFromVideoInteractor.h"
+#include "../../application/orchestrators/video/VideoSourceManager.h"
+#include "application/ports/logging/ILoggerFactory.h"
 #include "infrastructure/calculation/angle/CastAnglemeter.h"
 #include "infrastructure/calculation/calibration/CalibrationCalculatorPorts.h"
 #include "infrastructure/catalogs/FileDisplacementCatalog.h"
 #include "infrastructure/catalogs/FileGaugeCatalog.h"
-#include "infrastructure/catalogs/FilePrecisionCatalog.h"
+#include "infrastructure/catalogs/FileGaugePrecisionCatalog.h"
 #include "infrastructure/catalogs/FilePressureUnitCatalog.h"
 #include "infrastructure/catalogs/FilePrinterCatalog.h"
 #include "infrastructure/clock/SessionClock.h"
@@ -34,7 +34,7 @@
 #include "viewmodels/settings/SettingsViewModel.h"
 #include "../../domain/ports/video/IVideoSource.h"
 
-#include "../../domain/ports/calibration/IResultStore.h"
+#include "../../domain/ports/calibration/result/IResultStore.h"
 #include "infrastructure/process/ProcessRunner.h"
 
 using namespace mvvm;
@@ -63,7 +63,7 @@ struct LoggerFactory final : ILoggerFactory {
         cams++;
         return &app.createLogger("IVideoSource_" + std::to_string(cams));
     }
-    int cams = -1;
+    int cams = 0;
     ApplicationBootstrap& app;
 };
 
@@ -160,7 +160,7 @@ void ApplicationBootstrap::createAngleSources() {
         };
 
         angle_sources.emplace_back(
-            std::make_unique<AngleFromVideoInteractor>(ports)
+            std::make_unique<AngleFromVideoInteractor>(AngleSourceId{idx}, ports)
         );
 
         ++idx;
@@ -170,11 +170,11 @@ void ApplicationBootstrap::createAngleSources() {
 void ApplicationBootstrap::createVideoSourcesStorage() {
     auto storage = std::make_unique<VideoAngleSourcesStorage>();
 
-    for (std::size_t i = 0; i < video_sources.size(); ++i) {
+    for (int idx = 0; idx < video_sources.size(); ++idx) {
         VideoAngleSource source{
-            static_cast<int>(i + 1),
-            *angle_sources[i],
-            *video_sources[i]
+             AngleSourceId{idx + 1},
+            *angle_sources[idx],
+            *video_sources[idx]
         };
 
         storage->add(source);
@@ -242,7 +242,7 @@ void ApplicationBootstrap::createMotorDriver() {
     config.max_freq_hz = 40;
     config.min_freq_hz = 0;
 
-    G540LptMotorDriverPorts ports{
+    MotorDriverPorts ports{
         createLogger("IMotorDriver")
     };
 
@@ -274,12 +274,12 @@ void ApplicationBootstrap::createPrinterCatalog() {
 }
 
 void ApplicationBootstrap::createPrecisionCatalog() {
-    FilePrecisionCatalogPorts ports{
+    FileGaugePrecisionCatalogPorts ports{
         createLogger("IPrecisionCatalog")
     };
 
     precision_catalog =
-        std::make_unique<FilePrecisionCatalog>(
+        std::make_unique<FileGaugePrecisionCatalog>(
             ports,
             catalogs_dir_ + "/precision_classes"
         );

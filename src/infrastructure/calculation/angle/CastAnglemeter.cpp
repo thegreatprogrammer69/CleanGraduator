@@ -32,7 +32,7 @@ CastAnglemeter::~CastAnglemeter() {
 
 }
 
-domain::common::Angle CastAnglemeter::calculate(const domain::common::AnglemeterInput &input) {
+domain::common::Angle CastAnglemeter::calculate(const domain::common::AngleCalculatorInput &input) {
     if (input.frame->format == domain::common::PixelFormat::RGB24) {
         float angle;
         anglemeterSetImageSize(impl_->am, input.frame->width, input.frame->height);

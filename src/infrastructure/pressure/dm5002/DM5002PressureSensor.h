@@ -19,6 +19,7 @@ namespace infra::pressure {
 
         bool start() override;
         void stop() override;
+        bool isRunning() const noexcept override;
         void addObserver(domain::ports::IPressureSourceObserver &observer) override;
         void removeObserver(domain::ports::IPressureSourceObserver &observer) override;
 

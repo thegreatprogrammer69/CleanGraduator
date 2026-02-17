@@ -1,0 +1,13 @@
+//
+// Created by mint on 17.02.2026.
+//
+
+#ifndef CLEANGRADUATOR_MOTORDRIVERFACTORY_H
+#define CLEANGRADUATOR_MOTORDRIVERFACTORY_H
+
+
+class MotorDriverFactory {
+};
+
+
+#endif //CLEANGRADUATOR_MOTORDRIVERFACTORY_H

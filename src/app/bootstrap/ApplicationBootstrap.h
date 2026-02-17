@@ -19,7 +19,7 @@ namespace application::ports {
     struct IInfoSettingsStorage;
     struct IPrinterCatalog;
     struct IPressureUnitCatalog;
-    struct IPrecisionCatalog;
+    struct IGaugePrecisionCatalog;
     struct IGaugeCatalog;
     struct IDisplacementCatalog;
     struct IVideoAngleSourcesStorage;
@@ -97,7 +97,7 @@ public:
     // Каталоги
     std::unique_ptr<application::ports::IDisplacementCatalog> displacement_catalog;
     std::unique_ptr<application::ports::IGaugeCatalog> gauge_catalog;
-    std::unique_ptr<application::ports::IPrecisionCatalog> precision_catalog;
+    std::unique_ptr<application::ports::IGaugePrecisionCatalog> precision_catalog;
     std::unique_ptr<application::ports::IPressureUnitCatalog> pressure_unit_catalog;
     std::unique_ptr<application::ports::IPrinterCatalog> printer_catalog;
 

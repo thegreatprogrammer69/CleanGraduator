@@ -225,7 +225,7 @@ LinearCalibrationCalculator::LinearCalibrationCalculator(CalibrationCalculatorPo
     logger_.info("constructor called");
 }
 
-CalibrationResult LinearCalibrationCalculator::calculate(const CalibrationInput &input) const {
+CalibrationResult LinearCalibrationCalculator::calculate(const CalibrationCalculatorInput &input) const {
     logger_.info("start linear calibration for points {}, with {} angles and {} pressures", input.points, input.angles.size(), input.pressures.size());
 
     CalibrationResult result;

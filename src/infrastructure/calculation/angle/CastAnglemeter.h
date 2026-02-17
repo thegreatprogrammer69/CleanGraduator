@@ -11,7 +11,7 @@ namespace infra::calc {
     public:
         CastAnglemeter(AnglemeterPorts, CastAnglemeterConfig);
         ~CastAnglemeter() override;
-        domain::common::Angle calculate(const domain::common::AnglemeterInput&) override;
+        domain::common::Angle calculate(const domain::common::AngleCalculatorInput&) override;
 
         void setBrightLim(int brightLim);
         void setMaxPairs(int maxPairs);

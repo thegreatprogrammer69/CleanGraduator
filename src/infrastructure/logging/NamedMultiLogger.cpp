@@ -2,8 +2,8 @@
 
 #include <algorithm>
 
-#include "../../application/ports/outbound/logging/ILogSink.h"
-#include "../../domain/ports/clock/IClock.h"
+#include "application/ports/logging/ILogSink.h"
+#include "domain/ports/clock/IClock.h"
 
 static constexpr size_t MAX_LOGS_HISTORY = 482;
 

@@ -1,9 +1,10 @@
 #ifndef CLEANGRADUATOR_G540BOARDLPT_H
 #define CLEANGRADUATOR_G540BOARDLPT_H
+#include <atomic>
 #include <memory>
 
 #include "G540LptMotorDriverConfig.h"
-#include "G540LptMotorDriverPorts.h"
+#include "../MotorDriverPorts.h"
 #include "domain/fmt/Logger.h"
 #include "domain/ports/motor/IDualValveDriver.h"
 #include "domain/ports/motor/IMotorDriver.h"
@@ -13,7 +14,7 @@ namespace infra::motors {
 
     class G540LptMotorDriver final : public domain::ports::IMotorDriver, public domain::ports::IDualValveDriver {
     public:
-        G540LptMotorDriver(const G540LptMotorDriverPorts& ports,
+        G540LptMotorDriver(const MotorDriverPorts& ports,
                            const G540LptMotorDriverConfig& config);
         ~G540LptMotorDriver() override;
 
@@ -61,7 +62,7 @@ namespace infra::motors {
         struct G540LptImpl;
         std::unique_ptr<G540LptImpl> impl_;
 
-        G540LptMotorDriverPorts ports_;
+        MotorDriverPorts ports_;
         G540LptMotorDriverConfig config_;
 
         std::atomic<int> current_hz_;

@@ -2,7 +2,7 @@
 #include <algorithm>
 #include <optional>
 
-#include "application/ports/outbound/logging/ILogSource.h"
+#include "application/ports/logging/ILogSource.h"
 
 void infra::storage::LogSourcesStorage::addLogSource(application::models::LogSource source) {
     sources_.emplace(source.name, source);

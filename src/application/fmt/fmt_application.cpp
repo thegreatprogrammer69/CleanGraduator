@@ -23,17 +23,17 @@ std::ostream& operator<<(std::ostream& os, const Displacement& f) {
 
 std::ostream& operator<<(std::ostream& os, const Gauge& f) {
     os << "Gauge{name='" << to_utf8(f.name) << "', values=[";
-    for (size_t i = 0; i < f.values.size(); ++i) {
-        os << f.values[i];
-        if (i + 1 < f.values.size()) {
+    for (size_t i = 0; i < f.points.points.size(); ++i) {
+        os << f.points.points[i];
+        if (i + 1 < f.points.points.size()) {
             os << ", ";
         }
     }
     return os << "]}";
 }
 
-std::ostream& operator<<(std::ostream& os, const Precision& f) {
-    return os << "Precision{precision=" << f.precision << "}";
+std::ostream& operator<<(std::ostream& os, const GaugePrecision& f) {
+    return os << "Precision{precision=" << f.precision.value << "}";
 }
 
 std::ostream& operator<<(std::ostream& os, const PressureUnit& f) {

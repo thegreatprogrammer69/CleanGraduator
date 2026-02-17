@@ -1,7 +1,7 @@
 #ifndef CLEANGRADUATOR_LOGSOURCESTORAGE_H
 #define CLEANGRADUATOR_LOGSOURCESTORAGE_H
 #include <unordered_map>
-#include "application/ports/outbound/logging/ILogSourcesStorage.h"
+#include "application/ports/logging/ILogSourcesStorage.h"
 
 namespace infra::storage {
     class LogSourcesStorage final : public application::ports::ILogSourcesStorage {

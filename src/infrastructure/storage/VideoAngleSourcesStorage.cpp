@@ -2,6 +2,7 @@
 
 using namespace infra::storage;
 using namespace application::models;
+using namespace domain::common;
 
 VideoAngleSourcesStorage::VideoAngleSourcesStorage() {
 }
@@ -15,7 +16,7 @@ std::vector<VideoAngleSource> VideoAngleSourcesStorage::all()
     return sources_;  // возврат копии — безопасно
 }
 
-std::optional<VideoAngleSource> VideoAngleSourcesStorage::at(int id) const
+std::optional<VideoAngleSource> VideoAngleSourcesStorage::at(AngleSourceId id) const
 {
     auto it = std::find_if(
         sources_.begin(),

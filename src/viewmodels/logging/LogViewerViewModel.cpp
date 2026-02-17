@@ -1,7 +1,7 @@
 #include "LogViewerViewModel.h"
 
-#include "application/ports/outbound/logging/ILogSource.h"
-#include "application/ports/outbound/logging/ILogSourcesStorage.h"
+#include "application/ports/logging/ILogSource.h"
+#include "application/ports/logging/ILogSourcesStorage.h"
 
 using namespace mvvm;
 using namespace application::models;

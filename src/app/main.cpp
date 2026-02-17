@@ -51,7 +51,7 @@ int main(int argc, char *argv[]) {
         ui_bootstrap.main_window->show();
 
         application_bootstrap.angle_sources[0]->start();
-        application_bootstrap.angle_sources[1]->start();
+        // application_bootstrap.angle_sources[1]->start();
 
         application_bootstrap.pressure_source->start();
 

@@ -1,6 +1,6 @@
 #ifndef CLEANGRADUATOR_IVIDEOSOURCEOVERLAY_H
 #define CLEANGRADUATOR_IVIDEOSOURCEOVERLAY_H
-#include "domain/core/common/VideoFramePacket.h"
+#include "../../core/video/VideoFramePacket.h"
 
 namespace domain::ports {
     struct IVideoSourceOverlay {

@@ -3,18 +3,18 @@
 
 #include <QSettings>
 
-#include "application/ports/outbound/catalogs/IDisplacementCatalog.h"
-#include "application/ports/outbound/catalogs/IGaugeCatalog.h"
-#include "application/ports/outbound/catalogs/IPrecisionCatalog.h"
-#include "application/ports/outbound/catalogs/IPressureUnitCatalog.h"
-#include "application/ports/outbound/catalogs/IPrinterCatalog.h"
-#include "application/ports/outbound/settings/IInfoSettingsStorage.h"
+#include "application/ports/catalogs/IDisplacementCatalog.h"
+#include "application/ports/catalogs/IGaugeCatalog.h"
+#include "application/ports/catalogs/IGaugePrecisionCatalog.h"
+#include "application/ports/catalogs/IPressureUnitCatalog.h"
+#include "application/ports/catalogs/IPrinterCatalog.h"
+#include "application/ports/settings/IInfoSettingsStorage.h"
 
 namespace infra::storage {
     struct QtInfoSettingsStorageCatalogs {
         application::ports::IDisplacementCatalog& displacement_catalog;
         application::ports::IGaugeCatalog& gauge_catalog;
-        application::ports::IPrecisionCatalog& precision_catalog;
+        application::ports::IGaugePrecisionCatalog& precision_catalog;
         application::ports::IPressureUnitCatalog& pressure_unit_catalog;
         application::ports::IPrinterCatalog& printer_catalog;
     };

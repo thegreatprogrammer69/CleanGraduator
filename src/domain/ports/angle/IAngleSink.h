@@ -2,14 +2,13 @@
 #define CLEANGRADUATOR_IANGLESINK_H
 
 namespace domain::common {
-    class Timestamp;
-    class Angle;
+    struct AnglePacket;
 }
 
 namespace domain::ports {
     struct IAngleSink {
         virtual ~IAngleSink() = default;
-        virtual void onAngle(const common::Timestamp&, const common::Angle&) noexcept = 0;
+        virtual void onAngle(const common::AnglePacket&) noexcept = 0;
     };
 }
 

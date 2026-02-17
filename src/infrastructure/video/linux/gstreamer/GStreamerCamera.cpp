@@ -11,8 +11,8 @@
 #include "domain/core/measurement/Timestamp.h"
 #include "domain/core/video/PixelFormat.h"
 #include "domain/core/video/VideoFrame.h"
-#include "domain/core/common/VideoFramePacket.h"
-#include "domain/core/common/VideoSourceError.h"
+#include "domain/core/video/VideoFramePacket.h"
+#include "domain/core/video/VideoSourceError.h"
 #include "domain/ports/clock/IClock.h"
 
 namespace infra::camera {
@@ -126,7 +126,7 @@ void logBusMessages(fmt::Logger& logger, GstBus* bus, std::atomic<bool>& running
 
 } // namespace
 
-GStreamerCamera::GStreamerCamera(const VideoSourcePorts& ports, GStreamerCameraConfig config)
+GStreamerCamera::GStreamerCamera(VideoSourcePorts ports, GStreamerCameraConfig config)
     : logger_(ports.logger), ports_(ports), config_(std::move(config)) {}
 
 GStreamerCamera::~GStreamerCamera() {

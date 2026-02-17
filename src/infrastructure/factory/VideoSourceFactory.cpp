@@ -2,8 +2,8 @@
 
 #include <stdexcept>
 
-#include "../../application/ports/outbound/logging/ILoggerFactory.h"
-#include "../../domain/ports/video/IVideoSource.h"
+#include "application/ports/logging/ILoggerFactory.h"
+#include "domain/ports/video/IVideoSource.h"
 #include "infrastructure/video/linux/v4l/V4LCamera.h"
 #include "infrastructure/video/linux/v4l/V4LCameraConfig.h"
 #include "infrastructure/video/linux/gstreamer/GStreamerCamera.h"
@@ -37,7 +37,7 @@ std::vector<std::unique_ptr<domain::ports::IVideoSource>> infra::repo::VideoSour
 
     std::vector<std::unique_ptr<domain::ports::IVideoSource>> result;
 
-    for (int cam_idx = 0; cam_idx < 8; cam_idx++) {
+    for (int cam_idx = 1; cam_idx <= 8; cam_idx++) {
         const auto section_name = "camera_" + std::to_string(cam_idx);
         if (!ini.hasSection(section_name)) break;
         auto section = ini[section_name];

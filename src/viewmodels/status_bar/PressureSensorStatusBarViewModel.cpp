@@ -2,7 +2,7 @@
 
 #include <chrono>
 
-#include "domain/core/common/PressureSourceError.h"
+#include "domain/core/pressure/PressureSourceError.h"
 #include "domain/ports/pressure/IPressureSource.h"
 
 mvvm::PressureSensorStatusBarViewModel::PressureSensorStatusBarViewModel(

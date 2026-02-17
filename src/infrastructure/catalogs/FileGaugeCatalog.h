@@ -3,7 +3,7 @@
 
 #include <string>
 #include <vector>
-#include "../../application/ports/outbound/catalogs/IGaugeCatalog.h"
+#include "application/ports/catalogs/IGaugeCatalog.h"
 #include "domain/fmt/Logger.h"
 
 namespace domain::ports {

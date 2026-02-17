@@ -3,7 +3,7 @@
 
 #include <string>
 #include <vector>
-#include "../../application/ports/outbound/catalogs/IPrinterCatalog.h"
+#include "application/ports/catalogs/IPrinterCatalog.h"
 #include "domain/fmt/Logger.h"
 
 namespace domain::ports {

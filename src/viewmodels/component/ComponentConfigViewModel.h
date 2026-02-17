@@ -1,12 +1,8 @@
 #ifndef CLEANGRADUATOR_COMPONENTCONFIGVIEWMODEL_H
 #define CLEANGRADUATOR_COMPONENTCONFIGVIEWMODEL_H
 
-#include <memory>
-#include <unordered_map>
 #include <string>
-#include <any>
-
-#include "../../application/ports/outbound/settings/IRuntimeConfigurator.h"
+#include "application/ports/settings/IRuntimeConfigurator.h"
 #include "application/usecases/settings/ConfigureComponent.h"
 #include "viewmodels/Observable.h"
 
