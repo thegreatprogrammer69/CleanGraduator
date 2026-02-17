@@ -17,6 +17,14 @@ mvvm::PressureSensorStatusBarViewModel::~PressureSensorStatusBarViewModel() {
     pressure_source_.removeObserver(*this);
 }
 
+bool mvvm::PressureSensorStatusBarViewModel::open() {
+    return pressure_source_.start();
+}
+
+void mvvm::PressureSensorStatusBarViewModel::close() {
+    pressure_source_.stop();
+}
+
 domain::common::Pressure mvvm::PressureSensorStatusBarViewModel::pressureSpeedPerSecond() const {
     auto p = domain::common::Pressure::fromPa(
         pressure_speed_pa_per_sec_.load(std::memory_order_relaxed)

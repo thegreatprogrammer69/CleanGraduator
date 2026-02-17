@@ -5,6 +5,7 @@
 #include <QFrame>
 #include <QLabel>
 #include <QMetaObject>
+#include <QPushButton>
 #include <QVBoxLayout>
 
 #include "domain/fmt/fmt.h"
@@ -86,11 +87,28 @@ QtPressureSensorStatusBarWidget::QtPressureSensorStatusBarWidget(
     form->addRow(makeCaption(tr("Ошибка"), content_card_), error_value_);
 
     card->addLayout(form);
+
+    action_button_ = new QPushButton(content_card_);
+    action_button_->setProperty("role", "action");
+    action_button_->setCursor(Qt::PointingHandCursor);
+    connect(action_button_, &QPushButton::clicked, this, [this] {
+        if (vm_.is_opened.get_copy()) {
+            vm_.close();
+            return;
+        }
+
+        vm_.open();
+    });
+    card->addWidget(action_button_, 0, Qt::AlignRight);
+
     root->addWidget(content_card_);
 
     subs_->is_opened_sub = vm_.is_opened.subscribe([this](auto e) {
         const bool opened = e.new_value;
-        QMetaObject::invokeMethod(this, [this, opened] { setOpenedText(opened); }, Qt::QueuedConnection);
+        QMetaObject::invokeMethod(this, [this, opened] {
+            setOpenedText(opened);
+            setActionButtonText(opened);
+        }, Qt::QueuedConnection);
     });
 
     subs_->pressure_sub = vm_.pressure.subscribe([this](auto) {
@@ -108,6 +126,7 @@ QtPressureSensorStatusBarWidget::QtPressureSensorStatusBarWidget(
 
     refreshAll();
     setOpenedText(vm_.is_opened.get_copy());
+    setActionButtonText(vm_.is_opened.get_copy());
     setPressureText();
     setErrorText(vm_.error.get_copy());
 }
@@ -119,6 +138,10 @@ QtPressureSensorStatusBarWidget::~QtPressureSensorStatusBarWidget() {
 
 QString QtPressureSensorStatusBarWidget::openedToText(bool is_opened) {
     return is_opened ? tr("Открыт") : tr("Закрыт");
+}
+
+QString QtPressureSensorStatusBarWidget::actionToText(bool is_opened) {
+    return is_opened ? tr("Закрыть") : tr("Открыть");
 }
 
 QString QtPressureSensorStatusBarWidget::errorToText(const std::string& err) {
@@ -140,6 +163,10 @@ void QtPressureSensorStatusBarWidget::refreshAll() {
 
 void QtPressureSensorStatusBarWidget::setOpenedText(bool is_opened) {
     opened_value_->setText(openedToText(is_opened));
+}
+
+void QtPressureSensorStatusBarWidget::setActionButtonText(bool is_opened) {
+    action_button_->setText(actionToText(is_opened));
 }
 
 void QtPressureSensorStatusBarWidget::setPressureText() {
