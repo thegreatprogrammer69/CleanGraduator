@@ -10,6 +10,7 @@ namespace mvvm { class PressureSensorStatusBarViewModel; }
 
 class QFrame;
 class QLabel;
+class QPushButton;
 
 namespace ui {
 
@@ -21,10 +22,12 @@ namespace ui {
 
     private:
         static QString openedToText(bool is_opened);
+        static QString actionToText(bool is_opened);
         static QString errorToText(const std::string& err);
 
         void refreshAll();
         void setOpenedText(bool is_opened);
+        void setActionButtonText(bool is_opened);
         void setPressureText();
         void setErrorText(const std::string& err);
 
@@ -37,6 +40,7 @@ namespace ui {
         QLabel* pressure_value_{nullptr};
         QLabel* speed_value_{nullptr};
         QLabel* error_value_{nullptr};
+        QPushButton* action_button_{nullptr};
 
         struct Subscriptions;
         std::unique_ptr<Subscriptions> subs_;

@@ -29,6 +29,9 @@ namespace mvvm {
         explicit PressureSensorStatusBarViewModel(PressureSensorStatusBarViewModelDeps deps);
         ~PressureSensorStatusBarViewModel() override;
 
+        bool open();
+        void close();
+
         domain::common::Pressure pressureSpeedPerSecond() const;
 
         Observable<bool> is_opened{false};
