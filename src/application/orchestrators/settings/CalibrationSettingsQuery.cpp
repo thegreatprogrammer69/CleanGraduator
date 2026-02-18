@@ -20,10 +20,17 @@ CalibrationSettingsQuery::CalibrationSettingsQuery(CalibrationSettingsQueryPorts
 }
 
 std::optional<domain::common::PressurePoints> CalibrationSettingsQuery::currentGaugePressurePoints() const {
+    const auto pressure_unit = currentPressureUnit();
+    if (!pressure_unit) return std::nullopt;
+
+    domain::common::PressurePoints points;
     if (auto gauge = gauge_catalog_.at(data_.gauge_idx)) {
-        return gauge->points.poi fdsfsd  sdfnts;
+        if (gauge->points.value.size() < 2) return std::nullopt;
+        for (auto p : gauge->points.value) {
+            points.value.push_back(domain::common::Pressure(p, *pressure_unit));
+        }
     }
-    return std::nullopt;
+    return points;
 }
 
 std::optional<domain::common::GaugePrecision> CalibrationSettingsQuery::currentPrecision() const {

@@ -16,6 +16,7 @@ namespace domain::ports {
         // --- Lifecycle ---
         virtual void start() = 0;
         virtual void stop() = 0;
+        virtual bool isRunning() const = 0;
 
         // Немедленный аварийный стоп (синхронный)
         virtual void emergencyStop() = 0;

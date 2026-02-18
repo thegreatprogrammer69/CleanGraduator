@@ -6,11 +6,13 @@ endif ()
 
     add_executable(CleanGraduator
         main.cpp
-        test1.cpp test2.cpp
+        test1.cpp test2.cpp test3.cpp
         bootstrap/ApplicationBootstrap.cpp
         bootstrap/UseCasesBootstrap.cpp
         bootstrap/ViewModelsBootstrap.cpp
         bootstrap/UiBootstrap.cpp
+            ControlPanelWidget.cpp
+            ControlPanelWidget.h
 
     )
 

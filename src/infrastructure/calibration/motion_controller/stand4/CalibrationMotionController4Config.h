@@ -3,9 +3,9 @@
 
 namespace infra::calib {
     struct CalibrationMotionController4Config {
-        domain::ports::ILogger& logger;
-        domain::ports::IMotorDriver& motor_driver;
-        domain::ports::IDualValveDriver& dual_valve_driver;
+        // domain::ports::ILogger& logger;
+        // domain::ports::IMotorDriver& motor_driver;
+        // domain::ports::IDualValveDriver& dual_valve_driver;
     };
 }
 

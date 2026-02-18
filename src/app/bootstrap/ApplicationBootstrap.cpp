@@ -35,6 +35,7 @@
 #include "../../domain/ports/video/IVideoSource.h"
 
 #include "../../domain/ports/calibration/result/IResultStore.h"
+#include "infrastructure/factory/MotorDriverFactory.h"
 #include "infrastructure/process/ProcessRunner.h"
 
 using namespace mvvm;
@@ -232,25 +233,17 @@ void ApplicationBootstrap::createPressureSource() {
 
 
 void ApplicationBootstrap::createMotorDriver() {
-    G540LptMotorDriverConfig config{};
-    config.bit_begin_limit_switch = 1;
-    config.bit_end_limit_switch = 2;
-    config.byte_close_both_flaps = 0;
-    config.byte_open_input_flap = 8;
-    config.byte_open_output_flap = 9;
-    config.lpt_port = 0x385;
-    config.max_freq_hz = 40;
-    config.min_freq_hz = 0;
-
     MotorDriverPorts ports{
         createLogger("IMotorDriver")
     };
+    MotorDriverFactory factory(setup_dir_ + "/motor.ini", ports);
+    motor_driver = factory.load();
+    dual_valve_driver = factory.load_valve_driver();
 
-    motor_driver = std::make_unique<G540LptMotorDriver>(ports, config);
 }
 
 void ApplicationBootstrap::createDisplacementCatalog() {
-    FileDisplacementCatalogPorts ports{
+    CatalogPorts ports{
         createLogger("IDisplacementCatalog")
     };
 
@@ -262,7 +255,7 @@ void ApplicationBootstrap::createDisplacementCatalog() {
 }
 
 void ApplicationBootstrap::createPrinterCatalog() {
-    FilePrinterCatalogPorts ports{
+    CatalogPorts ports{
         createLogger("IPrinterCatalog")
     };
 
@@ -274,7 +267,7 @@ void ApplicationBootstrap::createPrinterCatalog() {
 }
 
 void ApplicationBootstrap::createPrecisionCatalog() {
-    FileGaugePrecisionCatalogPorts ports{
+    CatalogPorts ports{
         createLogger("IPrecisionCatalog")
     };
 
@@ -286,7 +279,7 @@ void ApplicationBootstrap::createPrecisionCatalog() {
 }
 
 void ApplicationBootstrap::createPressureUnitCatalog() {
-    FilePressureUnitCatalogPorts ports{
+    CatalogPorts ports{
         createLogger("IPressureUnitCatalog")
     };
 
@@ -298,7 +291,7 @@ void ApplicationBootstrap::createPressureUnitCatalog() {
 }
 
 void ApplicationBootstrap::createGaugeCatalog() {
-    FileGaugeCatalogPorts ports{
+    CatalogPorts ports{
         createLogger("IGaugeCatalog")
     };
 

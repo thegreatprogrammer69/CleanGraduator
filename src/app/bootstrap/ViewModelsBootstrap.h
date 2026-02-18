@@ -4,6 +4,9 @@
 #include <vector>
 
 namespace mvvm {
+    class ControlViewModel;
+    class MotorControlViewModel;
+    class DualValveControlViewModel;
     class AppStatusBarViewModel;
     class MotorDriverStatusViewModel;
     class PressureSensorStatusBarViewModel;
@@ -37,6 +40,11 @@ public:
     std::unique_ptr<mvvm::MotorDriverStatusViewModel> motor_driver_status;
     std::unique_ptr<mvvm::PressureSensorStatusBarViewModel> pressure_sensor_status;
 
+
+    std::unique_ptr<mvvm::DualValveControlViewModel> dual_valve_control;
+    std::unique_ptr<mvvm::MotorControlViewModel> motor_control;
+    std::unique_ptr<mvvm::ControlViewModel> control;
+
     std::unique_ptr<mvvm::LogViewerViewModel> log_viewer;
 
     std::unique_ptr<mvvm::MainWindowViewModel> main_window;
@@ -55,6 +63,10 @@ private:
     void createStatusBar();
     void createMotorDriverStatus();
     void createPressureSensorStatus();
+
+    void createDualValveControl();
+    void createMotorControl();
+    void createControl();
 
     void createLogViewer();
 

@@ -34,7 +34,7 @@ std::vector<std::string> split(const std::string& s, char delim) {
 
 namespace infra::catalogs {
 
-FilePrinterCatalog::FilePrinterCatalog(FilePrinterCatalogPorts ports, std::string filePath)
+FilePrinterCatalog::FilePrinterCatalog(CatalogPorts ports, std::string filePath)
     : logger_(ports.logger)
 {
     std::ifstream in(filePath, std::ios::binary);

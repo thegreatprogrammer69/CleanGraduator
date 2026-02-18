@@ -39,6 +39,9 @@ domain::common::Angle CastAnglemeter::calculate(const domain::common::AngleCalcu
         anglemeterGetArrowAngle(impl_->am, input.frame->buffer.data, &angle);
         return domain::common::Angle::fromDegrees(angle);
     }
+    else {
+        throw std::logic_error("Unsupported pixel format. Expected RGB24.");
+    }
     return {};
 }
 

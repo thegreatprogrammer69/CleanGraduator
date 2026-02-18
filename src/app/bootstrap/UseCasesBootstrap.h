@@ -3,6 +3,10 @@
 #include <memory>
 
 
+namespace application::orchestrators {
+    class MotorControlInteractor;
+}
+
 namespace application::usecase {
     class CloseAllCameras;
     class OpenAllCameras;
@@ -23,6 +27,9 @@ public:
     std::unique_ptr<application::usecase::OpenAllCameras> open_all_cameras;
     std::unique_ptr<application::usecase::CloseAllCameras> close_all_cameras;
 
+    std::unique_ptr<application::orchestrators::MotorControlInteractor> motor_control_interactor;
+
+
     // Конфигурируемы объект
     // std::unique_ptr<application::usecase::ConfigureComponent> configure_component;
 
@@ -32,6 +39,8 @@ private:
     void createOpenSelectedCameras();
     void createOpenAllCameras();
     void createCloseAllCameras();
+
+    void createMotorControlInteractor();
 
 };
 

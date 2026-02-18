@@ -4,6 +4,9 @@
 #include "UseCasesBootstrap.h"
 #include "viewmodels/logging/LogViewerViewModel.h"
 #include "viewmodels/MainWindowViewModel.h"
+#include "viewmodels/control/ControlViewModel.h"
+#include "viewmodels/control/DualValveControlViewModel.h"
+#include "viewmodels/control/MotorControlViewModel.h"
 #include "viewmodels/settings/CameraGridSettingsViewModel.h"
 #include "viewmodels/settings/InfoSettingsViewModel.h"
 #include "viewmodels/settings/SettingsViewModel.h"
@@ -34,6 +37,10 @@ void ViewModelsBootstrap::initialize() {
     createStatusBar();
     createMotorDriverStatus();
     createPressureSensorStatus();
+
+    createDualValveControl();
+    createMotorControl();
+    createControl();
 
     createLogViewer();
 
@@ -126,6 +133,28 @@ void ViewModelsBootstrap::createPressureSensorStatus() {
     pressure_sensor_status = std::make_unique<PressureSensorStatusBarViewModel>(deps);
 }
 
+void ViewModelsBootstrap::createDualValveControl() {
+    DualValveControlViewModelDeps deps {
+        *app_.dual_valve_driver
+    };
+    dual_valve_control = std::make_unique<DualValveControlViewModel>(deps);
+}
+
+void ViewModelsBootstrap::createMotorControl() {
+    MotorControlViewModelDeps deps {
+        *use_cases_.motor_control_interactor
+    };
+    motor_control = std::make_unique<MotorControlViewModel>(deps);
+}
+
+void ViewModelsBootstrap::createControl() {
+    ControlViewModelDeps deps {
+        *dual_valve_control,
+        *motor_control
+    };
+    control = std::make_unique<ControlViewModel>(deps);
+}
+
 void ViewModelsBootstrap::createLogViewer() {
     log_viewer = std::make_unique<LogViewerViewModel>(*app_.log_sources_storage);
 }
@@ -141,6 +170,7 @@ void ViewModelsBootstrap::createMainWindow() {
         *log_viewer,
         *video_source_grid,
         *settings,
+        *control,
         status_bar_view_models
     };
 

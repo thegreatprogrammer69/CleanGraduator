@@ -33,7 +33,7 @@ namespace infra::catalogs {
 
 using application::models::Displacement;
 
-FileDisplacementCatalog::FileDisplacementCatalog(FileDisplacementCatalogPorts ports, std::string filePath)
+FileDisplacementCatalog::FileDisplacementCatalog(CatalogPorts ports, std::string filePath)
     : logger_(ports.logger)
 {
     std::ifstream file(filePath, std::ios::binary);

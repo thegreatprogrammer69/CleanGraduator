@@ -21,6 +21,7 @@ namespace infra::motors {
         // --- Lifecycle ---
         void start() override;
         void stop() override;
+        bool isRunning() const override;
         void emergencyStop() override;
 
         // --- Motion config ---
@@ -46,6 +47,8 @@ namespace infra::motors {
         // --- Observers ---
         void addObserver(domain::ports::IMotorDriverObserver& o) override;
         void removeObserver(domain::ports::IMotorDriverObserver& o) override;
+        void addObserver(domain::ports::IDualValveDriverObserver &) override;
+        void removeObserver(domain::ports::IDualValveDriverObserver &) override;
 
         // --- Extra (из старого кода) ---
         enum class FlapsState { CloseBoth, OpenInput, OpenOutput };
@@ -55,6 +58,8 @@ namespace infra::motors {
         void openInputFlap() override;
         void openOutputFlap() override;
         void closeFlaps() override;
+
+
 
     private:
         fmt::Logger logger_;

@@ -24,6 +24,7 @@ namespace infra::calib::stand4 {
 
     private:
         bool is_tracking_ = false;
+        domain::common::MotorDirection direction_{};
 
         std::vector<double> points_;
         IPressurePointsTrackerObserver& observer_;

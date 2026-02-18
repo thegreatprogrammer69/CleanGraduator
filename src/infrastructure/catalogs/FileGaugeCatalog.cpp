@@ -48,7 +48,7 @@ bool tryParseDouble(std::string token, double& out) {
 
 namespace infra::catalogs {
 
-FileGaugeCatalog::FileGaugeCatalog(FileGaugeCatalogPorts ports, std::string filePath)
+FileGaugeCatalog::FileGaugeCatalog(CatalogPorts ports, std::string filePath)
     : logger_(ports.logger)
 {
     std::ifstream in(filePath, std::ios::binary);
@@ -110,7 +110,7 @@ FileGaugeCatalog::FileGaugeCatalog(FileGaugeCatalogPorts ports, std::string file
         try {
             application::models::Gauge g;
             g.name = from_utf8(name_utf8);
-            g.points.points = std::move(values);
+            g.points.value = std::move(values);
             gauges_.push_back(g);
             logger_.info("Loaded gauge model: {}", gauges_.back());
         } catch (const std::range_error&) {

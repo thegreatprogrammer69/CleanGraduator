@@ -3,6 +3,8 @@
 
 #include <string>
 #include <vector>
+
+#include "CatalogPorts.h"
 #include "application/ports/catalogs/IGaugeCatalog.h"
 #include "domain/fmt/Logger.h"
 
@@ -11,13 +13,9 @@ namespace domain::ports {
 }
 
 namespace infra::catalogs {
-    struct FileGaugeCatalogPorts {
-        domain::ports::ILogger& logger;
-    };
-
     class FileGaugeCatalog final : public application::ports::IGaugeCatalog {
     public:
-        explicit FileGaugeCatalog(FileGaugeCatalogPorts ports, std::string filePath);
+        explicit FileGaugeCatalog(CatalogPorts ports, std::string filePath);
         std::vector<application::models::Gauge> list() const override;
         std::optional<application::models::Gauge> at(int idx) const override;
 

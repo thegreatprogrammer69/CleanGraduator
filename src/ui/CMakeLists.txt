@@ -16,6 +16,13 @@ add_library(ui STATIC
         widgets/settings/QtSettingsWidget.cpp
         widgets/settings/QtSettingsWidget.h
 
+        widgets/control/QtDualValveControlWidget.cpp
+        widgets/control/QtDualValveControlWidget.h
+        widgets/control/QtMotorControlWidget.cpp
+        widgets/control/QtMotorControlWidget.h
+        widgets/control/QtControlWidget.cpp
+        widgets/control/QtControlWidget.h
+
         widgets/status_bar/QtAppStatusBarWidget.cpp
         widgets/status_bar/QtAppStatusBarWidget.h
         widgets/status_bar/QtMotorDriverStatusBarWidget.cpp

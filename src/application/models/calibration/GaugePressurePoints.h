@@ -5,14 +5,14 @@
 namespace application::model {
     struct GaugePressurePoints {
         explicit GaugePressurePoints(std::vector<double> points)
-            : points(std::move(points))
+            : value(std::move(points))
         {}
         GaugePressurePoints() = default;
-        std::vector<double> points;
+        std::vector<double> value;
         bool isCorrect() const {
-            return points.size() > 1;
+            return value.size() > 1;
         }
-        bool operator==(const GaugePressurePoints &other) const {  return points == other.points; }
+        bool operator==(const GaugePressurePoints &other) const {  return value == other.value; }
     };
 }
 

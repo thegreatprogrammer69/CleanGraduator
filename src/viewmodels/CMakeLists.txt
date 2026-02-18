@@ -6,6 +6,10 @@ add_library(viewmodels STATIC
         settings/InfoSettingsViewModel.cpp
         settings/SettingsViewModel.cpp
 
+        control/DualValveControlViewModel.cpp
+        control/MotorControlViewModel.cpp
+        control/ControlViewModel.cpp
+
         status_bar/AppStatusBarViewModel.cpp
         status_bar/MotorDriverStatusViewModel.cpp
         status_bar/PressureSensorStatusBarViewModel.cpp

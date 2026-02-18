@@ -33,7 +33,7 @@ const std::unordered_map<std::string, domain::common::PressureUnit> unitMap = {
     {"kgf_m2", domain::common::PressureUnit::kgf_m2}};
 }
 
-FilePressureUnitCatalog::FilePressureUnitCatalog(FilePressureUnitCatalogPorts ports, std::string filePath)
+FilePressureUnitCatalog::FilePressureUnitCatalog(CatalogPorts ports, std::string filePath)
     : logger_(ports.logger)
 {
     std::ifstream file(filePath, std::ios::binary);

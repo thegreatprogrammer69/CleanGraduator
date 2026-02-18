@@ -11,6 +11,7 @@ namespace infra::process {
 }
 
 namespace application::orchestrators {
+    class MotorControlInteractor;
     class VideoSourceManager;
 }
 
@@ -31,6 +32,7 @@ namespace infra::logging {
 }
 
 namespace domain::ports {
+    struct IDualValveDriver;
     struct IResultStore;
     struct IPressureSource;
     class ICalibrationCalculator;
@@ -83,6 +85,7 @@ public:
     ////////////////////////////////////////////////////////////////////////////////////////
     // Драйвер двигателя
     std::unique_ptr<domain::ports::IMotorDriver> motor_driver;
+    std::unique_ptr<domain::ports::IDualValveDriver> dual_valve_driver;
 
     ////////////////////////////////////////////////////////////////////////////////////////
     // Задатчик давления. Делавет весь процесс градуировки

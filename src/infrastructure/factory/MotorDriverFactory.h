@@ -4,10 +4,27 @@
 
 #ifndef CLEANGRADUATOR_MOTORDRIVERFACTORY_H
 #define CLEANGRADUATOR_MOTORDRIVERFACTORY_H
+#include <memory>
+#include <string>
 
+#include "domain/ports/motor/IDualValveDriver.h"
+#include "domain/ports/motor/IMotorDriver.h"
+#include "infrastructure/motor/g540/MotorDriverPorts.h"
 
-class MotorDriverFactory {
-};
+namespace infra::repo {
+    class MotorDriverFactory {
+    public:
+        MotorDriverFactory(const std::string& ini_path, motors::MotorDriverPorts ports);
+        ~MotorDriverFactory();
+
+        std::unique_ptr<domain::ports::IMotorDriver> load();
+        std::unique_ptr<domain::ports::IDualValveDriver> load_valve_driver();
+    private:
+        std::string ini_path_;
+        motors::MotorDriverPorts ports_;
+        domain::ports::IDualValveDriver* valve_driver_{nullptr};
+    };
+}
 
 
 #endif //CLEANGRADUATOR_MOTORDRIVERFACTORY_H

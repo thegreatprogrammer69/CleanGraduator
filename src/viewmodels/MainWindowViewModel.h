@@ -4,6 +4,7 @@
 
 
 namespace mvvm {
+    class ControlViewModel;
     class LogViewerViewModel;
     class SettingsViewModel;
     class VideoSourceGridViewModel;
@@ -12,6 +13,7 @@ namespace mvvm {
         LogViewerViewModel &log_viewer;
         VideoSourceGridViewModel &grid;
         SettingsViewModel &settings;
+        ControlViewModel &control;
         StatusBarViewModels status_bar;
     };
 
@@ -22,6 +24,7 @@ namespace mvvm {
         LogViewerViewModel& logViewerViewModel();
         VideoSourceGridViewModel& videoSourceGridViewModel();
         SettingsViewModel& settingsViewModel();
+        ControlViewModel& controlViewModel();
         StatusBarViewModels statusBarViewModels();
 
     private:

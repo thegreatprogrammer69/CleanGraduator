@@ -5,6 +5,7 @@ add_library(application STATIC
         orchestrators/calibration/recording/CalibrationRecorder.cpp
         orchestrators/video/VideoSourceManager.cpp
         orchestrators/settings/CalibrationSettingsQuery.cpp
+        orchestrators/motor/MotorControlInteractor.cpp
 
         usecases/settings/ConfigureComponent.cpp
 

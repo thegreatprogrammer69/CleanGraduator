@@ -13,6 +13,7 @@
 #include <vector>
 
 #include "domain/ports/motor/IMotorDriverObserver.h"
+#include "domain/ports/motor/IDualValveDriverObserver.h"
 
 using namespace infra::motors;
 
@@ -99,6 +100,10 @@ struct G540LptMotorDriver::G540LptImpl {
         cv_.notify_all();
     }
 
+    bool isRunning() const {
+        return requested_running_.load(std::memory_order_relaxed);
+    }
+
     void emergencyStop() {
         requested_running_.store(false, std::memory_order_relaxed);
         requested_emergency_.store(true, std::memory_order_relaxed);
@@ -165,6 +170,16 @@ struct G540LptMotorDriver::G540LptImpl {
     void removeObserver(domain::ports::IMotorDriverObserver& o) {
         std::lock_guard lk(obs_mtx_);
         observers_.erase(std::remove(observers_.begin(), observers_.end(), &o), observers_.end());
+    }
+
+    void addObserver(domain::ports::IDualValveDriverObserver& o) {
+        std::lock_guard lk(valve_obs_mtx_);
+        valve_observers_.push_back(&o);
+    }
+
+    void removeObserver(domain::ports::IDualValveDriverObserver& o) {
+        std::lock_guard lk(valve_obs_mtx_);
+        valve_observers_.erase(std::remove(valve_observers_.begin(), valve_observers_.end(), &o), valve_observers_.end());
     }
 
 private:
@@ -294,7 +309,19 @@ private:
         }
         for (auto* o : copy) fn(*o);
     }
+    template<class Fn>
+    void notifyAllValve(Fn&& fn) {
+        std::vector<domain::ports::IDualValveDriverObserver*> copy;
+        {
+            std::lock_guard lk(valve_obs_mtx_);
+            copy = valve_observers_;
+        }
+        for (auto* o : copy) fn(*o);
+    }
 
+    void notifyInputFlapOpened() { notifyAllValve([](auto& o){ o.onInputFlapOpened(); }); }
+    void notifyOutputFlapOpened() { notifyAllValve([](auto& o){ o.onOutputFlapOpened(); }); }
+    void notifyFlapsClosed() { notifyAllValve([](auto& o){ o.onFlapsClosed(); }); }
     void notifyStarted()  { notifyAll([](auto& o){ o.onStarted(); }); }
     void notifyStopped()  { notifyAll([](auto& o){ o.onStopped(); }); }
     void notifyFault(const domain::common::MotorFault& f) {
@@ -316,12 +343,15 @@ private:
         switch (s) {
             case FlapsState::CloseBoth:
                 lpt_.write(2, cfg_.byte_close_both_flaps);
+                notifyFlapsClosed();
                 break;
             case FlapsState::OpenInput:
                 lpt_.write(2, cfg_.byte_open_input_flap);
+                notifyInputFlapOpened();
                 break;
             case FlapsState::OpenOutput:
                 lpt_.write(2, cfg_.byte_open_output_flap);
+                notifyOutputFlapOpened();
                 break;
         }
     }
@@ -515,6 +545,8 @@ private:
     // observers mutex (редко)
     mutable std::mutex obs_mtx_;
     std::vector<domain::ports::IMotorDriverObserver*> observers_;
+    mutable std::mutex valve_obs_mtx_;
+    std::vector<domain::ports::IDualValveDriverObserver*> valve_observers_;
 
     // fault error (string) mutex (редко)
     mutable std::mutex fault_mtx_;
@@ -566,6 +598,10 @@ void G540LptMotorDriver::start() {
 void G540LptMotorDriver::stop() {
     logger_.info("stop()");
     impl_->stop();
+}
+
+bool G540LptMotorDriver::isRunning() const {
+    return impl_->isRunning();
 }
 
 void G540LptMotorDriver::emergencyStop() {
@@ -623,11 +659,19 @@ void G540LptMotorDriver::feedWatchdog() {
     // no-op
 }
 
-void G540LptMotorDriver::addObserver(domain::ports::IMotorDriverObserver& o) {
+void G540LptMotorDriver::addObserver(domain::ports::IMotorDriverObserver &o) {
     impl_->addObserver(o);
 }
 
-void G540LptMotorDriver::removeObserver(domain::ports::IMotorDriverObserver& o) {
+void G540LptMotorDriver::removeObserver(domain::ports::IMotorDriverObserver &o) {
+    impl_->removeObserver(o);
+}
+
+void G540LptMotorDriver::addObserver(domain::ports::IDualValveDriverObserver &o) {
+    impl_->addObserver(o);
+}
+
+void G540LptMotorDriver::removeObserver(domain::ports::IDualValveDriverObserver &o) {
     impl_->removeObserver(o);
 }
 

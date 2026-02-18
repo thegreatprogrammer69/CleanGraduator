@@ -43,7 +43,7 @@ namespace infra::catalogs {
 using application::models::GaugePrecision;
 
 FileGaugePrecisionCatalog::FileGaugePrecisionCatalog(
-    FilePrecisionCatalogPorts ports,
+    CatalogPorts ports,
     std::string filePath
 )
     : logger_(ports.logger)

@@ -18,6 +18,7 @@
 #include <QTableWidget>
 #include <QHeaderView>
 
+#include "control/QtControlWidget.h"
 #include "ui/widgets/layout/QtStackPanelWidget.h"
 #include "ui/widgets/settings/QtSettingsWidget.h"
 #include "ui/widgets/status_bar/QtAppStatusBarWidget.h"
@@ -91,38 +92,25 @@ ui::QtMainWindow::QtMainWindow(
 
     tableLayout->addWidget(table);
 
-    /* ----- Карточка: управление ----- */
+    /* ----- Карточка: управление (новая) ----- */
     auto* controlCard = new QFrame(processPage);
     controlCard->setObjectName("contentCard");
     controlCard->setAttribute(Qt::WA_StyledBackground, true);
     controlCard->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Minimum);
 
-    auto* controlLayout = new QGridLayout(controlCard);
+    auto* controlLayout = new QVBoxLayout(controlCard);
     controlLayout->setContentsMargins(12, 8, 8, 8);
-    controlLayout->setSpacing(12);
+    controlLayout->setSpacing(8);
 
-    auto* engineDir = new QGroupBox(tr("Направление двигателя"));
-    auto* dirLayout = new QHBoxLayout(engineDir);
-    dirLayout->addWidget(new QRadioButton(tr("Вперёд")));
-    dirLayout->addWidget(new QRadioButton(tr("Назад")));
+    auto* controlWidget =
+        new QtControlWidget(model_.controlViewModel(), controlCard);
 
-    auto* engineCtrl = new QGroupBox(tr("Управление двигателем"));
-    auto* engLayout = new QVBoxLayout(engineCtrl);
-    engLayout->addWidget(new QPushButton(tr("Старт")));
-    engLayout->addWidget(new QPushButton(tr("Стоп")));
-
-    auto* valveCtrl = new QGroupBox(tr("Управление клапанами"));
-    auto* valveLayout = new QVBoxLayout(valveCtrl);
-    valveLayout->addWidget(new QPushButton(tr("Открыть впускной")));
-    valveLayout->addWidget(new QPushButton(tr("Открыть выпускной")));
-    valveLayout->addWidget(new QPushButton(tr("Закрыть оба")));
-
-    controlLayout->addWidget(engineDir,  0, 0);
-    controlLayout->addWidget(engineCtrl, 1, 0);
-    controlLayout->addWidget(valveCtrl,  0, 1, 2, 1);
+    controlLayout->addWidget(controlWidget, 0);
 
     processLayout->addWidget(tableCard, 1);
     processLayout->addWidget(controlCard, 0);
+    controlLayout->addWidget(controlWidget, 0, Qt::AlignRight);
+
 
     /* =================================================
      * ================= PAGE: НАСТРОЙКИ ================

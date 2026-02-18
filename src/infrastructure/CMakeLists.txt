@@ -40,8 +40,13 @@ set(SOURCES
         factory/VideoSourceFactory.cpp
         factory/VideoSourceOverlayFactory.cpp
         factory/PressureSourceFactory.cpp
+        factory/MotorDriverFactory.cpp
 
         motor/g540/as_lpt/G540LptMotorDriver.cpp
+
+        calibration/motion_controller/stand4/FrequencyCalculator.cpp
+        calibration/motion_controller/stand4/PressurePointsTracker.cpp
+        calibration/motion_controller/stand4/CalibrationMotionController4.cpp
 
 )
 
@@ -66,20 +71,12 @@ elseif(UNIX)
     add_definitions(-DPLATFORM_LINUX)
     set(PLATFORM_SOURCES
             platform/com/ComPort_linux.cpp
-            platform/lpt/LptPort_linux.cpp
-#            platform/lpt/LptPort_console.cpp
+#            platform/lpt/LptPort_linux.cpp
+            platform/lpt/LptPort_console.cpp
             platform/sleep/sleep_linux.cpp
             video/linux/v4l/V4LCamera.cpp
             video/linux/gstreamer/GStreamerCamera.cpp
-            pressure/dm5002/DM5002PressureSensor.h
-            pressure/dm5002/DM5002PressureSensor.cpp
-            pressure/dm5002/DM5002PressureSensorConfig.h
-            calibration/motion_controller/stand4/stand4logic.h
-            calibration/motion_controller/stand4/FrequencyCalculator.h
-            calibration/motion_controller/stand4/FrequencyCalculator.cpp
-            calibration/motion_controller/stand4/IPressurePointsTrackerObserver.h
-            calibration/motion_controller/stand4/PressurePointsTracker.cpp
-            calibration/motion_controller/stand4/PressurePointsTracker.h
+
     )
 endif()
 

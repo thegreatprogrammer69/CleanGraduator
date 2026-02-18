@@ -5,6 +5,7 @@
 #include <vector>
 #include <optional>
 
+#include "CatalogPorts.h"
 #include "application/models/info/GaugePrecision.h"
 #include "application/ports/catalogs/IGaugePrecisionCatalog.h"
 #include "domain/fmt/Logger.h"
@@ -14,15 +15,10 @@ namespace domain::ports {
 }
 
 namespace infra::catalogs {
-
-    struct FilePrecisionCatalogPorts {
-        domain::ports::ILogger& logger;
-    };
-
     class FileGaugePrecisionCatalog final
         : public application::ports::IGaugePrecisionCatalog {
     public:
-        explicit FileGaugePrecisionCatalog(FilePrecisionCatalogPorts ports, std::string filePath);
+        explicit FileGaugePrecisionCatalog(CatalogPorts ports, std::string filePath);
 
         std::vector<application::models::GaugePrecision> list() const override;
         std::optional<application::models::GaugePrecision> at(int idx) const override;
