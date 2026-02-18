@@ -37,6 +37,12 @@ void mvvm::MotorDriverStatusViewModel::onStopped() {
     is_running_.store(false, std::memory_order_relaxed);
 }
 
+void mvvm::MotorDriverStatusViewModel::onLimitsStateChanged(domain::common::MotorLimitsState) {
+}
+
+void mvvm::MotorDriverStatusViewModel::onDirectionChanged(domain::common::MotorDirection) {
+}
+
 void mvvm::MotorDriverStatusViewModel::onFault(const domain::common::MotorFault& fault) {
     this->fault.set(fault);
 }

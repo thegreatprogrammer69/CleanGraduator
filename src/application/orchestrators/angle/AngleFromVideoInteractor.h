@@ -29,8 +29,8 @@ namespace application::orchestrators {
         void start() override;
         void stop() override;
         bool isRunning() const noexcept override;
-        void addSink(domain::ports::IAngleSink& sink) override;
-        void removeSink(domain::ports::IAngleSink& sink) override;
+        void addSink(domain::ports::IAngleSourceObserver& sink) override;
+        void removeSink(domain::ports::IAngleSourceObserver& sink) override;
 
     private:
         // IVideoSink
@@ -48,7 +48,7 @@ namespace application::orchestrators {
 
         std::mutex mutex_;
         std::atomic_bool running_{false};
-        std::vector<domain::ports::IAngleSink*> sinks_;
+        std::vector<domain::ports::IAngleSourceObserver*> sinks_;
     };
 
 } // namespace application

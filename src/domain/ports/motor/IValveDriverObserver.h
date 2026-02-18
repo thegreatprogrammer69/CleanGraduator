@@ -3,8 +3,8 @@
 
 namespace domain::ports {
 
-    struct IDualValveDriverObserver {
-        virtual ~IDualValveDriverObserver() = default;
+    struct IValveDriverObserver {
+        virtual ~IValveDriverObserver() = default;
 
         virtual void onInputFlapOpened() = 0;
         virtual void onOutputFlapOpened() = 0;

@@ -62,6 +62,6 @@ std::unique_ptr<domain::ports::IMotorDriver> MotorDriverFactory::load() {
     throw std::runtime_error("unknown Motor Driver implementation: " + implementation);
 }
 
-std::unique_ptr<domain::ports::IDualValveDriver> MotorDriverFactory::load_valve_driver() {
-    return std::unique_ptr<domain::ports::IDualValveDriver>(valve_driver_);
+std::unique_ptr<domain::ports::IValveDriver> MotorDriverFactory::load_valve_driver() {
+    return std::unique_ptr<domain::ports::IValveDriver>(valve_driver_);
 }

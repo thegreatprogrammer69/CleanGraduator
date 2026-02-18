@@ -40,7 +40,7 @@ namespace application::orchestrators {
         return running_;
     }
 
-    void AngleFromVideoInteractor::addSink(domain::ports::IAngleSink& sink) {
+    void AngleFromVideoInteractor::addSink(domain::ports::IAngleSourceObserver& sink) {
         {
             std::lock_guard lock(mutex_);
             if (std::find(sinks_.begin(), sinks_.end(), &sink) == sinks_.end()) {
@@ -51,7 +51,7 @@ namespace application::orchestrators {
         logger_.info("sink added");
     }
 
-    void AngleFromVideoInteractor::removeSink(domain::ports::IAngleSink& sink) {
+    void AngleFromVideoInteractor::removeSink(domain::ports::IAngleSourceObserver& sink) {
         {
             std::lock_guard lock(mutex_);
             sinks_.erase(
@@ -64,12 +64,11 @@ namespace application::orchestrators {
     }
 
     void AngleFromVideoInteractor::onVideoFrame(const domain::common::VideoFramePacket& packet) {
-        std::vector<domain::ports::IAngleSink*> localSinks;
+        std::vector<domain::ports::IAngleSourceObserver*> localSinks;
 
         {
             std::lock_guard lock(mutex_);
             if (!running_) {
-                logger_.warn("frame ignored: interactor not running (ts={})", packet.timestamp);
                 return;
             }
             localSinks = sinks_; // копия под защитой
@@ -92,7 +91,7 @@ namespace application::orchestrators {
             return;
         }
 
-        logger_.info("frame accepted, angle calculated (ts={}, angle={})",
+        logger_.info("angle calculated (ts={}, angle={})",
                      packet.timestamp,
                      angle);
 
@@ -113,7 +112,7 @@ namespace application::orchestrators {
     void AngleFromVideoInteractor::onVideoSourceOpenFailed(const domain::common::VideoSourceError &) {
     }
 
-    void AngleFromVideoInteractor::onVideoSourceClosed(const domain::common::VideoSourceError &) {
+    void AngleFromVideoInteractor::onVideoSourceClosed(const domain::common::VideoSourceError &err) {
 
     }
 } // namespace application

@@ -8,9 +8,9 @@
 #include "DShowCamera.h"
 #include "SampleGrabberCB.h"
 #include "domain/core/video/VideoFrame.h"
-#include "domain/core/common/VideoFramePacket.h"
-#include "domain/core/common/VideoSourceError.h"
-#include "../../../../domain/ports/clock/IClock.h"
+#include "domain/core/video/VideoFramePacket.h"
+#include "domain/core/video/VideoSourceError.h"
+#include "domain/ports/clock/IClock.h"
 
 using namespace infra::camera;
 
@@ -223,8 +223,6 @@ void DShowCamera::removeObserver(domain::ports::IVideoSourceObserver &o) {
 
 void DShowCamera::onFrame(double time, BYTE* data, long size) {
     using namespace domain::common;
-
-    logger_.info("onFrame: time={}, size={}", time, size);
 
     auto frame = std::make_shared<VideoFrame>();
     frame->width  = impl_->width;

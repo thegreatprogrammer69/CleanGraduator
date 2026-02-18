@@ -32,7 +32,7 @@ namespace infra::logging {
 }
 
 namespace domain::ports {
-    struct IDualValveDriver;
+    struct IValveDriver;
     struct IResultStore;
     struct IPressureSource;
     class ICalibrationCalculator;
@@ -85,7 +85,7 @@ public:
     ////////////////////////////////////////////////////////////////////////////////////////
     // Драйвер двигателя
     std::unique_ptr<domain::ports::IMotorDriver> motor_driver;
-    std::unique_ptr<domain::ports::IDualValveDriver> dual_valve_driver;
+    std::unique_ptr<domain::ports::IValveDriver> dual_valve_driver;
 
     ////////////////////////////////////////////////////////////////////////////////////////
     // Задатчик давления. Делавет весь процесс градуировки

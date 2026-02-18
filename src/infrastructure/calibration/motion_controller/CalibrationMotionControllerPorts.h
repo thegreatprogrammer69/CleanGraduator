@@ -5,14 +5,14 @@
 namespace domain::ports {
     struct IMotorDriver;
     struct ILogger;
-    struct IDualValveDriver;
+    struct IValveDriver;
 }
 
 namespace infra::calib {
     struct CalibrationMotionControllerPorts {
         domain::ports::ILogger& logger;
         domain::ports::IMotorDriver& motor_driver;
-        domain::ports::IDualValveDriver& dual_valve_driver;
+        domain::ports::IValveDriver& dual_valve_driver;
     };
 }
 

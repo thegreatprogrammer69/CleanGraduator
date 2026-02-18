@@ -22,16 +22,18 @@ namespace application::orchestrators {
 
         void start(int frequency, domain::common::MotorDirection dir);
         void stop();
-
         void addObserver(IMotorControlObserver& obs);
         void removeObserver(IMotorControlObserver& obs);
 
     protected:
         // ===== IMotorDriverObserver =====
-
         void onStarted() override;
         void onStopped() override;
+        void onLimitsStateChanged(domain::common::MotorLimitsState) override;
+        void onDirectionChanged(domain::common::MotorDirection) override;
         void onFault(const domain::common::MotorFault&) override;
+
+    private:
         void notifyRunning(bool running);
 
     private:

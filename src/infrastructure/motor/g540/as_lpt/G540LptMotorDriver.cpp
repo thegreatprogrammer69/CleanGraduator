@@ -13,7 +13,7 @@
 #include <vector>
 
 #include "domain/ports/motor/IMotorDriverObserver.h"
-#include "domain/ports/motor/IDualValveDriverObserver.h"
+#include "domain/ports/motor/IValveDriverObserver.h"
 
 using namespace infra::motors;
 
@@ -126,7 +126,13 @@ struct G540LptMotorDriver::G540LptImpl {
     }
 
     void setDirection(domain::common::MotorDirection d) {
-        direction_.store(static_cast<DirU>(d), std::memory_order_relaxed);
+        const auto old = direction_.exchange(
+            static_cast<DirU>(d),
+            std::memory_order_relaxed);
+
+        if (old != static_cast<DirU>(d)) {
+            notifyDirectionChanged(d);
+        }
     }
 
     void setHz(int hz) {
@@ -172,12 +178,12 @@ struct G540LptMotorDriver::G540LptImpl {
         observers_.erase(std::remove(observers_.begin(), observers_.end(), &o), observers_.end());
     }
 
-    void addObserver(domain::ports::IDualValveDriverObserver& o) {
+    void addObserver(domain::ports::IValveDriverObserver& o) {
         std::lock_guard lk(valve_obs_mtx_);
         valve_observers_.push_back(&o);
     }
 
-    void removeObserver(domain::ports::IDualValveDriverObserver& o) {
+    void removeObserver(domain::ports::IValveDriverObserver& o) {
         std::lock_guard lk(valve_obs_mtx_);
         valve_observers_.erase(std::remove(valve_observers_.begin(), valve_observers_.end(), &o), valve_observers_.end());
     }
@@ -279,13 +285,25 @@ private:
 
         std::uint32_t old = shared_state_.load(std::memory_order_relaxed);
         for (;;) {
-            const std::uint32_t neu = (old & ~(LIMIT_HOME_BIT | LIMIT_END_BIT)) | newLimitBits;
-            if (shared_state_.compare_exchange_weak(old, neu,
-                                                   std::memory_order_relaxed,
-                                                   std::memory_order_relaxed))
+            const std::uint32_t neu =
+                (old & ~(LIMIT_HOME_BIT | LIMIT_END_BIT)) | newLimitBits;
+
+            if (shared_state_.compare_exchange_weak(
+                    old, neu,
+                    std::memory_order_relaxed,
+                    std::memory_order_relaxed))
+            {
+                // 👉 ДОБАВИТЬ ЭТО:
+                domain::common::MotorLimitsState s{};
+                s.home = home;
+                s.end  = end;
+                notifyLimitsChanged(s);
+
                 return;
+            }
         }
     }
+
 
     // =========================
     // Thread control
@@ -311,7 +329,7 @@ private:
     }
     template<class Fn>
     void notifyAllValve(Fn&& fn) {
-        std::vector<domain::ports::IDualValveDriverObserver*> copy;
+        std::vector<domain::ports::IValveDriverObserver*> copy;
         {
             std::lock_guard lk(valve_obs_mtx_);
             copy = valve_observers_;
@@ -324,6 +342,8 @@ private:
     void notifyFlapsClosed() { notifyAllValve([](auto& o){ o.onFlapsClosed(); }); }
     void notifyStarted()  { notifyAll([](auto& o){ o.onStarted(); }); }
     void notifyStopped()  { notifyAll([](auto& o){ o.onStopped(); }); }
+    void notifyLimitsChanged(domain::common::MotorLimitsState s)  { notifyAll([s](auto& o){ o.onLimitsStateChanged(s); }); }
+    void notifyDirectionChanged(domain::common::MotorDirection d)  { notifyAll([d](auto& o){ o.onDirectionChanged(d); }); }
     void notifyFault(const domain::common::MotorFault& f) {
         notifyAll([&](auto& o){ o.onFault(f); });
     }
@@ -546,7 +566,7 @@ private:
     mutable std::mutex obs_mtx_;
     std::vector<domain::ports::IMotorDriverObserver*> observers_;
     mutable std::mutex valve_obs_mtx_;
-    std::vector<domain::ports::IDualValveDriverObserver*> valve_observers_;
+    std::vector<domain::ports::IValveDriverObserver*> valve_observers_;
 
     // fault error (string) mutex (редко)
     mutable std::mutex fault_mtx_;
@@ -667,11 +687,11 @@ void G540LptMotorDriver::removeObserver(domain::ports::IMotorDriverObserver &o) 
     impl_->removeObserver(o);
 }
 
-void G540LptMotorDriver::addObserver(domain::ports::IDualValveDriverObserver &o) {
+void G540LptMotorDriver::addObserver(domain::ports::IValveDriverObserver &o) {
     impl_->addObserver(o);
 }
 
-void G540LptMotorDriver::removeObserver(domain::ports::IDualValveDriverObserver &o) {
+void G540LptMotorDriver::removeObserver(domain::ports::IValveDriverObserver &o) {
     impl_->removeObserver(o);
 }
 

@@ -17,7 +17,7 @@ namespace mvvm {
         application::orchestrators::MotorControlInteractor& interactor;
     };
 
-    class MotorControlViewModel
+    class MotorControlViewModel final
         : application::orchestrators::IMotorControlObserver
     {
     public:

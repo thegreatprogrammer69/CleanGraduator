@@ -6,13 +6,13 @@
 #include "G540LptMotorDriverConfig.h"
 #include "../MotorDriverPorts.h"
 #include "domain/fmt/Logger.h"
-#include "domain/ports/motor/IDualValveDriver.h"
+#include "domain/ports/motor/IValveDriver.h"
 #include "domain/ports/motor/IMotorDriver.h"
 
 
 namespace infra::motors {
 
-    class G540LptMotorDriver final : public domain::ports::IMotorDriver, public domain::ports::IDualValveDriver {
+    class G540LptMotorDriver final : public domain::ports::IMotorDriver, public domain::ports::IValveDriver {
     public:
         G540LptMotorDriver(const MotorDriverPorts& ports,
                            const G540LptMotorDriverConfig& config);
@@ -47,14 +47,14 @@ namespace infra::motors {
         // --- Observers ---
         void addObserver(domain::ports::IMotorDriverObserver& o) override;
         void removeObserver(domain::ports::IMotorDriverObserver& o) override;
-        void addObserver(domain::ports::IDualValveDriverObserver &) override;
-        void removeObserver(domain::ports::IDualValveDriverObserver &) override;
+        void addObserver(domain::ports::IValveDriverObserver &) override;
+        void removeObserver(domain::ports::IValveDriverObserver &) override;
 
         // --- Extra (из старого кода) ---
         enum class FlapsState { CloseBoth, OpenInput, OpenOutput };
         void setFlapsState(FlapsState s);
 
-        // IDualValveDriver
+        // IValveDriver
         void openInputFlap() override;
         void openOutputFlap() override;
         void closeFlaps() override;

@@ -46,6 +46,12 @@ void MotorControlInteractor::onStopped() {
     notifyRunning(false);
 }
 
+void MotorControlInteractor::onLimitsStateChanged(domain::common::MotorLimitsState) {
+}
+
+void MotorControlInteractor::onDirectionChanged(domain::common::MotorDirection) {
+}
+
 void MotorControlInteractor::onFault(const domain::common::MotorFault &) {
     notifyRunning(false);
 }

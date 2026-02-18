@@ -47,8 +47,10 @@ void ui::QtControlWidget::setupUi() {
 
     btnValves->setChecked(true);
 
-    connect(group, &QButtonGroup::idClicked,
-            stack_, &QStackedWidget::setCurrentIndex);
+    connect(group,
+            QOverload<int>::of(&QButtonGroup::buttonClicked),
+            stack_,
+            &QStackedWidget::setCurrentIndex);
 }
 
 QPushButton * ui::QtControlWidget::makeSwitchButton(const QString &text) {

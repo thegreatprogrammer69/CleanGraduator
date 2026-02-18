@@ -1,6 +1,6 @@
 #ifndef CLEANGRADUATOR_IANGLESOURCE_H
 #define CLEANGRADUATOR_IANGLESOURCE_H
-#include "IAngleSink.h"
+#include "IAngleSourceObserver.h"
 
 
 namespace domain::ports {
@@ -9,8 +9,8 @@ namespace domain::ports {
         virtual void start() = 0;
         virtual void stop() = 0;
         virtual bool isRunning() const noexcept = 0;
-        virtual void addSink(IAngleSink& sink) = 0;
-        virtual void removeSink(IAngleSink& sink) = 0;
+        virtual void addObserver(IAngleSourceObserver&) = 0;
+        virtual void removeObserver(IAngleSourceObserver&) = 0;
     };
 }
 

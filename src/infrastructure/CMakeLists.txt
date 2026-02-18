@@ -47,6 +47,7 @@ set(SOURCES
         calibration/motion_controller/stand4/FrequencyCalculator.cpp
         calibration/motion_controller/stand4/PressurePointsTracker.cpp
         calibration/motion_controller/stand4/CalibrationMotionController4.cpp
+        calibration/motion_controller/stand4/CalibrationMotionController4Telemetry.cpp
 
 )
 
@@ -76,6 +77,9 @@ elseif(UNIX)
             platform/sleep/sleep_linux.cpp
             video/linux/v4l/V4LCamera.cpp
             video/linux/gstreamer/GStreamerCamera.cpp
+            calibration/motion_controller/stand4/CalibrationMotionController4Telemetry.cpp
+            calibration/motion_controller/algorithms/return_to_home.cpp
+            calibration/motion_controller/algorithms/return_to_home.h
 
     )
 endif()

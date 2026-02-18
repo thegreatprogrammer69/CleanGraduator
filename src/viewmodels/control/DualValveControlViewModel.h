@@ -1,18 +1,18 @@
 #ifndef CLEANGRADUATOR_VALVECONTROLVIEWMODEL_H
 #define CLEANGRADUATOR_VALVECONTROLVIEWMODEL_H
-#include "domain/ports/motor/IDualValveDriverObserver.h"
+#include "domain/ports/motor/IValveDriverObserver.h"
 #include "viewmodels/Observable.h"
 
 namespace domain::ports {
-    struct IDualValveDriver;
+    struct IValveDriver;
 }
 
 namespace mvvm {
     struct DualValveControlViewModelDeps {
-        domain::ports::IDualValveDriver& dual_valve_driver;
+        domain::ports::IValveDriver& dual_valve_driver;
     };
 
-    class DualValveControlViewModel final : domain::ports::IDualValveDriverObserver {
+    class DualValveControlViewModel final : domain::ports::IValveDriverObserver {
     public:
         explicit DualValveControlViewModel(DualValveControlViewModelDeps deps);
         ~DualValveControlViewModel() override;
@@ -32,7 +32,7 @@ namespace mvvm {
         Observable<FlapsState> flaps_state{FlapsUninitialized};
 
     private:
-        domain::ports::IDualValveDriver& dual_valve_driver_;
+        domain::ports::IValveDriver& dual_valve_driver_;
     };
 }
 

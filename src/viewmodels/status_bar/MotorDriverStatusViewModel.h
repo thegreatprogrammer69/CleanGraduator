@@ -35,6 +35,8 @@ namespace mvvm {
         // IMotorDriverObserver
         void onStarted() override;
         void onStopped() override;
+        void onLimitsStateChanged(domain::common::MotorLimitsState) override;
+        void onDirectionChanged(domain::common::MotorDirection) override;
         void onFault(const domain::common::MotorFault& fault) override;
 
     private:
