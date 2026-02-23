@@ -16,8 +16,7 @@ struct CalibrationSessionControlViewModelDeps {
 };
 
 class CalibrationSessionControlViewModel final
-    : public domain::ports::ICalibrationLifecycle
-    , public domain::ports::ICalibrationLifecycleObserver
+    : public domain::ports::ICalibrationLifecycleObserver
 {
 public:
     explicit CalibrationSessionControlViewModel(CalibrationSessionControlViewModelDeps deps);
@@ -27,16 +26,6 @@ public:
     void startCalibration();
     void stopCalibration();
     void emergencyStop();
-
-    bool start() override;
-    void markRunning() override;
-    bool stop() override;
-    void markIdle() override;
-    void markError(const std::string& err) override;
-    std::string lastError() const override;
-    domain::common::CalibrationLifecycleState state() const override;
-    void addObserver(domain::ports::ICalibrationLifecycleObserver&) override;
-    void removeObserver(domain::ports::ICalibrationLifecycleObserver&) override;
 
     void onCalibrationLifecycleStateChanged(
         domain::common::CalibrationLifecycleState newState,

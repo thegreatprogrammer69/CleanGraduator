@@ -156,6 +156,22 @@ void CalibrationProcessOrchestrator::start(CalibrationProcessOrchestratorInput i
         return;
     }
 
+    // Ensure pressure source is running before session start
+    if (!pressure_source_.isRunning()) {
+
+        logger_.info("Starting pressure source...");
+
+        if (!pressure_source_.start()) {
+
+            logger_.error("Calibration start failed: pressure_source_.start() returned false");
+
+            lifecycle_.markError("pressure source start failed");
+
+            return;
+        }
+    }
+
+
     if (!lifecycle_.start()) {
         logger_.warn("Start rejected by lifecycle");
         return;
