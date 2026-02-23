@@ -12,6 +12,7 @@
 
 #include "QtDualValveControlWidget.h"
 #include "QtMotorControlWidget.h"
+#include "QtCalibrationSessionControlWidget.h"
 
 
 namespace mvvm {
@@ -36,6 +37,8 @@ private:
     QWidget* makeValvesPage();
 
     QWidget* makeMotorPage();
+
+    QWidget* makeCalibrationPage();
 
     void applyStyle();
 

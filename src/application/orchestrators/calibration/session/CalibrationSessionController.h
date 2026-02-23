@@ -5,17 +5,32 @@
 #include "application/orchestrators/calibration/process/CalibrationProcessOrchestrator.h"
 #include "application/orchestrators/calibration/process/CalibrationProcessOrchestratorInput.h"
 #include "application/orchestrators/settings/CalibrationSettingsQuery.h"
+#include "domain/ports/calibration/lifecycle/ICalibrationLifecycle.h"
 
 namespace application::orchestrators {
-    class CalibrationSessionController {
+    class CalibrationSessionController : public domain::ports::ICalibrationLifecycle {
     public:
         explicit CalibrationSessionController(CalibrationSessionControllerPorts ports, CalibrationProcessOrchestrator& runtime);
         ~CalibrationSessionController();
 
         bool isRunning() const;
 
+
+        bool start() override;
+        void markRunning() override;
+
+        void markIdle() override;
+
+        void markError(const std::string& err) override;
+
+        std::string lastError() const override;
+
+        domain::common::CalibrationLifecycleState state() const override;
+
+        void addObserver(domain::ports::ICalibrationLifecycleObserver& observer) override;
+        void removeObserver(domain::ports::ICalibrationLifecycleObserver& observer) override;
         void start(CalibrationSessionControllerInput inp);
-        void stop();
+        bool stop() override;
         void abort();
 
     private:
@@ -27,6 +42,7 @@ namespace application::orchestrators {
 
         fmt::Logger logger_;
         CalibrationSettingsQuery& settings_query_;
+        domain::ports::ICalibrationLifecycle& lifecycle_;
     };
 }
 

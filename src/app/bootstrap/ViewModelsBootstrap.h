@@ -6,6 +6,7 @@
 namespace mvvm {
     class ControlViewModel;
     class MotorControlViewModel;
+    class CalibrationSessionControlViewModel;
     class DualValveControlViewModel;
     class AppStatusBarViewModel;
     class MotorDriverStatusViewModel;
@@ -43,6 +44,7 @@ public:
 
     std::unique_ptr<mvvm::DualValveControlViewModel> dual_valve_control;
     std::unique_ptr<mvvm::MotorControlViewModel> motor_control;
+    std::unique_ptr<mvvm::CalibrationSessionControlViewModel> calibration_session_control;
     std::unique_ptr<mvvm::ControlViewModel> control;
 
     std::unique_ptr<mvvm::LogViewerViewModel> log_viewer;
@@ -66,6 +68,7 @@ private:
 
     void createDualValveControl();
     void createMotorControl();
+    void createCalibrationSessionControl();
     void createControl();
 
     void createLogViewer();
