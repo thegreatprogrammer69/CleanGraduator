@@ -40,7 +40,7 @@ namespace infra::lifecycle {
         // --- Clock ---
         domain::ports::IClock& sessionClock();
 
-        const std::string& lastError() const;
+        std::string lastError() const override;
 
     private:
         void notify();

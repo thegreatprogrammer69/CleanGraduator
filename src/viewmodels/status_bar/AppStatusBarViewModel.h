@@ -26,7 +26,7 @@ namespace mvvm {
         domain::common::Timestamp uptimeTime();
 
     protected:
-        void onCalibrationLifecycleStateChanged(domain::common::CalibrationLifecycleState newState) override;
+        void onCalibrationLifecycleStateChanged(domain::common::CalibrationLifecycleState newState, const std::string& lastError) override;
 
     private:
         std::atomic<domain::common::CalibrationLifecycleState> current_state_{};

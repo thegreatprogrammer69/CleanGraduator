@@ -17,6 +17,8 @@ namespace domain::ports {
 
         virtual void markError(const std::string& err) = 0;
 
+        virtual std::string lastError() const = 0;
+
         virtual common::CalibrationLifecycleState state() const = 0;
 
         virtual void addObserver(ICalibrationLifecycleObserver&) = 0;

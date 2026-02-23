@@ -26,6 +26,6 @@ domain::common::Timestamp mvvm::AppStatusBarViewModel::uptimeTime() {
     return uptime_clock_.now();
 }
 
-void mvvm::AppStatusBarViewModel::onCalibrationLifecycleStateChanged(domain::common::CalibrationLifecycleState new_state) {
+void mvvm::AppStatusBarViewModel::onCalibrationLifecycleStateChanged(domain::common::CalibrationLifecycleState new_state, const std::string& lastError) {
     current_state_.store(new_state, std::memory_order_relaxed);
 }

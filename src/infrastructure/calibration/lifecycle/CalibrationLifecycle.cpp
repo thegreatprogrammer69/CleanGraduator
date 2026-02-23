@@ -14,7 +14,7 @@ CalibrationLifecycle::state() const
     return _state;
 }
 
-const std::string& CalibrationLifecycle::lastError() const
+std::string CalibrationLifecycle::lastError() const
 {
     return _last_error;
 }
@@ -131,7 +131,7 @@ void CalibrationLifecycle::removeObserver(
 void CalibrationLifecycle::notify()
 {
     for (auto* obs : _observers)
-        obs->onCalibrationLifecycleStateChanged(_state);
+        obs->onCalibrationLifecycleStateChanged(_state, _last_error);
 }
 
 } // namespace infra::lifecycle
