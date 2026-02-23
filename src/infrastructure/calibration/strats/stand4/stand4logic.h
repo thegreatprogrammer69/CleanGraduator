@@ -12,7 +12,7 @@ namespace infra::calib::stand4 {
         if (last_point.kgfcm2() < 300) {
             return last_point * 0.35;
         }
-        return last_point * 0.26;
+        return p.value[1] * 0.26;
     }
 
     inline domain::common::Pressure computeTargetPressure(const domain::common::PressurePoints &p, const double overload = 0.075) {
@@ -24,7 +24,7 @@ namespace infra::calib::stand4 {
     }
 
     inline domain::common::Pressure computeNominalVelocity(const domain::common::PressurePoints &p, const double durationSec = 100.) {
-        return p.value.back() * durationSec;
+        return p.value.back() / durationSec;
     }
 }
 

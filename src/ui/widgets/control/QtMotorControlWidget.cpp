@@ -68,11 +68,20 @@ void QtMotorControlWidget::bind()
     runningSub_ = vm_.is_running.subscribe(
         [this](const auto& running)
         {
-            bool r = running.new_value;
-            statusLabel_->setText(r ? tr("В движении") : tr("Простаивает"));
+            const bool r = running.new_value;
 
-            startButton_->setEnabled(!r);
-            stopButton_->setEnabled(r);
+            QMetaObject::invokeMethod(
+                this,
+                [this, r]()
+                {
+                    statusLabel_->setText(r ? tr("В движении")
+                                            : tr("Простаивает"));
+
+                    startButton_->setEnabled(!r);
+                    stopButton_->setEnabled(r);
+                },
+                Qt::QueuedConnection
+            );
         }
     );
 }

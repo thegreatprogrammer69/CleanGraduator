@@ -73,7 +73,7 @@ DShowCamera::~DShowCamera() {
 bool DShowCamera::open() {
     auto abort_opening = [this]() {
         const domain::common::VideoSourceError err {this->logger_.lastError()};
-        notifier_.notifyOpenFailed(err);
+        notifier_.notifyFailed(err);
     };
 
     logger_.info("DShowCamera::start() begin");
@@ -210,7 +210,7 @@ void DShowCamera::close() {
     logger_.info("DShowCamera::stop()");
     impl_.reset();
     logger_.info("DShowCamera stopped");
-    notifier_.notifyClosed({});
+    notifier_.notifyClosed();
 }
 
 void DShowCamera::addObserver(domain::ports::IVideoSourceObserver &o) {

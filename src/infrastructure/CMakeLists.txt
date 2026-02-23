@@ -14,8 +14,8 @@ set(SOURCES
         video/VideoSourceNotifier.cpp
 
         pressure/PressureSourceNotifier.cpp
-        pressure/dm5002/DM5002RFPressureSensor.cpp
         pressure/dm5002/DM5002PressureSensor.cpp
+        pressure/fake/FakePressureSource.cpp
 
         motion/g540/as_lpt/G540LptMotorDriver.cpp
 
@@ -58,7 +58,8 @@ if(WIN32)
     add_definitions(-DPLATFORM_WINDOWS)
     set(PLATFORM_SOURCES
             platform/com/ComPort_windows.cpp
-            platform/lpt/LptPort_windows.cpp
+#            platform/lpt/LptPort_windows.cpp
+            platform/lpt/LptPort_console.cpp
             platform/sleep/sleep_windows.cpp
             video/windows/dshow/DShowCamera.cpp
             video/windows/dshow/SampleGrabberCB.cpp

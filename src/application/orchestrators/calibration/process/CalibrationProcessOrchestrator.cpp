@@ -151,8 +151,8 @@ void CalibrationProcessOrchestrator::endSessionIfBegun() {
 void CalibrationProcessOrchestrator::start(CalibrationProcessOrchestratorInput input) {
 
     const auto st = lifecycleState();
-    if (st != LifecycleState::Idle) {
-        logger_.warn("Start ignored: lifecycle state != Idle");
+    if (st != LifecycleState::Idle && st != LifecycleState::Error) {
+        logger_.warn("Start ignored: lifecycle state != Idle || st != LifecycleState::Error");
         return;
     }
 

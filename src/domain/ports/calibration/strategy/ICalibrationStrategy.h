@@ -13,6 +13,7 @@ namespace domain::ports {
 
     enum class CalibrationDecisionType {
         None,
+        SwitchToBackward,
         Finish,
         Fault
     };

@@ -77,19 +77,39 @@ void QtCalibrationSessionControlWidget::bind() {
     });
 
     errorSub_ = vm_.error_text.subscribe([this](const auto& change) {
-        errorLabel_->setText(QString::fromStdString(change.new_value));
+        QMetaObject::invokeMethod(
+            this,
+            [this, text = QString::fromStdString(change.new_value)]() {
+                errorLabel_->setText(text);
+            },
+            Qt::QueuedConnection);
     }, false);
 
     canStartSub_ = vm_.can_start.subscribe([this](const auto& change) {
-        startButton_->setEnabled(change.new_value);
+        QMetaObject::invokeMethod(
+            this,
+            [this, value = change.new_value]() {
+                startButton_->setEnabled(value);
+            },
+            Qt::QueuedConnection);
     }, false);
 
     canStopSub_ = vm_.can_stop.subscribe([this](const auto& change) {
-        stopButton_->setEnabled(change.new_value);
+        QMetaObject::invokeMethod(
+            this,
+            [this, value = change.new_value]() {
+                stopButton_->setEnabled(value);
+            },
+            Qt::QueuedConnection);
     }, false);
 
     canAbortSub_ = vm_.can_abort.subscribe([this](const auto& change) {
-        emergencyStopButton_->setEnabled(change.new_value);
+        QMetaObject::invokeMethod(
+            this,
+            [this, value = change.new_value]() {
+                emergencyStopButton_->setEnabled(value);
+            },
+            Qt::QueuedConnection);
     }, false);
 
     errorLabel_->setText(QString::fromStdString(vm_.error_text.get_copy()));
