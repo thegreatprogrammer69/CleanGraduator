@@ -8,7 +8,7 @@
 #include "application/models/info/PressureUnit.h"
 #include "application/models/info/Printer.h"
 #include "application/ports/settings/IInfoSettingsStorage.h"
-#include "domain/core/calibration/calculation/PressurePoints.h"
+#include "../../../domain/core/calibration/common/PressurePoints.h"
 
 namespace application::models {
     struct Displacement;

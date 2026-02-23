@@ -6,14 +6,14 @@
 #include "fmt.h"
 #include "../core/calibration/result/CalibrationCellSeverity.h"
 #include "../../application/models/calibration/GaugePressurePoints.h"
-#include "domain/core/calibration/calculation/PressurePoints.h"
+#include "../core/calibration/common/PressurePoints.h"
+#include "domain/core/calibration/lifecycle/CalibrationLifecycleState.h"
 #include "domain/core/measurement/Angle.h"
 #include "domain/core/measurement/AngleUnit.h"
 #include "domain/core/measurement/Pressure.h"
 #include "domain/core/measurement/PressureUnit.h"
 #include "domain/core/measurement/Timestamp.h"
-#include "domain/core/motor/motor/MotorDirection.h"
-#include "domain/core/process/ProcessLifecycleState.h"
+#include "domain/core/drivers/motor/MotorDirection.h"
 #include "domain/core/video/PixelFormat.h"
 #include "domain/core/video/VideoBuffer.h"
 #include "domain/core/video/VideoFrame.h"
@@ -108,18 +108,18 @@ std::ostream& operator<<(std::ostream& os, const VideoFrame& f) {
     return os;
 }
 
-std::ostream& operator<<(std::ostream& os, const ProcessLifecycleState& f) {
+std::ostream& operator<<(std::ostream& os, const CalibrationLifecycleState& f) {
     switch (f) {
-        case ProcessLifecycleState::Idle:
+        case CalibrationLifecycleState::Idle:
             os << "Idle";
             break;
-        case ProcessLifecycleState::Forward:
-            os << "Forward";
+        case CalibrationLifecycleState::Starting:
+            os << "Starting";
             break;
-        case ProcessLifecycleState::Backward:
-            os << "Backward";
+        case CalibrationLifecycleState::Running:
+            os << "Running";
             break;
-        case ProcessLifecycleState::Stopping:
+        case CalibrationLifecycleState::Stopping:
             os << "Stopping";
             break;
     }

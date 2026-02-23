@@ -1,56 +1,71 @@
 #ifndef CLEANGRADUATOR_ANGLEFROMVIDEOINTERACTOR_H
 #define CLEANGRADUATOR_ANGLEFROMVIDEOINTERACTOR_H
+
 #include <atomic>
 #include <mutex>
 #include <vector>
 
-#include "domain/ports/angle/IAngleSource.h"
-#include "domain/ports/video/IVideoSourceObserver.h"
 #include "AngleFromVideoInteractorPorts.h"
+
+#include "domain/ports/angle/IAngleSource.h"
+#include "domain/ports/angle/IAngleSourceObserver.h"
+#include "domain/ports/video/IVideoSourceObserver.h"
+
 #include "domain/core/angle/AngleSourceId.h"
+#include "domain/core/angle/AngleSourceError.h"
 #include "domain/fmt/Logger.h"
 
 namespace domain::ports {
+    struct IVideoSource;
     struct IAngleCalculator;
 }
 
 namespace application::orchestrators {
 
-    class AngleFromVideoInteractor final
-        : domain::ports::IVideoSourceObserver
-        , public domain::ports::IAngleSource
-    {
-    public:
-        explicit AngleFromVideoInteractor(domain::common::AngleSourceId id, AngleFromVideoInteractorPorts ports);
-        ~AngleFromVideoInteractor() override;
+class AngleFromVideoInteractor final
+    : public domain::ports::IVideoSourceObserver
+    , public domain::ports::IAngleSource
+{
+public:
+    explicit AngleFromVideoInteractor(domain::common::AngleSourceId id,
+                                      AngleFromVideoInteractorPorts ports);
+    ~AngleFromVideoInteractor() override;
 
-    public:
-        // IAngleSource
-        void start() override;
-        void stop() override;
-        bool isRunning() const noexcept override;
-        void addSink(domain::ports::IAngleSourceObserver& sink) override;
-        void removeSink(domain::ports::IAngleSourceObserver& sink) override;
+    // IAngleSource
+    void start() override;
+    void stop() override;
+    bool isRunning() const noexcept override;
 
-    private:
-        // IVideoSink
-        void onVideoFrame(const domain::common::VideoFramePacket&) override;
-        void onVideoSourceOpened() override;
-        void onVideoSourceOpenFailed(const domain::common::VideoSourceError &) override;
-        void onVideoSourceClosed(const domain::common::VideoSourceError &) override;
+    void addObserver(domain::ports::IAngleSourceObserver& sink) override;
+    void removeObserver(domain::ports::IAngleSourceObserver& sink) override;
 
-    private:
-        domain::common::AngleSourceId id_;
+private:
+    // IVideoSourceObserver
+    void onVideoFrame(const domain::common::VideoFramePacket& packet) override;
+    void onVideoSourceOpened() override;
+    void onVideoSourceFailed(const domain::common::VideoSourceError& err) override;
+    void onVideoSourceClosed() override;
 
-        domain::ports::IVideoSource& video_source_;
-        domain::ports::IAngleCalculator& anglemeter_;
-        fmt::Logger logger_;
+private:
+    enum class State : uint8_t { Stopped, Starting, Running, Stopping };
 
-        std::mutex mutex_;
-        std::atomic_bool running_{false};
-        std::vector<domain::ports::IAngleSourceObserver*> sinks_;
-    };
+    void notifyStarted_();
+    void notifyStopped_();
+    void notifyFailed_(const char* msg);
 
-} // namespace application
+private:
+    domain::common::AngleSourceId id_;
 
-#endif //CLEANGRADUATOR_ANGLEFROMVIDEOINTERACTOR_H
+    domain::ports::IVideoSource&     video_source_;
+    domain::ports::IAngleCalculator& anglemeter_;
+    fmt::Logger                      logger_;
+
+    std::atomic<State> state_{State::Stopped};
+
+    std::mutex mutex_;
+    std::vector<domain::ports::IAngleSourceObserver*> observers_;
+};
+
+} // namespace application::orchestrators
+
+#endif // CLEANGRADUATOR_ANGLEFROMVIDEOINTERACTOR_H

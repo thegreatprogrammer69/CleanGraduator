@@ -11,9 +11,9 @@ namespace application::ports {
         virtual bool start(CalibrationRecorderInput) = 0;
         virtual void stop() = 0;
 
-        virtual void setPhase(domain::common::CalibrationMotionPhase phase) = 0;
+        virtual void setCalibrationMotionPhase(domain::common::CalibrationMotionPhase phase) = 0;
 
-        virtual domain::common::CalibrationDataset data() const = 0;
+        virtual domain::common::CalibrationDataset dataset() const = 0;
 
         virtual void resetSession() = 0;
         virtual bool isRecording() const = 0;

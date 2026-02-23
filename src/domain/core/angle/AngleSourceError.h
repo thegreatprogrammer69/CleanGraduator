@@ -6,8 +6,7 @@
 namespace domain::common {
     struct AngleSourceError {
         AngleSourceId id;
-        std::string reason;
-        bool is_error;
+        std::string error;
     };
 }
 

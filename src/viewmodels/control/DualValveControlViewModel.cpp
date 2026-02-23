@@ -4,7 +4,7 @@
 
 #include "DualValveControlViewModel.h"
 
-#include "domain/ports/motor/IValveDriver.h"
+#include "../../domain/ports/drivers/valve/IValveDriver.h"
 
 mvvm::DualValveControlViewModel::DualValveControlViewModel(DualValveControlViewModelDeps deps)
     : dual_valve_driver_(deps.dual_valve_driver)

@@ -2,7 +2,7 @@ add_library(application STATIC
         fmt/fmt_application.cpp
 
         orchestrators/angle/AngleFromVideoInteractor.cpp
-        orchestrators/calibration/recording/CalibrationRecorder.cpp
+        orchestrators/calibration/process/CalibrationProcessOrchestrator.cpp
         orchestrators/video/VideoSourceManager.cpp
         orchestrators/settings/CalibrationSettingsQuery.cpp
         orchestrators/motor/MotorControlInteractor.cpp

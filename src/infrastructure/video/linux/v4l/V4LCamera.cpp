@@ -46,7 +46,7 @@ bool V4LCamera::open() {
     auto abort_opening = [this]() {
         this->close();
         const domain::common::VideoSourceError err{logger_.lastError()};
-        notifier_.notifyOpenFailed(err);
+        notifier_.notifyFailed(err);
     };
 
     fd_ = ::open(config_.source.c_str(), O_RDWR | O_NONBLOCK, 0);
@@ -243,7 +243,7 @@ void V4LCamera::captureLoop() {
             break;
         }
     }
-    notifier_.notifyClosed({});
+    notifier_.notifyClosed();
 }
 
 void V4LCamera::dispatchFrame(const uint8_t* data, size_t size) {

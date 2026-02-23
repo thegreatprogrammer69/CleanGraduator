@@ -1,7 +1,7 @@
 #ifndef CLEANGRADUATOR_ICALIBRATIONCALCULATOR_H
 #define CLEANGRADUATOR_ICALIBRATIONCALCULATOR_H
-#include "CalibrationCalculatorInput.h"
 #include "domain/core/calibration/result/CalibrationResult.h"
+#include "domain/core/calibration/calculation/CalibrationCalculatorInput.h"
 
 namespace domain::common {
     class TimeSeries;

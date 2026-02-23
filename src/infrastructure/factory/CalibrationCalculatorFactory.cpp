@@ -39,16 +39,16 @@ std::unique_ptr<domain::ports::ICalibrationCalculator> infra::repo::CalibrationC
         const auto section = ini[section_name];
         const std::string algorithm = section.getString("algorithm", "");
 
-        if (algorithm == "linear") {
-            calc::LinearCalibrationCalculatorConfig config{};
-
-            // Пример чтения параметров (добавь реальные поля конфига)
-            config.min_angle_values_in_series = section.getInt("min_angle_values_in_series", config.min_angle_values_in_series);
-            config.min_pressure_values_in_series = section.getInt("min_pressure_values_in_series", config.min_pressure_values_in_series);
-            config.overlap = section.getInt("overlap", config.overlap);
-
-            return std::make_unique<calc::LinearCalibrationCalculator>(ports_, config);
-        }
+        // if (algorithm == "linear") {
+        //     calc::LinearCalibrationCalculatorConfig config{};
+        //
+        //     // Пример чтения параметров (добавь реальные поля конфига)
+        //     config.min_angle_values_in_series = section.getInt("min_angle_values_in_series", config.min_angle_values_in_series);
+        //     config.min_pressure_values_in_series = section.getInt("min_pressure_values_in_series", config.min_pressure_values_in_series);
+        //     config.overlap = section.getInt("overlap", config.overlap);
+        //
+        //     return std::make_unique<calc::LinearCalibrationCalculator>(ports_, config);
+        // }
 
         throw std::runtime_error("unknown calibration algorithm: " + algorithm);
 }

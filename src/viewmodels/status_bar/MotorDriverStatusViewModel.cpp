@@ -1,49 +1,45 @@
 #include "MotorDriverStatusViewModel.h"
 
-#include "domain/ports/motor/IMotorDriver.h"
+#include "domain/core/drivers/motor/MotorError.h"
+#include "../../domain/ports/drivers/motor/IMotorDriver.h"
+
+using namespace domain::common;
 
 mvvm::MotorDriverStatusViewModel::MotorDriverStatusViewModel(MotorDriverStatusViewModelDeps deps)
     : motor_driver_(deps.motor_driver)
 {
     motor_driver_.addObserver(*this);
-    fault.set(motor_driver_.fault());
+    is_running_.set(motor_driver_.isRunning());
+    limits_state_.set(motor_driver_.limits());
+    direction_.set(motor_driver_.direction());
 }
 
 mvvm::MotorDriverStatusViewModel::~MotorDriverStatusViewModel() {
     motor_driver_.removeObserver(*this);
 }
 
-bool mvvm::MotorDriverStatusViewModel::isRunning() const {
-    return is_running_.load(std::memory_order_relaxed);
-}
-
-int mvvm::MotorDriverStatusViewModel::frequencyHz() const {
+int mvvm::MotorDriverStatusViewModel::frequency() const {
     return motor_driver_.frequency();
 }
 
-domain::common::MotorDirection mvvm::MotorDriverStatusViewModel::direction() const {
-    return motor_driver_.direction();
+void mvvm::MotorDriverStatusViewModel::onMotorStarted() {
+    is_running_.set(true);
 }
 
-domain::common::MotorLimitsState mvvm::MotorDriverStatusViewModel::limits() const {
-    return motor_driver_.limits();
+void mvvm::MotorDriverStatusViewModel::onMotorStopped() {
+    is_running_.set(false);
 }
 
-void mvvm::MotorDriverStatusViewModel::onStarted() {
-    is_running_.store(true, std::memory_order_relaxed);
+void mvvm::MotorDriverStatusViewModel::onMotorStartFailed(const MotorError &error) {
+    is_running_.set(false);
+    error_.set(error.reason);
 }
 
-void mvvm::MotorDriverStatusViewModel::onStopped() {
-    is_running_.store(false, std::memory_order_relaxed);
+void mvvm::MotorDriverStatusViewModel::onMotorLimitsStateChanged(MotorLimitsState state) {
+    limits_state_.set(state);
 }
 
-void mvvm::MotorDriverStatusViewModel::onLimitsStateChanged(domain::common::MotorLimitsState) {
-}
-
-void mvvm::MotorDriverStatusViewModel::onDirectionChanged(domain::common::MotorDirection) {
-}
-
-void mvvm::MotorDriverStatusViewModel::onFault(const domain::common::MotorFault& fault) {
-    this->fault.set(fault);
+void mvvm::MotorDriverStatusViewModel::onMotorDirectionChanged(MotorDirection direction) {
+    direction_.set(direction);
 }
 

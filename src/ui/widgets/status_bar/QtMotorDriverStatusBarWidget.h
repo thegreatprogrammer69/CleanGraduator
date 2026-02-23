@@ -6,9 +6,9 @@
 
 #include <memory>
 
-#include "domain/core/motor/motor/MotorDirection.h"
-#include "domain/core/motor/motor/MotorFault.h"
-#include "domain/core/motor/motor/MotorLimitsState.h"
+#include "domain/core/drivers/motor/MotorDirection.h"
+#include "domain/core/drivers/motor/MotorError.h"
+#include "domain/core/drivers/motor/MotorLimitsState.h"
 
 namespace mvvm { class MotorDriverStatusViewModel; }
 
@@ -25,12 +25,19 @@ namespace ui {
 
     private:
         static QString directionToText(domain::common::MotorDirection direction);
-        static QString faultToText(const domain::common::MotorFault& fault);
         static QString runToText(bool is_running);
         static QString boolToText(bool value);
 
-        void refreshAll();
-        void setFaultText(const domain::common::MotorFault &fault);
+        static QString errorToText(const std::string& error);
+
+        // --- Initial sync ---
+        void initializeFromViewModel();
+
+        void refreshFrequency();
+        void setRunning(bool is_running);
+        void setDirection(domain::common::MotorDirection direction);
+        void setLimits(domain::common::MotorLimitsState limits);
+        void setError(const std::string& error);
 
     private:
         mvvm::MotorDriverStatusViewModel& vm_;
@@ -44,7 +51,6 @@ namespace ui {
         QLabel* end_limit_value_{nullptr};
         QLabel* fault_value_{nullptr};
 
-        // Подписки на Observable держим в .cpp (чтобы не тащить типы в заголовок)
         struct Subscriptions;
         std::unique_ptr<Subscriptions> subs_;
 

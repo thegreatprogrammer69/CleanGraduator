@@ -1,7 +1,9 @@
 #ifndef CLEANGRADUATOR_VIDEOSOURCENOTIFIER_H
 #define CLEANGRADUATOR_VIDEOSOURCENOTIFIER_H
+
 #include <algorithm>
 #include <vector>
+#include <mutex>
 
 namespace domain::common {
     struct VideoSourceError;
@@ -13,19 +15,22 @@ namespace domain::ports {
 }
 
 namespace infra::camera::detail {
+
     class VideoSourceNotifier {
     public:
         void addObserver(domain::ports::IVideoSourceObserver& observer);
         void removeObserver(domain::ports::IVideoSourceObserver& observer);
+
         void notifyFrame(const domain::common::VideoFramePacket& frame);
         void notifyOpened();
-        void notifyOpenFailed(const domain::common::VideoSourceError& error);
-        void notifyClosed(const domain::common::VideoSourceError& error);
+        void notifyFailed(const domain::common::VideoSourceError& error);
+        void notifyClosed();
 
     private:
         std::vector<domain::ports::IVideoSourceObserver*> observers_;
+        std::mutex mutex_;
     };
+
 }
 
-
-#endif //CLEANGRADUATOR_VIDEOSOURCENOTIFIER_H
+#endif // CLEANGRADUATOR_VIDEOSOURCENOTIFIER_H

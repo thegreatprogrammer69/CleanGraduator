@@ -7,9 +7,9 @@
 #include <memory>
 #include <string>
 
-#include "domain/ports/motor/IValveDriver.h"
-#include "domain/ports/motor/IMotorDriver.h"
-#include "infrastructure/motor/g540/MotorDriverPorts.h"
+#include "../../domain/ports/drivers/valve/IValveDriver.h"
+#include "../../domain/ports/drivers/motor/IMotorDriver.h"
+#include "infrastructure/motion/g540/MotorDriverPorts.h"
 
 namespace infra::repo {
     class MotorDriverFactory {
@@ -18,7 +18,7 @@ namespace infra::repo {
         ~MotorDriverFactory();
 
         std::unique_ptr<domain::ports::IMotorDriver> load();
-        std::unique_ptr<domain::ports::IValveDriver> load_valve_driver();
+        domain::ports::IValveDriver* load_valve_driver();
     private:
         std::string ini_path_;
         motors::MotorDriverPorts ports_;

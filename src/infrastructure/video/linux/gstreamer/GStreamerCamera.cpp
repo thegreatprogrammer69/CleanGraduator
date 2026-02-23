@@ -137,7 +137,7 @@ bool GStreamerCamera::open() {
     auto abort_opening = [this]() {
         this->close();
         const domain::common::VideoSourceError err{logger_.lastError()};
-        notifier_.notifyOpenFailed(err);
+        notifier_.notifyFailed(err);
     };
 
     if (running_.load()) return false;
@@ -231,7 +231,7 @@ void GStreamerCamera::close() {
         pipeline_ = nullptr;
     }
 
-    notifier_.notifyClosed({});
+    notifier_.notifyClosed();
 }
 
 void GStreamerCamera::addObserver(domain::ports::IVideoSourceObserver &o) {
@@ -261,7 +261,7 @@ void GStreamerCamera::captureLoop() {
         gst_sample_unref(sample);
     }
 
-    notifier_.notifyClosed({});
+    notifier_.notifyClosed();
 }
 
 void GStreamerCamera::dispatchSample(GstSample* sample) {

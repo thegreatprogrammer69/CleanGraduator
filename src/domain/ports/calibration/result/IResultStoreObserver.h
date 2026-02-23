@@ -8,7 +8,7 @@ namespace domain::common {
 namespace domain::ports {
     struct IResultStoreObserver {
         virtual ~IResultStoreObserver() = default;
-        virtual void onResultUpdated(const common::CalibrationResult& result) = 0;
+        virtual void onResultUpdated(const common::CalibrationResult&) = 0;
     };
 }
 

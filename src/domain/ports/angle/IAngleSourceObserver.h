@@ -3,17 +3,21 @@
 #include "domain/core/angle/AngleSourceError.h"
 
 namespace domain::common {
-    struct AnglePacket;
+    struct AngleSourcePacket;
 }
 
 namespace domain::ports {
+
     struct IAngleSourceObserver {
         virtual ~IAngleSourceObserver() = default;
-        virtual void onStarted();
-        virtual void onClosed();
-        virtual void onError(const common::AngleSourceError&) = 0;
-        virtual void onAngle(const common::AnglePacket&) = 0;
+
+        virtual void onAngleSourceStarted() = 0;
+        virtual void onAngleSourceStopped() = 0;
+        virtual void onAngleSourceFailed(const common::AngleSourceError&) = 0;
+
+        virtual void onAngleSourcePacket(const common::AngleSourcePacket&) = 0;
     };
+
 }
 
 #endif //CLEANGRADUATOR_IANGLESINK_H

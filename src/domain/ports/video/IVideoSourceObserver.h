@@ -11,8 +11,8 @@ namespace domain::ports {
         virtual ~IVideoSourceObserver() = default;
         virtual void onVideoFrame(const common::VideoFramePacket& packet) = 0;
         virtual void onVideoSourceOpened() = 0;
-        virtual void onVideoSourceOpenFailed(const common::VideoSourceError&) = 0;
-        virtual void onVideoSourceClosed(const common::VideoSourceError&) = 0;
+        virtual void onVideoSourceFailed(const common::VideoSourceError&) = 0;
+        virtual void onVideoSourceClosed() = 0;
     };
 }
 #endif //CLEANGRADUATOR_IFRAMESINK_H

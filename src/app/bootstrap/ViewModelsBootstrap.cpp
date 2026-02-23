@@ -109,7 +109,7 @@ void ViewModelsBootstrap::createSettings() {
 
 void ViewModelsBootstrap::createStatusBar() {
     AppStatusBarViewModelDeps deps {
-        *app_.process_lifecycle,
+        *app_.calibration_lifecycle,
         *app_.session_clock,
         *app_.uptime_clock
     };
@@ -135,7 +135,7 @@ void ViewModelsBootstrap::createPressureSensorStatus() {
 
 void ViewModelsBootstrap::createDualValveControl() {
     DualValveControlViewModelDeps deps {
-        *app_.dual_valve_driver
+        *app_.valve_driver
     };
     dual_valve_control = std::make_unique<DualValveControlViewModel>(deps);
 }

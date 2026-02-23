@@ -1,6 +1,6 @@
 #ifndef CLEANGRADUATOR_VALVECONTROLVIEWMODEL_H
 #define CLEANGRADUATOR_VALVECONTROLVIEWMODEL_H
-#include "domain/ports/motor/IValveDriverObserver.h"
+#include "../../domain/ports/drivers/valve/IValveDriverObserver.h"
 #include "viewmodels/Observable.h"
 
 namespace domain::ports {

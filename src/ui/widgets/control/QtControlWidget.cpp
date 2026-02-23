@@ -14,32 +14,45 @@ ui::QtControlWidget::QtControlWidget(mvvm::ControlViewModel &vm, QWidget *parent
 
 void ui::QtControlWidget::setupUi() {
     auto* root = new QVBoxLayout(this);
-    root->setSpacing(8);
+    root->setSpacing(0);
+    root->setContentsMargins(0, 0, 0, 0);
 
     // =============================
-    // Панель переключения
+    // Панель переключения (над карточкой)
     // =============================
     auto* switchBar = new QHBoxLayout;
-    switchBar->setSpacing(16);
+    switchBar->setSpacing(8);
+    switchBar->setAlignment(Qt::AlignCenter);
+
+    // Верхний отступ — чтобы визуально кнопки "сидели" на бордере карточки
+    switchBar->setContentsMargins(0, 0, 0, 0);
 
     auto* btnValves = makeSwitchButton("Клапаны");
     auto* btnMotor  = makeSwitchButton("Управление двигателем");
 
     switchBar->addWidget(btnValves);
     switchBar->addWidget(btnMotor);
-    switchBar->addStretch();
+    switchBar->addStretch(1);
 
     root->addLayout(switchBar);
 
     // =============================
-    // Stack
+    // Stack (карточки)
     // =============================
     stack_ = new QStackedWidget;
+
+    // Поднимаем карточку вверх,
+    // чтобы её верхний border проходил через центр кнопок
+    stack_->setContentsMargins(0, 0, 0, 0);
+
     root->addWidget(stack_);
 
     stack_->addWidget(makeValvesPage());
     stack_->addWidget(makeMotorPage());
 
+    // =============================
+    // Логика переключения
+    // =============================
     auto* group = new QButtonGroup(this);
     group->setExclusive(true);
     group->addButton(btnValves, 0);
@@ -100,30 +113,39 @@ QWidget * ui::QtControlWidget::makeMotorPage() {
 void ui::QtControlWidget::applyStyle() {
     setStyleSheet(R"(
 
+/* =========================
+   Switch Tabs (link style)
+=========================*/
+QPushButton[role="switchLink"] {
+    background: transparent;
+    border: none;
+
+    padding: 4px;
+    margin: 0px;
+
+    min-width: 0px;
+    min-height: 0px;
+
+    font-size: 14px;
+    font-weight: 600;
+    color: #6B7280;
+}
+
+QPushButton[role="switchLink"]:hover {
+    color: #2563EB;
+    text-decoration: underline;
+}
+
+QPushButton[role="switchLink"]:pressed {
+    color: #1D4ED8;
+}
+
+QPushButton[role="switchLink"]:checked {
+    color: #111827;
+}
+
         /* =========================
-           Switch Links
-        ==========================*/
-        QPushButton[role="switchLink"] {
-            background: transparent;
-            border: none;
-            padding: 4px 0;
-            font-size: 15px;
-            font-weight: 600;
-            color: #374151;
-        }
-
-        QPushButton[role="switchLink"]:hover {
-            color: #2563EB;
-            text-decoration: underline;
-        }
-
-        QPushButton[role="switchLink"]:checked {
-            color: #111827;
-            border-bottom: 2px solid #2563EB;
-        }
-
-        /* =========================
-           Card
+           Card (оставлено как было)
         ==========================*/
         QWidget[role="card"] {
             background: #FFFFFF;
@@ -151,5 +173,5 @@ void ui::QtControlWidget::applyStyle() {
             background: #DBEAFE;
         }
 
-        )");
+    )");
 }

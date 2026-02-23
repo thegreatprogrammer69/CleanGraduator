@@ -1,7 +1,7 @@
 #include "MotorControlInteractor.h"
 
 #include "IMotorControlObserver.h"
-#include "domain/ports/motor/IMotorDriver.h"
+#include "../../../domain/ports/drivers/motor/IMotorDriver.h"
 
 #include <algorithm>
 
@@ -38,22 +38,22 @@ void MotorControlInteractor::removeObserver(IMotorControlObserver& obs) {
     );
 }
 
-void MotorControlInteractor::onStarted() {
+void MotorControlInteractor::onMotorStarted() {
     notifyRunning(true);
 }
 
-void MotorControlInteractor::onStopped() {
+void MotorControlInteractor::onMotorStopped() {
     notifyRunning(false);
 }
 
-void MotorControlInteractor::onLimitsStateChanged(domain::common::MotorLimitsState) {
-}
-
-void MotorControlInteractor::onDirectionChanged(domain::common::MotorDirection) {
-}
-
-void MotorControlInteractor::onFault(const domain::common::MotorFault &) {
+void MotorControlInteractor::onMotorStartFailed(const domain::common::MotorError &) {
     notifyRunning(false);
+}
+
+void MotorControlInteractor::onMotorLimitsStateChanged(domain::common::MotorLimitsState) {
+}
+
+void MotorControlInteractor::onMotorDirectionChanged(domain::common::MotorDirection) {
 }
 
 void MotorControlInteractor::notifyRunning(bool running) {

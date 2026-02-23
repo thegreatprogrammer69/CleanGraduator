@@ -3,10 +3,9 @@
 
 #include <atomic>
 
-#include "domain/core/motor/motor/MotorDirection.h"
-#include "domain/core/motor/motor/MotorFault.h"
-#include "domain/core/motor/motor/MotorLimitsState.h"
-#include "domain/ports/motor/IMotorDriverObserver.h"
+#include "domain/core/drivers/motor/MotorDirection.h"
+#include "domain/core/drivers/motor/MotorLimitsState.h"
+#include "../../domain/ports/drivers/motor/IMotorDriverObserver.h"
 #include "viewmodels/Observable.h"
 
 namespace domain::ports {
@@ -24,24 +23,21 @@ namespace mvvm {
         explicit MotorDriverStatusViewModel(MotorDriverStatusViewModelDeps deps);
         ~MotorDriverStatusViewModel() override;
 
-        bool isRunning() const;
-        int frequencyHz() const;
-        domain::common::MotorDirection direction() const;
-        domain::common::MotorLimitsState limits() const;
+        Observable<bool> is_running_;
+        Observable<std::string> error_;
+        Observable<domain::common::MotorDirection> direction_;
+        Observable<domain::common::MotorLimitsState> limits_state_;
 
-        Observable<domain::common::MotorFault> fault{};
+        int frequency() const;
 
     protected:
-        // IMotorDriverObserver
-        void onStarted() override;
-        void onStopped() override;
-        void onLimitsStateChanged(domain::common::MotorLimitsState) override;
-        void onDirectionChanged(domain::common::MotorDirection) override;
-        void onFault(const domain::common::MotorFault& fault) override;
+        void onMotorStarted() override;
+        void onMotorStopped() override;
+        void onMotorStartFailed(const domain::common::MotorError &) override;
+        void onMotorLimitsStateChanged(domain::common::MotorLimitsState) override;
+        void onMotorDirectionChanged(domain::common::MotorDirection) override;
 
     private:
-        // В UI 3 состояния - остановлен и движется вперёд/назад
-        std::atomic_bool is_running_{false};
         domain::ports::IMotorDriver& motor_driver_;
     };
 

@@ -1,7 +1,7 @@
 #ifndef CLEANGRADUATOR_MOTORCONTROLVIEWMODEL_H
 #define CLEANGRADUATOR_MOTORCONTROLVIEWMODEL_H
 #include "application/orchestrators/motor/IMotorControlObserver.h"
-#include "domain/core/motor/motor/MotorDirection.h"
+#include "domain/core/drivers/motor/MotorDirection.h"
 #include "viewmodels/Observable.h"
 
 namespace application::orchestrators {

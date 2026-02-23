@@ -1,6 +1,6 @@
 #ifndef CLEANGRADUATOR_PRECISION_H
 #define CLEANGRADUATOR_PRECISION_H
-#include "domain/core/calibration/calculation/GaugePrecision.h"
+#include "../../../domain/core/calibration/common/GaugePrecision.h"
 
 namespace application::models {
     struct GaugePrecision {

@@ -4,7 +4,7 @@
 
 namespace domain::ports {
     struct IVideoSourceOverlay {
-        virtual domain::common::VideoFramePacket draw(common::VideoFramePacket) const = 0;
+        virtual common::VideoFramePacket draw(common::VideoFramePacket) const = 0;
         virtual ~IVideoSourceOverlay() = default;
     };
 }

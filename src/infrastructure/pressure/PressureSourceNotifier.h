@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <vector>
+#include <mutex>
 
 namespace domain::common {
     struct PressurePacket;
@@ -27,6 +28,7 @@ namespace infra::pressure::detail {
 
     private:
         std::vector<domain::ports::IPressureSourceObserver*> observers_;
+        std::mutex mutex_;
     };
 
 }

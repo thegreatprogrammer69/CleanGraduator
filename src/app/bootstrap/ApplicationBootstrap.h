@@ -5,14 +5,19 @@
 #include <string>
 #include <vector>
 
+#include "../../infrastructure/calibration/lifecycle/CalibrationLifecycle.h"
 
-namespace infra::process {
-    class ProcessRunner;
-}
-
-namespace application::orchestrators {
-    class MotorControlInteractor;
-    class VideoSourceManager;
+namespace domain::ports {
+    struct IValveDriver;
+    struct IResultStore;
+    struct IPressureSource;
+    class ICalibrationCalculator;
+    struct IAngleCalculator;
+    struct IAngleSource;
+    struct IVideoSource;
+    struct IClock;
+    struct ILogger;
+    struct IMotorDriver;
 }
 
 namespace application::ports {
@@ -26,23 +31,13 @@ namespace application::ports {
     struct IVideoAngleSourcesStorage;
 }
 
+namespace application::orchestrators {
+    class MotorControlInteractor;
+    class VideoSourceManager;
+}
 
 namespace infra::logging {
     class NamedMultiLogger;
-}
-
-namespace domain::ports {
-    struct IValveDriver;
-    struct IResultStore;
-    struct IPressureSource;
-    class ICalibrationCalculator;
-    struct IAngleCalculator;
-    struct IAngleSource;
-    struct IVideoSource;
-    struct IClock;
-    struct IProcessLifecycle;
-    struct ILogger;
-    struct IMotorDriver;
 }
 
 class ApplicationBootstrap {
@@ -55,15 +50,17 @@ public:
     domain::ports::ILogger& createLogger(const std::string &logger_name);
 
     ////////////////////////////////////////////////////////////////////////////////////////
+    std::unique_ptr<domain::ports::IClock> uptime_clock;
+
+    ////////////////////////////////////////////////////////////////////////////////////////
     // Логеры
     std::unique_ptr<application::ports::ILogSourcesStorage> log_sources_storage;
     std::vector<std::unique_ptr<domain::ports::ILogger>> loggers;
 
     ////////////////////////////////////////////////////////////////////////////////////////
     // Жизненный цикл и Время
-    std::unique_ptr<domain::ports::IProcessLifecycle> process_lifecycle;
+    std::unique_ptr<domain::ports::ICalibrationLifecycle> calibration_lifecycle;
     domain::ports::IClock* session_clock;
-    std::unique_ptr<domain::ports::IClock> uptime_clock;
 
     ////////////////////////////////////////////////////////////////////////////////////////
     // Угломер и калибратор
@@ -85,7 +82,7 @@ public:
     ////////////////////////////////////////////////////////////////////////////////////////
     // Драйвер двигателя
     std::unique_ptr<domain::ports::IMotorDriver> motor_driver;
-    std::unique_ptr<domain::ports::IValveDriver> dual_valve_driver;
+    domain::ports::IValveDriver* valve_driver;
 
     ////////////////////////////////////////////////////////////////////////////////////////
     // Задатчик давления. Делавет весь процесс градуировки
@@ -111,7 +108,7 @@ public:
 
     ////////////////////////////////////////////////////////////////////////////////////////
     // Реагирует на состояние и запускает какие-либо процессы
-    std::unique_ptr<infra::process::ProcessRunner> process_runner;
+
 
 private:
     std::string setup_dir_;

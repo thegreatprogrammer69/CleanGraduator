@@ -17,7 +17,7 @@ set(SOURCES
         pressure/dm5002/DM5002RFPressureSensor.cpp
         pressure/dm5002/DM5002PressureSensor.cpp
 
-        motor/g540/as_lpt/G540LptMotorDriver.cpp
+        motion/g540/as_lpt/G540LptMotorDriver.cpp
 
         logging/ConsoleLogger.cpp
         logging/FileLogger.cpp
@@ -25,9 +25,6 @@ set(SOURCES
 
         clock/SessionClock.cpp
         clock/UptimeClock.cpp
-
-        process/ProcessLifecycle.cpp
-        process/ProcessRunner.cpp
 
         overlay/crosshair/CrosshairVideoOverlay.cpp
 
@@ -42,12 +39,11 @@ set(SOURCES
         factory/PressureSourceFactory.cpp
         factory/MotorDriverFactory.cpp
 
-        motor/g540/as_lpt/G540LptMotorDriver.cpp
+        motion/g540/as_lpt/G540LptMotorDriver.cpp
 
-        calibration/motion_controller/stand4/FrequencyCalculator.cpp
-        calibration/motion_controller/stand4/PressurePointsTracker.cpp
-        calibration/motion_controller/stand4/CalibrationMotionController4.cpp
-        calibration/motion_controller/stand4/CalibrationMotionController4Telemetry.cpp
+        calibration/lifecycle/CalibrationLifecycle.cpp
+        calibration/strats/stand4/Stand4FrequencyCalculator.cpp
+        calibration/strats/stand4/Stand4CalibrationStrategy.cpp
 
 )
 
@@ -77,10 +73,6 @@ elseif(UNIX)
             platform/sleep/sleep_linux.cpp
             video/linux/v4l/V4LCamera.cpp
             video/linux/gstreamer/GStreamerCamera.cpp
-            calibration/motion_controller/stand4/CalibrationMotionController4Telemetry.cpp
-            calibration/motion_controller/algorithms/return_to_home.cpp
-            calibration/motion_controller/algorithms/return_to_home.h
-
     )
 endif()
 

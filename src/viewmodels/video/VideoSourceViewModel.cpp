@@ -20,16 +20,16 @@ void VideoSourceViewModel::onVideoSourceOpened() {
     is_opened.set(true);
 }
 
-void VideoSourceViewModel::onVideoSourceOpenFailed(const domain::common::VideoSourceError & err) {
+void VideoSourceViewModel::onVideoSourceFailed(const domain::common::VideoSourceError &err) {
     is_opened.set(false);
     error.set(err.reason);
 }
 
-void VideoSourceViewModel::onVideoSourceClosed(const domain::common::VideoSourceError &err) {
+void VideoSourceViewModel::onVideoSourceClosed() {
     is_opened.set(false);
-    error.set(err.reason);
 }
 
 void VideoSourceViewModel::onVideoFrame(const domain::common::VideoFramePacket& frame_packet) {
     frame.set(frame_packet.frame);
+    error.set({});
 }

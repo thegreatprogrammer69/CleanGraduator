@@ -2,22 +2,17 @@
 // #include <thread>
 //
 // #include "application/fmt/fmt_application.h"
-// #include "domain/core/process/ProcessLifecycleState.h"
 // #include "infrastructure/logging/ConsoleLogger.h"
+// #include "infrastructure/motion/g540/as_lpt/G540LptMotorDriver.h"
+// #include "infrastructure/motion/g540/as_lpt/G540LptMotorDriverConfig.h"
 //
-// #include "infrastructure/motor/g540/as_lpt/G540LptMotorDriver.h"
-// #include "infrastructure/motor/g540/as_lpt/G540LptMotorDriverConfig.h"
-// #include "infrastructure/motor/g540/as_lpt/G540LptMotorDriverPorts.h"
-//
-// using namespace infra::motors;
-// using namespace infra::logging;
 //
 // int main(int argc, char *argv[]) {
 //     QApplication app(argc, argv);
 //
-//     ConsoleLogger logger;
+//     infra::logging::ConsoleLogger logger;
 //
-//     G540LptMotorDriverConfig config;
+//     infra::motors::G540LptMotorDriverConfig config;
 //         config.bit_begin_limit_switch = 1;
 //         config.bit_end_limit_switch = 2;
 //         config.byte_close_both_flaps = 0;
@@ -27,16 +22,21 @@
 //         config.max_freq_hz = 40;
 //         config.min_freq_hz = 0;
 //
-//     G540LptMotorDriverPorts ports {
+//     infra::motors::MotorDriverPorts ports {
 //         logger
 //     };
 //
-//     G540LptMotorDriver g540(ports, config);
+//     infra::motors::G540LptMotorDriver g540(ports, config);
+//     g540.initialize();
+//
 //     std::this_thread::sleep_for(std::chrono::milliseconds(1));
 //     g540.openInputFlap();
 //     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 //     g540.closeFlaps();
 //
+//
+//     g540.start();
+//     g540.stop();
 //
 //     std::this_thread::sleep_for(std::chrono::milliseconds(1000000));
 //

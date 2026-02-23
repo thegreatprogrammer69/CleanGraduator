@@ -5,8 +5,8 @@
 #include <QWidget>
 #include <QTimer>
 
+#include "domain/core/calibration/lifecycle/CalibrationLifecycleState.h"
 #include "domain/core/measurement/Timestamp.h"
-#include "domain/core/process/ProcessLifecycleState.h"
 
 namespace mvvm { class AppStatusBarViewModel; }
 
@@ -22,13 +22,13 @@ namespace ui {
         ~QtAppStatusBarWidget() override;
 
     private:
-        static QString stateToText(domain::common::ProcessLifecycleState s);
+        static QString stateToText(domain::common::CalibrationLifecycleState s);
         static QString formatHhMmSs(domain::common::Timestamp ts);
-        static QString stateAccent(domain::common::ProcessLifecycleState s);
+        static QString stateAccent(domain::common::CalibrationLifecycleState s);
 
         void refreshAll();
 
-        void setState(domain::common::ProcessLifecycleState s);
+        void setState(domain::common::CalibrationLifecycleState s);
         void setSession(domain::common::Timestamp ts);
         void setUptime(domain::common::Timestamp ts);
 

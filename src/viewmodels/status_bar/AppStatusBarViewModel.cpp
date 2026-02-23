@@ -1,7 +1,6 @@
 #include "AppStatusBarViewModel.h"
-
 #include "domain/ports/clock/IClock.h"
-#include "domain/ports/lifecycle/IProcessLifecycle.h"
+#include "domain/ports/calibration/lifecycle/ICalibrationLifecycle.h"
 
 mvvm::AppStatusBarViewModel::AppStatusBarViewModel(AppStatusBarViewModelDeps deps)
     : lifecycle_(deps.lifecycle)
@@ -15,7 +14,7 @@ mvvm::AppStatusBarViewModel::~AppStatusBarViewModel() {
     lifecycle_.removeObserver(*this);
 }
 
-domain::common::ProcessLifecycleState mvvm::AppStatusBarViewModel::state() {
+domain::common::CalibrationLifecycleState mvvm::AppStatusBarViewModel::state() {
     return current_state_.load(std::memory_order_relaxed);
 }
 
@@ -27,6 +26,6 @@ domain::common::Timestamp mvvm::AppStatusBarViewModel::uptimeTime() {
     return uptime_clock_.now();
 }
 
-void mvvm::AppStatusBarViewModel::onStateChanged(domain::common::ProcessLifecycleState new_state) {
+void mvvm::AppStatusBarViewModel::onCalibrationLifecycleStateChanged(domain::common::CalibrationLifecycleState new_state) {
     current_state_.store(new_state, std::memory_order_relaxed);
 }

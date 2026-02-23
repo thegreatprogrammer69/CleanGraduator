@@ -81,26 +81,30 @@ void QtDualValveControlWidget::bindViewModel()
     });
 }
 
-void QtDualValveControlWidget::updateUiFromState(mvvm::DualValveControlViewModel::FlapsState state)
+    void QtDualValveControlWidget::updateUiFromState(
+        mvvm::DualValveControlViewModel::FlapsState state)
 {
     state_label_->setText(QString::fromUtf8(toText(state)));
 
-    // базовая логика доступности кнопок (можешь выкинуть, если не нужно)
     using S = mvvm::DualValveControlViewModel::FlapsState;
 
-    const bool is_initialized = (state != S::FlapsUninitialized);
-
+    // Базовое состояние — всё доступно
     open_input_btn_->setEnabled(true);
     open_output_btn_->setEnabled(true);
-    close_flaps_btn_->setEnabled(is_initialized);
+    close_flaps_btn_->setEnabled(true);
 
+    // Ограничения только для подтверждённых состояний
     if (state == S::InputFlapOpened) {
         open_input_btn_->setEnabled(false);
-    } else if (state == S::OutputFlapOpened) {
+    }
+    else if (state == S::OutputFlapOpened) {
         open_output_btn_->setEnabled(false);
-    } else if (state == S::FlapsClosed) {
+    }
+    else if (state == S::FlapsClosed) {
         close_flaps_btn_->setEnabled(false);
     }
+
+    // FlapsUninitialized → ничего не блокируем
 }
 
 } // namespace ui

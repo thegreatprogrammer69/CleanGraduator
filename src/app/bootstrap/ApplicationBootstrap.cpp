@@ -3,8 +3,8 @@
 #include <stdexcept>
 #include <vector>
 
-#include "../../application/orchestrators/angle/AngleFromVideoInteractor.h"
-#include "../../application/orchestrators/video/VideoSourceManager.h"
+#include "application/orchestrators/angle/AngleFromVideoInteractor.h"
+#include "application/orchestrators/video/VideoSourceManager.h"
 #include "application/ports/logging/ILoggerFactory.h"
 #include "infrastructure/calculation/angle/CastAnglemeter.h"
 #include "infrastructure/calculation/calibration/CalibrationCalculatorPorts.h"
@@ -22,21 +22,19 @@
 #include "infrastructure/logging/ConsoleLogger.h"
 #include "infrastructure/logging/FileLogger.h"
 #include "infrastructure/logging/NamedMultiLogger.h"
-#include "../../infrastructure/motor/g540/as_lpt/G540LptMotorDriver.h"
+#include "infrastructure/motion/g540/as_lpt/G540LptMotorDriver.h"
 #include "infrastructure/overlay/crosshair/CrosshairVideoOverlay.h"
 #include "infrastructure/platform/com/ComPort.h"
 #include "infrastructure/pressure/PressureSourceNotifier.h"
-#include "../../infrastructure/pressure/PressureSourcePorts.h"
-#include "infrastructure/process/ProcessLifecycle.h"
+#include "infrastructure/pressure/PressureSourcePorts.h"
 #include "infrastructure/storage/QtInfoSettingsStorage.h"
 #include "infrastructure/storage/VideoAngleSourcesStorage.h"
 #include "infrastructure/storage/LogSourcesStorage.h"
 #include "viewmodels/settings/SettingsViewModel.h"
-#include "../../domain/ports/video/IVideoSource.h"
+#include "domain/ports/video/IVideoSource.h"
 
-#include "../../domain/ports/calibration/result/IResultStore.h"
+#include "domain/ports/calibration/result/IResultStore.h"
 #include "infrastructure/factory/MotorDriverFactory.h"
-#include "infrastructure/process/ProcessRunner.h"
 
 using namespace mvvm;
 using namespace domain::ports;
@@ -45,7 +43,6 @@ using namespace application::orchestrators;
 using namespace application::models;
 using namespace application::ports;
 using namespace infra::clock;
-using namespace infra::process;
 using namespace infra::logging;
 using namespace infra::calc;
 using namespace infra::catalogs;
@@ -55,6 +52,7 @@ using namespace infra::overlay;
 using namespace infra::platform;
 using namespace infra::repo;
 using namespace infra::storage;
+using namespace infra::lifecycle;
 
 
 struct LoggerFactory final : ILoggerFactory {
@@ -133,9 +131,9 @@ void ApplicationBootstrap::createLogSourcesStorage() {
 }
 
 void ApplicationBootstrap::createLifecycle() {
-    auto* lifecycle = new ProcessLifecycle();
-    session_clock = &lifecycle->clock();
-    process_lifecycle = std::unique_ptr<ProcessLifecycle>(lifecycle);
+    auto* lifecycle = new CalibrationLifecycle();
+    session_clock = &lifecycle->sessionClock();
+    calibration_lifecycle = std::unique_ptr<CalibrationLifecycle>(lifecycle);
 }
 
 void ApplicationBootstrap::createClock() {
@@ -214,7 +212,7 @@ void ApplicationBootstrap::createCalibrator() {
         ports
     );
 
-    calibrator = factory.load();
+    // calibrator = factory.load();
 }
 
 void ApplicationBootstrap::createPressureSource() {
@@ -238,7 +236,7 @@ void ApplicationBootstrap::createMotorDriver() {
     };
     MotorDriverFactory factory(setup_dir_ + "/motor.ini", ports);
     motor_driver = factory.load();
-    dual_valve_driver = factory.load_valve_driver();
+    valve_driver = factory.load_valve_driver();
 
 }
 
@@ -321,5 +319,5 @@ void ApplicationBootstrap::createInfoSettingsStorage() {
 
 
 void ApplicationBootstrap::createProcessRunner() {
-    process_runner = std::make_unique<ProcessRunner>(createLogger("ProcessRunner"), *process_lifecycle);
+
 }

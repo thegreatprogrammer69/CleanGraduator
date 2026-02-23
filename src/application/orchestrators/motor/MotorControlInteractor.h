@@ -2,8 +2,8 @@
 #define CLEANGRADUATOR_MOTORCONTROLINTERACTOR_H
 #include <vector>
 
-#include "domain/core/motor/motor/MotorDirection.h"
-#include "domain/ports/motor/IMotorDriverObserver.h"
+#include "domain/core/drivers/motor/MotorDirection.h"
+#include "../../../domain/ports/drivers/motor/IMotorDriverObserver.h"
 
 
 namespace domain::ports {
@@ -27,14 +27,17 @@ namespace application::orchestrators {
 
     protected:
         // ===== IMotorDriverObserver =====
-        void onStarted() override;
-        void onStopped() override;
-        void onLimitsStateChanged(domain::common::MotorLimitsState) override;
-        void onDirectionChanged(domain::common::MotorDirection) override;
-        void onFault(const domain::common::MotorFault&) override;
+        void onMotorStarted() override;
+        void onMotorStopped() override;
+        void onMotorStartFailed(const domain::common::MotorError &) override;
+        void onMotorLimitsStateChanged(domain::common::MotorLimitsState) override;
+        void onMotorDirectionChanged(domain::common::MotorDirection) override;
 
     private:
         void notifyRunning(bool running);
+
+    public:
+
 
     private:
         domain::ports::IMotorDriver& driver_;

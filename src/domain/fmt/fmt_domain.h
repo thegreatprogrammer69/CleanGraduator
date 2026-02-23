@@ -3,6 +3,7 @@
 #include <iosfwd>
 
 namespace domain::common {
+    enum class CalibrationLifecycleState;
     struct PressurePoints;
     enum class CalibrationCellSeverity;
     class Angle;
@@ -13,7 +14,6 @@ namespace domain::common {
     enum class PixelFormat;
     struct VideoBuffer;
     struct VideoFrame;
-    enum class ProcessLifecycleState;
     enum class MotorDirection;
 }
 
@@ -25,7 +25,7 @@ std::ostream& operator<<(std::ostream& os, const domain::common::Timestamp& f);
 std::ostream& operator<<(std::ostream& os, const domain::common::PixelFormat& f);
 std::ostream& operator<<(std::ostream& os, const domain::common::VideoBuffer& f);
 std::ostream& operator<<(std::ostream& os, const domain::common::VideoFrame& f);
-std::ostream& operator<<(std::ostream& os, const domain::common::ProcessLifecycleState& f);
+std::ostream& operator<<(std::ostream& os, const domain::common::CalibrationLifecycleState& f);
 std::ostream& operator<<(std::ostream& os, const domain::common::CalibrationCellSeverity& f);
 std::ostream& operator<<(std::ostream& os, const domain::common::MotorDirection& f);
 std::ostream& operator<<(std::ostream& os, const domain::common::PressurePoints& f);
