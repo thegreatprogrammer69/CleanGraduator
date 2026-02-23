@@ -3,6 +3,7 @@ add_library(application STATIC
 
         orchestrators/angle/AngleFromVideoInteractor.cpp
         orchestrators/calibration/process/CalibrationProcessOrchestrator.cpp
+        orchestrators/calibration/session/CalibrationSessionController.cpp
         orchestrators/video/VideoSourceManager.cpp
         orchestrators/settings/CalibrationSettingsQuery.cpp
         orchestrators/motor/MotorControlInteractor.cpp

@@ -3,6 +3,7 @@
 
 namespace domain::ports {
     struct ILogger;
+    struct ICalibrationLifecycle;
 }
 
 namespace application::orchestrators {
@@ -11,6 +12,7 @@ namespace application::orchestrators {
     struct CalibrationSessionControllerPorts {
         domain::ports::ILogger& logger;
         CalibrationSettingsQuery& settings_query;
+        domain::ports::ICalibrationLifecycle& lifecycle;
     };
 }
 

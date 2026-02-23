@@ -10,6 +10,7 @@ CalibrationSessionController::CalibrationSessionController(
     : runtime_(runtime)
     , logger_(ports.logger)
     , settings_query_(ports.settings_query)
+    , lifecycle_(ports.lifecycle)
 {
 }
 
@@ -40,15 +41,16 @@ void CalibrationSessionController::start(CalibrationSessionControllerInput inp)
     runtime_.start(*config);
 }
 
-void CalibrationSessionController::stop()
+bool CalibrationSessionController::stop()
 {
     if (!runtime_.isRunning()) {
         logger_.warn("CalibrationSessionController::stop ignored: not running");
-        return;
+        return false;
     }
 
     logger_.info("CalibrationSessionController: stop requested");
     runtime_.stop();
+    return true;
 }
 
 void CalibrationSessionController::abort()
@@ -81,4 +83,45 @@ std::optional<CalibrationProcessOrchestratorInput> CalibrationSessionController:
     config.pressure_points = *pressure_points;
 
     return config;
+}
+
+
+bool CalibrationSessionController::start()
+{
+    return lifecycle_.start();
+}
+
+void CalibrationSessionController::markRunning()
+{
+    lifecycle_.markRunning();
+}
+
+void CalibrationSessionController::markIdle()
+{
+    lifecycle_.markIdle();
+}
+
+void CalibrationSessionController::markError(const std::string& err)
+{
+    lifecycle_.markError(err);
+}
+
+std::string CalibrationSessionController::lastError() const
+{
+    return lifecycle_.lastError();
+}
+
+domain::common::CalibrationLifecycleState CalibrationSessionController::state() const
+{
+    return lifecycle_.state();
+}
+
+void CalibrationSessionController::addObserver(domain::ports::ICalibrationLifecycleObserver& observer)
+{
+    lifecycle_.addObserver(observer);
+}
+
+void CalibrationSessionController::removeObserver(domain::ports::ICalibrationLifecycleObserver& observer)
+{
+    lifecycle_.removeObserver(observer);
 }

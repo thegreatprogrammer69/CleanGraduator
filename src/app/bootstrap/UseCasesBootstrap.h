@@ -5,6 +5,9 @@
 
 namespace application::orchestrators {
     class MotorControlInteractor;
+    class CalibrationProcessOrchestrator;
+    class CalibrationSessionController;
+    class CalibrationSettingsQuery;
 }
 
 namespace application::usecase {
@@ -28,6 +31,9 @@ public:
     std::unique_ptr<application::usecase::CloseAllCameras> close_all_cameras;
 
     std::unique_ptr<application::orchestrators::MotorControlInteractor> motor_control_interactor;
+    std::unique_ptr<application::orchestrators::CalibrationSettingsQuery> calibration_settings_query;
+    std::unique_ptr<application::orchestrators::CalibrationProcessOrchestrator> calibration_process_orchestrator;
+    std::unique_ptr<application::orchestrators::CalibrationSessionController> calibration_session_controller;
 
 
     // Конфигурируемы объект
@@ -41,6 +47,7 @@ private:
     void createCloseAllCameras();
 
     void createMotorControlInteractor();
+    void createCalibrationSessionController();
 
 };
 
