@@ -151,10 +151,26 @@ void CalibrationProcessOrchestrator::endSessionIfBegun() {
 void CalibrationProcessOrchestrator::start(CalibrationProcessOrchestratorInput input) {
 
     const auto st = lifecycleState();
-    if (st != LifecycleState::Idle) {
-        logger_.warn("Start ignored: lifecycle state != Idle");
+    if (st != LifecycleState::Idle && st != LifecycleState::Error) {
+        logger_.warn("Start ignored: lifecycle state != Idle || st != LifecycleState::Error");
         return;
     }
+
+    // Ensure pressure source is running before session start
+    if (!pressure_source_.isRunning()) {
+
+        logger_.info("Starting pressure source...");
+
+        if (!pressure_source_.start()) {
+
+            logger_.error("Calibration start failed: pressure_source_.start() returned false");
+
+            lifecycle_.markError("pressure source start failed");
+
+            return;
+        }
+    }
+
 
     if (!lifecycle_.start()) {
         logger_.warn("Start rejected by lifecycle");

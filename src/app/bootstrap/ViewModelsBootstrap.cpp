@@ -4,6 +4,7 @@
 #include "UseCasesBootstrap.h"
 #include "viewmodels/logging/LogViewerViewModel.h"
 #include "viewmodels/MainWindowViewModel.h"
+#include "viewmodels/control/CalibrationSessionControlViewModel.h"
 #include "viewmodels/control/ControlViewModel.h"
 #include "viewmodels/control/DualValveControlViewModel.h"
 #include "viewmodels/control/MotorControlViewModel.h"
@@ -40,6 +41,7 @@ void ViewModelsBootstrap::initialize() {
 
     createDualValveControl();
     createMotorControl();
+    createCalibrationSessionControl();
     createControl();
 
     createLogViewer();
@@ -147,10 +149,19 @@ void ViewModelsBootstrap::createMotorControl() {
     motor_control = std::make_unique<MotorControlViewModel>(deps);
 }
 
+void ViewModelsBootstrap::createCalibrationSessionControl() {
+    CalibrationSessionControlViewModelDeps deps{
+        *use_cases_.calibration_session_controller,
+        *app_.calibration_lifecycle
+    };
+    calibration_session_control = std::make_unique<CalibrationSessionControlViewModel>(deps);
+}
+
 void ViewModelsBootstrap::createControl() {
     ControlViewModelDeps deps {
         *dual_valve_control,
-        *motor_control
+        *motor_control,
+        *calibration_session_control
     };
     control = std::make_unique<ControlViewModel>(deps);
 }

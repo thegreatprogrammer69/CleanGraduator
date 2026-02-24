@@ -8,6 +8,7 @@ add_library(viewmodels STATIC
 
         control/DualValveControlViewModel.cpp
         control/MotorControlViewModel.cpp
+        control/CalibrationSessionControlViewModel.cpp
         control/ControlViewModel.cpp
 
         status_bar/AppStatusBarViewModel.cpp

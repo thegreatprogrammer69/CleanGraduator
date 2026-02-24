@@ -29,9 +29,11 @@ void ui::QtControlWidget::setupUi() {
 
     auto* btnValves = makeSwitchButton("Клапаны");
     auto* btnMotor  = makeSwitchButton("Управление двигателем");
+    auto* btnCalibration = makeSwitchButton("Калибровка");
 
     switchBar->addWidget(btnValves);
     switchBar->addWidget(btnMotor);
+    switchBar->addWidget(btnCalibration);
     switchBar->addStretch(1);
 
     root->addLayout(switchBar);
@@ -49,6 +51,7 @@ void ui::QtControlWidget::setupUi() {
 
     stack_->addWidget(makeValvesPage());
     stack_->addWidget(makeMotorPage());
+    stack_->addWidget(makeCalibrationPage());
 
     // =============================
     // Логика переключения
@@ -57,6 +60,7 @@ void ui::QtControlWidget::setupUi() {
     group->setExclusive(true);
     group->addButton(btnValves, 0);
     group->addButton(btnMotor, 1);
+    group->addButton(btnCalibration, 2);
 
     btnValves->setChecked(true);
 
@@ -105,6 +109,24 @@ QWidget * ui::QtControlWidget::makeMotorPage() {
             new QtMotorControlWidget(vm_.motorViewModel(), page);
 
     layout->addWidget(motorWidget);
+    layout->addStretch();
+
+    return page;
+}
+
+QWidget * ui::QtControlWidget::makeCalibrationPage() {
+    auto* page = new QWidget;
+    page->setAttribute(Qt::WA_StyledBackground, true);
+    page->setProperty("role", "card");
+
+    auto* layout = new QVBoxLayout(page);
+    layout->setContentsMargins(16, 16, 16, 16);
+    layout->setSpacing(8);
+
+    auto* calibrationWidget =
+            new QtCalibrationSessionControlWidget(vm_.calibrationViewModel(), page);
+
+    layout->addWidget(calibrationWidget);
     layout->addStretch();
 
     return page;

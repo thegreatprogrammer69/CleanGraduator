@@ -1,14 +1,19 @@
-#ifndef UNTITLED_WINDM500211PRESSURESENSOR_H
-#define UNTITLED_WINDM500211PRESSURESENSOR_H
+#ifndef CLEANGRADUATOR_DM5002PRESSURESENSOR_H
+#define CLEANGRADUATOR_DM5002PRESSURESENSOR_H
 
 #include <memory>
+
 #include <domain/ports/pressure/IPressureSource.h>
+
 #include "DM5002PressureSensorConfig.h"
 #include "../PressureSourcePorts.h"
+
 #include "domain/core/measurement/Pressure.h"
 #include "domain/core/measurement/Timestamp.h"
 #include "domain/fmt/Logger.h"
 #include "infrastructure/pressure/PressureSourceNotifier.h"
+
+namespace domain::ports { class IClock; }
 
 namespace infra::pressure {
 
@@ -20,27 +25,30 @@ namespace infra::pressure {
         bool start() override;
         void stop() override;
         bool isRunning() const noexcept override;
-        void addObserver(domain::ports::IPressureSourceObserver &observer) override;
-        void removeObserver(domain::ports::IPressureSourceObserver &observer) override;
+
+        void addObserver(domain::ports::IPressureSourceObserver& observer) override;
+        void removeObserver(domain::ports::IPressureSourceObserver& observer) override;
 
     private:
         struct ReadResult {
             bool valid{false};
-            domain::common::Timestamp time_point;
-            domain::common::Pressure pressure;
+            domain::common::Timestamp time_point{};
+            domain::common::Pressure pressure{};
         };
+
         ReadResult readPressure();
         void run();
 
     private:
-        struct DM5002PressureSensorImpl;
-        std::unique_ptr<DM5002PressureSensorImpl> impl_;
+        struct Impl;
+        std::unique_ptr<Impl> impl_;
+
         DM5002PressureSensorConfig config_;
         fmt::Logger logger_;
         domain::ports::IClock& clock_;
         detail::PressureSourceNotifier notifier_;
     };
 
-}
+} // namespace infra::pressure
 
-#endif //UNTITLED_WINDM5002PRESSURESENSOR_H
+#endif // CLEANGRADUATOR_DM5002PRESSURESENSOR_H

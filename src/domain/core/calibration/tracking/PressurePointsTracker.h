@@ -23,7 +23,7 @@ namespace domain::common {
 
     private:
         bool is_tracking_ = false;
-        domain::common::MotorDirection direction_{};
+        MotorDirection direction_{};
 
         std::vector<float> points_;
         IPressurePointsTrackerObserver& observer_;
