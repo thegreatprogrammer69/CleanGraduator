@@ -38,9 +38,11 @@ public:
 
     // API
     void start(CalibrationProcessOrchestratorInput input);
-    void stop();   // graceful stop (Finish / user stop) -> strategy must stop motor
-    void abort();  // emergency stop (Fault / hardware errors) -> strategy must abort motor
+    void stop();
     bool isRunning() const;
+
+    void startHoming();
+    void stopHoming();
 
     // IPressurePointsTrackerObserver
     void onPointEntered(int index) override;
@@ -106,6 +108,8 @@ private:
 
     // Trackers/state
     domain::common::PressurePointsTracker pressure_points_tracker_;
+
+    std::atomic<bool> homing_stop_requested_{false};
 
     std::atomic<bool> sources_attached_{false};
     std::atomic<bool> actuators_attached_{false};

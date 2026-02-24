@@ -9,7 +9,7 @@ namespace infra::platform {
         ~LptPort();
 
         void open(unsigned short address);
-        void close();
+        void close() noexcept;
 
         bool isOpen() const noexcept;
 

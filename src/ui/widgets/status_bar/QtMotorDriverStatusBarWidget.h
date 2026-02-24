@@ -7,7 +7,7 @@
 #include <memory>
 
 #include "domain/core/drivers/motor/MotorDirection.h"
-#include "domain/core/drivers/motor/MotorError.h"
+#include "domain/core/drivers/motor/MotorDriverError.h"
 #include "domain/core/drivers/motor/MotorLimitsState.h"
 
 namespace mvvm { class MotorDriverStatusViewModel; }

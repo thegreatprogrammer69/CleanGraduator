@@ -151,22 +151,27 @@ void CalibrationProcessOrchestrator::endSessionIfBegun() {
 void CalibrationProcessOrchestrator::start(CalibrationProcessOrchestratorInput input) {
 
     const auto st = lifecycleState();
-    if (st != LifecycleState::Idle && st != LifecycleState::Error) {
-        logger_.warn("Start ignored: lifecycle state != Idle || st != LifecycleState::Error");
+
+    if (st != LifecycleState::Idle){
+        logger_.warn("Start rejected: lifecycle state invalid ({})",
+                     static_cast<int>(st));
+        return;
+    }
+
+    const auto limits = motor_driver_.limits();
+    last_limits_.store(limits);
+
+    if (!limits.home){
+        logger_.warn("Start rejected: HOME limit inactive. Use returnToHome().");
         return;
     }
 
     // Ensure pressure source is running before session start
     if (!pressure_source_.isRunning()) {
-
         logger_.info("Starting pressure source...");
-
         if (!pressure_source_.start()) {
-
             logger_.error("Calibration start failed: pressure_source_.start() returned false");
-
             lifecycle_.markError("pressure source start failed");
-
             return;
         }
     }
@@ -193,6 +198,42 @@ void CalibrationProcessOrchestrator::start(CalibrationProcessOrchestratorInput i
     beginSession();
 }
 
+void CalibrationProcessOrchestrator::startHoming() {
+    const auto st = lifecycleState();
+
+    if (st != LifecycleState::Idle)
+    {
+        logger_.warn("returnToHome rejected: lifecycle state invalid ({})",
+                     static_cast<int>(st));
+        return;
+    }
+
+    const auto limits = motor_driver_.limits();
+    last_limits_.store(limits);
+
+    // Уже дома
+    if (limits.home) {
+        logger_.info("Homing skipped: already at HOME");
+        return;
+    }
+
+    attachActuatorObservers();
+
+    if (!lifecycle_.startHoming()) {
+        logger_.warn("returnToHome rejected by lifecycle");
+        detachActuatorObservers();
+        return;
+    }
+
+    homing_stop_requested_.store(false);
+
+    strategy_.beginHoming();
+    logger_.info("Homing started");
+}
+
+void CalibrationProcessOrchestrator::stopHoming() {
+}
+
 void CalibrationProcessOrchestrator::stop() {
     requestGracefulStop("stop() requested");
 }
@@ -208,16 +249,16 @@ void CalibrationProcessOrchestrator::requestGracefulStop(const char* reason) {
 
     const auto st = lifecycleState();
 
-    if (st == LifecycleState::Idle)
-        return;
-
-    if (st == LifecycleState::Error) {
-        logger_.warn("Graceful stop while Error: {}", reason);
+    if (strlen(reason) > 0) {
+        logger_.warn("Graceful stop with error: {}", reason);
         detachSourceObservers();
         detachActuatorObservers();
         lifecycle_.markIdle();
         return;
     }
+
+    if (st == LifecycleState::Idle)
+        return;
 
     if (st == LifecycleState::Starting) {
         cancelStartToIdle(reason);
@@ -265,9 +306,6 @@ void CalibrationProcessOrchestrator::abortNow(const char* reason) {
 
     const auto st = lifecycleState();
     if (st == LifecycleState::Idle)
-        return;
-
-    if (st == LifecycleState::Error)
         return;
 
     logger_.error("Calibration abort: {}", reason);
@@ -326,17 +364,10 @@ void CalibrationProcessOrchestrator::onMotorStopped() {
         return;
     }
 
-    if (st == LifecycleState::Error) {
-        // After abort we may want to detach actuator observers once motor is down
-        detachActuatorObservers();
-        logger_.info("Motor stopped after Error");
-        return;
-    }
-
     logger_.warn("onMotorStopped ignored in state {}", static_cast<int>(st));
 }
 
-void CalibrationProcessOrchestrator::onMotorStartFailed(const MotorError&) {
+void CalibrationProcessOrchestrator::onMotorStartFailed(const MotorDriverError&) {
     abortNow("motor start failed callback");
 }
 

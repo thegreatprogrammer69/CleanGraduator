@@ -33,7 +33,7 @@ namespace mvvm {
     protected:
         void onMotorStarted() override;
         void onMotorStopped() override;
-        void onMotorStartFailed(const domain::common::MotorError &) override;
+        void onMotorStartFailed(const domain::common::MotorDriverError &) override;
         void onMotorLimitsStateChanged(domain::common::MotorLimitsState) override;
         void onMotorDirectionChanged(domain::common::MotorDirection) override;
 

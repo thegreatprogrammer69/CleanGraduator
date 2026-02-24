@@ -7,7 +7,7 @@ namespace domain::common {
         Starting,    // подписки есть, ждём мотор started
         Running,     // идёт калибровка
         Stopping,    // ждём мотор stopped (graceful stop)
-        Error        // аварийно завершено (можно сразу сводить в Idle)
+        Homing,
     };
 }
 

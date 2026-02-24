@@ -1,11 +1,10 @@
 #ifndef CLEANGRADUATOR_MOTORERROR_H
 #define CLEANGRADUATOR_MOTORERROR_H
-#include <string>
-
 
 namespace domain::common {
-    struct MotorError {
-        std::string reason;
+    struct MotorDriverError {
+        std::string message;
+        void reset() { message.clear(); }
     };
 }
 

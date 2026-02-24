@@ -1,6 +1,6 @@
 #include "MotorDriverStatusViewModel.h"
 
-#include "domain/core/drivers/motor/MotorError.h"
+#include "domain/core/drivers/motor/MotorDriverError.h"
 #include "../../domain/ports/drivers/motor/IMotorDriver.h"
 
 using namespace domain::common;
@@ -30,7 +30,7 @@ void mvvm::MotorDriverStatusViewModel::onMotorStopped() {
     is_running_.set(false);
 }
 
-void mvvm::MotorDriverStatusViewModel::onMotorStartFailed(const MotorError &error) {
+void mvvm::MotorDriverStatusViewModel::onMotorStartFailed(const MotorDriverError &error) {
     is_running_.set(false);
     error_.set(error.reason);
 }

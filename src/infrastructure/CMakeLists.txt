@@ -74,6 +74,13 @@ elseif(UNIX)
             platform/sleep/sleep_linux.cpp
             video/linux/v4l/V4LCamera.cpp
             video/linux/gstreamer/GStreamerCamera.cpp
+            motor/g540/as_lpt/G540LptMotorDriver.h
+            motor/g540/as_lpt/G540LPTMotorDriver.cpp
+            motor/notifier/MotorDriverNotifier.cpp
+            motor/notifier/MotorDriverNotifier.h
+            utils/thread/ThreadWorker.cpp
+            utils/thread/ThreadWorker.h
+            utils/atomic/AtomicStruct.h
     )
 endif()
 

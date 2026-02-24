@@ -30,7 +30,7 @@ namespace infra::platform {
                   << std::hex << address_ << std::dec << "\n";
     }
 
-    void LptPort::close() {
+    void LptPort::close() noexcept {
         if (!opened_)
             return;
 

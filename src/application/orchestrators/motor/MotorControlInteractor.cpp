@@ -46,7 +46,7 @@ void MotorControlInteractor::onMotorStopped() {
     notifyRunning(false);
 }
 
-void MotorControlInteractor::onMotorStartFailed(const domain::common::MotorError &) {
+void MotorControlInteractor::onMotorStartFailed(const domain::common::MotorDriverError &) {
     notifyRunning(false);
 }
 

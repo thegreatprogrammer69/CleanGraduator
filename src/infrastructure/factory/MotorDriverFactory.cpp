@@ -3,7 +3,7 @@
 #include <stdexcept>
 
 #include "infrastructure/motion/g540/as_lpt/G540LptMotorDriver.h"
-#include "infrastructure/motion/g540/as_lpt/G540LptMotorDriverConfig.h"
+#include "../motor/g540/as_lpt/G540LptMotorDriverConfig.h"
 #include "infrastructure/utils/ini/IniFile.h"
 
 using namespace infra::repo;
