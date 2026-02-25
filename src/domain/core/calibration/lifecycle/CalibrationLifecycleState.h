@@ -3,11 +3,8 @@
 
 namespace domain::common {
     enum class CalibrationLifecycleState {
-        Idle,        // ничего не происходит, подписок нет
-        Starting,    // подписки есть, ждём мотор started
-        Running,     // идёт калибровка
-        Stopping,    // ждём мотор stopped (graceful stop)
-        Homing,
+        Stopped,
+        Started
     };
 }
 

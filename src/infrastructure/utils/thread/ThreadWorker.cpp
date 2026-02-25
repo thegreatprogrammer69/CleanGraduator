@@ -1,7 +1,11 @@
 #include "ThreadWorker.h"
 
 namespace utils::thread {
-    ThreadWorker::ThreadWorker(Task task): m_task(std::move(task)) {}
+
+    ThreadWorker::ThreadWorker(Task task)
+        : m_task(std::move(task))
+    {
+    }
 
     ThreadWorker::~ThreadWorker() {
         stop();
@@ -11,10 +15,13 @@ namespace utils::thread {
         if (m_running.load())
             return;
 
-        m_stopRequested.store(false);
-        m_paused.store(false);
-        m_running.store(true);
+        {
+            std::lock_guard<std::mutex> lock(m_mutex);
+            m_stopRequested = false;
+            m_paused = false;
+        }
 
+        m_running.store(true);
         m_thread = std::thread(&ThreadWorker::threadLoop, this);
     }
 
@@ -24,8 +31,8 @@ namespace utils::thread {
 
         {
             std::lock_guard<std::mutex> lock(m_mutex);
-            m_stopRequested.store(true);
-            m_paused.store(false);
+            m_stopRequested = true;
+            m_paused = false;
         }
 
         m_cv.notify_all();
@@ -40,7 +47,8 @@ namespace utils::thread {
         if (!m_running.load())
             return;
 
-        m_paused.store(true);
+        std::lock_guard<std::mutex> lock(m_mutex);
+        m_paused = true;
     }
 
     void ThreadWorker::resume() {
@@ -49,7 +57,7 @@ namespace utils::thread {
 
         {
             std::lock_guard<std::mutex> lock(m_mutex);
-            m_paused.store(false);
+            m_paused = false;
         }
 
         m_cv.notify_all();
@@ -60,28 +68,26 @@ namespace utils::thread {
     }
 
     void ThreadWorker::threadLoop() {
-        while (true)
+        std::unique_lock<std::mutex> lock(m_mutex);
+
+        while (!m_stopRequested)
         {
-            // Проверка на остановку
-            if (m_stopRequested.load())
+            // Ждём если на паузе
+            m_cv.wait(lock, [this] {
+                return !m_paused || m_stopRequested;
+            });
+
+            if (m_stopRequested)
                 break;
 
-            // Обработка паузы
-            if (m_paused.load())
-            {
-                std::unique_lock<std::mutex> lock(m_mutex);
-                m_cv.wait(lock, [this]
-                {
-                    return !m_paused.load() || m_stopRequested.load();
-                });
+            // Выполняем задачу вне критической секции
+            lock.unlock();
 
-                if (m_stopRequested.load())
-                    break;
-            }
-
-            // Выполнение пользовательской задачи
             if (m_task)
                 m_task();
+
+            lock.lock();
         }
     }
+
 }

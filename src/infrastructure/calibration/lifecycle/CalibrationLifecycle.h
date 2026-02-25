@@ -48,12 +48,12 @@ namespace infra::lifecycle {
     private:
         using State = domain::common::CalibrationLifecycleState;
 
-        State _state{State::Idle};
-        std::vector<domain::ports::ICalibrationLifecycleObserver*> _observers;
+        State state_ { State::Stopped };
+        std::vector<domain::ports::ICalibrationLifecycleObserver*> observers_;
 
-        clock::SessionClock _session_clock;
+        clock::SessionClock session_clock_;
 
-        std::string _last_error;
+        std::string last_error_;
     };
 
 } // namespace infra::lifecycle

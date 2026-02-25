@@ -7,7 +7,6 @@ namespace domain::common {
 }
 
 namespace domain::ports {
-    struct IValveDriver;
     struct IMotorDriver;
     struct ICalibrationRecorder;
 
@@ -22,7 +21,7 @@ namespace domain::ports {
     public:
         virtual ~ICalibrationStrategy() = default;
 
-        virtual void bind(IMotorDriver& motor, IValveDriver& valve, ICalibrationRecorder& recorder) = 0;
+        virtual void bind(IMotorDriver& motor, ICalibrationRecorder& recorder) = 0;
 
         virtual void begin(const common::CalibrationBeginContext&) = 0;
 

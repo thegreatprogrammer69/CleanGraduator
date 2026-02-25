@@ -14,6 +14,8 @@ namespace domain::common {
 
         struct Started {};
         struct Stopped {};
+        struct StoppedAtHome {};
+        struct StoppedAtEnd {};
 
         struct Fault {
             MotorDriverError error;
@@ -34,6 +36,8 @@ namespace domain::common {
         using Data = std::variant<
             Started,
             Stopped,
+            StoppedAtHome,
+            StoppedAtEnd,
             Fault,
             LimitsChanged,
             DirectionChanged,

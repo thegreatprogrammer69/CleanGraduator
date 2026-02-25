@@ -7,7 +7,6 @@
 #include <optional>
 
 #include "domain/ports/drivers/motor/IMotorDriver.h"
-#include "domain/ports/drivers/valve/IValveDriver.h"
 
 #include "stand4logic.h"
 #include "Stand4FrequencyCalculator.h"
@@ -22,7 +21,6 @@ namespace infra::calib::stand4 {
 
         void bind(
             domain::ports::IMotorDriver& motor,
-            domain::ports::IValveDriver& valve,
             domain::ports::ICalibrationRecorder& recorder) override;
 
         void begin(const domain::common::CalibrationBeginContext& ctx) override;
@@ -50,7 +48,6 @@ namespace infra::calib::stand4 {
 
     private:
         domain::ports::IMotorDriver* motor_{nullptr};
-        domain::ports::IValveDriver* valve_{nullptr};
         domain::ports::ICalibrationRecorder* recorder_{nullptr};
 
         Stand4FrequencyCalculator freq_calc_;

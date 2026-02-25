@@ -24,6 +24,12 @@ namespace domain::common {
             );
         }
 
+        MotorFrequency withMaxHz(const float max_hz) const {
+            float hz = hz_;
+            if (hz > max_hz) hz = max_hz;
+            return MotorFrequency(hz);
+        }
+
     private:
         float hz_;
     };

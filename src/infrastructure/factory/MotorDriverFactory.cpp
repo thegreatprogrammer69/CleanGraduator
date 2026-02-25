@@ -1,13 +1,12 @@
 #include "MotorDriverFactory.h"
-
 #include <stdexcept>
 
-#include "infrastructure/motion/g540/as_lpt/G540LptMotorDriver.h"
-#include "../motor/g540/as_lpt/G540LptMotorDriverConfig.h"
+#include "infrastructure/motor/g540/as_lpt/G540LptMotorDriver.h"
+#include "infrastructure/motor/g540/as_lpt/G540LptMotorDriverConfig.h"
 #include "infrastructure/utils/ini/IniFile.h"
 
 using namespace infra::repo;
-using namespace infra::motors;
+using namespace infra::motor;
 
 namespace {
 
@@ -42,7 +41,7 @@ std::unique_ptr<domain::ports::IMotorDriver> MotorDriverFactory::load() {
     const std::string implementation = section.getString("implementation", "");
 
     if (implementation == "g540lpt") {
-        G540LptMotorDriverConfig config;
+        motors::G540LptMotorDriverConfig config;
 
         // Пример чтения параметров (добавь реальные поля конфига)
         config.bit_begin_limit_switch = section.getInt("bit_begin_limit_switch", config.bit_begin_limit_switch);
@@ -55,13 +54,8 @@ std::unique_ptr<domain::ports::IMotorDriver> MotorDriverFactory::load() {
         config.min_freq_hz = section.getInt("min_freq_hz", config.min_freq_hz);
 
         auto motor_driver = std::make_unique<G540LptMotorDriver>(ports_, config);
-        valve_driver_ = motor_driver.get();
         return motor_driver;
     }
 
     throw std::runtime_error("unknown Motor Driver implementation: " + implementation);
-}
-
-domain::ports::IValveDriver* MotorDriverFactory::load_valve_driver() {
-    return valve_driver_;
 }

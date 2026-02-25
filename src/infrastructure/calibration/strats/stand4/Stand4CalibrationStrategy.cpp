@@ -18,10 +18,9 @@ Stand4CalibrationStrategy::Stand4CalibrationStrategy()
 {
 }
 
-void Stand4CalibrationStrategy::bind(IMotorDriver& motor, IValveDriver& valve, ICalibrationRecorder& recorder)
+void Stand4CalibrationStrategy::bind(IMotorDriver& motor, ICalibrationRecorder& recorder)
 {
     motor_ = &motor;
-    valve_ = &valve;
     recorder_ = &recorder;
 }
 
@@ -39,12 +38,12 @@ void Stand4CalibrationStrategy::begin(const CalibrationBeginContext& ctx)
 
     freq_calc_.reset();
 
-    valve_->closeFlaps();
+    motor_->setFlapsState(MotorFlapsState::FlapsClosed);
 }
 
 void Stand4CalibrationStrategy::end()
 {
-    valve_->closeFlaps();
+    motor_->setFlapsState(MotorFlapsState::FlapsClosed);
     motor_->stop();
     state_ = State::Idle;
 }
@@ -94,15 +93,15 @@ void Stand4CalibrationStrategy::updatePreload(const CalibrationFeedContext& ctx)
     const float p_cur = ctx.pressure;
 
     if (p_cur < p_preload_) {
-        valve_->openInputFlap();
+        motor_->setFlapsState(MotorFlapsState::IntakeOpened);
         return;
     }
 
-    valve_->closeFlaps();
+    motor_->setFlapsState(MotorFlapsState::FlapsClosed);
     state_ = State::Forward;
 
     motor_->setDirection(MotorDirection::Forward);
-    motor_->setFrequency(0);
+    motor_->setFrequency(MotorFrequency(0));
     motor_->start();
 }
 
@@ -116,7 +115,7 @@ void Stand4CalibrationStrategy::updateForward(const CalibrationFeedContext& ctx)
             : 0.0;
 
     if (p_cur >= p_target_) {
-        motor_->setFrequency(0);
+        motor_->setFrequency(MotorFrequency(0));
         motor_->setDirection(MotorDirection::Backward);
         state_ = State::Backward;
         return;
@@ -128,18 +127,19 @@ void Stand4CalibrationStrategy::updateForward(const CalibrationFeedContext& ctx)
         dp_cur,
         dp_nominal_);
 
-    motor_->setFrequency(freq);
+    motor_->setFrequency(MotorFrequency(freq));
 }
 
 void Stand4CalibrationStrategy::updateBackward(const CalibrationFeedContext& ctx)
 {
     if (ctx.limits.home) {
         state_ = State::Finished;
+        motor_->setFlapsState(MotorFlapsState::ExhaustOpened);
         motor_->stop();
         return;
     }
 
     const int f_max = motor_->frequencyLimits().maxHz;
 
-    motor_->setFrequency(f_max);
+    motor_->setFrequency(MotorFrequency(f_max));
 }

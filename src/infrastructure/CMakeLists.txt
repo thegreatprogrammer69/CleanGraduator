@@ -5,7 +5,6 @@ set(SOURCES
         catalogs/FileGaugePrecisionCatalog.cpp
         catalogs/FilePressureUnitCatalog.cpp
 
-        utils/ini/IniFile.cpp
 
         calculation/calibration/LinearCalibrationCalculator.cpp
         calculation/angle/CastAnglemeter.cpp
@@ -16,8 +15,6 @@ set(SOURCES
         pressure/PressureSourceNotifier.cpp
         pressure/dm5002/DM5002PressureSensor.cpp
         pressure/fake/FakePressureSource.cpp
-
-        motion/g540/as_lpt/G540LptMotorDriver.cpp
 
         logging/ConsoleLogger.cpp
         logging/FileLogger.cpp
@@ -39,12 +36,16 @@ set(SOURCES
         factory/PressureSourceFactory.cpp
         factory/MotorDriverFactory.cpp
 
-        motor/g540/as_lpt/G540LPTMotorDriver.cpp
-        motor/notifier/MotorDriverNotifier.cpp
-
         calibration/lifecycle/CalibrationLifecycle.cpp
         calibration/strats/stand4/Stand4FrequencyCalculator.cpp
         calibration/strats/stand4/Stand4CalibrationStrategy.cpp
+
+        motor/g540/as_lpt/G540LptMotorDriver.cpp
+        motor/notifier/MotorDriverNotifier.cpp
+
+        utils/thread/ThreadWorker.cpp
+        utils/ini/IniFile.cpp
+        utils/watchdog/SoftwareWatchdog.cpp
 
 )
 
@@ -75,13 +76,6 @@ elseif(UNIX)
             platform/sleep/sleep_linux.cpp
             video/linux/v4l/V4LCamera.cpp
             video/linux/gstreamer/GStreamerCamera.cpp
-            motor/g540/as_lpt/G540LptMotorDriver.h
-            motor/g540/as_lpt/G540LPTMotorDriver.cpp
-            motor/notifier/MotorDriverNotifier.cpp
-            motor/notifier/MotorDriverNotifier.h
-            utils/thread/ThreadWorker.cpp
-            utils/thread/ThreadWorker.h
-            utils/atomic/AtomicStruct.h
     )
 endif()
 

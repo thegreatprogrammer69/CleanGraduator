@@ -2,12 +2,13 @@
 #define CLEANGRADUATOR_THREADWORKER_H
 
 #include <thread>
-#include <atomic>
 #include <condition_variable>
 #include <functional>
 #include <mutex>
+#include <atomic>
 
 namespace utils::thread {
+
     class ThreadWorker
     {
     public:
@@ -16,16 +17,9 @@ namespace utils::thread {
         explicit ThreadWorker(Task task);
         ~ThreadWorker();
 
-        // Запуск потока
         void start();
-
-        // Корректная остановка
         void stop();
-
-        // Пауза
         void pause();
-
-        // Продолжить
         void resume();
 
         bool isRunning() const noexcept;
@@ -38,12 +32,15 @@ namespace utils::thread {
         std::thread m_thread;
 
         std::atomic<bool> m_running{false};
-        std::atomic<bool> m_stopRequested{false};
-        std::atomic<bool> m_paused{false};
 
-        std::condition_variable m_cv;
+        // Защищены m_mutex
+        bool m_stopRequested{false};
+        bool m_paused{false};
+
         std::mutex m_mutex;
+        std::condition_variable m_cv;
     };
+
 }
 
-#endif //CLEANGRADUATOR_THREADWORKER_H
+#endif

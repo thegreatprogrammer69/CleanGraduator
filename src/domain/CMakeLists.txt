@@ -7,6 +7,11 @@ add_library(domain STATIC
         core/drivers/motor/MotorFlapsState.h
         "core/drivers/motor/MotorDriverState.h"
         core/drivers/motor/MotorFrequency.h
+        core/angle/AngleSourceEvent.h
+        ports/angle/IAngleSink.h
+        core/video/VideoSourceEvent.h
+        ports/video/IVideoSink.h
+        ports/pressure/IPressureSink.h
 )
 
 

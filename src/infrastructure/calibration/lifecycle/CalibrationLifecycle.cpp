@@ -11,12 +11,12 @@ CalibrationLifecycle::CalibrationLifecycle() = default;
 domain::common::CalibrationLifecycleState
 CalibrationLifecycle::state() const
 {
-    return _state;
+    return state_;
 }
 
 std::string CalibrationLifecycle::lastError() const
 {
-    return _last_error;
+    return last_error_;
 }
 
 // --------------------------------------------------
@@ -25,7 +25,7 @@ std::string CalibrationLifecycle::lastError() const
 
 domain::ports::IClock& CalibrationLifecycle::sessionClock()
 {
-    return _session_clock;
+    return session_clock_;
 }
 
 // --------------------------------------------------
@@ -34,12 +34,12 @@ domain::ports::IClock& CalibrationLifecycle::sessionClock()
 
 bool CalibrationLifecycle::start()
 {
-    if (_state != State::Idle)
+    if (state_ != State::Stopped)
         return false;
 
-    _last_error.clear();
+    last_error_.clear();
 
-    _state = State::Starting;
+    state_ = State::Starting;
     notify();
 
     return true;
@@ -47,22 +47,22 @@ bool CalibrationLifecycle::start()
 
 void CalibrationLifecycle::markRunning()
 {
-    if (_state != State::Starting)
+    if (state_ != State::Starting)
         return;
 
-    _state = State::Running;
+    state_ = State::Running;
 
-    _session_clock.start();
+    session_clock_.start();
 
     notify();
 }
 
 bool CalibrationLifecycle::stop()
 {
-    if (_state != State::Running)
+    if (state_ != State::Running)
         return false;
 
-    _state = State::Stopping;
+    state_ = State::Stopping;
     notify();
 
     return true;
@@ -70,12 +70,12 @@ bool CalibrationLifecycle::stop()
 
 void CalibrationLifecycle::markIdle()
 {
-    if (_state != State::Stopping)
+    if (state_ != State::Stopping)
         return;
 
-    _state = State::Idle;
+    state_ = State::Idle;
 
-    _session_clock.stop();
+    session_clock_.stop();
 
     notify();
 }
@@ -83,28 +83,28 @@ void CalibrationLifecycle::markIdle()
 void CalibrationLifecycle::markError(const std::string& err)
 {
     // Error allowed only from active states
-    if (_state == State::Idle || _state == State::Error)
+    if (state_ == State::Idle || state_ == State::Error)
         return;
 
-    _last_error = err;
+    last_error_ = err;
 
-    _state = State::Error;
+    state_ = State::Error;
 
-    _session_clock.stop();
+    session_clock_.stop();
 
     notify();
 }
 
 void CalibrationLifecycle::resetToIdle()
 {
-    if (_state != State::Error)
+    if (state_ != State::Error)
         return;
 
-    _last_error.clear();
+    last_error_.clear();
 
-    _state = State::Idle;
+    state_ = State::Idle;
 
-    _session_clock.stop();
+    session_clock_.stop();
 
     notify();
 }
@@ -116,22 +116,22 @@ void CalibrationLifecycle::resetToIdle()
 void CalibrationLifecycle::addObserver(
     domain::ports::ICalibrationLifecycleObserver& obs)
 {
-    if (std::find(_observers.begin(), _observers.end(), &obs) == _observers.end())
-        _observers.push_back(&obs);
+    if (std::find(observers_.begin(), observers_.end(), &obs) == observers_.end())
+        observers_.push_back(&obs);
 }
 
 void CalibrationLifecycle::removeObserver(
     domain::ports::ICalibrationLifecycleObserver& obs)
 {
-    _observers.erase(
-        std::remove(_observers.begin(), _observers.end(), &obs),
-        _observers.end());
+    observers_.erase(
+        std::remove(observers_.begin(), observers_.end(), &obs),
+        observers_.end());
 }
 
 void CalibrationLifecycle::notify()
 {
-    for (auto* obs : _observers)
-        obs->onCalibrationLifecycleStateChanged(_state, _last_error);
+    for (auto* obs : observers_)
+        obs->onCalibrationLifecycleStateChanged(state_, last_error_);
 }
 
 } // namespace infra::lifecycle

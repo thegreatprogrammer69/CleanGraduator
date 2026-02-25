@@ -3,8 +3,8 @@
 
 namespace domain::common {
     struct MotorLimitsState {
-        bool home;
-        bool end;
+        bool home{false};
+        bool end{false};
         bool operator==(const MotorLimitsState& other) const {
             return home == other.home && end == other.end;
         }

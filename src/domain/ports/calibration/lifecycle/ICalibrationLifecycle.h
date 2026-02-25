@@ -9,17 +9,13 @@ namespace domain::ports {
     struct ICalibrationLifecycle {
         virtual ~ICalibrationLifecycle() = default;
 
-        virtual bool start() = 0;        // Idle → Starting
-        virtual void markRunning() = 0;  // Starting → Running
+        virtual bool start() = 0;     // Stopped → Running
+        virtual void stop() = 0;      // Running → Stopped
 
-        virtual bool stop() = 0;         // Running → Stopping
-        virtual void markIdle() = 0;     // Stopping → Idle
-
-        virtual void markError(const std::string& err) = 0;
-
-        virtual std::string lastError() const = 0;
+        virtual void fail(std::string error) = 0;
 
         virtual common::CalibrationLifecycleState state() const = 0;
+        virtual std::string lastError() const = 0;
 
         virtual void addObserver(ICalibrationLifecycleObserver&) = 0;
         virtual void removeObserver(ICalibrationLifecycleObserver&) = 0;

@@ -14,10 +14,10 @@
 #include "infrastructure/utils/watchdog/SoftwareWatchdog.h"
 
 namespace infra::motor {
-    class G540LPTMotorDriver final : public domain::ports::IMotorDriver {
+    class G540LptMotorDriver final : public domain::ports::IMotorDriver {
     public:
-        G540LPTMotorDriver(MotorDriverPorts, const motors::G540LptMotorDriverConfig &);
-        ~G540LPTMotorDriver() override;
+        G540LptMotorDriver(MotorDriverPorts, const motors::G540LptMotorDriverConfig &);
+        ~G540LptMotorDriver() override;
 
         bool initialize() override;
         bool start() override;
@@ -47,8 +47,11 @@ namespace infra::motor {
     private:
         void loopOnce();
         void stepOnce();
-        bool pollSafety();
+        bool pollSafety(const domain::common::MotorLimitsState &current_limits);
         std::uint8_t readState() const;
+
+        void handleLimitEvents(const domain::common::MotorLimitsState &current);
+
         void resetError();
 
     private:
@@ -64,6 +67,7 @@ namespace infra::motor {
         std::atomic<domain::common::MotorDirection> direction_;
         utils::atomic::AtomicStruct<domain::common::MotorDriverError> error_;
         utils::atomic::AtomicStruct<domain::common::MotorFrequency> frequency_;
+        domain::common::MotorLimitsState last_limits_state_{};
 
         platform::LptPort lpt_port_;
     };
