@@ -6,7 +6,6 @@ namespace domain::common {
         Uninitialized,
         Running,
         Stopped,
-        Fault
     };
 }
 

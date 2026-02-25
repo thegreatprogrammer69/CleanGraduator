@@ -10,6 +10,8 @@ namespace domain::common {
 
         float hz() const noexcept { return hz_; }
 
+        bool isValid() const noexcept { return hz_ > 0.99f; }
+
         std::chrono::steady_clock::duration halfPeriod() const noexcept {
             using namespace std::chrono;
 

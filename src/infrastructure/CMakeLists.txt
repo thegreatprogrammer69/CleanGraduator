@@ -39,7 +39,8 @@ set(SOURCES
         factory/PressureSourceFactory.cpp
         factory/MotorDriverFactory.cpp
 
-        motion/g540/as_lpt/G540LptMotorDriver.cpp
+        motor/g540/as_lpt/G540LPTMotorDriver.cpp
+        motor/notifier/MotorDriverNotifier.cpp
 
         calibration/lifecycle/CalibrationLifecycle.cpp
         calibration/strats/stand4/Stand4FrequencyCalculator.cpp

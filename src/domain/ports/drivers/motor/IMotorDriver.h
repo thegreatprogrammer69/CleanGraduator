@@ -25,7 +25,6 @@ namespace domain::ports {
 
         // -- Safety API
         virtual void emergencyStop() = 0;
-        virtual bool resetError() = 0;
         virtual common::MotorDriverError error() const = 0;
         virtual void enableWatchdog(std::chrono::milliseconds timeout) = 0;
         virtual void disableWatchdog() = 0;

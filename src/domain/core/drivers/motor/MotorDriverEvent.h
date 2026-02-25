@@ -11,6 +11,7 @@ namespace domain::common {
 
     struct MotorDriverEvent {
 
+
         struct Started {};
         struct Stopped {};
 
@@ -40,6 +41,8 @@ namespace domain::common {
         >;
 
         Data data;
+
+        MotorDriverEvent(Data data) : data(std::move(data)) {}
     };
 
 }

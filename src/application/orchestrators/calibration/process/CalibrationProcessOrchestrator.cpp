@@ -11,7 +11,6 @@
 #include "domain/ports/calibration/lifecycle/ICalibrationLifecycle.h"
 #include "domain/ports/calibration/strategy/ICalibrationStrategy.h"
 #include "domain/ports/drivers/motor/IMotorDriver.h"
-#include "domain/ports/drivers/valve/IValveDriver.h"
 #include "domain/ports/pressure/IPressureSource.h"
 
 using namespace application::orchestrators;

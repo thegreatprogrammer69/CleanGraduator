@@ -14,7 +14,6 @@ namespace utils::thread {
         using Task = std::function<void()>;
 
         explicit ThreadWorker(Task task);
-
         ~ThreadWorker();
 
         // Запуск потока

@@ -11,11 +11,12 @@
 #include "infrastructure/platform/lpt/LptPort.h"
 #include "infrastructure/utils/thread/ThreadWorker.h"
 #include "infrastructure/utils/atomic/AtomicStruct.h"
+#include "infrastructure/utils/watchdog/SoftwareWatchdog.h"
 
 namespace infra::motor {
     class G540LPTMotorDriver final : public domain::ports::IMotorDriver {
     public:
-        G540LPTMotorDriver(MotorDriverPorts, motors::G540LptMotorDriverConfig);
+        G540LPTMotorDriver(MotorDriverPorts, const motors::G540LptMotorDriverConfig &);
         ~G540LPTMotorDriver() override;
 
         bool initialize() override;
@@ -24,7 +25,6 @@ namespace infra::motor {
         domain::common::MotorDriverState state() const override;
 
         void emergencyStop() override;
-        bool resetError() override;
         domain::common::MotorDriverError error() const override;
         void enableWatchdog(std::chrono::milliseconds timeout) override;
         void disableWatchdog() override;
@@ -45,14 +45,23 @@ namespace infra::motor {
         void removeObserver(domain::ports::IMotorDriverObserver &) override;
 
     private:
+        void loopOnce();
+        void stepOnce();
+        bool pollSafety();
+        std::uint8_t readState() const;
+        void resetError();
+
+    private:
         fmt::Logger logger_;
         motors::G540LptMotorDriverConfig config_;
 
         utils::thread::ThreadWorker thread_worker_;
+        utils::watchdog::SoftwareWatchdog software_watchdog_;
         MotorDriverNotifier notifier_;
 
-
         std::atomic<domain::common::MotorDriverState> state_;
+        mutable std::atomic<domain::common::MotorFlapsState> flaps_state_;
+        std::atomic<domain::common::MotorDirection> direction_;
         utils::atomic::AtomicStruct<domain::common::MotorDriverError> error_;
         utils::atomic::AtomicStruct<domain::common::MotorFrequency> frequency_;
 
