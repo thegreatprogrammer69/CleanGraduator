@@ -2,14 +2,17 @@
 #define CLEANGRADUATOR_PRESSUREPOINTSTRACKER_H
 #include <vector>
 
-#include "IPressurePointsTrackerObserver.h"
 #include "domain/core/drivers/motor/MotorDirection.h"
+
+namespace domain::ports {
+    struct IPressurePointsTrackerObserver;
+}
 
 namespace domain::common {
 
     class PressurePointsTracker {
     public:
-        explicit PressurePointsTracker(IPressurePointsTrackerObserver& observer);
+        explicit PressurePointsTracker(ports::IPressurePointsTrackerObserver& observer);
         ~PressurePointsTracker();
 
         void beginTracking(const std::vector<float>& points, MotorDirection direction);
@@ -26,7 +29,7 @@ namespace domain::common {
         MotorDirection direction_{};
 
         std::vector<float> points_;
-        IPressurePointsTrackerObserver& observer_;
+        ports::IPressurePointsTrackerObserver& observer_;
 
         std::size_t current_index_ = 0;
         bool inside_ = false;

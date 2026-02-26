@@ -110,17 +110,11 @@ std::ostream& operator<<(std::ostream& os, const VideoFrame& f) {
 
 std::ostream& operator<<(std::ostream& os, const CalibrationLifecycleState& f) {
     switch (f) {
-        case CalibrationLifecycleState::Idle:
-            os << "Idle";
+        case CalibrationLifecycleState::Started:
+            os << "Started";
             break;
-        case CalibrationLifecycleState::Starting:
-            os << "Starting";
-            break;
-        case CalibrationLifecycleState::Running:
-            os << "Running";
-            break;
-        case CalibrationLifecycleState::Stopping:
-            os << "Stopping";
+        case CalibrationLifecycleState::Stopped:
+            os << "Stopped";
             break;
     }
     return os;

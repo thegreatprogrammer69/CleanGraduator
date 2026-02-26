@@ -7,7 +7,7 @@
 #include "CalibrationProcessOrchestratorInput.h"
 #include "CalibrationProcessOrchestratorPorts.h"
 
-#include "domain/core/calibration/tracking/IPressurePointsTrackerObserver.h"
+#include "../../../../domain/ports/calibration/tracking/IPressurePointsTrackerObserver.h"
 #include "domain/core/calibration/tracking/PressurePointsTracker.h"
 
 #include "domain/fmt/Logger.h"

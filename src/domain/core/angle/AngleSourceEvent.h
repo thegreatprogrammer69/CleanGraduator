@@ -5,17 +5,20 @@
 
 namespace domain::common {
 
-    struct AngleSourceStarted {};
-    struct AngleSourceStopped {};
-    struct AngleSourceFailed {
-        AngleSourceError error;
-    };
+    struct AngleSourceEvent {
 
-    using AngleSourceEvent = std::variant<
-        AngleSourceStarted,
-        AngleSourceStopped,
-        AngleSourceFailed
-    >;
+        struct Started {};
+        struct Stopped {};
+        struct Failed { AngleSourceError error; };
+
+        using Data = std::variant<
+            Started,
+            Stopped,
+            Failed
+        >;
+
+        Data data;
+    };
 }
 
 #endif //CLEANGRADUATOR_ANGLESOURCEEVENT_H

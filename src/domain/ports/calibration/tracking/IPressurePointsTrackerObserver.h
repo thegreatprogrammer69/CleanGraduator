@@ -2,12 +2,17 @@
 #define CLEANGRADUATOR_IPRESSUREPOINTSTRACKEROBSERVER_H
 
 namespace domain::common {
-    struct IPressurePointsTrackerObserver {
-        virtual ~IPressurePointsTrackerObserver() = default;
+    struct PressurePointsTrackerEvent;
+}
 
-        virtual void onPointEntered(int index) = 0;
-        virtual void onPointExited(int index) = 0;
+namespace domain::ports {
+
+    struct IPressurePointsTrackerObserver {
+        virtual ~IPressurePointsTrackerObserver() noexcept = default;
+
+        virtual void onPressurePointsTrackerEvent(const common::PressurePointsTrackerEvent&) = 0;
     };
+
 }
 
 #endif //CLEANGRADUATOR_IPRESSUREPOINTSTRACKEROBSERVER_H

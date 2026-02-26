@@ -5,18 +5,20 @@
 
 namespace domain::common {
 
-    struct VideoSourceStarted {};
-    struct VideoSourceStopped {};
+    struct VideoSourceEvent {
 
-    struct VideoSourceOpenFailed {
-        VideoSourceError error;
+        struct Opened {};
+        struct OpenFailed { VideoSourceError error; };
+        struct Closed {};
+
+        using Data = std::variant<
+            Opened,
+            OpenFailed,
+            Closed
+        >;
+
+        Data data;
     };
-
-    using VideoSourceEvent = std::variant<
-        VideoSourceStarted,
-        VideoSourceStopped,
-        VideoSourceOpenFailed
-    >;
 
 }
 

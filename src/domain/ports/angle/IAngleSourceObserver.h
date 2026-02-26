@@ -1,8 +1,8 @@
 #ifndef CLEANGRADUATOR_IANGLESINK_H
 #define CLEANGRADUATOR_IANGLESINK_H
-#include "domain/core/angle/AngleSourceEvent.h"
 
 namespace domain::common {
+    struct AngleSourceEvent;
     struct AngleSourcePacket;
 }
 

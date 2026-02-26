@@ -2,7 +2,11 @@
 
 #include <cmath>
 
+#include "PressurePointsTrackerEvent.h"
+#include "domain/ports/calibration/tracking/IPressurePointsTrackerObserver.h"
+
 using namespace domain::common;
+using namespace domain::ports;
 
 PressurePointsTracker::PressurePointsTracker(IPressurePointsTrackerObserver& observer)
     : observer_(observer)
@@ -52,42 +56,50 @@ void PressurePointsTracker::endTracking() {
 
 void PressurePointsTracker::update(float pressure)
 {
-    if (!is_tracking_) return;
-    if (current_index_ >= points_.size()) return;
+    if (!is_tracking_ || current_index_ >= points_.size())
+        return;
 
     const float target = points_[current_index_];
+    const bool forward = (direction_ == MotorDirection::Forward);
+
+    const auto reached = [&](float p, float t) {
+        return forward ? (p >= t) : (p <= t);
+    };
+
+    const auto passed = [&](float p, float t) {
+        return forward ? (p > t) : (p < t);
+    };
 
     if (!inside_) {
-        if (direction_ == MotorDirection::Forward) {
-            if (pressure >= target) {
-                inside_ = true;
-                observer_.onPointEntered(current_index_);
-            }
-        } else {
-            if (pressure <= target) {
-                inside_ = true;
-                observer_.onPointEntered(current_index_);
-            }
-        }
-    }
-    else {
-        if (direction_ == MotorDirection::Forward) {
-            if (pressure > target) {
-                observer_.onPointExited(current_index_);
-                inside_ = false;
-                ++current_index_;
-            }
-        } else {
-            if (pressure < target) {
-                observer_.onPointExited(current_index_);
-                inside_ = false;
-                ++current_index_;
-            }
-        }
+        if (reached(pressure, target)) {
+            inside_ = true;
 
-        if (current_index_ >= points_.size()) {
-            is_tracking_ = false;
+            observer_.onPressurePointsTrackerEvent(
+                PressurePointsTrackerEvent{
+                    PressurePointsTrackerEvent::PointEntered{
+                        static_cast<int>(current_index_)
+                    }
+                }
+            );
         }
+        return;
+    }
+
+    if (passed(pressure, target)) {
+
+        observer_.onPressurePointsTrackerEvent(
+            PressurePointsTrackerEvent{
+                PressurePointsTrackerEvent::PointExited{
+                    static_cast<int>(current_index_)
+                }
+            }
+        );
+
+        inside_ = false;
+        ++current_index_;
+
+        if (current_index_ >= points_.size())
+            is_tracking_ = false;
     }
 }
 
