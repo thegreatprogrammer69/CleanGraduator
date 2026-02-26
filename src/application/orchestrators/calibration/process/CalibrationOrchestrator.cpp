@@ -1,4 +1,4 @@
-#include "CalibrationProcessOrchestrator.h"
+#include "CalibrationOrchestrator.h"
 
 #include <vector>
 
@@ -16,7 +16,7 @@
 using namespace application::orchestrators;
 using namespace domain::common;
 
-CalibrationProcessOrchestrator::CalibrationProcessOrchestrator(CalibrationProcessOrchestratorPorts ports)
+CalibrationOrchestrator::CalibrationOrchestrator(CalibrationOrchestratorPorts ports)
     : pressure_points_tracker_(*this)
     , logger_(ports.logger)
     , pressure_source_(ports.pressure_source)
@@ -36,23 +36,23 @@ CalibrationProcessOrchestrator::CalibrationProcessOrchestrator(CalibrationProces
     last_direction_.store(motor_driver_.direction());
 }
 
-CalibrationProcessOrchestrator::~CalibrationProcessOrchestrator() {
+CalibrationOrchestrator::~CalibrationOrchestrator() {
     // deterministic shutdown: emergency path (idempotent)
     abort();
 }
 
-CalibrationProcessOrchestrator::LifecycleState CalibrationProcessOrchestrator::lifecycleState() const {
+CalibrationOrchestrator::LifecycleState CalibrationOrchestrator::lifecycleState() const {
     return lifecycle_.state();
 }
 
-bool CalibrationProcessOrchestrator::isRunning() const {
+bool CalibrationOrchestrator::isRunning() const {
     return lifecycleState() == LifecycleState::Running;
 }
 
 // -----------------------------------------------------
 // Observers attach/detach (idempotent, split groups)
 // -----------------------------------------------------
-void CalibrationProcessOrchestrator::attachSourceObservers() {
+void CalibrationOrchestrator::attachSourceObservers() {
     if (sources_attached_.exchange(true))
         return;
 
@@ -67,7 +67,7 @@ void CalibrationProcessOrchestrator::attachSourceObservers() {
     logger_.info("Source observers attached");
 }
 
-void CalibrationProcessOrchestrator::detachSourceObservers() {
+void CalibrationOrchestrator::detachSourceObservers() {
     if (!sources_attached_.exchange(false))
         return;
 
@@ -82,7 +82,7 @@ void CalibrationProcessOrchestrator::detachSourceObservers() {
     logger_.info("Source observers detached");
 }
 
-void CalibrationProcessOrchestrator::attachActuatorObservers() {
+void CalibrationOrchestrator::attachActuatorObservers() {
     if (actuators_attached_.exchange(true))
         return;
 
@@ -92,7 +92,7 @@ void CalibrationProcessOrchestrator::attachActuatorObservers() {
     logger_.info("Actuator observers attached");
 }
 
-void CalibrationProcessOrchestrator::detachActuatorObservers() {
+void CalibrationOrchestrator::detachActuatorObservers() {
     if (!actuators_attached_.exchange(false))
         return;
 
@@ -105,7 +105,7 @@ void CalibrationProcessOrchestrator::detachActuatorObservers() {
 // --------------------------
 // Session begin/end (idempotent)
 // --------------------------
-void CalibrationProcessOrchestrator::beginSession() {
+void CalibrationOrchestrator::beginSession() {
     if (session_begun_.exchange(true))
         return;
 
@@ -133,7 +133,7 @@ void CalibrationProcessOrchestrator::beginSession() {
     logger_.info("Calibration entered Running");
 }
 
-void CalibrationProcessOrchestrator::endSessionIfBegun() {
+void CalibrationOrchestrator::endSessionIfBegun() {
     if (session_begun_.exchange(false)) {
         // Strategy must put hardware into safe state (including motor stop/abort) by contract.
         strategy_.end();
@@ -147,7 +147,7 @@ void CalibrationProcessOrchestrator::endSessionIfBegun() {
 // ----------------------------------------
 // Public API: start/stop/abort
 // ----------------------------------------
-void CalibrationProcessOrchestrator::start(CalibrationProcessOrchestratorInput input) {
+void CalibrationOrchestrator::start(CalibrationOrchestratorInput input) {
 
     const auto st = lifecycleState();
 
@@ -197,7 +197,7 @@ void CalibrationProcessOrchestrator::start(CalibrationProcessOrchestratorInput i
     beginSession();
 }
 
-void CalibrationProcessOrchestrator::startHoming() {
+void CalibrationOrchestrator::startHoming() {
     const auto st = lifecycleState();
 
     if (st != LifecycleState::Idle)
@@ -230,21 +230,21 @@ void CalibrationProcessOrchestrator::startHoming() {
     logger_.info("Homing started");
 }
 
-void CalibrationProcessOrchestrator::stopHoming() {
+void CalibrationOrchestrator::stopHoming() {
 }
 
-void CalibrationProcessOrchestrator::stop() {
+void CalibrationOrchestrator::stop() {
     requestGracefulStop("stop() requested");
 }
 
-void CalibrationProcessOrchestrator::abort() {
+void CalibrationOrchestrator::abort() {
     abortNow("abort() requested");
 }
 
 // ----------------------------------------
 // Internal stop/abort paths
 // ----------------------------------------
-void CalibrationProcessOrchestrator::requestGracefulStop(const char* reason) {
+void CalibrationOrchestrator::requestGracefulStop(const char* reason) {
 
     const auto st = lifecycleState();
 
@@ -290,7 +290,7 @@ void CalibrationProcessOrchestrator::requestGracefulStop(const char* reason) {
     }
 }
 
-void CalibrationProcessOrchestrator::cancelStartToIdle(const char* reason) {
+void CalibrationOrchestrator::cancelStartToIdle(const char* reason) {
     logger_.info("Cancel start -> Idle: {}", reason);
 
     detachSourceObservers();
@@ -301,7 +301,7 @@ void CalibrationProcessOrchestrator::cancelStartToIdle(const char* reason) {
     lifecycle_.markIdle();
 }
 
-void CalibrationProcessOrchestrator::abortNow(const char* reason) {
+void CalibrationOrchestrator::abortNow(const char* reason) {
 
     const auto st = lifecycleState();
     if (st == LifecycleState::Idle)
@@ -328,12 +328,12 @@ void CalibrationProcessOrchestrator::abortNow(const char* reason) {
 // ----------------------------------------
 // Pressure points tracker observer
 // ----------------------------------------
-void CalibrationProcessOrchestrator::onPointEntered(int index) {
+void CalibrationOrchestrator::onPointEntered(int index) {
     current_point_index_.store(index);
     logger_.info("Entered pressure point {}", index);
 }
 
-void CalibrationProcessOrchestrator::onPointExited(int index) {
+void CalibrationOrchestrator::onPointExited(int index) {
     const auto cur = current_point_index_.load();
     if (cur == index) {
         current_point_index_.store(-1);
@@ -344,14 +344,14 @@ void CalibrationProcessOrchestrator::onPointExited(int index) {
 // ----------------------------------------
 // Motor callbacks (observe-only)
 // ----------------------------------------
-void CalibrationProcessOrchestrator::onMotorStarted() {
+void CalibrationOrchestrator::onMotorStarted() {
     motor_running_.store(true);
 
     const auto st = lifecycleState();
     logger_.info("Motor started (lifecycle={})", static_cast<int>(st));
 }
 
-void CalibrationProcessOrchestrator::onMotorStopped() {
+void CalibrationOrchestrator::onMotorStopped() {
     motor_running_.store(false);
 
     const auto st = lifecycleState();
@@ -366,41 +366,41 @@ void CalibrationProcessOrchestrator::onMotorStopped() {
     logger_.warn("onMotorStopped ignored in state {}", static_cast<int>(st));
 }
 
-void CalibrationProcessOrchestrator::onMotorStartFailed(const MotorDriverError&) {
+void CalibrationOrchestrator::onMotorStartFailed(const MotorDriverError&) {
     abortNow("motor start failed callback");
 }
 
-void CalibrationProcessOrchestrator::onMotorLimitsStateChanged(MotorLimitsState s) {
+void CalibrationOrchestrator::onMotorLimitsStateChanged(MotorLimitsState s) {
     last_limits_.store(s);
 }
 
-void CalibrationProcessOrchestrator::onMotorDirectionChanged(MotorDirection d) {
+void CalibrationOrchestrator::onMotorDirectionChanged(MotorDirection d) {
     last_direction_.store(d);
 }
 
 // ----------------------------------------
 // Valve callbacks (observe-only safety)
 // ----------------------------------------
-void CalibrationProcessOrchestrator::onInputFlapOpened() {
+void CalibrationOrchestrator::onInputFlapOpened() {
     if (motor_running_.load()) {
         abortNow("input flap opened while motor running");
     }
 }
 
-void CalibrationProcessOrchestrator::onOutputFlapOpened() {
+void CalibrationOrchestrator::onOutputFlapOpened() {
     if (motor_running_.load()) {
         abortNow("output flap opened while motor running");
     }
 }
 
-void CalibrationProcessOrchestrator::onFlapsClosed() {
+void CalibrationOrchestrator::onFlapsClosed() {
     // ignore
 }
 
 // ----------------------------------------
 // Pressure source callbacks
 // ----------------------------------------
-void CalibrationProcessOrchestrator::onPressurePacket(const PressurePacket& p) {
+void CalibrationOrchestrator::onPressurePacket(const PressurePacket& p) {
 
     if (lifecycleState() != LifecycleState::Running)
         return;
@@ -433,15 +433,15 @@ void CalibrationProcessOrchestrator::onPressurePacket(const PressurePacket& p) {
     }
 }
 
-void CalibrationProcessOrchestrator::onPressureSourceOpened() {
+void CalibrationOrchestrator::onPressureSourceOpened() {
     logger_.info("Pressure source opened");
 }
 
-void CalibrationProcessOrchestrator::onPressureSourceOpenFailed(const PressureSourceError&) {
+void CalibrationOrchestrator::onPressureSourceOpenFailed(const PressureSourceError&) {
     abortNow("pressure source open failed");
 }
 
-void CalibrationProcessOrchestrator::onPressureSourceClosed(const PressureSourceError&) {
+void CalibrationOrchestrator::onPressureSourceClosed(const PressureSourceError&) {
     const auto st = lifecycleState();
     if (st == LifecycleState::Starting || st == LifecycleState::Running) {
         abortNow("pressure source closed during calibration");
@@ -451,22 +451,22 @@ void CalibrationProcessOrchestrator::onPressureSourceClosed(const PressureSource
 // ----------------------------------------
 // Angle source callbacks
 // ----------------------------------------
-void CalibrationProcessOrchestrator::onAngleSourceStarted() {
+void CalibrationOrchestrator::onAngleSourceStarted() {
     // ignore (if you need dynamic attach: attach on start here)
 }
 
-void CalibrationProcessOrchestrator::onAngleSourceStopped() {
+void CalibrationOrchestrator::onAngleSourceStopped() {
     const auto st = lifecycleState();
     if (st == LifecycleState::Starting || st == LifecycleState::Running) {
         abortNow("angle source stopped during calibration");
     }
 }
 
-void CalibrationProcessOrchestrator::onAngleSourceFailed(const AngleSourceError&) {
+void CalibrationOrchestrator::onAngleSourceFailed(const AngleSourceError&) {
     abortNow("angle source failed during calibration");
 }
 
-void CalibrationProcessOrchestrator::onAngleSourcePacket(const AngleSourcePacket& p) {
+void CalibrationOrchestrator::onAngleSourcePacket(const AngleSourcePacket& p) {
 
     if (lifecycleState() != LifecycleState::Running)
         return;

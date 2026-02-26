@@ -4,7 +4,7 @@
 namespace domain::ports {
     struct IPressureSink {
         virtual ~IPressureSink() = default;
-
+        virtual void onPressure(const common::PressurePacket&) = 0;
     };
 }
 

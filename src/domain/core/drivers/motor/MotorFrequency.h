@@ -5,33 +5,79 @@
 namespace domain::common {
     class MotorFrequency {
     public:
-        explicit MotorFrequency(float hz) noexcept
-            : hz_(hz > 0.f ? hz : 0.f) {}
+        explicit MotorFrequency(float hz = 0.f) noexcept
+            : hz_(hz) {}
 
-        float hz() const noexcept { return hz_; }
+        // --- Copy ctor
+        MotorFrequency(const MotorFrequency& other) noexcept
+            : hz_(other.hz_.load(std::memory_order_relaxed)) {}
 
-        bool isValid() const noexcept { return hz_ > 0.99f; }
+        // --- Copy assign
+        MotorFrequency& operator=(const MotorFrequency& other) noexcept {
+            if (this != &other) {
+                hz_.store(
+                    other.hz_.load(std::memory_order_relaxed),
+                    std::memory_order_relaxed
+                );
+            }
+            return *this;
+        }
+
+        // --- Move ctor
+        MotorFrequency(MotorFrequency&& other) noexcept
+            : hz_(other.hz_.load(std::memory_order_relaxed)) {}
+
+        // --- Move assign
+        MotorFrequency& operator=(MotorFrequency&& other) noexcept {
+            if (this != &other) {
+                hz_.store(
+                    other.hz_.load(std::memory_order_relaxed),
+                    std::memory_order_relaxed
+                );
+            }
+            return *this;
+        }
+
+        float hz() const noexcept {
+            return hz_.load(std::memory_order_relaxed);
+        }
+
+        void set(float hz) noexcept {
+            hz_.store(hz, std::memory_order_relaxed);
+        }
+
+        bool isValid() const noexcept {
+            return hz() > 0.99f;
+        }
+
+        void clampTo(float max_hz) noexcept
+        {
+            float current = hz_.load(std::memory_order_relaxed);
+
+            while (current > max_hz) {
+                if (hz_.compare_exchange_weak(current,max_hz)) {
+                    break;
+                }
+            }
+        }
 
         std::chrono::steady_clock::duration halfPeriod() const noexcept {
             using namespace std::chrono;
 
-            if (hz_ <= std::numeric_limits<float>::epsilon())
+            const float value = hz_.load(std::memory_order_relaxed);
+
+            if (value <= 0.f)
                 return steady_clock::duration::zero();
 
-            const double seconds = 1.0 / (2.0 * hz_);
+            const double seconds = 1.0 / (2.0 * static_cast<double>(value));
+
             return duration_cast<steady_clock::duration>(
                 duration<double>(seconds)
             );
         }
 
-        MotorFrequency withMaxHz(const float max_hz) const {
-            float hz = hz_;
-            if (hz > max_hz) hz = max_hz;
-            return MotorFrequency(hz);
-        }
-
     private:
-        float hz_;
+        std::atomic<float> hz_;
     };
 }
 

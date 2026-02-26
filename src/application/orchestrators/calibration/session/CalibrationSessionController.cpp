@@ -6,7 +6,7 @@ using namespace domain::common;
 
 CalibrationSessionController::CalibrationSessionController(
     CalibrationSessionControllerPorts ports,
-    CalibrationProcessOrchestrator& runtime)
+    CalibrationOrchestrator& runtime)
     : runtime_(runtime)
     , logger_(ports.logger)
     , settings_query_(ports.settings_query)
@@ -57,9 +57,9 @@ void CalibrationSessionController::abort()
     runtime_.abort();
 }
 
-std::optional<CalibrationProcessOrchestratorInput> CalibrationSessionController::buildConfig()
+std::optional<CalibrationOrchestratorInput> CalibrationSessionController::buildConfig()
 {
-    CalibrationProcessOrchestratorInput config;
+    CalibrationOrchestratorInput config;
 
     config.calibration_mode = calibration_mode_;
     config.angle_unit = AngleUnit::deg;

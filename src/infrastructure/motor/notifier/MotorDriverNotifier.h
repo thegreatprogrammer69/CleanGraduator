@@ -4,6 +4,8 @@
 #include <vector>
 #include <mutex>
 
+#include "infrastructure/utils/thread/ThreadSafeObserverList.h"
+
 namespace domain::common {
     struct MotorDriverEvent;
 }
@@ -18,14 +20,13 @@ namespace infra::motor {
         MotorDriverNotifier() = default;
         ~MotorDriverNotifier() = default;
 
-        void addObserver(domain::ports::IMotorDriverObserver& observer);
-        void removeObserver(domain::ports::IMotorDriverObserver& observer);
+        void addObserver(domain::ports::IMotorDriverObserver& o);
+        void removeObserver(domain::ports::IMotorDriverObserver& o);
 
-        void notify(const domain::common::MotorDriverEvent& event);
+        void notifyEvent(const domain::common::MotorDriverEvent& ev);
 
     private:
-        std::mutex mutex_;
-        std::vector<domain::ports::IMotorDriverObserver*> observers_;
+        ThreadSafeObserverList<domain::ports::IMotorDriverObserver> observers_;
 
 
     };

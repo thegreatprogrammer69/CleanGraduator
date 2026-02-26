@@ -139,7 +139,7 @@ namespace infra::motor {
 
         MotorDriverEvent::Fault ev;
         ev.error = err;
-        notifier_.notify(MotorDriverEvent(ev));
+        notifier_.notifyEvent(MotorDriverEvent(ev));
     }
 
     MotorDriverState G540LptMotorDriver::state() const {
@@ -163,11 +163,12 @@ namespace infra::motor {
     }
 
     void G540LptMotorDriver::setFrequency(const MotorFrequency frequency) {
-        frequency_.store(frequency.withMaxHz(config_.max_freq_hz));
+        frequency_ = frequency;
+        frequency_.clampTo(config_.max_freq_hz);
     }
 
     MotorFrequency G540LptMotorDriver::frequency() const {
-        return frequency_.load();
+        return frequency_;
     }
 
     MotorFrequencyLimits G540LptMotorDriver::frequencyLimits() const {
@@ -219,7 +220,7 @@ namespace infra::motor {
         // 5. Генерация события
         MotorDriverEvent::FlapsStateChanged ev;
         ev.state = state;
-        notifier_.notify(MotorDriverEvent(ev));
+        notifier_.notifyEvent(MotorDriverEvent(ev));
     }
 
     MotorFlapsState G540LptMotorDriver::flapsState() const {
@@ -273,7 +274,7 @@ namespace infra::motor {
             // 2. Уведомление о fault
             MotorDriverEvent::Fault ev;
             ev.error = new_err;
-            notifier_.notify(MotorDriverEvent(ev));
+            notifier_.notifyEvent(MotorDriverEvent(ev));
 
             return false;
         }
@@ -283,7 +284,7 @@ namespace infra::motor {
             logger_.info("END limit reached while moving Forward");
 
             MotorDriverEvent::StoppedAtEnd ev;
-            notifier_.notify(MotorDriverEvent(ev));
+            notifier_.notifyEvent(MotorDriverEvent(ev));
 
             return false;
         }
@@ -293,7 +294,7 @@ namespace infra::motor {
             logger_.info("HOME limit reached while moving Backward");
 
             MotorDriverEvent::StoppedAtHome ev;
-            notifier_.notify(MotorDriverEvent(ev));
+            notifier_.notifyEvent(MotorDriverEvent(ev));
 
             return false;
         }
@@ -305,15 +306,14 @@ namespace infra::motor {
     void G540LptMotorDriver::stepOnce() {
         using namespace std::chrono;
 
-        const auto freq = frequency_.load();
-        if (!freq.isValid()) platform::sleep(1ms);
+        if (!frequency_.isValid()) platform::sleep(1ms);
 
         // 1. Формирование управляющих байтов для выбранного направления
         std::uint8_t step_bytes[2];
         genStepBytes(step_bytes, direction_);
 
         // 2. Расчёт половины периода шага
-        const auto half_period = freq.halfPeriod();
+        const auto half_period = frequency_.halfPeriod();
 
         // 3. Первый фронт
         lpt_port_.write(step_bytes[0]);
@@ -343,7 +343,7 @@ namespace infra::motor {
         // 3. Генерация доменного события LimitsChanged
         MotorDriverEvent::LimitsChanged ev;
         ev.limits = current;
-        notifier_.notify(MotorDriverEvent(ev));
+        notifier_.notifyEvent(MotorDriverEvent(ev));
 
         // 4. Обновление последнего состояния
         last_limits_state_ = current;

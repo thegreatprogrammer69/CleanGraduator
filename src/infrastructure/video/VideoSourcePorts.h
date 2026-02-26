@@ -11,7 +11,6 @@ namespace infra::camera {
 struct VideoSourcePorts {
     domain::ports::ILogger& logger;
     domain::ports::IClock& clock;
-    ~VideoSourcePorts() = default;
 };
 
 }

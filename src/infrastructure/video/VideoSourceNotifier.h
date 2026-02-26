@@ -1,35 +1,36 @@
 #ifndef CLEANGRADUATOR_VIDEOSOURCENOTIFIER_H
 #define CLEANGRADUATOR_VIDEOSOURCENOTIFIER_H
-
-#include <algorithm>
-#include <vector>
-#include <mutex>
-
-namespace domain::common {
-    struct VideoSourceError;
-    struct VideoFramePacket;
-}
+#include "infrastructure/utils/thread/ThreadSafeObserverList.h"
 
 namespace domain::ports {
-    struct IVideoSourceObserver;
+    class IVideoSourceObserver;
+    class IVideoSink;
 }
+
+namespace domain::common {
+    struct VideoFramePacket;
+    struct VideoSourceEvent;
+}
+
 
 namespace infra::camera::detail {
 
     class VideoSourceNotifier {
     public:
-        void addObserver(domain::ports::IVideoSourceObserver& observer);
-        void removeObserver(domain::ports::IVideoSourceObserver& observer);
+        void addObserver(domain::ports::IVideoSourceObserver& o);
+        void removeObserver(domain::ports::IVideoSourceObserver& o);
+
+        void addSink(domain::ports::IVideoSink& s);
+        void removeSink(domain::ports::IVideoSink& s);
 
         void notifyFrame(const domain::common::VideoFramePacket& frame);
-        void notifyOpened();
-        void notifyFailed(const domain::common::VideoSourceError& error);
-        void notifyClosed();
+        void notifyEvent(const domain::common::VideoSourceEvent& event);
 
     private:
-        std::vector<domain::ports::IVideoSourceObserver*> observers_;
-        std::mutex mutex_;
+        ThreadSafeObserverList<domain::ports::IVideoSourceObserver> observers_;
+        ThreadSafeObserverList<domain::ports::IVideoSink> sinks_;
     };
+
 
 }
 

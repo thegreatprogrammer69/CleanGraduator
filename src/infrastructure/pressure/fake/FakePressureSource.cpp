@@ -5,9 +5,11 @@
 #include "domain/ports/clock/IClock.h"
 #include "domain/core/pressure/PressurePacket.h"
 #include "domain/core/pressure/PressureSourceError.h"
+#include "domain/core/pressure/PressureSourceEvent.h"
 #include "infrastructure/platform/sleep/sleep.h"
 
 namespace infra::pressure {
+    using namespace domain::common;
 
 FakePressureSource::FakePressureSource(
         PressureSourcePorts ports,
@@ -75,7 +77,7 @@ void FakePressureSource::removeObserver(
 
 void FakePressureSource::run() {
 
-    notifier_.notifyOpened();
+    notifier_.notifyEvent(PressureSourceEvent(PressureSourceEvent::Opened()));
 
     const double fromPa = config_.from.pa();
     const double toPa   = config_.to.pa();
@@ -119,7 +121,7 @@ void FakePressureSource::run() {
         platform::sleep(config_.poll_interval);
     }
 
-    notifier_.notifyClosed(domain::common::PressureSourceError{});
+    notifier_.notifyEvent(PressureSourceEvent(PressureSourceEvent::Closed()));
     running_.store(false);
 }
 

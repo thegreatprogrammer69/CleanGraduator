@@ -444,7 +444,7 @@ bool format_to(std::string& out, const std::string& format, const Args&... args)
 
 // Convenience: returns only string (ошибки тихо игнорируются — строка всё равно вернётся).
 template <typename... Args>
-std::string fmt(const std::string& format, const Args&... args) {
+std::string format(const std::string& format, const Args&... args) {
     std::string out;
     (void)format_to(out, format, args...);
     return out;
@@ -458,7 +458,7 @@ result format_res(const std::string& format, const Args&... args) {
     return r;
 }
 
-} // namespace fmt
+} // namespace format
 
 
 #endif

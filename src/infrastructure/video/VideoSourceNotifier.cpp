@@ -1,63 +1,41 @@
 #include "VideoSourceNotifier.h"
-#include "../../domain/ports/video/IVideoSourceObserver.h"
+#include "domain/ports/video/IVideoSourceObserver.h"
+#include "domain/ports/video/IVideoSink.h"
 
 using namespace infra::camera::detail;
 using namespace domain::ports;
 using namespace domain::common;
 
-void VideoSourceNotifier::addObserver(IVideoSourceObserver& observer) {
-    std::lock_guard<std::mutex> lock(mutex_);
-    observers_.push_back(&observer);
+void VideoSourceNotifier::addObserver(IVideoSourceObserver& o)
+{
+    observers_.add(o);
 }
 
-void VideoSourceNotifier::removeObserver(IVideoSourceObserver& observer) {
-    std::lock_guard<std::mutex> lock(mutex_);
-    observers_.erase(
-        std::remove(observers_.begin(), observers_.end(), &observer),
-        observers_.end()
-    );
+void VideoSourceNotifier::removeObserver(IVideoSourceObserver& o)
+{
+    observers_.remove(o);
 }
 
-void VideoSourceNotifier::notifyFrame(const VideoFramePacket& frame) {
-    std::vector<IVideoSourceObserver*> copy;
-    {
-        std::lock_guard<std::mutex> lock(mutex_);
-        copy = observers_;
-    }
-
-    for (auto* o : copy)
-        o->onVideoFrame(frame);
+void VideoSourceNotifier::addSink(IVideoSink& s)
+{
+    sinks_.add(s);
 }
 
-void VideoSourceNotifier::notifyOpened() {
-    std::vector<IVideoSourceObserver*> copy;
-    {
-        std::lock_guard<std::mutex> lock(mutex_);
-        copy = observers_;
-    }
-
-    for (auto* o : copy)
-        o->onVideoSourceOpened();
+void VideoSourceNotifier::removeSink(IVideoSink& s)
+{
+    sinks_.remove(s);
 }
 
-void VideoSourceNotifier::notifyFailed(const VideoSourceError& error) {
-    std::vector<IVideoSourceObserver*> copy;
-    {
-        std::lock_guard<std::mutex> lock(mutex_);
-        copy = observers_;
-    }
-
-    for (auto* o : copy)
-        o->onVideoSourceFailed(error);
+void VideoSourceNotifier::notifyFrame(const VideoFramePacket& frame)
+{
+    sinks_.notify([&frame](IVideoSink& s) {
+        s.onVideoFrame(frame);
+    });
 }
 
-void VideoSourceNotifier::notifyClosed() {
-    std::vector<IVideoSourceObserver*> copy;
-    {
-        std::lock_guard<std::mutex> lock(mutex_);
-        copy = observers_;
-    }
-
-    for (auto* o : copy)
-        o->onVideoSourceClosed();
+void VideoSourceNotifier::notifyEvent(const VideoSourceEvent& event)
+{
+    observers_.notify([&event](IVideoSourceObserver& o) {
+        o.onVideoSourceEvent(event);
+    });
 }

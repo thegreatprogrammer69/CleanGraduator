@@ -1,8 +1,8 @@
 #include "UseCasesBootstrap.h"
 
 #include "ApplicationBootstrap.h"
-#include "application/orchestrators/calibration/process/CalibrationProcessOrchestrator.h"
-#include "application/orchestrators/calibration/process/CalibrationProcessOrchestratorPorts.h"
+#include "application/orchestrators/calibration/process/CalibrationOrchestrator.h"
+#include "application/orchestrators/calibration/process/CalibrationOrchestratorPorts.h"
 #include "application/orchestrators/calibration/session/CalibrationSessionController.h"
 #include "application/orchestrators/calibration/session/CalibrationSessionControllerPorts.h"
 #include "application/orchestrators/motor/MotorControlInteractor.h"
@@ -83,8 +83,8 @@ void UseCasesBootstrap::createCalibrationRecorder() {
 }
 
 void UseCasesBootstrap::createCalibrationProcessOrchestrator() {
-    CalibrationProcessOrchestratorPorts ports{
-        app_.createLogger("CalibrationProcessOrchestrator"),
+    CalibrationOrchestratorPorts ports{
+        app_.createLogger("CalibrationOrchestrator"),
         *app_.pressure_source,
         *app_.videoangle_sources_storage,
         *app_.motor_driver,
@@ -94,7 +94,7 @@ void UseCasesBootstrap::createCalibrationProcessOrchestrator() {
         *app_.calibration_lifecycle
     };
 
-    calibration_process_orchestrator = std::make_unique<CalibrationProcessOrchestrator>(ports);
+    calibration_process_orchestrator = std::make_unique<CalibrationOrchestrator>(ports);
 }
 
 void UseCasesBootstrap::createCalibrationSessionController() {

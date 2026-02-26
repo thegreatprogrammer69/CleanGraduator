@@ -6,7 +6,7 @@
 namespace application::orchestrators {
     class MotorControlInteractor;
     class CalibrationSettingsQuery;
-    class CalibrationProcessOrchestrator;
+    class CalibrationOrchestrator;
     class CalibrationSessionController;
 }
 
@@ -39,7 +39,7 @@ public:
     std::unique_ptr<application::orchestrators::CalibrationSettingsQuery> calibration_settings_query;
     std::unique_ptr<domain::ports::ICalibrationStrategy> calibration_strategy;
     std::unique_ptr<domain::ports::ICalibrationRecorder> calibration_recorder;
-    std::unique_ptr<application::orchestrators::CalibrationProcessOrchestrator> calibration_process_orchestrator;
+    std::unique_ptr<application::orchestrators::CalibrationOrchestrator> calibration_process_orchestrator;
     std::unique_ptr<application::orchestrators::CalibrationSessionController> calibration_session_controller;
 
 

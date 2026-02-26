@@ -8,7 +8,7 @@
 
 
 namespace application::orchestrators {
-    struct CalibrationProcessOrchestratorInput {
+    struct CalibrationOrchestratorInput {
         domain::common::CalibrationMode calibration_mode;
         domain::common::PressureUnit pressure_unit;
         domain::common::AngleUnit angle_unit;

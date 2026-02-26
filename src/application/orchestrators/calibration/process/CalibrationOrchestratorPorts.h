@@ -18,7 +18,7 @@ namespace domain::ports {
 }
 
 namespace application::orchestrators {
-    struct CalibrationProcessOrchestratorPorts {
+    struct CalibrationOrchestratorPorts {
         domain::ports::ILogger& logger;
         domain::ports::IPressureSource& pressure_source;
         ports::IVideoAngleSourcesStorage& angle_sources_storage;

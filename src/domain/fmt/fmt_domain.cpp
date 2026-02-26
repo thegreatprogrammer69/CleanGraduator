@@ -39,7 +39,7 @@ std::ostream& operator<<(std::ostream& os, const AngleUnit& f) {
 }
 
 std::ostream& operator<<(std::ostream& os, const Pressure& f) {
-    os << fmt::fmt("{:.2f} {}", f.value(), f.unit());
+    os << fmt::format("{:.2f} {}", f.value(), f.unit());
     return os;
 }
 
@@ -151,7 +151,7 @@ std::ostream & operator<<(std::ostream &os, const domain::common::MotorDirection
 }
 
 std::ostream & operator<<(std::ostream &os, const PressurePoints &f) {
-    os << fmt::fmt("GaugePressurePoints{[{}]}", f);
+    os << fmt::format("GaugePressurePoints{[{}]}", f);
     return os;
 }
 

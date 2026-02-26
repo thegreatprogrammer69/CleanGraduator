@@ -1,63 +1,35 @@
 #include "PressureSourceNotifier.h"
-#include "../../domain/ports/pressure/IPressureSourceObserver.h"
+#include "domain/ports/pressure/IPressureSourceObserver.h"
+#include "domain/ports/pressure/IPressureSink.h"
 
 using namespace infra::pressure::detail;
 using namespace domain::ports;
 using namespace domain::common;
 
 void PressureSourceNotifier::addObserver(IPressureSourceObserver& observer) {
-    std::lock_guard<std::mutex> lock(mutex_);
-    observers_.push_back(&observer);
+    observers_.add(observer);
 }
 
 void PressureSourceNotifier::removeObserver(IPressureSourceObserver& observer) {
-    std::lock_guard<std::mutex> lock(mutex_);
-    observers_.erase(
-        std::remove(observers_.begin(), observers_.end(), &observer),
-        observers_.end()
-    );
+    observers_.remove(observer);
+}
+
+void PressureSourceNotifier::addSink(IPressureSink &sink) {
+    sinks_.add(sink);
+}
+
+void PressureSourceNotifier::removeSink(IPressureSink &sink) {
+    sinks_.remove(sink);
 }
 
 void PressureSourceNotifier::notifyPressure(const PressurePacket& packet) {
-    std::vector<IPressureSourceObserver*> copy;
-    {
-        std::lock_guard<std::mutex> lock(mutex_);
-        copy = observers_;
-    }
-
-    for (auto* o : copy)
-        o->onPressurePacket(packet);
+    sinks_.notify([&packet](IPressureSink& s) {
+        s.onPressure(packet);
+    });
 }
 
-void PressureSourceNotifier::notifyOpened() {
-    std::vector<IPressureSourceObserver*> copy;
-    {
-        std::lock_guard<std::mutex> lock(mutex_);
-        copy = observers_;
-    }
-
-    for (auto* o : copy)
-        o->onPressureSourceOpened();
-}
-
-void PressureSourceNotifier::notifyOpenFailed(const PressureSourceError& error) {
-    std::vector<IPressureSourceObserver*> copy;
-    {
-        std::lock_guard<std::mutex> lock(mutex_);
-        copy = observers_;
-    }
-
-    for (auto* o : copy)
-        o->onPressureSourceOpenFailed(error);
-}
-
-void PressureSourceNotifier::notifyClosed(const PressureSourceError& error) {
-    std::vector<IPressureSourceObserver*> copy;
-    {
-        std::lock_guard<std::mutex> lock(mutex_);
-        copy = observers_;
-    }
-
-    for (auto* o : copy)
-        o->onPressureSourceClosed(error);
+void PressureSourceNotifier::notifyEvent(const PressureSourceEvent &event) {
+    observers_.notify([&event](IPressureSourceObserver& o) {
+        o.onPressureSourceEvent(event);
+    });
 }

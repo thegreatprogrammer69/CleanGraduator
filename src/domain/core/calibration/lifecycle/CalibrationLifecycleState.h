@@ -3,6 +3,7 @@
 
 namespace domain::common {
     enum class CalibrationLifecycleState {
+        Uninitialized,
         Stopped,
         Started
     };

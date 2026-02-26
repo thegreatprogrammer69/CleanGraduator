@@ -12,12 +12,14 @@
 
 #include "domain/ports/clock/IClock.h"
 #include "domain/core/pressure/PressurePacket.h"
-#include "domain/core/pressure/PressureSourceError.h"
+#include "domain/core/pressure/PressureSourceEvent.h"
 
 #include "infrastructure/platform/sleep/sleep.h"
 #include "infrastructure/platform/com/ComPort.h"
 
 namespace infra::pressure {
+
+    using namespace domain::common;
 
 namespace {
 
@@ -210,17 +212,21 @@ void DM5002PressureSensor::run() {
         impl_->com_port.open(config_.com_port);
     } catch (const std::exception& e) {
         logger_.error("failed to open COM port: {}", e.what());
-        notifier_.notifyOpenFailed({ logger_.lastError() });
+        PressureSourceEvent::OpenFailed ev;
+        ev.error.reason = logger_.lastError();
+        notifier_.notifyEvent(PressureSourceEvent(ev));
         finish();
         return;
     } catch (...) {
         logger_.error("failed to open COM port: unknown exception");
-        notifier_.notifyOpenFailed({ logger_.lastError() });
+        PressureSourceEvent::OpenFailed ev;
+        ev.error.reason = logger_.lastError();
+        notifier_.notifyEvent(PressureSourceEvent(ev));
         finish();
         return;
     }
 
-    notifier_.notifyOpened();
+    notifier_.notifyEvent(PressureSourceEvent(PressureSourceEvent::Opened()));
 
     int invalid_count = 0;
 
@@ -246,7 +252,7 @@ void DM5002PressureSensor::run() {
                 invalid_count = 0;
             }
 
-            domain::common::PressurePacket packet;
+            PressurePacket packet;
             packet.timestamp = result.time_point;
             packet.pressure  = result.pressure;
 
@@ -268,8 +274,9 @@ void DM5002PressureSensor::run() {
         logger_.warn("COM port close threw: unknown");
     }
 
-    domain::common::PressureSourceError err{ logger_.lastError() };
-    notifier_.notifyClosed(err);
+    PressureSourceEvent::Failed ev;
+    ev.error.reason = logger_.lastError();
+    notifier_.notifyEvent(PressureSourceEvent(ev));
 
     finish();
 }

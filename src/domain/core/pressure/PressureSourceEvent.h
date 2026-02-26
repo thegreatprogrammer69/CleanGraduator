@@ -11,6 +11,10 @@ namespace domain::common {
 
         struct Opened {};
 
+        struct OpenFailed {
+            PressureSourceError error;
+        };
+
         struct Failed {
             PressureSourceError error;
         };
@@ -19,11 +23,14 @@ namespace domain::common {
 
         using Data = std::variant<
             Opened,
+            OpenFailed,
             Failed,
             Closed
         >;
 
         Data data;
+
+        PressureSourceEvent(Data data) : data(std::move(data)) {}
     };
 
 }

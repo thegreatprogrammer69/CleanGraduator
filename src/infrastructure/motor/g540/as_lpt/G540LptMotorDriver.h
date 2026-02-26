@@ -66,7 +66,8 @@ namespace infra::motor {
         mutable std::atomic<domain::common::MotorFlapsState> flaps_state_;
         std::atomic<domain::common::MotorDirection> direction_;
         utils::atomic::AtomicStruct<domain::common::MotorDriverError> error_;
-        utils::atomic::AtomicStruct<domain::common::MotorFrequency> frequency_;
+        domain::common::MotorFrequency frequency_;
+
         domain::common::MotorLimitsState last_limits_state_{};
 
         platform::LptPort lpt_port_;

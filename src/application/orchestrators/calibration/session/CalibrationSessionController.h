@@ -2,14 +2,14 @@
 #define CLEANGRADUATOR_CALIBRATIONSESSIONCONTROLLER_H
 #include "CalibrationSessionControllerInput.h"
 #include "CalibrationSessionControllerPorts.h"
-#include "application/orchestrators/calibration/process/CalibrationProcessOrchestrator.h"
-#include "application/orchestrators/calibration/process/CalibrationProcessOrchestratorInput.h"
+#include "application/orchestrators/calibration/process/CalibrationOrchestrator.h"
+#include "application/orchestrators/calibration/process/CalibrationOrchestratorInput.h"
 #include "application/orchestrators/settings/CalibrationSettingsQuery.h"
 
 namespace application::orchestrators {
     class CalibrationSessionController {
     public:
-        explicit CalibrationSessionController(CalibrationSessionControllerPorts ports, CalibrationProcessOrchestrator& runtime);
+        explicit CalibrationSessionController(CalibrationSessionControllerPorts ports, CalibrationOrchestrator& runtime);
         ~CalibrationSessionController();
 
         bool isRunning() const;
@@ -19,10 +19,10 @@ namespace application::orchestrators {
         void abort();
 
     private:
-        std::optional<CalibrationProcessOrchestratorInput> buildConfig();
+        std::optional<CalibrationOrchestratorInput> buildConfig();
 
     private:
-        CalibrationProcessOrchestrator& runtime_;
+        CalibrationOrchestrator& runtime_;
         domain::common::CalibrationMode calibration_mode_{domain::common::CalibrationMode::Full};
 
         fmt::Logger logger_;
