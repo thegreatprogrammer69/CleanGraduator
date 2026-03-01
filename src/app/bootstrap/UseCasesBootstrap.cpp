@@ -3,8 +3,6 @@
 #include "ApplicationBootstrap.h"
 #include "application/orchestrators/calibration/process/CalibrationOrchestrator.h"
 #include "application/orchestrators/calibration/process/CalibrationOrchestratorPorts.h"
-#include "application/orchestrators/calibration/session/CalibrationSessionController.h"
-#include "application/orchestrators/calibration/session/CalibrationSessionControllerPorts.h"
 #include "application/orchestrators/motor/MotorControlInteractor.h"
 #include "application/orchestrators/settings/CalibrationSettingsQuery.h"
 #include "application/usecases/cameras/CloseAllCameras.h"
@@ -42,7 +40,6 @@ void UseCasesBootstrap::initialize() {
     createCalibrationStrategy();
     createCalibrationRecorder();
     createCalibrationProcessOrchestrator();
-    createCalibrationSessionController();
 }
 
 void UseCasesBootstrap::createOpenSelectedCameras() {
@@ -86,22 +83,13 @@ void UseCasesBootstrap::createCalibrationProcessOrchestrator() {
     CalibrationOrchestratorPorts ports{
         app_.createLogger("CalibrationOrchestrator"),
         *app_.pressure_source,
+        *app_.video_source_manager,
         *app_.videoangle_sources_storage,
         *app_.motor_driver,
-        *app_.valve_driver,
+        *app_.session_clock,
         *calibration_strategy,
-        *calibration_recorder,
-        *app_.calibration_lifecycle
+        *calibration_recorder
     };
 
     calibration_process_orchestrator = std::make_unique<CalibrationOrchestrator>(ports);
-}
-
-void UseCasesBootstrap::createCalibrationSessionController() {
-    CalibrationSessionControllerPorts ports{
-        app_.createLogger("CalibrationSessionController"),
-        *calibration_settings_query
-    };
-
-    calibration_session_controller = std::make_unique<CalibrationSessionController>(ports, *calibration_process_orchestrator);
 }

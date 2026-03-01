@@ -52,7 +52,6 @@ using namespace infra::overlay;
 using namespace infra::platform;
 using namespace infra::repo;
 using namespace infra::storage;
-using namespace infra::lifecycle;
 
 
 struct LoggerFactory final : ILoggerFactory {
@@ -78,7 +77,7 @@ ApplicationBootstrap::~ApplicationBootstrap() {
 void ApplicationBootstrap::initialize() {
     createLogSourcesStorage();
 
-    createLifecycle();
+    createSessionClock();
     createClock();
 
     createDisplacementCatalog();
@@ -130,10 +129,8 @@ void ApplicationBootstrap::createLogSourcesStorage() {
     log_sources_storage = std::make_unique<LogSourcesStorage>();
 }
 
-void ApplicationBootstrap::createLifecycle() {
-    auto* lifecycle = new CalibrationLifecycle();
-    session_clock = &lifecycle->sessionClock();
-    calibration_lifecycle = std::unique_ptr<CalibrationLifecycle>(lifecycle);
+void ApplicationBootstrap::createSessionClock() {
+    session_clock = std::make_unique<SessionClock>();
 }
 
 void ApplicationBootstrap::createClock() {

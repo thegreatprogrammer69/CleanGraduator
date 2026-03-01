@@ -7,7 +7,6 @@ namespace application::orchestrators {
     class MotorControlInteractor;
     class CalibrationSettingsQuery;
     class CalibrationOrchestrator;
-    class CalibrationSessionController;
 }
 
 namespace domain::ports {
@@ -40,7 +39,6 @@ public:
     std::unique_ptr<domain::ports::ICalibrationStrategy> calibration_strategy;
     std::unique_ptr<domain::ports::ICalibrationRecorder> calibration_recorder;
     std::unique_ptr<application::orchestrators::CalibrationOrchestrator> calibration_process_orchestrator;
-    std::unique_ptr<application::orchestrators::CalibrationSessionController> calibration_session_controller;
 
 
     // Конфигурируемы объект
@@ -58,7 +56,6 @@ private:
     void createCalibrationStrategy();
     void createCalibrationRecorder();
     void createCalibrationProcessOrchestrator();
-    void createCalibrationSessionController();
 
 };
 

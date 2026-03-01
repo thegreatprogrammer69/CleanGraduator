@@ -1,8 +1,9 @@
 #include "PressureSensorStatusBarViewModel.h"
 
 #include <chrono>
+#include <type_traits>
+#include <variant>
 
-#include "domain/core/pressure/PressureSourceError.h"
 #include "domain/ports/pressure/IPressureSource.h"
 
 mvvm::PressureSensorStatusBarViewModel::PressureSensorStatusBarViewModel(
@@ -11,9 +12,11 @@ mvvm::PressureSensorStatusBarViewModel::PressureSensorStatusBarViewModel(
     : pressure_source_(deps.pressure_source)
 {
     pressure_source_.addObserver(*this);
+    pressure_source_.addSink(*this);
 }
 
 mvvm::PressureSensorStatusBarViewModel::~PressureSensorStatusBarViewModel() {
+    pressure_source_.removeSink(*this);
     pressure_source_.removeObserver(*this);
 }
 
@@ -65,21 +68,24 @@ void mvvm::PressureSensorStatusBarViewModel::onPressurePacket(
 }
 
 
-void mvvm::PressureSensorStatusBarViewModel::onPressureSourceOpened() {
-    is_opened.set(true);
-    error.set("");
-}
+void mvvm::PressureSensorStatusBarViewModel::onPressureSourceEvent(const domain::common::PressureSourceEvent& event) {
+    std::visit([this](const auto& ev) {
+        using T = std::decay_t<decltype(ev)>;
 
-void mvvm::PressureSensorStatusBarViewModel::onPressureSourceOpenFailed(const domain::common::PressureSourceError& err) {
-    is_opened.set(false);
-    pressure_speed_pa_per_sec_.store(0.0, std::memory_order_relaxed);
-    error.set(err.reason);
-}
-
-void mvvm::PressureSensorStatusBarViewModel::onPressureSourceClosed(const domain::common::PressureSourceError& err) {
-    is_opened.set(false);
-    pressure_speed_pa_per_sec_.store(0.0, std::memory_order_relaxed);
-    last_pressure_.reset();
-    last_time_.reset();
-    error.set(err.reason);
+        if constexpr (std::is_same_v<T, domain::common::PressureSourceEvent::Opened>) {
+            is_opened.set(true);
+            error.set("");
+        } else if constexpr (std::is_same_v<T, domain::common::PressureSourceEvent::OpenFailed>
+                             || std::is_same_v<T, domain::common::PressureSourceEvent::Failed>) {
+            is_opened.set(false);
+            pressure_speed_pa_per_sec_.store(0.0, std::memory_order_relaxed);
+            error.set(ev.error.reason);
+        } else if constexpr (std::is_same_v<T, domain::common::PressureSourceEvent::Closed>) {
+            is_opened.set(false);
+            pressure_speed_pa_per_sec_.store(0.0, std::memory_order_relaxed);
+            last_pressure_.reset();
+            last_time_.reset();
+            error.set("");
+        }
+    }, event.data);
 }

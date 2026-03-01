@@ -13,7 +13,7 @@ namespace domain::ports {
 }
 
 namespace mvvm {
-    class VideoSourceViewModel final : domain::ports::IVideoSourceObserver, domain::ports::IVideoSink {
+    class VideoSourceViewModel final : public domain::ports::IVideoSourceObserver, public domain::ports::IVideoSink {
     public:
         Observable<domain::common::VideoFramePtr> frame{};
         Observable<bool> is_opened{false};
@@ -26,9 +26,7 @@ namespace mvvm {
     private:
         // IVideoSourceObserver
         void onVideoFrame(const domain::common::VideoFramePacket &) override;
-        void onVideoSourceOpened() override;
-        void onVideoSourceFailed(const domain::common::VideoSourceError &) override;
-        void onVideoSourceClosed() override;
+        void onVideoSourceEvent(const domain::common::VideoSourceEvent &) override;
 
     private:
         domain::ports::IVideoSource &video_source_;
