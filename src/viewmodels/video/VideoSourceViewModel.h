@@ -1,38 +1,37 @@
 #ifndef CLEANGRADUATOR_VIDEOSOURCEVIEWMODEL_H
 #define CLEANGRADUATOR_VIDEOSOURCEVIEWMODEL_H
+
 #include <string>
 
-#include "../../domain/ports/video/IVideoSourceObserver.h"
-#include "viewmodels/Observable.h"
-#include "domain/core/video/VideoFrame.h"
 #include "domain/core/video/VideoFramePacket.h"
+#include "domain/core/video/VideoSourceEvent.h"
 #include "domain/ports/video/IVideoSink.h"
+#include "domain/ports/video/IVideoSourceObserver.h"
+#include "viewmodels/Observable.h"
 
 namespace domain::ports {
-    struct IVideoSource;
+struct IVideoSource;
 }
 
 namespace mvvm {
-    class VideoSourceViewModel final : domain::ports::IVideoSourceObserver, domain::ports::IVideoSink {
-    public:
-        Observable<domain::common::VideoFramePtr> frame{};
-        Observable<bool> is_opened{false};
-        Observable<std::string> error{};
 
-    public:
-        explicit VideoSourceViewModel(domain::ports::IVideoSource& video_source);
-        ~VideoSourceViewModel() override;
+class VideoSourceViewModel final : public domain::ports::IVideoSourceObserver, public domain::ports::IVideoSink {
+public:
+    Observable<domain::common::VideoFramePtr> frame{};
+    Observable<bool> is_opened{false};
+    Observable<std::string> error{};
 
-    private:
-        // IVideoSourceObserver
-        void onVideoFrame(const domain::common::VideoFramePacket &) override;
-        void onVideoSourceOpened() override;
-        void onVideoSourceFailed(const domain::common::VideoSourceError &) override;
-        void onVideoSourceClosed() override;
+    explicit VideoSourceViewModel(domain::ports::IVideoSource& video_source);
+    ~VideoSourceViewModel() override;
 
-    private:
-        domain::ports::IVideoSource &video_source_;
-    };
-}
+private:
+    void onVideoSourceEvent(const domain::common::VideoSourceEvent& event) override;
+    void onVideoFrame(const domain::common::VideoFramePacket& frame_packet) override;
+
+private:
+    domain::ports::IVideoSource& video_source_;
+};
+
+} // namespace mvvm
 
 #endif //CLEANGRADUATOR_VIDEOSOURCEVIEWMODEL_H
