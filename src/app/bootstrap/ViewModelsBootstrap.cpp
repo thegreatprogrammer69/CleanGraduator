@@ -111,7 +111,7 @@ void ViewModelsBootstrap::createSettings() {
 
 void ViewModelsBootstrap::createStatusBar() {
     AppStatusBarViewModelDeps deps {
-        *app_.calibration_lifecycle,
+        *use_cases_.calibration_process_orchestrator,
         *app_.session_clock,
         *app_.uptime_clock
     };
@@ -151,8 +151,8 @@ void ViewModelsBootstrap::createMotorControl() {
 
 void ViewModelsBootstrap::createCalibrationSessionControl() {
     CalibrationSessionControlViewModelDeps deps{
-        *use_cases_.calibration_session_controller,
-        *app_.calibration_lifecycle
+        *use_cases_.calibration_process_orchestrator,
+        *use_cases_.calibration_settings_query
     };
     calibration_session_control = std::make_unique<CalibrationSessionControlViewModel>(deps);
 }
