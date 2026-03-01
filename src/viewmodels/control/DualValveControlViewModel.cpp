@@ -4,38 +4,29 @@
 
 #include "DualValveControlViewModel.h"
 
-#include "../../domain/ports/drivers/valve/IValveDriver.h"
+#include "domain/ports/drivers/motor/IMotorDriver.h"
 
 mvvm::DualValveControlViewModel::DualValveControlViewModel(DualValveControlViewModelDeps deps)
-    : dual_valve_driver_(deps.dual_valve_driver)
+    : motor_driver_(deps.motor_driver)
 {
-    dual_valve_driver_.addObserver(*this);
+    motor_driver_.addObserver(*this);
 }
 
 mvvm::DualValveControlViewModel::~DualValveControlViewModel() {
-    dual_valve_driver_.removeObserver(*this);
+    motor_driver_.removeObserver(*this);
 }
 
 void mvvm::DualValveControlViewModel::openInputFlap() {
-    dual_valve_driver_.openInputFlap();
+    motor_driver_.setFlapsState(domain::common::MotorFlapsState::IntakeOpened);
 }
 
 void mvvm::DualValveControlViewModel::openOutputFlap() {
-    dual_valve_driver_.openOutputFlap();
+    motor_driver_.setFlapsState(domain::common::MotorFlapsState::ExhaustOpened);
 }
 
 void mvvm::DualValveControlViewModel::closeFlaps() {
-    dual_valve_driver_.closeFlaps();
+    motor_driver_.setFlapsState(domain::common::MotorFlapsState::FlapsClosed);
 }
 
-void mvvm::DualValveControlViewModel::onInputFlapOpened() {
-    flaps_state.set(InputFlapOpened);
-}
-
-void mvvm::DualValveControlViewModel::onOutputFlapOpened() {
-    flaps_state.set(OutputFlapOpened);
-}
-
-void mvvm::DualValveControlViewModel::onFlapsClosed() {
-    flaps_state.set(FlapsClosed);
+void mvvm::DualValveControlViewModel::onMotorEvent(const domain::common::MotorDriverEvent &event) {
 }

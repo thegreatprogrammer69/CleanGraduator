@@ -1,14 +1,23 @@
 #include "CalibrationOrchestrator.h"
 
+#include <algorithm>
+#include <mutex>
+#include <stdexcept>
+#include <variant>
 #include <vector>
 
+#include "application/orchestrators/calibration/process/CalibrationOrchestratorEvent.h"
+#include "application/orchestrators/video/VideoSourceManager.h"
+#include "application/ports/calibration/orchestration/CalibrationOrchestratorObserver.h"
 #include "application/ports/video/IVideoAngleSourcesStorage.h"
+#include "domain/core/angle/AngleSourceEvent.h"
 #include "domain/core/angle/AngleSourcePacket.h"
-#include "domain/core/calibration/strategy/CalibrationBeginContext.h"
-#include "domain/core/calibration/strategy/CalibrationFeedContext.h"
+#include "domain/core/calibration/strategy/CalibrationStrategyBeginContext.h"
+#include "domain/core/calibration/strategy/CalibrationStrategyFeedContext.h"
+#include "domain/core/drivers/motor/MotorDriverEvent.h"
+#include "domain/core/pressure/PressureSourceEvent.h"
 #include "domain/ports/angle/IAngleSource.h"
 #include "domain/ports/calibration/recording/ICalibrationRecorder.h"
-#include "domain/ports/calibration/lifecycle/ICalibrationLifecycle.h"
 #include "domain/ports/calibration/strategy/ICalibrationStrategy.h"
 #include "domain/ports/drivers/motor/IMotorDriver.h"
 #include "domain/ports/pressure/IPressureSource.h"
@@ -16,463 +25,416 @@
 using namespace application::orchestrators;
 using namespace domain::common;
 
-CalibrationOrchestrator::CalibrationOrchestrator(CalibrationOrchestratorPorts ports)
-    : pressure_points_tracker_(*this)
-    , logger_(ports.logger)
-    , pressure_source_(ports.pressure_source)
-    , angle_sources_storage_(ports.angle_sources_storage)
-    , motor_driver_(ports.motor_driver)
-    , valve_driver_(ports.valve_driver)
-    , strategy_(ports.strategy)
-    , recorder_(ports.recorder)
-    , lifecycle_(ports.lifecycle)
+namespace
 {
-    // Orchestrator does NOT control motor/valve.
-    // Strategy owns actuator commands via bind().
-    strategy_.bind(motor_driver_, valve_driver_, recorder_);
+// Временное решение без правки .h:
+// один mutex на все экземпляры CalibrationOrchestrator.
+// Если хочешь, потом дам версию с per-instance mutex в header.
+std::mutex g_calibration_orchestrator_mutex;
+} // namespace
 
-    // Observe-only initial snapshots (read-only is ok)
-    last_limits_.store(motor_driver_.limits());
-    last_direction_.store(motor_driver_.direction());
+CalibrationOrchestrator::CalibrationOrchestrator(CalibrationOrchestratorPorts ports)
+    : logger_(ports.logger)
+    , ports_(ports)
+    , inp_{}
+{
 }
 
-CalibrationOrchestrator::~CalibrationOrchestrator() {
-    // deterministic shutdown: emergency path (idempotent)
-    abort();
+CalibrationOrchestrator::~CalibrationOrchestrator()
+{
+    stop();
 }
 
-CalibrationOrchestrator::LifecycleState CalibrationOrchestrator::lifecycleState() const {
-    return lifecycle_.state();
-}
+bool CalibrationOrchestrator::start(CalibrationOrchestratorInput input)
+{
+    std::lock_guard<std::mutex> lock(g_calibration_orchestrator_mutex);
 
-bool CalibrationOrchestrator::isRunning() const {
-    return lifecycleState() == LifecycleState::Running;
-}
-
-// -----------------------------------------------------
-// Observers attach/detach (idempotent, split groups)
-// -----------------------------------------------------
-void CalibrationOrchestrator::attachSourceObservers() {
-    if (sources_attached_.exchange(true))
-        return;
-
-    pressure_source_.addObserver(*this);
-
-    for (auto& src : angle_sources_storage_.all()) {
-        if (src.angle_source.isRunning()) {
-            src.angle_source.addObserver(*this);
-        }
-    }
-
-    logger_.info("Source observers attached");
-}
-
-void CalibrationOrchestrator::detachSourceObservers() {
-    if (!sources_attached_.exchange(false))
-        return;
-
-    pressure_source_.removeObserver(*this);
-
-    for (auto& src : angle_sources_storage_.all()) {
-        if (src.angle_source.isRunning()) {
-            src.angle_source.removeObserver(*this);
-        }
-    }
-
-    logger_.info("Source observers detached");
-}
-
-void CalibrationOrchestrator::attachActuatorObservers() {
-    if (actuators_attached_.exchange(true))
-        return;
-
-    motor_driver_.addObserver(*this);
-    valve_driver_.addObserver(*this);
-
-    logger_.info("Actuator observers attached");
-}
-
-void CalibrationOrchestrator::detachActuatorObservers() {
-    if (!actuators_attached_.exchange(false))
-        return;
-
-    motor_driver_.removeObserver(*this);
-    valve_driver_.removeObserver(*this);
-
-    logger_.info("Actuator observers detached");
-}
-
-// --------------------------
-// Session begin/end (idempotent)
-// --------------------------
-void CalibrationOrchestrator::beginSession() {
-    if (session_begun_.exchange(true))
-        return;
-
-    current_point_index_.store(-1);
-
-    std::vector<float> pp;
-    pp.reserve(config_.pressure_points.value.size());
-    for (const auto& p : config_.pressure_points.value) {
-        pp.push_back(p.to(config_.pressure_unit));
-    }
-
-    // Use last observed direction (no motor control)
-    pressure_points_tracker_.beginTracking(pp, last_direction_.load());
-    tracking_begun_.store(true);
-
-    CalibrationBeginContext ctx;
-    ctx.pressure_points = config_.pressure_points;
-    ctx.pressure_unit = config_.pressure_unit;
-    ctx.calibration_mode = config_.calibration_mode;
-
-    // Strategy begins calibration; it may start motor later from feed()
-    strategy_.begin(ctx);
-
-    lifecycle_.markRunning();
-    logger_.info("Calibration entered Running");
-}
-
-void CalibrationOrchestrator::endSessionIfBegun() {
-    if (session_begun_.exchange(false)) {
-        // Strategy must put hardware into safe state (including motor stop/abort) by contract.
-        strategy_.end();
-    }
-
-    if (tracking_begun_.exchange(false)) {
-        pressure_points_tracker_.endTracking();
-    }
-}
-
-// ----------------------------------------
-// Public API: start/stop/abort
-// ----------------------------------------
-void CalibrationOrchestrator::start(CalibrationOrchestratorInput input) {
-
-    const auto st = lifecycleState();
-
-    if (st != LifecycleState::Idle){
-        logger_.warn("Start rejected: lifecycle state invalid ({})",
-                     static_cast<int>(st));
-        return;
-    }
-
-    const auto limits = motor_driver_.limits();
-    last_limits_.store(limits);
-
-    if (!limits.home){
-        logger_.warn("Start rejected: HOME limit inactive. Use returnToHome().");
-        return;
-    }
-
-    // Ensure pressure source is running before session start
-    if (!pressure_source_.isRunning()) {
-        logger_.info("Starting pressure source...");
-        if (!pressure_source_.start()) {
-            logger_.error("Calibration start failed: pressure_source_.start() returned false");
-            lifecycle_.markError("pressure source start failed");
-            return;
-        }
-    }
-
-
-    if (!lifecycle_.start()) {
-        logger_.warn("Start rejected by lifecycle");
-        return;
-    }
-
-    config_ = input;
-    logger_.info("Calibration start requested");
-
-    // Attach first to avoid losing early events
-    attachActuatorObservers();
-    attachSourceObservers();
-
-    // Refresh observed snapshots (read-only)
-    last_limits_.store(motor_driver_.limits());
-    last_direction_.store(motor_driver_.direction());
-    motor_running_.store(motor_driver_.isRunning()); // read-only; remove if you want *zero* motor method calls
-
-    // Begin session immediately: we must process pressure packets even before motor starts
-    beginSession();
-}
-
-void CalibrationOrchestrator::startHoming() {
-    const auto st = lifecycleState();
-
-    if (st != LifecycleState::Idle)
+    CalibrationOrchestratorState expected = CalibrationOrchestratorState::Stopped;
+    if (!state_.compare_exchange_strong(expected,
+                                        CalibrationOrchestratorState::Starting,
+                                        std::memory_order_acq_rel))
     {
-        logger_.warn("returnToHome rejected: lifecycle state invalid ({})",
-                     static_cast<int>(st));
+        return false;
+    }
+
+    inp_ = input;
+    opened_angle_sources_.clear();
+
+    try
+    {
+        // ---------- Motor ----------
+        if (ports_.motor_driver.state() == MotorDriverState::Uninitialized)
+        {
+            if (!ports_.motor_driver.initialize())
+                throw std::runtime_error(logger_.lastError());
+        }
+        else if (ports_.motor_driver.state() == MotorDriverState::Running)
+        {
+            ports_.motor_driver.stop();
+        }
+
+        // ---------- Cameras ----------
+        const auto opened = ports_.source_manager.opened();
+        if (opened.empty())
+            throw std::runtime_error("No opened angle sources");
+
+        for (const auto& id : opened)
+        {
+            auto src = ports_.source_storage.at(id);
+            if (!src)
+                throw std::runtime_error(fmt::format("Opened angle source is missing in storage: {}", id.value));
+
+            opened_angle_sources_.insert(id);
+        }
+
+        // ---------- Observers ----------
+        attachObservers();
+
+        // ---------- Pressure ----------
+        if (!ports_.pressure_source.isRunning())
+        {
+            if (!ports_.pressure_source.start())
+                throw std::runtime_error(logger_.lastError());
+        }
+
+        // ---------- Strategy ----------
+        CalibrationStrategyBeginContext ctx;
+        ctx.pressure_unit    = inp_.pressure_unit;
+        ctx.calibration_mode = inp_.calibration_mode;
+        ctx.pressure_points  = inp_.pressure_points;
+
+        ports_.strategy.bind(ports_.motor_driver, ports_.recorder);
+        const auto verdict = ports_.strategy.begin(ctx);
+
+        std::visit(
+            [this](const auto& e)
+            {
+                using T = std::decay_t<decltype(e)>;
+
+                if constexpr (std::is_same_v<T, CalibrationStrategyVerdict::Fault>)
+                {
+                    logger_.error("Calibration strategy begin failed: {}", e.error);
+                    throw std::runtime_error(e.error);
+                }
+            },
+            verdict.data);
+
+        state_.store(CalibrationOrchestratorState::Started,
+                     std::memory_order_release);
+
+        ports_.session_clock.start();
+
+        notifyObservers(
+            CalibrationOrchestratorEvent(
+                CalibrationOrchestratorEvent::Started{}));
+
+        return true;
+    }
+    catch (const std::exception& e)
+    {
+        logger_.error("Calibration start failed: {}", e.what());
+
+        // rollback из Starting / partially-started
+        teardown();
+
+        state_.store(CalibrationOrchestratorState::Stopped,
+                     std::memory_order_release);
+
+        CalibrationOrchestratorEvent::Failed ev;
+        ev.error = e.what();
+        notifyObservers(CalibrationOrchestratorEvent(ev));
+
+        return false;
+    }
+}
+
+void CalibrationOrchestrator::stop()
+{
+    std::lock_guard<std::mutex> lock(g_calibration_orchestrator_mutex);
+
+    CalibrationOrchestratorState current = state_.load(std::memory_order_acquire);
+
+    if (current == CalibrationOrchestratorState::Stopped ||
+        current == CalibrationOrchestratorState::Stopping)
+    {
         return;
     }
 
-    const auto limits = motor_driver_.limits();
-    last_limits_.store(limits);
-
-    // Уже дома
-    if (limits.home) {
-        logger_.info("Homing skipped: already at HOME");
+    CalibrationOrchestratorState expected = current;
+    if (!state_.compare_exchange_strong(expected,
+                                        CalibrationOrchestratorState::Stopping,
+                                        std::memory_order_acq_rel))
+    {
         return;
     }
 
-    attachActuatorObservers();
+    teardown();
 
-    if (!lifecycle_.startHoming()) {
-        logger_.warn("returnToHome rejected by lifecycle");
-        detachActuatorObservers();
-        return;
+    state_.store(CalibrationOrchestratorState::Stopped,
+                 std::memory_order_release);
+
+    notifyObservers(
+        CalibrationOrchestratorEvent(
+            CalibrationOrchestratorEvent::Stopped{}));
+}
+
+bool CalibrationOrchestrator::isRunning() const
+{
+    return state_.load(std::memory_order_acquire)
+           == CalibrationOrchestratorState::Started;
+}
+
+void CalibrationOrchestrator::addObserver(ports::CalibrationOrchestratorObserver& observer)
+{
+    std::lock_guard<std::mutex> lock(g_calibration_orchestrator_mutex);
+    observers_.add(observer);
+}
+
+void CalibrationOrchestrator::removeObserver(ports::CalibrationOrchestratorObserver& observer)
+{
+    std::lock_guard<std::mutex> lock(g_calibration_orchestrator_mutex);
+    observers_.remove(observer);
+}
+
+void CalibrationOrchestrator::onPressureSourceEvent(const PressureSourceEvent& ev)
+{
+    std::string error_to_report;
+
+    {
+        std::lock_guard<std::mutex> lock(g_calibration_orchestrator_mutex);
+
+        if (state_.load(std::memory_order_acquire) != CalibrationOrchestratorState::Started)
+            return;
+
+        std::visit(
+            [&error_to_report](const auto& e)
+            {
+                using T = std::decay_t<decltype(e)>;
+
+                if constexpr (std::is_same_v<T, PressureSourceEvent::Closed>)
+                {
+                    error_to_report = "Pressure source closed";
+                }
+                else if constexpr (std::is_same_v<T, PressureSourceEvent::Failed>)
+                {
+                    error_to_report = "Pressure source failed";
+                }
+            },
+            ev.data);
     }
 
-    homing_stop_requested_.store(false);
-
-    strategy_.beginHoming();
-    logger_.info("Homing started");
+    if (!error_to_report.empty())
+        stopWithError(error_to_report);
 }
 
-void CalibrationOrchestrator::stopHoming() {
-}
+void CalibrationOrchestrator::onPressurePacket(const PressurePacket& p)
+{
+    enum class Action
+    {
+        None,
+        Complete,
+        Fail
+    };
 
-void CalibrationOrchestrator::stop() {
-    requestGracefulStop("stop() requested");
-}
+    Action action = Action::None;
+    std::string error;
 
-void CalibrationOrchestrator::abort() {
-    abortNow("abort() requested");
-}
+    {
+        std::lock_guard<std::mutex> lock(g_calibration_orchestrator_mutex);
 
-// ----------------------------------------
-// Internal stop/abort paths
-// ----------------------------------------
-void CalibrationOrchestrator::requestGracefulStop(const char* reason) {
+        if (state_.load(std::memory_order_acquire) != CalibrationOrchestratorState::Started)
+            return;
 
-    const auto st = lifecycleState();
+        CalibrationStrategyFeedContext ctx;
+        ctx.timestamp = p.timestamp.asSeconds();
+        ctx.pressure  = p.pressure.to(inp_.pressure_unit);
 
-    if (strlen(reason) > 0) {
-        logger_.warn("Graceful stop with error: {}", reason);
-        detachSourceObservers();
-        detachActuatorObservers();
-        lifecycle_.markIdle();
-        return;
+        const auto verdict = ports_.strategy.feed(ctx);
+
+        std::visit(
+            [this, &action, &error](const auto& v)
+            {
+                using T = std::decay_t<decltype(v)>;
+
+                if constexpr (std::is_same_v<T, CalibrationStrategyVerdict::Complete>)
+                {
+                    logger_.info("Calibration strategy finished successfully.");
+                    action = Action::Complete;
+                }
+                else if constexpr (std::is_same_v<T, CalibrationStrategyVerdict::Fault>)
+                {
+                    logger_.error("Calibration strategy failed: {}", v.error);
+                    action = Action::Fail;
+                    error = v.error;
+                }
+            },
+            verdict.data);
+
+        if (action == Action::None &&
+            state_.load(std::memory_order_acquire) == CalibrationOrchestratorState::Started)
+        {
+            ports_.recorder.pushPressure(
+                p.timestamp.asSeconds(),
+                p.pressure.to(inp_.pressure_unit));
+        }
     }
 
-    if (st == LifecycleState::Idle)
-        return;
-
-    if (st == LifecycleState::Starting) {
-        cancelStartToIdle(reason);
-        return;
+    if (action == Action::Complete)
+    {
+        stop();
     }
-
-    if (st != LifecycleState::Running) {
-        logger_.warn("Graceful stop ignored: lifecycle state not Running");
-        return;
-    }
-
-    logger_.info("Calibration graceful stop requested: {}", reason);
-
-    if (!lifecycle_.stop()) {
-        logger_.warn("Lifecycle rejected stop()");
-        return;
-    }
-
-    // Stop feeding strategy first
-    detachSourceObservers();
-
-    // End session (strategy.end() is where motor stop should happen)
-    endSessionIfBegun();
-
-    // If motor is not running, finalize immediately; otherwise wait for onMotorStopped()
-    if (!motor_running_.load()) {
-        detachActuatorObservers();
-        lifecycle_.markIdle();
-        logger_.info("Calibration stopped -> Idle (motor already stopped)");
-    }
-}
-
-void CalibrationOrchestrator::cancelStartToIdle(const char* reason) {
-    logger_.info("Cancel start -> Idle: {}", reason);
-
-    detachSourceObservers();
-    endSessionIfBegun();
-
-    // No motor control here; strategy.end() is responsible for safe hardware state
-    detachActuatorObservers();
-    lifecycle_.markIdle();
-}
-
-void CalibrationOrchestrator::abortNow(const char* reason) {
-
-    const auto st = lifecycleState();
-    if (st == LifecycleState::Idle)
-        return;
-
-    logger_.error("Calibration abort: {}", reason);
-
-    // Stop feeding immediately (prevents further strategy.feed)
-    detachSourceObservers();
-
-    // End session (strategy must perform emergency-safe actions by contract)
-    endSessionIfBegun();
-
-    // Mark lifecycle error
-    lifecycle_.markError(reason);
-
-    // Keep actuator observers until motor actually stops (for determinism/logging),
-    // but if it's already stopped we can detach now.
-    if (!motor_running_.load()) {
-        detachActuatorObservers();
-    }
-}
-
-// ----------------------------------------
-// Pressure points tracker observer
-// ----------------------------------------
-void CalibrationOrchestrator::onPointEntered(int index) {
-    current_point_index_.store(index);
-    logger_.info("Entered pressure point {}", index);
-}
-
-void CalibrationOrchestrator::onPointExited(int index) {
-    const auto cur = current_point_index_.load();
-    if (cur == index) {
-        current_point_index_.store(-1);
-    }
-    logger_.info("Exited pressure point {}", index);
-}
-
-// ----------------------------------------
-// Motor callbacks (observe-only)
-// ----------------------------------------
-void CalibrationOrchestrator::onMotorStarted() {
-    motor_running_.store(true);
-
-    const auto st = lifecycleState();
-    logger_.info("Motor started (lifecycle={})", static_cast<int>(st));
-}
-
-void CalibrationOrchestrator::onMotorStopped() {
-    motor_running_.store(false);
-
-    const auto st = lifecycleState();
-
-    if (st == LifecycleState::Stopping) {
-        logger_.info("Motor stopped: finalize -> Idle");
-        detachActuatorObservers();
-        lifecycle_.markIdle();
-        return;
-    }
-
-    logger_.warn("onMotorStopped ignored in state {}", static_cast<int>(st));
-}
-
-void CalibrationOrchestrator::onMotorStartFailed(const MotorDriverError&) {
-    abortNow("motor start failed callback");
-}
-
-void CalibrationOrchestrator::onMotorLimitsStateChanged(MotorLimitsState s) {
-    last_limits_.store(s);
-}
-
-void CalibrationOrchestrator::onMotorDirectionChanged(MotorDirection d) {
-    last_direction_.store(d);
-}
-
-// ----------------------------------------
-// Valve callbacks (observe-only safety)
-// ----------------------------------------
-void CalibrationOrchestrator::onInputFlapOpened() {
-    if (motor_running_.load()) {
-        abortNow("input flap opened while motor running");
+    else if (action == Action::Fail)
+    {
+        stopWithError(error);
     }
 }
 
-void CalibrationOrchestrator::onOutputFlapOpened() {
-    if (motor_running_.load()) {
-        abortNow("output flap opened while motor running");
-    }
-}
+void CalibrationOrchestrator::onAnglePacket(const AngleSourcePacket& p)
+{
+    std::lock_guard<std::mutex> lock(g_calibration_orchestrator_mutex);
 
-void CalibrationOrchestrator::onFlapsClosed() {
-    // ignore
-}
-
-// ----------------------------------------
-// Pressure source callbacks
-// ----------------------------------------
-void CalibrationOrchestrator::onPressurePacket(const PressurePacket& p) {
-
-    if (lifecycleState() != LifecycleState::Running)
+    if (state_.load(std::memory_order_acquire) != CalibrationOrchestratorState::Started)
         return;
 
-    const float ts = p.timestamp.asSeconds();
-    const float pressure = p.pressure.to(config_.pressure_unit);
-
-    recorder_.pushPressure(ts, pressure);
-    pressure_points_tracker_.update(pressure);
-
-    domain::common::CalibrationFeedContext ctx;
-    ctx.timestamp = ts;
-    ctx.pressure = pressure;
-    ctx.mode = config_.calibration_mode;
-    ctx.limits = last_limits_.load();
-
-    const int idx = current_point_index_.load();
-    ctx.current_point = (idx >= 0) ? std::optional<int>(idx) : std::nullopt;
-
-    const auto decision = strategy_.feed(ctx);
-
-    if (decision == domain::ports::CalibrationDecisionType::Finish) {
-        requestGracefulStop("strategy decision: Finish");
-        return;
-    }
-
-    if (decision == domain::ports::CalibrationDecisionType::Fault) {
-        abortNow("strategy decision: Fault");
-        return;
-    }
-}
-
-void CalibrationOrchestrator::onPressureSourceOpened() {
-    logger_.info("Pressure source opened");
-}
-
-void CalibrationOrchestrator::onPressureSourceOpenFailed(const PressureSourceError&) {
-    abortNow("pressure source open failed");
-}
-
-void CalibrationOrchestrator::onPressureSourceClosed(const PressureSourceError&) {
-    const auto st = lifecycleState();
-    if (st == LifecycleState::Starting || st == LifecycleState::Running) {
-        abortNow("pressure source closed during calibration");
-    }
-}
-
-// ----------------------------------------
-// Angle source callbacks
-// ----------------------------------------
-void CalibrationOrchestrator::onAngleSourceStarted() {
-    // ignore (if you need dynamic attach: attach on start here)
-}
-
-void CalibrationOrchestrator::onAngleSourceStopped() {
-    const auto st = lifecycleState();
-    if (st == LifecycleState::Starting || st == LifecycleState::Running) {
-        abortNow("angle source stopped during calibration");
-    }
-}
-
-void CalibrationOrchestrator::onAngleSourceFailed(const AngleSourceError&) {
-    abortNow("angle source failed during calibration");
-}
-
-void CalibrationOrchestrator::onAngleSourcePacket(const AngleSourcePacket& p) {
-
-    if (lifecycleState() != LifecycleState::Running)
-        return;
-
-    recorder_.pushAngle(
+    ports_.recorder.pushAngle(
         p.source_id,
         p.timestamp.asSeconds(),
-        p.angle.to(config_.angle_unit));
+        p.angle.to(inp_.angle_unit));
+}
+
+void CalibrationOrchestrator::onAngleSourceEvent(const AngleSourceEvent& ev)
+{
+    std::string error_to_report;
+
+    {
+        std::lock_guard<std::mutex> lock(g_calibration_orchestrator_mutex);
+
+        if (state_.load(std::memory_order_acquire) != CalibrationOrchestratorState::Started)
+            return;
+
+        std::visit(
+            [&error_to_report](const auto& e)
+            {
+                using T = std::decay_t<decltype(e)>;
+
+                if constexpr (std::is_same_v<T, AngleSourceEvent::Stopped>)
+                {
+                    error_to_report = "Angle source stopped";
+                }
+                else if constexpr (std::is_same_v<T, AngleSourceEvent::Failed>)
+                {
+                    error_to_report = e.error.error;
+                }
+            },
+            ev.data);
+    }
+
+    if (!error_to_report.empty())
+        stopWithError(error_to_report);
+}
+
+void CalibrationOrchestrator::onMotorEvent(const MotorDriverEvent& ev)
+{
+    std::string error_to_report;
+
+    {
+        std::lock_guard<std::mutex> lock(g_calibration_orchestrator_mutex);
+
+        if (state_.load(std::memory_order_acquire) != CalibrationOrchestratorState::Started)
+            return;
+
+        std::visit(
+            [&error_to_report](const auto& e)
+            {
+                using T = std::decay_t<decltype(e)>;
+
+                if constexpr (std::is_same_v<T, MotorDriverEvent::Fault>)
+                {
+                    error_to_report = e.error.message;
+                }
+            },
+            ev.data);
+    }
+
+    if (!error_to_report.empty())
+        stopWithError(error_to_report);
+}
+
+void CalibrationOrchestrator::attachObservers()
+{
+    ports_.motor_driver.addObserver(*this);
+    ports_.pressure_source.addObserver(*this);
+
+    for (const auto& id : opened_angle_sources_)
+    {
+        auto it = ports_.source_storage.at(id);
+        if (!it)
+            throw std::runtime_error(fmt::format("Angle source disappeared during attach: {}", id.value));
+
+        it->angle_source.addObserver(*this);
+    }
+}
+
+void CalibrationOrchestrator::detachObservers()
+{
+    ports_.motor_driver.removeObserver(*this);
+    ports_.pressure_source.removeObserver(*this);
+
+    for (const auto& id : opened_angle_sources_)
+    {
+        auto it = ports_.source_storage.at(id);
+        if (it)
+            it->angle_source.removeObserver(*this);
+    }
+}
+
+void CalibrationOrchestrator::notifyObservers(const CalibrationOrchestratorEvent& ev)
+{
+    observers_.notify(
+        [&ev](ports::CalibrationOrchestratorObserver& o)
+        {
+            o.onCalibrationOrchestratorEvent(ev);
+        });
+}
+
+void CalibrationOrchestrator::teardown()
+{
+    // Вызывается только под g_calibration_orchestrator_mutex
+    detachObservers();
+
+    ports_.motor_driver.stop();
+    ports_.pressure_source.stop();
+
+    ports_.strategy.end();
+    ports_.session_clock.stop();
+}
+
+void CalibrationOrchestrator::stopWithError(const std::string& error)
+{
+    std::lock_guard<std::mutex> lock(g_calibration_orchestrator_mutex);
+
+    auto current = state_.load(std::memory_order_acquire);
+    if (current != CalibrationOrchestratorState::Starting &&
+        current != CalibrationOrchestratorState::Started)
+    {
+        return;
+    }
+
+    CalibrationOrchestratorState expected = current;
+    if (!state_.compare_exchange_strong(expected,
+                                        CalibrationOrchestratorState::Stopping,
+                                        std::memory_order_acq_rel))
+    {
+        return;
+    }
+
+    teardown();
+
+    state_.store(CalibrationOrchestratorState::Stopped,
+                 std::memory_order_release);
+
+    CalibrationOrchestratorEvent::Failed ev;
+    ev.error = error;
+
+    notifyObservers(CalibrationOrchestratorEvent(ev));
 }

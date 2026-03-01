@@ -5,7 +5,7 @@
 
 namespace domain::common {
 
-    struct CalibrationBeginContext {
+    struct CalibrationStrategyBeginContext {
         PressureUnit pressure_unit;
 
         CalibrationMode calibration_mode;

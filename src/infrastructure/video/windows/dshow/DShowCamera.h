@@ -20,7 +20,7 @@ namespace infra::camera {
         explicit DShowCamera(VideoSourcePorts ports, DShowCameraConfig config);
         ~DShowCamera() override;
 
-        void open() override;
+        bool open() override;
         void close() override;
         bool isRunning() const noexcept override;
 

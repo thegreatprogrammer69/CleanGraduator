@@ -8,7 +8,7 @@ namespace domain::ports {
     struct IVideoSource {
         virtual ~IVideoSource() = default;
 
-        virtual void open() = 0;
+        virtual bool open() = 0;
         virtual void close() = 0;
         virtual bool isRunning() const noexcept = 0;
 

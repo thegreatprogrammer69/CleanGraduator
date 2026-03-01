@@ -1,11 +1,7 @@
 #ifndef CLEANGRADUATOR_PRESSURESOURCENOTIFIER_H
 #define CLEANGRADUATOR_PRESSURESOURCENOTIFIER_H
 
-#include <algorithm>
-#include <vector>
-#include <mutex>
-
-#include "infrastructure/utils/thread/ThreadSafeObserverList.h"
+#include "shared/ThreadSafeObserverList.h"
 
 namespace domain::common {
     struct PressurePacket;

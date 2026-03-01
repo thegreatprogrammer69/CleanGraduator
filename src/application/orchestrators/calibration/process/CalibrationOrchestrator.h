@@ -2,74 +2,76 @@
 #define CLEANGRADUATOR_CALIBRATIONPROCESSORCHESTRATOR_H
 
 #include <atomic>
-#include <optional>
+#include <set>
+#include <mutex>
 
+#include "CalibrationOrchestratorState.h"
 #include "CalibrationOrchestratorInput.h"
 #include "CalibrationOrchestratorPorts.h"
-#include "domain/core/calibration/lifecycle/CalibrationLifecycleState.h"
+#include "application/ports/calibration/orchestration/CalibrationOrchestratorObserver.h"
+#include "domain/core/angle/AngleSourceId.h"
+#include "domain/fmt/Logger.h"
 #include "domain/ports/angle/IAngleSink.h"
 #include "domain/ports/angle/IAngleSourceObserver.h"
 #include "domain/ports/drivers/motor/IMotorDriverObserver.h"
 #include "domain/ports/pressure/IPressureSink.h"
 #include "domain/ports/pressure/IPressureSourceObserver.h"
+#include "shared/ThreadSafeObserverList.h"
+
+namespace application::ports {
+    struct CalibrationOrchestratorObserver;
+}
 
 namespace application::orchestrators {
 
-class CalibrationOrchestrator final
-    : domain::ports::IPressureSourceObserver
-    , domain::ports::IPressureSink
-    , domain::ports::IAngleSourceObserver
-    , domain::ports::IAngleSink
-    , domain::ports::IMotorDriverObserver
+class CalibrationOrchestrator
+        : domain::ports::IPressureSourceObserver
+          , domain::ports::IPressureSink
+          , domain::ports::IAngleSourceObserver
+          , domain::ports::IAngleSink
+          , domain::ports::IMotorDriverObserver
 {
 public:
     explicit CalibrationOrchestrator(CalibrationOrchestratorPorts ports);
     ~CalibrationOrchestrator() override;
 
     // API
-    void start(CalibrationOrchestratorInput input);
+    bool start(CalibrationOrchestratorInput input);
     void stop();
     bool isRunning() const;
 
+    void addObserver(ports::CalibrationOrchestratorObserver& observer);
+    void removeObserver(ports::CalibrationOrchestratorObserver& observer);
+
+    // Observers and Sinks
+    void onPressureSourceEvent(const domain::common::PressureSourceEvent &) override;
+    void onPressurePacket(const domain::common::PressurePacket &) override;
+    void onAnglePacket(const domain::common::AngleSourcePacket &) override;
+    void onAngleSourceEvent(const domain::common::AngleSourceEvent &) override;
+    void onMotorEvent(const domain::common::MotorDriverEvent &event) override;
+
+
 private:
-    using LifecycleState = domain::common::CalibrationLifecycleState;
-
-    LifecycleState lifecycleState() const;
-
-    void attachObservers()
+    void attachObservers();
     void detachObservers();
 
+    void notifyObservers(const CalibrationOrchestratorEvent& ev);
+
+    void teardown();
+
+    void stopWithError(const std::string& error);
+
 private:
-    // Config
-    CalibrationOrchestratorInput config_{};
+    std::atomic<CalibrationOrchestratorState> state_;
+    std::set<domain::common::AngleSourceId> opened_angle_sources_;
 
-    // Trackers/state
-    domain::common::PressurePointsTracker pressure_points_tracker_;
+    mutable std::mutex lifecycle_mutex_;
+    ThreadSafeObserverList<ports::CalibrationOrchestratorObserver> observers_;
 
-    std::atomic<bool> homing_stop_requested_{false};
-
-    std::atomic<bool> sources_attached_{false};
-    std::atomic<bool> actuators_attached_{false};
-
-    std::atomic<bool> session_begun_{false};
-    std::atomic<bool> tracking_begun_{false};
-
-    std::atomic<int> current_point_index_{-1};
-
-    // Observe-only motor facts (no motor control calls)
-    std::atomic<bool> motor_running_{false};
-    std::atomic<domain::common::MotorDirection> last_direction_{domain::common::MotorDirection::Forward};
-    std::atomic<domain::common::MotorLimitsState> last_limits_{};
-
-    // Ports
     fmt::Logger logger_;
-    domain::ports::IPressureSource& pressure_source_;
-    ports::IVideoAngleSourcesStorage& angle_sources_storage_;
-    domain::ports::IMotorDriver& motor_driver_;   // observe-only usage
-    domain::ports::IValveDriver& valve_driver_;   // observe-only usage
-    domain::ports::ICalibrationStrategy& strategy_;
-    domain::ports::ICalibrationRecorder& recorder_;
-    domain::ports::ICalibrationLifecycle& lifecycle_;
+
+    CalibrationOrchestratorPorts ports_;
+    CalibrationOrchestratorInput inp_;
 };
 
 } // namespace application::orchestrators

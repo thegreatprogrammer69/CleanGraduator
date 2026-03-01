@@ -14,6 +14,8 @@
 #include "domain/core/angle/AngleSourceId.h"
 #include "domain/core/angle/AngleSourceError.h"
 #include "domain/fmt/Logger.h"
+#include "domain/ports/video/IVideoSink.h"
+#include "shared/ThreadSafeObserverList.h"
 
 namespace domain::ports {
     struct IVideoSource;
@@ -23,7 +25,7 @@ namespace domain::ports {
 namespace application::orchestrators {
 
 class AngleFromVideoInteractor final
-    : public domain::ports::IVideoSourceObserver
+    : public domain::ports::IVideoSink
     , public domain::ports::IAngleSource
 {
 public:
@@ -36,15 +38,12 @@ public:
     void stop() override;
     bool isRunning() const noexcept override;
 
-    void addObserver(domain::ports::IAngleSourceObserver& sink) override;
-    void removeObserver(domain::ports::IAngleSourceObserver& sink) override;
+    void addSink(domain::ports::IAngleSink &) override;
+    void removeSink(domain::ports::IAngleSink &) override;
 
 private:
     // IVideoSourceObserver
-    void onVideoFrame(const domain::common::VideoFramePacket& packet) override;
-    void onVideoSourceOpened() override;
-    void onVideoSourceFailed(const domain::common::VideoSourceError& err) override;
-    void onVideoSourceClosed() override;
+
 
 private:
     enum class State : uint8_t { Stopped, Starting, Running, Stopping };
@@ -52,6 +51,9 @@ private:
     void notifyStarted_();
     void notifyStopped_();
     void notifyFailed_(const char* msg);
+
+public:
+    void onVideoFrame(const domain::common::VideoFramePacket &) override;
 
 private:
     domain::common::AngleSourceId id_;
@@ -62,8 +64,7 @@ private:
 
     std::atomic<State> state_{State::Stopped};
 
-    std::mutex mutex_;
-    std::vector<domain::ports::IAngleSourceObserver*> observers_;
+    ThreadSafeObserverList<domain::ports::IAngleSink> sinks_;
 };
 
 } // namespace application::orchestrators

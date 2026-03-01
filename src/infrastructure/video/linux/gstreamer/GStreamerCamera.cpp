@@ -13,9 +13,12 @@
 #include "domain/core/video/VideoFrame.h"
 #include "domain/core/video/VideoFramePacket.h"
 #include "domain/core/video/VideoSourceError.h"
+#include "domain/core/video/VideoSourceEvent.h"
 #include "domain/ports/clock/IClock.h"
 
 namespace infra::camera {
+
+    using namespace domain::common;
 
 namespace {
 
@@ -76,20 +79,20 @@ bool readCapsWHF(GstSample* sample, int& w, int& h, const char*& fmtStr) {
     return true;
 }
 
-domain::common::PixelFormat mapPixelFormat(const char* gstFormat) {
-    if (!gstFormat) return domain::common::PixelFormat::YUYV;
+PixelFormat mapPixelFormat(const char* gstFormat) {
+    if (!gstFormat) return PixelFormat::YUYV;
 
     // GStreamer обычно называет YUYV как "YUY2"
     if (std::strcmp(gstFormat, "YUY2") == 0 || std::strcmp(gstFormat, "YUYV") == 0) {
-        return domain::common::PixelFormat::YUYV;
+        return PixelFormat::YUYV;
     }
 
     if (std::strcmp(gstFormat, "RGB") == 0) {
-        return domain::common::PixelFormat::RGB24;
+        return PixelFormat::RGB24;
     }
 
     // "RGB", "BGR", "GRAY8", "NV12", ...
-    return domain::common::PixelFormat::YUYV;
+    return PixelFormat::YUYV;
 }
 
 void logBusMessages(fmt::Logger& logger, GstBus* bus, std::atomic<bool>& running) {
@@ -136,8 +139,10 @@ GStreamerCamera::~GStreamerCamera() {
 bool GStreamerCamera::open() {
     auto abort_opening = [this]() {
         this->close();
-        const domain::common::VideoSourceError err{logger_.lastError()};
-        notifier_.notifyFailed(err);
+        const VideoSourceError err{logger_.lastError()};
+        VideoSourceEvent::Failed ev;
+        ev.error = err;
+        notifier_.notifyEvent(VideoSourceEvent(ev));
     };
 
     if (running_.load()) return false;
@@ -200,7 +205,9 @@ bool GStreamerCamera::open() {
 
     logger_.info("GStreamerCamera started: {}", config_.pipe);
 
-    notifier_.notifyOpened();
+    VideoSourceEvent::Opened ev;
+    notifier_.notifyEvent(VideoSourceEvent(ev));
+
     return true;
 }
 
@@ -231,7 +238,20 @@ void GStreamerCamera::close() {
         pipeline_ = nullptr;
     }
 
-    notifier_.notifyClosed();
+    VideoSourceEvent::Closed ev;
+    notifier_.notifyEvent(VideoSourceEvent(ev));
+}
+
+bool GStreamerCamera::isRunning() const noexcept {
+    return running_.load();
+}
+
+void GStreamerCamera::addSink(domain::ports::IVideoSink &s) {
+    notifier_.addSink(s);
+}
+
+void GStreamerCamera::removeSink(domain::ports::IVideoSink &s) {
+    notifier_.removeSink(s);
 }
 
 void GStreamerCamera::addObserver(domain::ports::IVideoSourceObserver &o) {
@@ -261,7 +281,8 @@ void GStreamerCamera::captureLoop() {
         gst_sample_unref(sample);
     }
 
-    notifier_.notifyClosed();
+    VideoSourceEvent::Closed ev;
+    notifier_.notifyEvent(VideoSourceEvent(ev));
 }
 
 void GStreamerCamera::dispatchSample(GstSample* sample) {
@@ -280,18 +301,18 @@ void GStreamerCamera::dispatchSample(GstSample* sample) {
     const char* fmtStr = nullptr;
     (void)readCapsWHF(sample, w, h, fmtStr);
 
-    auto frame = std::make_shared<domain::common::VideoFrame>();
+    auto frame = std::make_shared<VideoFrame>();
     frame->width  = w;
     frame->height = h;
     frame->format = mapPixelFormat(fmtStr);
-    frame->buffer = domain::common::VideoBuffer(static_cast<int>(map.size));
+    frame->buffer = VideoBuffer(static_cast<int>(map.size));
 
     std::memcpy(frame->buffer.data, map.data, map.size);
     gst_buffer_unmap(buffer, &map);
 
-    const domain::common::Timestamp ts = ports_.clock.now();
+    const Timestamp ts = ports_.clock.now();
 
-    domain::common::VideoFramePacket packet;
+    VideoFramePacket packet;
     packet.timestamp = ts;
     packet.frame = frame;
 

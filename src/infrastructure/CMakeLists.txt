@@ -36,7 +36,6 @@ set(SOURCES
         factory/PressureSourceFactory.cpp
         factory/MotorDriverFactory.cpp
 
-        calibration/lifecycle/CalibrationLifecycle.cpp
         calibration/strats/stand4/Stand4FrequencyCalculator.cpp
         calibration/strats/stand4/Stand4CalibrationStrategy.cpp
 
@@ -76,7 +75,6 @@ elseif(UNIX)
             platform/sleep/sleep_linux.cpp
             video/linux/v4l/V4LCamera.cpp
             video/linux/gstreamer/GStreamerCamera.cpp
-            utils/thread/ThreadSafeObserverList.h
     )
 endif()
 

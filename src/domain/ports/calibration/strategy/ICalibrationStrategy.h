@@ -1,21 +1,15 @@
 #ifndef CLEANGRADUATOR_ICALIBRATIONSTRATEGY_H
 #define CLEANGRADUATOR_ICALIBRATIONSTRATEGY_H
+#include "domain/core/calibration/strategy/CalibrationStrategyVerdict.h"
 
 namespace domain::common {
-    struct CalibrationBeginContext;
-    struct CalibrationFeedContext;
+    struct CalibrationStrategyBeginContext;
+    struct CalibrationStrategyFeedContext;
 }
 
 namespace domain::ports {
     struct IMotorDriver;
     struct ICalibrationRecorder;
-
-    enum class CalibrationDecisionType {
-        None,
-        SwitchToBackward,
-        Finish,
-        Fault
-    };
 
     class ICalibrationStrategy {
     public:
@@ -23,9 +17,9 @@ namespace domain::ports {
 
         virtual void bind(IMotorDriver& motor, ICalibrationRecorder& recorder) = 0;
 
-        virtual void begin(const common::CalibrationBeginContext&) = 0;
+        virtual common::CalibrationStrategyVerdict begin(const common::CalibrationStrategyBeginContext&) = 0;
 
-        virtual CalibrationDecisionType feed(const common::CalibrationFeedContext&) = 0;
+        virtual common::CalibrationStrategyVerdict feed(const common::CalibrationStrategyFeedContext&) = 0;
 
         virtual void end() = 0;
 

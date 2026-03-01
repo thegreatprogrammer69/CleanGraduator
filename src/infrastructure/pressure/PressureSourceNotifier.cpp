@@ -24,7 +24,7 @@ void PressureSourceNotifier::removeSink(IPressureSink &sink) {
 
 void PressureSourceNotifier::notifyPressure(const PressurePacket& packet) {
     sinks_.notify([&packet](IPressureSink& s) {
-        s.onPressure(packet);
+        s.onPressurePacket(packet);
     });
 }
 

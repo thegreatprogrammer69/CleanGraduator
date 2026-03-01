@@ -8,6 +8,7 @@
 
 #include "domain/core/video/VideoFramePacket.h"
 #include "domain/core/angle/AngleSourcePacket.h"
+#include "domain/ports/angle/IAngleSink.h"
 
 namespace application::orchestrators {
 
@@ -18,18 +19,26 @@ AngleFromVideoInteractor::AngleFromVideoInteractor(domain::common::AngleSourceId
     , anglemeter_(ports.anglemeter)
     , logger_(ports.logger)
 {
-    video_source_.addObserver(*this);
+    video_source_.addSink(*this);
     logger_.info("AngleFromVideoInteractor constructed");
 }
 
 AngleFromVideoInteractor::~AngleFromVideoInteractor() {
-    stop(); // идемпотентно
-    video_source_.removeObserver(*this);
+    stop();
+    video_source_.addSink(*this);
     logger_.info("AngleFromVideoInteractor destroyed");
 }
 
 bool AngleFromVideoInteractor::isRunning() const noexcept {
     return state_.load(std::memory_order_acquire) == State::Running;
+}
+
+void AngleFromVideoInteractor::addSink(domain::ports::IAngleSink &s) {
+    sinks_.add(s);
+}
+
+void AngleFromVideoInteractor::removeSink(domain::ports::IAngleSink &s) {
+    sinks_.remove(s);
 }
 
 void AngleFromVideoInteractor::start() {
@@ -79,80 +88,9 @@ void AngleFromVideoInteractor::stop() {
     }
 }
 
-void AngleFromVideoInteractor::addObserver(domain::ports::IAngleSourceObserver& sink) {
-    bool shouldNotifyStarted = false;
-
-    {
-        std::lock_guard<std::mutex> lock(mutex_);
-        auto it = std::find(observers_.begin(), observers_.end(), &sink);
-        if (it == observers_.end()) {
-            observers_.push_back(&sink);
-        }
-        shouldNotifyStarted = (state_.load(std::memory_order_acquire) == State::Running);
-    }
-
-    if (shouldNotifyStarted) {
-        sink.onAngleSourceStarted();
-    }
-}
-
-void AngleFromVideoInteractor::removeObserver(domain::ports::IAngleSourceObserver& sink) {
-    std::lock_guard<std::mutex> lock(mutex_);
-    observers_.erase(std::remove(observers_.begin(), observers_.end(), &sink), observers_.end());
-}
-
-void AngleFromVideoInteractor::onVideoSourceOpened() {
-    State s = state_.load(std::memory_order_acquire);
-
-    if (s == State::Starting) {
-        state_.store(State::Running, std::memory_order_release);
-        logger_.info("video opened -> Running");
-        notifyStarted_();
-        return;
-    }
-
-    if (s == State::Stopping) {
-        logger_.warn("video opened while stopping -> closing");
-        try { video_source_.close(); } catch (...) {}
-        return;
-    }
-
-    // Running/Stopped — игнорируем
-    logger_.warn("onVideoSourceOpened(): unexpected state");
-}
-
-void AngleFromVideoInteractor::onVideoSourceFailed(const domain::common::VideoSourceError& /*err*/) {
-    State s = state_.load(std::memory_order_acquire);
-    if (s == State::Stopped) {
-        return;
-    }
-
-    logger_.error("video source failed");
-    notifyFailed_("video source failed");
-
-    state_.store(State::Stopped, std::memory_order_release);
-    notifyStopped_();
-}
-
-void AngleFromVideoInteractor::onVideoSourceClosed() {
-    State prev = state_.exchange(State::Stopped, std::memory_order_acq_rel);
-    if (prev == State::Stopped) {
-        return;
-    }
-
-    logger_.info("video closed -> Stopped");
-    notifyStopped_();
-}
-
 void AngleFromVideoInteractor::onVideoFrame(const domain::common::VideoFramePacket& packet) {
     if (state_.load(std::memory_order_acquire) != State::Running) {
         return;
-    }
-
-    std::vector<domain::ports::IAngleSourceObserver*> sinks;
-    {
-        std::lock_guard<std::mutex> lock(mutex_);
-        sinks = observers_;
     }
 
     domain::common::AngleCalculatorInput input{};
@@ -174,50 +112,9 @@ void AngleFromVideoInteractor::onVideoFrame(const domain::common::VideoFramePack
     out.timestamp = packet.timestamp;
     out.angle = angle;
 
-    for (auto* s : sinks) {
-        if (s) {
-            s->onAngleSourcePacket(out);
-        }
-    }
-}
-
-// ----- notifications (без локов во время callback'ов) -----
-
-void AngleFromVideoInteractor::notifyStarted_() {
-    std::vector<domain::ports::IAngleSourceObserver*> sinks;
-    {
-        std::lock_guard<std::mutex> lock(mutex_);
-        sinks = observers_;
-    }
-    for (auto* s : sinks) {
-        if (s) s->onAngleSourceStarted();
-    }
-}
-
-void AngleFromVideoInteractor::notifyStopped_() {
-    std::vector<domain::ports::IAngleSourceObserver*> sinks;
-    {
-        std::lock_guard<std::mutex> lock(mutex_);
-        sinks = observers_;
-    }
-    for (auto* s : sinks) {
-        if (s) s->onAngleSourceStopped();
-    }
-}
-
-void AngleFromVideoInteractor::notifyFailed_(const char* msg) {
-    domain::common::AngleSourceError e{};
-    e.id = id_;
-    e.error = msg;
-
-    std::vector<domain::ports::IAngleSourceObserver*> sinks;
-    {
-        std::lock_guard<std::mutex> lock(mutex_);
-        sinks = observers_;
-    }
-    for (auto* s : sinks) {
-        if (s) s->onAngleSourceFailed(e);
-    }
+    sinks_.notify([&out](domain::ports::IAngleSink& o) {
+        o.onAnglePacket(out);
+    });
 }
 
 } // namespace application::orchestrators

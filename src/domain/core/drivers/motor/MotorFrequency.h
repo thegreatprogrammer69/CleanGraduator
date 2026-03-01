@@ -1,5 +1,6 @@
 #ifndef CLEANGRADUATOR_MOTORFREQUENCY_H
 #define CLEANGRADUATOR_MOTORFREQUENCY_H
+#include <atomic>
 #include <chrono>
 
 namespace domain::common {

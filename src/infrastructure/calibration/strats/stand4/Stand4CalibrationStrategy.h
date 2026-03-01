@@ -23,9 +23,9 @@ namespace infra::calib::stand4 {
             domain::ports::IMotorDriver& motor,
             domain::ports::ICalibrationRecorder& recorder) override;
 
-        void begin(const domain::common::CalibrationBeginContext& ctx) override;
+        domain::common::CalibrationStrategyVerdict begin(const domain::common::CalibrationStrategyBeginContext& ctx) override;
 
-        domain::ports::CalibrationDecisionType feed(const domain::common::CalibrationFeedContext& ctx) override;
+        domain::common::CalibrationStrategyVerdict feed(const domain::common::CalibrationStrategyFeedContext& ctx) override;
 
         void end() override;
 
@@ -42,9 +42,9 @@ namespace infra::calib::stand4 {
         };
 
     private:
-        void updatePreload(const domain::common::CalibrationFeedContext& ctx);
-        void updateForward(const domain::common::CalibrationFeedContext& ctx);
-        void updateBackward(const domain::common::CalibrationFeedContext& ctx);
+        void updatePreload(const domain::common::CalibrationStrategyFeedContext& ctx);
+        void updateForward(const domain::common::CalibrationStrategyFeedContext& ctx);
+        void updateBackward(const domain::common::CalibrationStrategyFeedContext& ctx);
 
     private:
         domain::ports::IMotorDriver* motor_{nullptr};

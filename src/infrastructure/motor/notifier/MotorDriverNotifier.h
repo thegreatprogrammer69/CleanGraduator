@@ -1,10 +1,7 @@
 #ifndef CLEANGRADUATOR_MOTORDRIVERNOTIFIER_H
 #define CLEANGRADUATOR_MOTORDRIVERNOTIFIER_H
+#include "shared/ThreadSafeObserverList.h"
 
-#include <vector>
-#include <mutex>
-
-#include "infrastructure/utils/thread/ThreadSafeObserverList.h"
 
 namespace domain::common {
     struct MotorDriverEvent;
@@ -27,8 +24,6 @@ namespace infra::motor {
 
     private:
         ThreadSafeObserverList<domain::ports::IMotorDriverObserver> observers_;
-
-
     };
 }
 

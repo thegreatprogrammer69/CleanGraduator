@@ -1,5 +1,6 @@
 #ifndef CLEANGRADUATOR_CALIBRATIONPROCESSORCHESTRATORPORTS_H
 #define CLEANGRADUATOR_CALIBRATIONPROCESSORCHESTRATORPORTS_H
+#include "domain/ports/clock/ISessionClock.h"
 
 
 namespace application::ports {
@@ -9,24 +10,24 @@ namespace application::ports {
 namespace domain::ports {
     struct ICalibrationRecorder;
     class ICalibrationStrategy;
-    struct IValveDriver;
     struct IMotorDriver;
     struct ILogger;
     struct IAngleSource;
     struct IPressureSource;
-    struct ICalibrationLifecycle;
 }
 
 namespace application::orchestrators {
+    class VideoSourceManager;
+
     struct CalibrationOrchestratorPorts {
         domain::ports::ILogger& logger;
         domain::ports::IPressureSource& pressure_source;
-        ports::IVideoAngleSourcesStorage& angle_sources_storage;
+        VideoSourceManager& source_manager;
+        ports::IVideoAngleSourcesStorage& source_storage;
         domain::ports::IMotorDriver& motor_driver;
-        domain::ports::IValveDriver& valve_driver;
+        domain::ports::ISessionClock& session_clock;
         domain::ports::ICalibrationStrategy& strategy;
         domain::ports::ICalibrationRecorder& recorder;
-        domain::ports::ICalibrationLifecycle& lifecycle;
     };
 }
 

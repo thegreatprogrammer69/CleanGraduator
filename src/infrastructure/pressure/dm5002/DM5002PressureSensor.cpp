@@ -196,6 +196,14 @@ void DM5002PressureSensor::removeObserver(domain::ports::IPressureSourceObserver
     notifier_.removeObserver(observer);
 }
 
+void DM5002PressureSensor::addSink(domain::ports::IPressureSink &s) {
+    notifier_.addSink(s);
+}
+
+void DM5002PressureSensor::removeSink(domain::ports::IPressureSink &s) {
+    notifier_.removeSink(s);
+}
+
 void DM5002PressureSensor::run() {
     using namespace std::chrono;
 

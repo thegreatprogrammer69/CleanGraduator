@@ -1,7 +1,7 @@
 #include "Stand4CalibrationStrategy.h"
 
-#include "domain/core/calibration/strategy/CalibrationBeginContext.h"
-#include "domain/core/calibration/strategy/CalibrationFeedContext.h"
+#include "domain/core/calibration/strategy/CalibrationStrategyBeginContext.h"
+#include "domain/core/calibration/strategy/CalibrationStrategyFeedContext.h"
 
 using namespace domain;
 using namespace domain::common;
@@ -24,7 +24,7 @@ void Stand4CalibrationStrategy::bind(IMotorDriver& motor, ICalibrationRecorder& 
     recorder_ = &recorder;
 }
 
-void Stand4CalibrationStrategy::begin(const CalibrationBeginContext& ctx)
+CalibrationStrategyVerdict Stand4CalibrationStrategy::begin(const CalibrationStrategyBeginContext& ctx)
 {
     state_ = State::Preload;
 
@@ -56,14 +56,16 @@ bool Stand4CalibrationStrategy::isRunning() const
            s != State::Fault;
 }
 
-CalibrationDecisionType Stand4CalibrationStrategy::feed(const CalibrationFeedContext& ctx)
+CalibrationStrategyVerdict Stand4CalibrationStrategy::feed(const CalibrationStrategyFeedContext& ctx)
 {
     const State current = state_.load();
 
+    if (current == State::Finished)
+        return CalibrationStrategyVerdict(CalibrationStrategyVerdict::Complete());
+
     if (current == State::Idle ||
-        current == State::Finished ||
         current == State::Fault)
-        return CalibrationDecisionType::None;
+        return CalibrationStrategyVerdict(CalibrationStrategyVerdict::None());
 
     switch (current) {
         case State::Preload:
@@ -85,10 +87,10 @@ CalibrationDecisionType Stand4CalibrationStrategy::feed(const CalibrationFeedCon
     last_pressure_ = ctx.pressure;;
     last_time_ = ctx.timestamp;
 
-    return CalibrationDecisionType::None;
+    return CalibrationStrategyVerdict(CalibrationStrategyVerdict::None());
 }
 
-void Stand4CalibrationStrategy::updatePreload(const CalibrationFeedContext& ctx)
+void Stand4CalibrationStrategy::updatePreload(const CalibrationStrategyFeedContext& ctx)
 {
     const float p_cur = ctx.pressure;
 
@@ -105,7 +107,7 @@ void Stand4CalibrationStrategy::updatePreload(const CalibrationFeedContext& ctx)
     motor_->start();
 }
 
-void Stand4CalibrationStrategy::updateForward(const CalibrationFeedContext& ctx)
+void Stand4CalibrationStrategy::updateForward(const CalibrationStrategyFeedContext& ctx)
 {
     const float p_cur = ctx.pressure;
     const float dt = ctx.timestamp - last_time_;
@@ -130,9 +132,9 @@ void Stand4CalibrationStrategy::updateForward(const CalibrationFeedContext& ctx)
     motor_->setFrequency(MotorFrequency(freq));
 }
 
-void Stand4CalibrationStrategy::updateBackward(const CalibrationFeedContext& ctx)
+void Stand4CalibrationStrategy::updateBackward(const CalibrationStrategyFeedContext& ctx)
 {
-    if (ctx.limits.home) {
+    if (motor_->limits().home) {
         state_ = State::Finished;
         motor_->setFlapsState(MotorFlapsState::ExhaustOpened);
         motor_->stop();

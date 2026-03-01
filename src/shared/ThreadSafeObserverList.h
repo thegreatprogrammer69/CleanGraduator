@@ -1,5 +1,6 @@
 #ifndef CLEANGRADUATOR_THREADSAFEOBSERVERLIST_H
 #define CLEANGRADUATOR_THREADSAFEOBSERVERLIST_H
+#include <algorithm>
 #include <mutex>
 #include <vector>
 

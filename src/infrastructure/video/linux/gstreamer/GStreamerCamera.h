@@ -26,12 +26,20 @@ namespace infra::camera {
 
         bool open() override;
         void close() override;
+        bool isRunning() const noexcept override;
+
         void addObserver(domain::ports::IVideoSourceObserver&) override;
         void removeObserver(domain::ports::IVideoSourceObserver&) override;
+
+        void addSink(domain::ports::IVideoSink &) override;
+        void removeSink(domain::ports::IVideoSink &) override;
 
     private:
         void captureLoop();
         void dispatchSample(GstSample* sample);
+
+    public:
+
 
     private:
         detail::VideoSourceNotifier notifier_;
