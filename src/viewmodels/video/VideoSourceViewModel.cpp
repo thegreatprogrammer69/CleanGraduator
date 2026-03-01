@@ -1,35 +1,44 @@
 #include "VideoSourceViewModel.h"
 
-#include "domain/core/video/VideoFramePacket.h"
-#include "domain/core/video/VideoSourceError.h"
+#include <type_traits>
+#include <variant>
+
 #include "domain/ports/video/IVideoSource.h"
 
 using namespace mvvm;
 
 VideoSourceViewModel::VideoSourceViewModel(domain::ports::IVideoSource& video_source)
-    : video_source_(video_source)
-{
+    : video_source_(video_source) {
     video_source_.addObserver(*this);
+    video_source_.addSink(*this);
 }
 
 VideoSourceViewModel::~VideoSourceViewModel() {
+    video_source_.removeSink(*this);
     video_source_.removeObserver(*this);
 }
 
-void VideoSourceViewModel::onVideoSourceOpened() {
-    is_opened.set(true);
-}
-
-void VideoSourceViewModel::onVideoSourceFailed(const domain::common::VideoSourceError &err) {
-    is_opened.set(false);
-    error.set(err.reason);
-}
-
-void VideoSourceViewModel::onVideoSourceClosed() {
-    is_opened.set(false);
+void VideoSourceViewModel::onVideoSourceEvent(const domain::common::VideoSourceEvent& event) {
+    std::visit(
+        [this](const auto& e) {
+            using T = std::decay_t<decltype(e)>;
+            if constexpr (std::is_same_v<T, domain::common::VideoSourceEvent::Opened>) {
+                is_opened.set(true);
+                error.set("");
+            } else if constexpr (std::is_same_v<T, domain::common::VideoSourceEvent::OpenFailed>) {
+                is_opened.set(false);
+                error.set(e.error.reason);
+            } else if constexpr (std::is_same_v<T, domain::common::VideoSourceEvent::Failed>) {
+                is_opened.set(false);
+                error.set(e.error.reason);
+            } else if constexpr (std::is_same_v<T, domain::common::VideoSourceEvent::Closed>) {
+                is_opened.set(false);
+            }
+        },
+        event.data);
 }
 
 void VideoSourceViewModel::onVideoFrame(const domain::common::VideoFramePacket& frame_packet) {
     frame.set(frame_packet.frame);
-    error.set({});
+    error.set("");
 }
