@@ -62,11 +62,11 @@ namespace infra::motor {
         utils::watchdog::SoftwareWatchdog software_watchdog_;
         MotorDriverNotifier notifier_;
 
-        std::atomic<domain::common::MotorDriverState> state_;
-        mutable std::atomic<domain::common::MotorFlapsState> flaps_state_;
-        std::atomic<domain::common::MotorDirection> direction_;
-        utils::atomic::AtomicStruct<domain::common::MotorDriverError> error_;
-        domain::common::MotorFrequency frequency_;
+        std::atomic<domain::common::MotorDriverState> state_{domain::common::MotorDriverState::Uninitialized};
+        mutable std::atomic<domain::common::MotorFlapsState> flaps_state_{domain::common::MotorFlapsState::Uninitialized};
+        std::atomic<domain::common::MotorDirection> direction_{domain::common::MotorDirection::Forward};
+        utils::atomic::AtomicStruct<domain::common::MotorDriverError> error_{};
+        domain::common::MotorFrequency frequency_{};
 
         domain::common::MotorLimitsState last_limits_state_{};
 

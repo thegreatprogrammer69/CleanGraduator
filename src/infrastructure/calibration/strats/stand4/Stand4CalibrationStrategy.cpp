@@ -39,6 +39,8 @@ CalibrationStrategyVerdict Stand4CalibrationStrategy::begin(const CalibrationStr
     freq_calc_.reset();
 
     motor_->setFlapsState(MotorFlapsState::FlapsClosed);
+
+    return CalibrationStrategyVerdict(CalibrationStrategyVerdict::None());
 }
 
 void Stand4CalibrationStrategy::end()

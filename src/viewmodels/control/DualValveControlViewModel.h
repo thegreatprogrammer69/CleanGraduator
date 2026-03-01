@@ -1,5 +1,6 @@
 #ifndef CLEANGRADUATOR_VALVECONTROLVIEWMODEL_H
 #define CLEANGRADUATOR_VALVECONTROLVIEWMODEL_H
+#include "domain/core/drivers/motor/MotorFlapsState.h"
 #include "domain/ports/drivers/motor/IMotorDriverObserver.h"
 #include "viewmodels/Observable.h"
 
@@ -23,11 +24,7 @@ namespace mvvm {
 
         void onMotorEvent(const domain::common::MotorDriverEvent &event) override;
 
-        enum FlapsState {
-            FlapsUninitialized, InputFlapOpened, OutputFlapOpened, FlapsClosed
-        };
-
-        Observable<FlapsState> flaps_state{FlapsUninitialized};
+        Observable<domain::common::MotorFlapsState> flaps_state{domain::common::MotorFlapsState::Uninitialized};
 
     private:
         domain::ports::IMotorDriver& motor_driver_;

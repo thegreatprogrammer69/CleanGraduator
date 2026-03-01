@@ -1,7 +1,6 @@
 #include "CalibrationOrchestrator.h"
 
 #include <algorithm>
-#include <mutex>
 #include <stdexcept>
 #include <variant>
 #include <vector>
@@ -25,14 +24,6 @@
 using namespace application::orchestrators;
 using namespace domain::common;
 
-namespace
-{
-// Временное решение без правки .h:
-// один mutex на все экземпляры CalibrationOrchestrator.
-// Если хочешь, потом дам версию с per-instance mutex в header.
-std::mutex g_calibration_orchestrator_mutex;
-} // namespace
-
 CalibrationOrchestrator::CalibrationOrchestrator(CalibrationOrchestratorPorts ports)
     : logger_(ports.logger)
     , ports_(ports)
@@ -47,8 +38,6 @@ CalibrationOrchestrator::~CalibrationOrchestrator()
 
 bool CalibrationOrchestrator::start(CalibrationOrchestratorInput input)
 {
-    std::lock_guard<std::mutex> lock(g_calibration_orchestrator_mutex);
-
     CalibrationOrchestratorState expected = CalibrationOrchestratorState::Stopped;
     if (!state_.compare_exchange_strong(expected,
                                         CalibrationOrchestratorState::Starting,
@@ -150,8 +139,6 @@ bool CalibrationOrchestrator::start(CalibrationOrchestratorInput input)
 
 void CalibrationOrchestrator::stop()
 {
-    std::lock_guard<std::mutex> lock(g_calibration_orchestrator_mutex);
-
     CalibrationOrchestratorState current = state_.load(std::memory_order_acquire);
 
     if (current == CalibrationOrchestratorState::Stopped ||
@@ -186,13 +173,11 @@ bool CalibrationOrchestrator::isRunning() const
 
 void CalibrationOrchestrator::addObserver(ports::CalibrationOrchestratorObserver& observer)
 {
-    std::lock_guard<std::mutex> lock(g_calibration_orchestrator_mutex);
     observers_.add(observer);
 }
 
 void CalibrationOrchestrator::removeObserver(ports::CalibrationOrchestratorObserver& observer)
 {
-    std::lock_guard<std::mutex> lock(g_calibration_orchestrator_mutex);
     observers_.remove(observer);
 }
 
@@ -200,28 +185,24 @@ void CalibrationOrchestrator::onPressureSourceEvent(const PressureSourceEvent& e
 {
     std::string error_to_report;
 
-    {
-        std::lock_guard<std::mutex> lock(g_calibration_orchestrator_mutex);
+    if (state_.load(std::memory_order_acquire) != CalibrationOrchestratorState::Started)
+        return;
 
-        if (state_.load(std::memory_order_acquire) != CalibrationOrchestratorState::Started)
-            return;
+    std::visit(
+        [&error_to_report](const auto& e)
+        {
+            using T = std::decay_t<decltype(e)>;
 
-        std::visit(
-            [&error_to_report](const auto& e)
+            if constexpr (std::is_same_v<T, PressureSourceEvent::Closed>)
             {
-                using T = std::decay_t<decltype(e)>;
-
-                if constexpr (std::is_same_v<T, PressureSourceEvent::Closed>)
-                {
-                    error_to_report = "Pressure source closed";
-                }
-                else if constexpr (std::is_same_v<T, PressureSourceEvent::Failed>)
-                {
-                    error_to_report = "Pressure source failed";
-                }
-            },
-            ev.data);
-    }
+                error_to_report = "Pressure source closed";
+            }
+            else if constexpr (std::is_same_v<T, PressureSourceEvent::Failed>)
+            {
+                error_to_report = "Pressure source failed";
+            }
+        },
+        ev.data);
 
     if (!error_to_report.empty())
         stopWithError(error_to_report);
@@ -239,44 +220,40 @@ void CalibrationOrchestrator::onPressurePacket(const PressurePacket& p)
     Action action = Action::None;
     std::string error;
 
-    {
-        std::lock_guard<std::mutex> lock(g_calibration_orchestrator_mutex);
+    if (state_.load(std::memory_order_acquire) != CalibrationOrchestratorState::Started)
+        return;
 
-        if (state_.load(std::memory_order_acquire) != CalibrationOrchestratorState::Started)
-            return;
+    CalibrationStrategyFeedContext ctx;
+    ctx.timestamp = p.timestamp.asSeconds();
+    ctx.pressure  = p.pressure.to(inp_.pressure_unit);
 
-        CalibrationStrategyFeedContext ctx;
-        ctx.timestamp = p.timestamp.asSeconds();
-        ctx.pressure  = p.pressure.to(inp_.pressure_unit);
+    const auto verdict = ports_.strategy.feed(ctx);
 
-        const auto verdict = ports_.strategy.feed(ctx);
-
-        std::visit(
-            [this, &action, &error](const auto& v)
-            {
-                using T = std::decay_t<decltype(v)>;
-
-                if constexpr (std::is_same_v<T, CalibrationStrategyVerdict::Complete>)
-                {
-                    logger_.info("Calibration strategy finished successfully.");
-                    action = Action::Complete;
-                }
-                else if constexpr (std::is_same_v<T, CalibrationStrategyVerdict::Fault>)
-                {
-                    logger_.error("Calibration strategy failed: {}", v.error);
-                    action = Action::Fail;
-                    error = v.error;
-                }
-            },
-            verdict.data);
-
-        if (action == Action::None &&
-            state_.load(std::memory_order_acquire) == CalibrationOrchestratorState::Started)
+    std::visit(
+        [this, &action, &error](const auto& v)
         {
-            ports_.recorder.pushPressure(
-                p.timestamp.asSeconds(),
-                p.pressure.to(inp_.pressure_unit));
-        }
+            using T = std::decay_t<decltype(v)>;
+
+            if constexpr (std::is_same_v<T, CalibrationStrategyVerdict::Complete>)
+            {
+                logger_.info("Calibration strategy finished successfully.");
+                action = Action::Complete;
+            }
+            else if constexpr (std::is_same_v<T, CalibrationStrategyVerdict::Fault>)
+            {
+                logger_.error("Calibration strategy failed: {}", v.error);
+                action = Action::Fail;
+                error = v.error;
+            }
+        },
+        verdict.data);
+
+    if (action == Action::None &&
+        state_.load(std::memory_order_acquire) == CalibrationOrchestratorState::Started)
+    {
+        ports_.recorder.pushPressure(
+            p.timestamp.asSeconds(),
+            p.pressure.to(inp_.pressure_unit));
     }
 
     if (action == Action::Complete)
@@ -291,8 +268,6 @@ void CalibrationOrchestrator::onPressurePacket(const PressurePacket& p)
 
 void CalibrationOrchestrator::onAnglePacket(const AngleSourcePacket& p)
 {
-    std::lock_guard<std::mutex> lock(g_calibration_orchestrator_mutex);
-
     if (state_.load(std::memory_order_acquire) != CalibrationOrchestratorState::Started)
         return;
 
@@ -306,28 +281,24 @@ void CalibrationOrchestrator::onAngleSourceEvent(const AngleSourceEvent& ev)
 {
     std::string error_to_report;
 
-    {
-        std::lock_guard<std::mutex> lock(g_calibration_orchestrator_mutex);
+    if (state_.load(std::memory_order_acquire) != CalibrationOrchestratorState::Started)
+        return;
 
-        if (state_.load(std::memory_order_acquire) != CalibrationOrchestratorState::Started)
-            return;
+    std::visit(
+        [&error_to_report](const auto& e)
+        {
+            using T = std::decay_t<decltype(e)>;
 
-        std::visit(
-            [&error_to_report](const auto& e)
+            if constexpr (std::is_same_v<T, AngleSourceEvent::Stopped>)
             {
-                using T = std::decay_t<decltype(e)>;
-
-                if constexpr (std::is_same_v<T, AngleSourceEvent::Stopped>)
-                {
-                    error_to_report = "Angle source stopped";
-                }
-                else if constexpr (std::is_same_v<T, AngleSourceEvent::Failed>)
-                {
-                    error_to_report = e.error.error;
-                }
-            },
-            ev.data);
-    }
+                error_to_report = "Angle source stopped";
+            }
+            else if constexpr (std::is_same_v<T, AngleSourceEvent::Failed>)
+            {
+                error_to_report = e.error.error;
+            }
+        },
+        ev.data);
 
     if (!error_to_report.empty())
         stopWithError(error_to_report);
@@ -337,24 +308,20 @@ void CalibrationOrchestrator::onMotorEvent(const MotorDriverEvent& ev)
 {
     std::string error_to_report;
 
-    {
-        std::lock_guard<std::mutex> lock(g_calibration_orchestrator_mutex);
+    if (state_.load(std::memory_order_acquire) != CalibrationOrchestratorState::Started)
+        return;
 
-        if (state_.load(std::memory_order_acquire) != CalibrationOrchestratorState::Started)
-            return;
+    std::visit(
+        [&error_to_report](const auto& e)
+        {
+            using T = std::decay_t<decltype(e)>;
 
-        std::visit(
-            [&error_to_report](const auto& e)
+            if constexpr (std::is_same_v<T, MotorDriverEvent::Fault>)
             {
-                using T = std::decay_t<decltype(e)>;
-
-                if constexpr (std::is_same_v<T, MotorDriverEvent::Fault>)
-                {
-                    error_to_report = e.error.message;
-                }
-            },
-            ev.data);
-    }
+                error_to_report = e.error.message;
+            }
+        },
+        ev.data);
 
     if (!error_to_report.empty())
         stopWithError(error_to_report);
@@ -399,20 +366,18 @@ void CalibrationOrchestrator::notifyObservers(const CalibrationOrchestratorEvent
 
 void CalibrationOrchestrator::teardown()
 {
-    // Вызывается только под g_calibration_orchestrator_mutex
     detachObservers();
 
     ports_.motor_driver.stop();
     ports_.pressure_source.stop();
 
-    ports_.strategy.end();
+    if (ports_.strategy.isRunning())
+        ports_.strategy.end();
     ports_.session_clock.stop();
 }
 
 void CalibrationOrchestrator::stopWithError(const std::string& error)
 {
-    std::lock_guard<std::mutex> lock(g_calibration_orchestrator_mutex);
-
     auto current = state_.load(std::memory_order_acquire);
     if (current != CalibrationOrchestratorState::Starting &&
         current != CalibrationOrchestratorState::Started)

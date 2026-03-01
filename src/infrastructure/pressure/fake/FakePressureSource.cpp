@@ -1,15 +1,17 @@
 #include "FakePressureSource.h"
 
 #include <cmath>
+#include <stdexcept>
 
 #include "domain/ports/clock/IClock.h"
 #include "domain/core/pressure/PressurePacket.h"
-#include "domain/core/pressure/PressureSourceError.h"
 #include "domain/core/pressure/PressureSourceEvent.h"
+#include "domain/core/pressure/PressureSourceError.h"
 #include "infrastructure/platform/sleep/sleep.h"
 
 namespace infra::pressure {
-    using namespace domain::common;
+
+using namespace domain::common;
 
 FakePressureSource::FakePressureSource(
         PressureSourcePorts ports,
@@ -25,60 +27,74 @@ FakePressureSource::FakePressureSource(
         throw std::invalid_argument("FakePressureSource: poll_interval must be > 0");
 
     logger_.info("FakePressureSource constructed");
+
+    worker_ = std::make_unique<utils::thread::ThreadWorker>(
+        [this]() { loop(); }
+    );
 }
 
-FakePressureSource::~FakePressureSource() {
+FakePressureSource::~FakePressureSource()
+{
     stop();
 }
 
-bool FakePressureSource::start() {
-    std::lock_guard<std::mutex> lk(lifecycle_mtx_);
-
-    if (running_.load(std::memory_order_acquire))
+bool FakePressureSource::start()
+{
+    if (running_)
         return false;
 
-    if (worker_.joinable())
-        worker_.join();
+    logger_.info("FakePressureSource starting");
 
-    stop_requested_.store(false);
-    running_.store(true);
+    running_ = true;
+    worker_->start();
 
-    worker_ = std::thread(&FakePressureSource::run, this);
+    notifier_.notifyEvent(
+        PressureSourceEvent(PressureSourceEvent::Opened()));
+
     return true;
 }
 
-void FakePressureSource::stop() {
-    std::lock_guard<std::mutex> lk(lifecycle_mtx_);
-
-    if (!running_.load() && !worker_.joinable())
+void FakePressureSource::stop()
+{
+    if (!running_)
         return;
 
-    stop_requested_.store(true);
+    running_ = false;
+    worker_->pause();
 
-    if (worker_.joinable())
-        worker_.join();
-
-    running_.store(false);
+    notifier_.notifyEvent(
+        PressureSourceEvent(PressureSourceEvent::Closed()));
 }
 
-bool FakePressureSource::isRunning() const noexcept {
-    return running_.load() && !stop_requested_.load();
+bool FakePressureSource::isRunning() const noexcept
+{
+    return running_;
 }
 
 void FakePressureSource::addObserver(
-        domain::ports::IPressureSourceObserver& observer) {
+        domain::ports::IPressureSourceObserver& observer)
+{
     notifier_.addObserver(observer);
 }
 
 void FakePressureSource::removeObserver(
-        domain::ports::IPressureSourceObserver& observer) {
+        domain::ports::IPressureSourceObserver& observer)
+{
     notifier_.removeObserver(observer);
 }
 
-void FakePressureSource::run() {
+void FakePressureSource::addSink(domain::ports::IPressureSink& sink)
+{
+    notifier_.addSink(sink);
+}
 
-    notifier_.notifyEvent(PressureSourceEvent(PressureSourceEvent::Opened()));
+void FakePressureSource::removeSink(domain::ports::IPressureSink& sink)
+{
+    notifier_.removeSink(sink);
+}
 
+    void FakePressureSource::loop()
+{
     const double fromPa = config_.from.pa();
     const double toPa   = config_.to.pa();
     const double delta  = toPa - fromPa;
@@ -86,43 +102,39 @@ void FakePressureSource::run() {
     const double durationSec =
         static_cast<double>(config_.duration.count()) / 1000.0;
 
-    while (!stop_requested_.load()) {
-
+    while (worker_->isRunning())
+    {
         const double nowSec = clock_.now().asSeconds();
 
-        double t = std::fmod(nowSec, durationSec) / durationSec;
+        double valuePa = 0.0;
 
-        double valuePa;
-
-        if (config_.mode == FakePressureSourceConfig::Mode::Ramp) {
+        if (config_.mode == FakePressureSourceConfig::Mode::Ramp)
+        {
+            const double t = std::fmod(nowSec, durationSec) / durationSec;
             valuePa = fromPa + delta * t;
         }
-        else { // PingPong
-            // период 2*duration
+        else
+        {
             const double fullPeriod = durationSec * 2.0;
             const double phase = std::fmod(nowSec, fullPeriod);
 
-            double localT;
-            if (phase < durationSec) {
-                localT = phase / durationSec;
-            } else {
-                localT = 1.0 - (phase - durationSec) / durationSec;
-            }
+            double localT = (phase < durationSec)
+                ? phase / durationSec
+                : 1.0 - (phase - durationSec) / durationSec;
 
             valuePa = fromPa + delta * localT;
         }
 
-        domain::common::PressurePacket packet;
+        PressurePacket packet;
         packet.timestamp = clock_.now();
-        packet.pressure  = domain::common::Pressure::fromKgfCm2(domain::common::Pressure::fromPa(valuePa).kgfcm2());
+        packet.pressure =
+            Pressure::fromKgfCm2(
+                Pressure::fromPa(valuePa).kgfcm2());
 
         notifier_.notifyPressure(packet);
 
         platform::sleep(config_.poll_interval);
     }
-
-    notifier_.notifyEvent(PressureSourceEvent(PressureSourceEvent::Closed()));
-    running_.store(false);
 }
 
 }

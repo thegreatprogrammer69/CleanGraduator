@@ -14,7 +14,7 @@ mvvm::MotorDriverStatusViewModel::MotorDriverStatusViewModel(MotorDriverStatusVi
 {
     motor_driver_.addObserver(*this);
     is_running_.set(motor_driver_.state() == MotorDriverState::Running);
-    limits_state_.set(motor_driver_.limits());
+    // limits_state_.set(motor_driver_.limits());
     direction_.set(motor_driver_.direction());
 }
 

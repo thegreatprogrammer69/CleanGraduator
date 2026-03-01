@@ -1,9 +1,7 @@
 #ifndef CLEANGRADUATOR_FAKEPRESSURESOURCE_H
 #define CLEANGRADUATOR_FAKEPRESSURESOURCE_H
 
-#include <atomic>
-#include <thread>
-#include <mutex>
+#include <memory>
 
 #include <domain/ports/pressure/IPressureSource.h>
 
@@ -11,12 +9,14 @@
 #include "../PressureSourcePorts.h"
 #include "infrastructure/pressure/PressureSourceNotifier.h"
 #include "domain/fmt/Logger.h"
+#include "infrastructure/utils/thread/ThreadWorker.h"
 
 namespace domain::ports { class IClock; }
 
 namespace infra::pressure {
 
-    class FakePressureSource final : public domain::ports::IPressureSource {
+    class FakePressureSource final : public domain::ports::IPressureSource
+    {
     public:
         FakePressureSource(PressureSourcePorts ports,
                            FakePressureSourceConfig config);
@@ -29,8 +29,11 @@ namespace infra::pressure {
         void addObserver(domain::ports::IPressureSourceObserver& observer) override;
         void removeObserver(domain::ports::IPressureSourceObserver& observer) override;
 
+        void addSink(domain::ports::IPressureSink& sink) override;
+        void removeSink(domain::ports::IPressureSink& sink) override;
+
     private:
-        void run();
+        void loop();
 
     private:
         FakePressureSourceConfig config_;
@@ -38,10 +41,8 @@ namespace infra::pressure {
         domain::ports::IClock& clock_;
         detail::PressureSourceNotifier notifier_;
 
-        std::atomic<bool> stop_requested_{true};
-        std::atomic<bool> running_{false};
-        std::thread worker_;
-        std::mutex lifecycle_mtx_;
+        std::unique_ptr<utils::thread::ThreadWorker> worker_;
+        bool running_{false};
     };
 
 }

@@ -4,6 +4,7 @@
 
 #include "DualValveControlViewModel.h"
 
+#include "domain/core/drivers/motor/MotorDriverEvent.h"
 #include "domain/ports/drivers/motor/IMotorDriver.h"
 
 mvvm::DualValveControlViewModel::DualValveControlViewModel(DualValveControlViewModelDeps deps)
@@ -28,5 +29,15 @@ void mvvm::DualValveControlViewModel::closeFlaps() {
     motor_driver_.setFlapsState(domain::common::MotorFlapsState::FlapsClosed);
 }
 
-void mvvm::DualValveControlViewModel::onMotorEvent(const domain::common::MotorDriverEvent &event) {
+void mvvm::DualValveControlViewModel::onMotorEvent(const domain::common::MotorDriverEvent &ev) {
+    auto data = ev.data;
+    std::visit([this](auto& e)
+    {
+        using T = std::decay_t<decltype(e)>;
+
+        if constexpr (std::is_same_v<T, domain::common::MotorDriverEvent::FlapsStateChanged>) {
+            flaps_state.set(e.state);
+        }
+
+    }, data);
 }

@@ -30,7 +30,7 @@ AngleFromVideoInteractor::~AngleFromVideoInteractor() {
 }
 
 bool AngleFromVideoInteractor::isRunning() const noexcept {
-    return state_.load(std::memory_order_acquire) == State::Running;
+    return state_.load(std::memory_order_acquire) == State::Started;
 }
 
 void AngleFromVideoInteractor::addSink(domain::ports::IAngleSink &s) {
@@ -41,55 +41,25 @@ void AngleFromVideoInteractor::removeSink(domain::ports::IAngleSink &s) {
     sinks_.remove(s);
 }
 
+void AngleFromVideoInteractor::addObserver(domain::ports::IAngleSourceObserver &o) {
+    observers_.add(o);
+}
+
+void AngleFromVideoInteractor::removeObserver(domain::ports::IAngleSourceObserver &o) {
+    observers_.remove(o);
+}
+
+
 void AngleFromVideoInteractor::start() {
-    State s = state_.load(std::memory_order_acquire);
-    if (s == State::Starting || s == State::Running) {
-        return;
-    }
-
-    state_.store(State::Starting, std::memory_order_release);
-    logger_.info("start(): opening video source");
-
-    try {
-        video_source_.open();
-    } catch (const std::exception& ex) {
-        logger_.error("start(): open() threw: {}", ex.what());
-        notifyFailed_("video open threw exception");
-        state_.store(State::Stopped, std::memory_order_release);
-        notifyStopped_();
-    } catch (...) {
-        logger_.error("start(): open() threw unknown exception");
-        notifyFailed_("video open threw unknown exception");
-        state_.store(State::Stopped, std::memory_order_release);
-        notifyStopped_();
-    }
+    state_.store(State::Started, std::memory_order_release);
 }
 
 void AngleFromVideoInteractor::stop() {
-    State s = state_.load(std::memory_order_acquire);
-    if (s == State::Stopped || s == State::Stopping) {
-        return;
-    }
-
-    state_.store(State::Stopping, std::memory_order_release);
-    logger_.info("stop(): closing video source");
-
-    try {
-        video_source_.close();
-    } catch (const std::exception& ex) {
-        logger_.error("stop(): close() threw: {}", ex.what());
-        // закрыться не смогли — но состояние источника для нас завершаем
-        state_.store(State::Stopped, std::memory_order_release);
-        notifyStopped_();
-    } catch (...) {
-        logger_.error("stop(): close() threw unknown exception");
-        state_.store(State::Stopped, std::memory_order_release);
-        notifyStopped_();
-    }
+    state_.store(State::Stopped, std::memory_order_release);
 }
 
 void AngleFromVideoInteractor::onVideoFrame(const domain::common::VideoFramePacket& packet) {
-    if (state_.load(std::memory_order_acquire) != State::Running) {
+    if (state_.load(std::memory_order_acquire) != State::Started) {
         return;
     }
 

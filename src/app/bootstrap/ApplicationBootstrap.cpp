@@ -22,7 +22,6 @@
 #include "infrastructure/logging/ConsoleLogger.h"
 #include "infrastructure/logging/FileLogger.h"
 #include "infrastructure/logging/NamedMultiLogger.h"
-#include "infrastructure/motion/g540/as_lpt/G540LptMotorDriver.h"
 #include "infrastructure/overlay/crosshair/CrosshairVideoOverlay.h"
 #include "infrastructure/platform/com/ComPort.h"
 #include "infrastructure/pressure/PressureSourceNotifier.h"
@@ -47,7 +46,7 @@ using namespace infra::logging;
 using namespace infra::calc;
 using namespace infra::catalogs;
 using namespace infra::pressure;
-using namespace infra::motors;
+using namespace infra::motor;
 using namespace infra::overlay;
 using namespace infra::platform;
 using namespace infra::repo;
@@ -233,7 +232,6 @@ void ApplicationBootstrap::createMotorDriver() {
     };
     MotorDriverFactory factory(setup_dir_ + "/motor.ini", ports);
     motor_driver = factory.load();
-    valve_driver = factory.load_valve_driver();
 
 }
 
