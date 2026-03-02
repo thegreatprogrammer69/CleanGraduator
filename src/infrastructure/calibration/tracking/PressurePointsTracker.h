@@ -16,10 +16,9 @@ namespace domain::common {
         ~PressurePointsTracker();
 
         void beginTracking(const std::vector<float>& points, MotorDirection direction);
-
         void endTracking();
 
-        void update(float pressure);
+        void feed(float pressure);
 
         void setEnterThreshold(float v);
         void setExitThreshold(float v);

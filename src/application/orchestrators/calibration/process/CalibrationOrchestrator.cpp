@@ -331,6 +331,7 @@ void CalibrationOrchestrator::attachObservers()
 {
     ports_.motor_driver.addObserver(*this);
     ports_.pressure_source.addObserver(*this);
+    ports_.pressure_source.addSink(*this);
 
     for (const auto& id : opened_angle_sources_)
     {
@@ -339,6 +340,7 @@ void CalibrationOrchestrator::attachObservers()
             throw std::runtime_error(fmt::format("Angle source disappeared during attach: {}", id.value));
 
         it->angle_source.addObserver(*this);
+        it->angle_source.addSink(*this);
     }
 }
 
@@ -346,12 +348,14 @@ void CalibrationOrchestrator::detachObservers()
 {
     ports_.motor_driver.removeObserver(*this);
     ports_.pressure_source.removeObserver(*this);
+    ports_.pressure_source.removeSink(*this);
 
     for (const auto& id : opened_angle_sources_)
     {
         auto it = ports_.source_storage.at(id);
         if (it)
             it->angle_source.removeObserver(*this);
+            it->angle_source.removeSink(*this);
     }
 }
 

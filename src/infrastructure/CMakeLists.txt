@@ -75,6 +75,8 @@ elseif(UNIX)
             platform/sleep/sleep_linux.cpp
             video/linux/v4l/V4LCamera.cpp
             video/linux/gstreamer/GStreamerCamera.cpp
+            calibration/strats/CalibrationStrategyPorts.h
+            calibration/strats/stand4/Stand4CalibrationStrategyConfig.h
     )
 endif()
 

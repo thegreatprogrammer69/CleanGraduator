@@ -6,18 +6,21 @@
 #include <atomic>
 #include <optional>
 
+#include "Stand4CalibrationStrategyConfig.h"
 #include "domain/ports/drivers/motor/IMotorDriver.h"
 
 #include "stand4logic.h"
 #include "Stand4FrequencyCalculator.h"
+#include "domain/fmt/Logger.h"
 #include "domain/ports/calibration/recording/ICalibrationRecorder.h"
+#include "infrastructure/calibration/strats/CalibrationStrategyPorts.h"
 
 namespace infra::calib::stand4 {
     class Stand4CalibrationStrategy final
         : public domain::ports::ICalibrationStrategy
     {
     public:
-        Stand4CalibrationStrategy();
+        Stand4CalibrationStrategy(CalibrationStrategyPorts ports, Stand4CalibrationStrategyConfig config);
 
         void bind(
             domain::ports::IMotorDriver& motor,
@@ -31,7 +34,6 @@ namespace infra::calib::stand4 {
 
         bool isRunning() const override;
 
-    private:
         enum class State {
             Idle,
             Preload,
@@ -46,7 +48,17 @@ namespace infra::calib::stand4 {
         void updateForward(const domain::common::CalibrationStrategyFeedContext& ctx);
         void updateBackward(const domain::common::CalibrationStrategyFeedContext& ctx);
 
+        void transition(State newState);
+
+        void transitionToPreload();
+        void transitionToForward();
+        void transitionToBackward();
+        void transitionToFinished();
+        void transitionToFault();
+
     private:
+        fmt::Logger logger_;
+
         domain::ports::IMotorDriver* motor_{nullptr};
         domain::ports::ICalibrationRecorder* recorder_{nullptr};
 

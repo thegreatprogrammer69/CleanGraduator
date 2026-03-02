@@ -138,27 +138,27 @@ DShowCamera::~DShowCamera() {
     logger_.info("DShowCamera dtor");
 }
 
-void DShowCamera::open() {
+bool DShowCamera::open() {
     std::lock_guard<std::mutex> lock(state_mutex_);
 
     if (impl_ && impl_->running) {
         logger_.warn("DShowCamera::open() ignored: already running");
-        return;
+        return false;
     }
 
     logger_.info("DShowCamera::open() begin");
 
     impl_ = std::make_unique<DShowCameraImpl>();
 
-    if (!initializeCom())       return;
-    if (!createGraph())         return;
-    if (!createSourceFilter())  return;
-    if (!createSampleGrabber()) return;
-    if (!createNullRenderer())  return;
-    if (!connectGraph())        return;
-    if (!readConnectedFormat()) return;
-    if (!configureSampleGrabber()) return;
-    if (!runGraph())            return;
+    if (!initializeCom())       return false;
+    if (!createGraph())         return false;
+    if (!createSourceFilter())  return false;
+    if (!createSampleGrabber()) return false;
+    if (!createNullRenderer())  return false;
+    if (!connectGraph())        return false;
+    if (!readConnectedFormat()) return false;
+    if (!configureSampleGrabber()) return false;
+    if (!runGraph())            return false;
 
     impl_->last_frame_tick_ms = nowSteadyMs();
     impl_->running = true;
@@ -167,6 +167,8 @@ void DShowCamera::open() {
 
     logger_.info("DShowCamera opened successfully");
     notifier_.notifyEvent(VideoSourceEvent(VideoSourceEvent::Opened{}));
+
+    return true;
 }
 
 void DShowCamera::close() {
@@ -231,7 +233,7 @@ void DShowCamera::onFrame(double /*time*/, unsigned char* data, long size) {
     auto frame = std::make_shared<VideoFrame>();
     frame->width = width;
     frame->height = height;
-    frame->format = PixelFormat::RGB24;
+    frame->format = PixelFormat::YUYV;
     frame->buffer = VideoBuffer(size);
 
     std::memcpy(frame->buffer.data, data, static_cast<size_t>(size));
@@ -246,7 +248,7 @@ void DShowCamera::onFrame(double /*time*/, unsigned char* data, long size) {
 bool DShowCamera::initializeCom() {
     const HRESULT hr = CoInitializeEx(
         nullptr,
-        COINIT_MULTITHREADED | COINIT_SPEED_OVER_MEMORY
+        COINIT_APARTMENTTHREADED | COINIT_SPEED_OVER_MEMORY
     );
 
     if (FAILED(hr)) {
@@ -320,7 +322,7 @@ bool DShowCamera::createSampleGrabber() {
 
     AM_MEDIA_TYPE mt{};
     mt.majortype = MEDIATYPE_Video;
-    mt.subtype = MEDIASUBTYPE_RGB24;
+    mt.subtype = MEDIASUBTYPE_YUY2;
     mt.formattype = FORMAT_VideoInfo;
 
     hr = impl_->grabber->SetMediaType(&mt);

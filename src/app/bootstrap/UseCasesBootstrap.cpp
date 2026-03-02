@@ -72,7 +72,11 @@ void UseCasesBootstrap::createCalibrationSettingsQuery() {
 }
 
 void UseCasesBootstrap::createCalibrationStrategy() {
-    calibration_strategy = std::make_unique<infra::calib::stand4::Stand4CalibrationStrategy>();
+    infra::calib::CalibrationStrategyPorts ports {
+        app_.createLogger("Stand4CalibrationStrategy")
+    };
+    infra::calib::stand4::Stand4CalibrationStrategyConfig config {};
+    calibration_strategy = std::make_unique<infra::calib::stand4::Stand4CalibrationStrategy>(ports, config);
 }
 
 void UseCasesBootstrap::createCalibrationRecorder() {

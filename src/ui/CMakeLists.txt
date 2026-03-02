@@ -6,8 +6,8 @@ add_library(ui STATIC
 
         widgets/video/QtVideoSourceGridWidget.cpp
         widgets/video/QtVideoSourceGridWidget.h
-        widgets/video/QtVideoSourceWidget.cpp
-        widgets/video/QtVideoSourceWidget.h
+        widgets/video/QtGLVideoSourceWidget.cpp
+        widgets/video/QtGLVideoSourceWidget.h
 
         widgets/settings/QtCameraGridSettingsWidget.cpp
         widgets/settings/QtCameraGridSettingsWidget.h
@@ -37,12 +37,21 @@ add_library(ui STATIC
 
         widgets/QtMainWindow.cpp
         widgets/QtMainWindow.h
+        widgets/video/QtD3D11VideoSourceWidget.h
+        widgets/video/QtD3D11VideoSourceWidget.cpp
 
 )
 
 target_include_directories(ui
         PUBLIC
         ${PROJECT_SOURCE_DIR}/src
+)
+
+
+target_link_libraries(ui PRIVATE
+        $<$<PLATFORM_ID:Windows>:d3d11>
+        $<$<PLATFORM_ID:Windows>:dxgi>
+        $<$<PLATFORM_ID:Windows>:d3dcompiler>
 )
 
 target_link_libraries(ui
