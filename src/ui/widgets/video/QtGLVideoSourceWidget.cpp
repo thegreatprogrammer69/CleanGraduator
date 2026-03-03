@@ -1,4 +1,4 @@
-#include "QtVideoSourceWidget.h"
+#include "QtGLVideoSourceWidget.h"
 
 #include <QFile>
 
@@ -22,7 +22,7 @@ QString loadTextResource(const char* path) {
 }
 }
 
-QtVideoSourceWidget::QtVideoSourceWidget(mvvm::VideoSourceViewModel& model, QWidget* parent)
+QtGLVideoSourceWidget::QtGLVideoSourceWidget(mvvm::VideoSourceViewModel& model, QWidget* parent)
     : QOpenGLWidget(parent)
 {
     frame_sub_ = model.frame.subscribe([this](const auto& a) {
@@ -41,13 +41,13 @@ QtVideoSourceWidget::QtVideoSourceWidget(mvvm::VideoSourceViewModel& model, QWid
     update();
 }
 
-void QtVideoSourceWidget::setVideoFrame(VideoFramePtr frame) {
+void QtGLVideoSourceWidget::setVideoFrame(VideoFramePtr frame) {
     std::lock_guard lock(mutex_);
     current_frame_ = frame;
     update();
 }
 
-void QtVideoSourceWidget::initializeGL() {
+void QtGLVideoSourceWidget::initializeGL() {
     initializeOpenGLFunctions();
 
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
@@ -69,11 +69,11 @@ void QtVideoSourceWidget::initializeGL() {
     update();
 }
 
-void QtVideoSourceWidget::resizeGL(int w, int h) {
+void QtGLVideoSourceWidget::resizeGL(int w, int h) {
     glViewport(0, 0, w, h);
 }
 
-void QtVideoSourceWidget::paintGL() {
+void QtGLVideoSourceWidget::paintGL() {
     if (!shaderInited_) {
         glClear(GL_COLOR_BUFFER_BIT);
         return;
@@ -92,7 +92,7 @@ void QtVideoSourceWidget::paintGL() {
     drawQuad(noVideo);
 }
 
-void QtVideoSourceWidget::initTextureIfNeeded(const VideoFrame& frame) {
+void QtGLVideoSourceWidget::initTextureIfNeeded(const VideoFrame& frame) {
     const bool isYuyv = (frame.format == PixelFormat::YUYV);
 
     if (isYuyv && (frame.width % 2) != 0)
@@ -137,7 +137,7 @@ void QtVideoSourceWidget::initTextureIfNeeded(const VideoFrame& frame) {
     textureInitialized_ = true;
 }
 
-void QtVideoSourceWidget::uploadFramePBO(const VideoFrame& frame) {
+void QtGLVideoSourceWidget::uploadFramePBO(const VideoFrame& frame) {
     const int next = (pboIndex_ + 1) % 2;
 
     glBindTexture(GL_TEXTURE_2D, texture_);
@@ -159,7 +159,7 @@ void QtVideoSourceWidget::uploadFramePBO(const VideoFrame& frame) {
     pboIndex_ = next;
 }
 
-void QtVideoSourceWidget::drawQuad(bool noVideo) {
+void QtGLVideoSourceWidget::drawQuad(bool noVideo) {
     glClear(GL_COLOR_BUFFER_BIT);
 
     program_.bind();
@@ -195,7 +195,7 @@ void QtVideoSourceWidget::drawQuad(bool noVideo) {
 }
 
 #include <QDir>
-void QtVideoSourceWidget::initShader() {
+void QtGLVideoSourceWidget::initShader() {
     if (shaderInited_) {
         return;
     }

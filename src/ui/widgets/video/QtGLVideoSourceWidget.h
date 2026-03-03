@@ -22,13 +22,13 @@ namespace domain::common {
 
 namespace ui {
 
-    class QtVideoSourceWidget final
+    class QtGLVideoSourceWidget final
         : public QOpenGLWidget
         , protected QOpenGLFunctions_2_1
     {
         Q_OBJECT
     public:
-        explicit QtVideoSourceWidget(mvvm::VideoSourceViewModel& model, QWidget* parent = nullptr);
+        explicit QtGLVideoSourceWidget(mvvm::VideoSourceViewModel& model, QWidget* parent = nullptr);
 
     private slots:
         void setVideoFrame(domain::common::VideoFramePtr frame);

@@ -1,13 +1,22 @@
 #include "AppStatusBarViewModel.h"
 
 #include "application/orchestrators/calibration/process/CalibrationOrchestrator.h"
+#include "application/orchestrators/calibration/process/CalibrationOrchestratorEvent.h"
 #include "domain/ports/clock/IClock.h"
+
+#include <type_traits>
+#include <variant>
 
 mvvm::AppStatusBarViewModel::AppStatusBarViewModel(AppStatusBarViewModelDeps deps)
     : orchestrator_(deps.orchestrator)
     , session_clock_(deps.session_clock)
     , uptime_clock_(deps.uptime_clock)
 {
+    current_state_.store(
+        orchestrator_.isRunning()
+            ? application::orchestrators::CalibrationOrchestratorState::Started
+            : application::orchestrators::CalibrationOrchestratorState::Stopped,
+        std::memory_order_relaxed);
     orchestrator_.addObserver(*this);
 }
 
@@ -29,6 +38,14 @@ domain::common::Timestamp mvvm::AppStatusBarViewModel::uptimeTime() {
 
 void mvvm::AppStatusBarViewModel::onCalibrationOrchestratorEvent(
     const application::orchestrators::CalibrationOrchestratorEvent &ev) {
-    // current_state_.store({}, std::memory_order_relaxed);
-}
+    std::visit([this](const auto& event) {
+        using T = std::decay_t<decltype(event)>;
 
+        if constexpr (std::is_same_v<T, application::orchestrators::CalibrationOrchestratorEvent::Started>) {
+            current_state_.store(application::orchestrators::CalibrationOrchestratorState::Started, std::memory_order_relaxed);
+        } else if constexpr (std::is_same_v<T, application::orchestrators::CalibrationOrchestratorEvent::Stopped>
+                             || std::is_same_v<T, application::orchestrators::CalibrationOrchestratorEvent::Failed>) {
+            current_state_.store(application::orchestrators::CalibrationOrchestratorState::Stopped, std::memory_order_relaxed);
+        }
+    }, ev.data);
+}

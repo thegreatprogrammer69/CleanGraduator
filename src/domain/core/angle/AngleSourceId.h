@@ -5,6 +5,7 @@ namespace domain::common {
     struct AngleSourceId {
         explicit AngleSourceId(int v) : value(v) {}
         AngleSourceId() : value(-1) {}
+        ~AngleSourceId() {};
         int value;
         bool operator==(const AngleSourceId& other) const { return value == other.value; }
         bool operator<(const AngleSourceId& other) const { return value < other.value; }

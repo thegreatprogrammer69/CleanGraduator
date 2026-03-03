@@ -41,21 +41,14 @@ public:
     void addSink(domain::ports::IAngleSink &) override;
     void removeSink(domain::ports::IAngleSink &) override;
 
-private:
-    // IVideoSourceObserver
+    void addObserver(domain::ports::IAngleSourceObserver &) override;
+    void removeObserver(domain::ports::IAngleSourceObserver &) override;
 
-
-private:
-    enum class State : uint8_t { Stopped, Starting, Running, Stopping };
-
-    void notifyStarted_();
-    void notifyStopped_();
-    void notifyFailed_(const char* msg);
-
-public:
     void onVideoFrame(const domain::common::VideoFramePacket &) override;
 
 private:
+    enum class State : uint8_t { Stopped, Started };
+
     domain::common::AngleSourceId id_;
 
     domain::ports::IVideoSource&     video_source_;
@@ -65,6 +58,7 @@ private:
     std::atomic<State> state_{State::Stopped};
 
     ThreadSafeObserverList<domain::ports::IAngleSink> sinks_;
+    ThreadSafeObserverList<domain::ports::IAngleSourceObserver> observers_;
 };
 
 } // namespace application::orchestrators

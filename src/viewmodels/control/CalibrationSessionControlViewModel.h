@@ -4,14 +4,17 @@
 #include <string>
 
 #include "application/orchestrators/calibration/process/CalibrationOrchestrator.h"
+#include "application/orchestrators/calibration/process/CalibrationOrchestratorInput.h"
 #include "application/orchestrators/calibration/process/CalibrationOrchestratorState.h"
+#include "application/orchestrators/settings/CalibrationSettingsQuery.h"
 #include "domain/core/calibration/common/CalibrationMode.h"
 #include "viewmodels/Observable.h"
 
 namespace mvvm {
 
 struct CalibrationSessionControlViewModelDeps {
-
+    application::orchestrators::CalibrationOrchestrator& orchestrator;
+    application::orchestrators::CalibrationSettingsQuery& settings_query;
 };
 
 class CalibrationSessionControlViewModel final : public application::ports::CalibrationOrchestratorObserver
@@ -35,8 +38,10 @@ public:
     Observable<bool> can_abort{false};
 
 private:
-    // application::orchestrators::CalibrationSessionController& session_controller_;
-    // domain::ports::ICalibrationLifecycle& lifecycle_;
+    void applyState(application::orchestrators::CalibrationOrchestratorState state, const std::string& last_error);
+
+    application::orchestrators::CalibrationOrchestrator& orchestrator_;
+    application::orchestrators::CalibrationSettingsQuery& settings_query_;
 };
 
 } // namespace mvvm

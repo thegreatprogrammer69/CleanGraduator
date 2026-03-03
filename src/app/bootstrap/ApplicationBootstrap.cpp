@@ -22,7 +22,6 @@
 #include "infrastructure/logging/ConsoleLogger.h"
 #include "infrastructure/logging/FileLogger.h"
 #include "infrastructure/logging/NamedMultiLogger.h"
-#include "infrastructure/motion/g540/as_lpt/G540LptMotorDriver.h"
 #include "infrastructure/overlay/crosshair/CrosshairVideoOverlay.h"
 #include "infrastructure/platform/com/ComPort.h"
 #include "infrastructure/pressure/PressureSourceNotifier.h"
@@ -47,12 +46,11 @@ using namespace infra::logging;
 using namespace infra::calc;
 using namespace infra::catalogs;
 using namespace infra::pressure;
-using namespace infra::motors;
+using namespace infra::motor;
 using namespace infra::overlay;
 using namespace infra::platform;
 using namespace infra::repo;
 using namespace infra::storage;
-using namespace infra::lifecycle;
 
 
 struct LoggerFactory final : ILoggerFactory {
@@ -78,7 +76,7 @@ ApplicationBootstrap::~ApplicationBootstrap() {
 void ApplicationBootstrap::initialize() {
     createLogSourcesStorage();
 
-    createLifecycle();
+    createSessionClock();
     createClock();
 
     createDisplacementCatalog();
@@ -130,10 +128,8 @@ void ApplicationBootstrap::createLogSourcesStorage() {
     log_sources_storage = std::make_unique<LogSourcesStorage>();
 }
 
-void ApplicationBootstrap::createLifecycle() {
-    auto* lifecycle = new CalibrationLifecycle();
-    session_clock = &lifecycle->sessionClock();
-    calibration_lifecycle = std::unique_ptr<CalibrationLifecycle>(lifecycle);
+void ApplicationBootstrap::createSessionClock() {
+    session_clock = std::make_unique<SessionClock>();
 }
 
 void ApplicationBootstrap::createClock() {
@@ -236,7 +232,6 @@ void ApplicationBootstrap::createMotorDriver() {
     };
     MotorDriverFactory factory(setup_dir_ + "/motor.ini", ports);
     motor_driver = factory.load();
-    valve_driver = factory.load_valve_driver();
 
 }
 

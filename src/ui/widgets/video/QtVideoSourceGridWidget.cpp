@@ -6,27 +6,29 @@
 #include <QVBoxLayout>
 #include <QtMath>
 
-#include "ui/widgets/video/QtVideoSourceWidget.h"
+#include "ui/widgets/video/QtGLVideoSourceWidget.h"
+#include "ui/widgets/video/QtD3D11VideoSourceWidget.h"
 
 #include "viewmodels/video/VideoSourceGridViewModel.h"
 
 namespace {
 
 // Плитка с видео внутри (аналог makeCameraTile из старого кода)
-static QFrame* makeTile(mvvm::VideoSourceViewModel& model, QWidget* parent)
+static QFrame* makeTile(const std::string& renderer, mvvm::VideoSourceViewModel& model, QWidget* parent)
 {
     auto* tile = new QFrame(parent);
     tile->setObjectName("cameraTile");
     tile->setAttribute(Qt::WA_StyledBackground, true);
 
-    auto* video = new ui::QtVideoSourceWidget(model, tile);
-    // TODO: привяжите video к vm (если нужно)
-    // video->setViewModel(vm);  // пример
-
     auto* l = new QVBoxLayout(tile);
     l->setContentsMargins(0, 0, 0, 0);
     l->setSpacing(0);
-    l->addWidget(video);
+
+#ifdef PLATFORM_WINDOWS
+        l->addWidget(new ui::QtD3D11VideoSourceWidget(model, tile));
+#else
+        l->addWidget(new ui::QtGLVideoSourceWidget(model, tile));
+#endif
 
     return tile;
 }
@@ -35,9 +37,10 @@ static QFrame* makeTile(mvvm::VideoSourceViewModel& model, QWidget* parent)
 
 namespace ui {
 
-QtVideoSourceGridWidget::QtVideoSourceGridWidget(mvvm::VideoSourceGridViewModel& model, QWidget* parent)
+QtVideoSourceGridWidget::QtVideoSourceGridWidget(std::string renderer, mvvm::VideoSourceGridViewModel& model, QWidget* parent)
     : QWidget(parent)
     , m_model(model)
+    , renderer_(std::move(renderer))
 {
     setObjectName("videoSourceGrid");
 
@@ -126,7 +129,7 @@ void QtVideoSourceGridWidget::rebuildFromModel()
         if (s.col >= m_cols || s.row >= m_rows)
             continue;
 
-        auto* tile = makeTile(s.vm, this);
+        auto* tile = makeTile(renderer_, s.vm, this);
         m_tiles.push_back(tile);
         m_grid->addWidget(tile, s.row, s.col);
     }

@@ -31,11 +31,7 @@ namespace mvvm {
         int frequency() const;
 
     protected:
-        void onMotorStarted() override;
-        void onMotorStopped() override;
-        void onMotorStartFailed(const domain::common::MotorDriverError &) override;
-        void onMotorLimitsStateChanged(domain::common::MotorLimitsState) override;
-        void onMotorDirectionChanged(domain::common::MotorDirection) override;
+        void onMotorEvent(const domain::common::MotorDriverEvent &event) override;
 
     private:
         domain::ports::IMotorDriver& motor_driver_;
@@ -44,4 +40,3 @@ namespace mvvm {
 }
 
 #endif //CLEANGRADUATOR_MOTORDRIVERSTATUSVIEWMODEL_H
-

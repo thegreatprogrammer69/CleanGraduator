@@ -132,7 +132,7 @@ void QtAppStatusBarWidget::refreshAll()
     setUptime(vm_.uptimeTime());
 }
 
-void QtAppStatusBarWidget::setState(domain::common::CalibrationLifecycleState s)
+void QtAppStatusBarWidget::setState(application::orchestrators::CalibrationOrchestratorState s)
 {
     const auto txt = stateToText(s);
     const auto accent = stateAccent(s);
@@ -163,24 +163,24 @@ void QtAppStatusBarWidget::setUptime(domain::common::Timestamp ts)
     uptimeValue_->setText(formatHhMmSs(ts));
 }
 
-QString QtAppStatusBarWidget::stateToText(domain::common::CalibrationLifecycleState s)
+QString QtAppStatusBarWidget::stateToText(application::orchestrators::CalibrationOrchestratorState s)
 {
-    using S = domain::common::CalibrationLifecycleState;
+    using S = application::orchestrators::CalibrationOrchestratorState;
     switch (s) {
-        case S::Idle:     return tr("Ожидание");
-        case S::Starting:  return tr("Запуск");
-        case S::Running: return tr("В процессе");
+        case S::Stopped:  return tr("Ожидание");
+        case S::Starting: return tr("Запуск");
+        case S::Started:  return tr("В процессе");
         case S::Stopping: return tr("Остановка");
     }
     return tr("Неизвестно");
 }
 
-QString QtAppStatusBarWidget::stateAccent(domain::common::CalibrationLifecycleState s)
+QString QtAppStatusBarWidget::stateAccent(application::orchestrators::CalibrationOrchestratorState s)
 {
-    using S = domain::common::CalibrationLifecycleState;
+    using S = application::orchestrators::CalibrationOrchestratorState;
     switch (s) {
-        case S::Idle:     return "#6B7280"; // gray
-        case S::Running:  return "#059669"; // green
+        case S::Stopped:  return "#6B7280"; // gray
+        case S::Started:  return "#059669"; // green
         case S::Starting: return "#2563EB"; // blue
         case S::Stopping: return "#D97706"; // amber
     }

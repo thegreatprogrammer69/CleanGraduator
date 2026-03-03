@@ -3,6 +3,7 @@
 
 namespace domain::common {
     enum class MotorFlapsState {
+        Uninitialized,
         IntakeOpened,
         ExhaustOpened,
         FlapsClosed,

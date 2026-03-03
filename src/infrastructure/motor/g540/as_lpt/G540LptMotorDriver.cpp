@@ -188,9 +188,24 @@ namespace infra::motor {
 
     void G540LptMotorDriver::setFlapsState(MotorFlapsState state)
     {
+        if (!lpt_port_.isOpen()) {
+            try {
+                logger_.warn("LPT port is not open. Attempting to open...");
+                lpt_port_.open(config_.lpt_port);
+                logger_.info("LPT port successfully opened");
+            }
+            catch (const std::exception& ex) {
+                logger_.error(std::string("Failed to open LPT port: ") + ex.what());
+                return; // fail-fast
+            }
+            catch (...) {
+                logger_.error("Failed to open LPT port: unknown error");
+                return;
+            }
+        }
+
         // 1. Атомарная замена состояния
         const auto previous = flaps_state_.exchange(state);
-
 
         switch (state) {
             case MotorFlapsState::ExhaustOpened:
