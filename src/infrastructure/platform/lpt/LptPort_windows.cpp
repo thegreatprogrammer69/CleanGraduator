@@ -56,7 +56,7 @@ void LptPort::open(unsigned short address) {
     opened_ = true;
 }
 
-void LptPort::close() {
+void LptPort::close() noexcept {
     if (!opened_)
         return;
 

@@ -1,5 +1,7 @@
 #include "CrosshairVideoOverlay.h"
 
+#include "domain/core/video/VideoFramePacket.h"
+
 using namespace infra::overlay;
 using namespace domain::common;
 
@@ -222,13 +224,13 @@ CrosshairVideoOverlay::CrosshairVideoOverlay(CrosshairVideoOverlayConfig config)
 {
 }
 
-VideoFramePacket CrosshairVideoOverlay::draw(VideoFramePacket packet) const
+void CrosshairVideoOverlay::draw(const VideoFramePacket& packet) const
 {
     if (!config_.visible)
-        return packet;
+        return;
 
     if (!packet.frame)
-        return packet;
+        return;
 
     auto* frame = packet.frame.get();
 
@@ -237,7 +239,7 @@ VideoFramePacket CrosshairVideoOverlay::draw(VideoFramePacket packet) const
     const int height = frame->height;
 
     if (!data || width <= 0 || height <= 0)
-        return packet;
+        return;
 
     switch (frame->format)
     {
@@ -271,6 +273,4 @@ VideoFramePacket CrosshairVideoOverlay::draw(VideoFramePacket packet) const
             // неподдерживаемый формат — ничего не делаем
             break;
     }
-
-    return packet;
 }

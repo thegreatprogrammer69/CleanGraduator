@@ -29,12 +29,18 @@ public:
 
     bool open() override;
     void close() override;
+    bool isRunning() const noexcept override;
+
     void addObserver(domain::ports::IVideoSourceObserver&) override;
     void removeObserver(domain::ports::IVideoSourceObserver&) override;
+
+    void addSink(domain::ports::IVideoSink &) override;
+    void removeSink(domain::ports::IVideoSink &) override;
 
 private:
     void captureLoop();
     void dispatchFrame(const uint8_t* data, size_t size);
+
 
 private:
     detail::VideoSourceNotifier notifier_;

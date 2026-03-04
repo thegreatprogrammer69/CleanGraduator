@@ -1,17 +1,26 @@
 #include "CalibrationSessionControlViewModel.h"
 
+#include <type_traits>
+#include <variant>
+
+#include "application/orchestrators/calibration/process/CalibrationOrchestratorEvent.h"
+
 using namespace mvvm;
 
 CalibrationSessionControlViewModel::CalibrationSessionControlViewModel(CalibrationSessionControlViewModelDeps deps)
-    : session_controller_(deps.session_controller)
-    , lifecycle_(deps.lifecycle)
+    : orchestrator_(deps.orchestrator)
+    , settings_query_(deps.settings_query)
 {
-    lifecycle_.addObserver(*this);
-    onCalibrationLifecycleStateChanged(lifecycle_.state(), lifecycle_.lastError());
+    orchestrator_.addObserver(*this);
+    applyState(
+        orchestrator_.isRunning()
+            ? application::orchestrators::CalibrationOrchestratorState::Started
+            : application::orchestrators::CalibrationOrchestratorState::Stopped,
+        "");
 }
 
 CalibrationSessionControlViewModel::~CalibrationSessionControlViewModel() {
-    lifecycle_.removeObserver(*this);
+    orchestrator_.removeObserver(*this);
 }
 
 void CalibrationSessionControlViewModel::setCalibrationMode(domain::common::CalibrationMode mode) {
@@ -19,32 +28,67 @@ void CalibrationSessionControlViewModel::setCalibrationMode(domain::common::Cali
 }
 
 void CalibrationSessionControlViewModel::startCalibration() {
-    const application::orchestrators::CalibrationSessionControllerInput input{selected_mode.get_copy()};
-    session_controller_.start(input);
+    const auto pressure_points = settings_query_.currentGaugePressurePoints();
+    const auto pressure_unit = settings_query_.currentPressureUnit();
+
+    if (!pressure_points || !pressure_points->isCorrect() || !pressure_unit) {
+        applyState(
+            application::orchestrators::CalibrationOrchestratorState::Stopped,
+            "Не удалось запустить: проверьте настройки шкалы и единиц давления.");
+        return;
+    }
+
+    application::orchestrators::CalibrationOrchestratorInput input{
+        selected_mode.get_copy(),
+        *pressure_unit,
+        domain::common::AngleUnit::deg,
+        *pressure_points
+    };
+
+    if (!orchestrator_.start(input)) {
+        applyState(
+            application::orchestrators::CalibrationOrchestratorState::Stopped,
+            "Не удалось запустить процесс калибровки.");
+    }
 }
 
 void CalibrationSessionControlViewModel::stopCalibration() {
-    session_controller_.stop();
+    orchestrator_.stop();
 }
 
 void CalibrationSessionControlViewModel::emergencyStop() {
-    session_controller_.abort();
+    orchestrator_.stop();
 }
 
-void CalibrationSessionControlViewModel::onCalibrationLifecycleStateChanged(
-    domain::common::CalibrationLifecycleState newState,
-    const std::string& lastError)
+void CalibrationSessionControlViewModel::onCalibrationOrchestratorEvent(
+    const application::orchestrators::CalibrationOrchestratorEvent &ev) {
+    std::visit([this](const auto& event) {
+        using T = std::decay_t<decltype(event)>;
+
+        if constexpr (std::is_same_v<T, application::orchestrators::CalibrationOrchestratorEvent::Started>) {
+            applyState(application::orchestrators::CalibrationOrchestratorState::Started, "");
+        } else if constexpr (std::is_same_v<T, application::orchestrators::CalibrationOrchestratorEvent::Stopped>) {
+            applyState(application::orchestrators::CalibrationOrchestratorState::Stopped, "");
+        } else if constexpr (std::is_same_v<T, application::orchestrators::CalibrationOrchestratorEvent::Failed>) {
+            applyState(application::orchestrators::CalibrationOrchestratorState::Stopped, event.error);
+        }
+    }, ev.data);
+}
+
+void CalibrationSessionControlViewModel::applyState(
+    application::orchestrators::CalibrationOrchestratorState state,
+    const std::string& last_error)
 {
-    error_text.set(lastError);
+    error_text.set(last_error);
 
-    const bool isIdle = newState == domain::common::CalibrationLifecycleState::Idle;
-    const bool isError = newState == domain::common::CalibrationLifecycleState::Error;
-    const bool canStopNow =
-        newState == domain::common::CalibrationLifecycleState::Starting
-        || newState == domain::common::CalibrationLifecycleState::Running
-        || newState == domain::common::CalibrationLifecycleState::Stopping;
+    const bool can_start_now = state == application::orchestrators::CalibrationOrchestratorState::Stopped;
+    const bool can_stop_now =
+        state == application::orchestrators::CalibrationOrchestratorState::Starting
+        || state == application::orchestrators::CalibrationOrchestratorState::Started
+        || state == application::orchestrators::CalibrationOrchestratorState::Stopping;
+    const bool can_abort_now = state == application::orchestrators::CalibrationOrchestratorState::Started;
 
-    can_start.set(isIdle || isError);
-    can_stop.set(canStopNow);
-    can_abort.set(!isIdle);
+    can_start.set(can_start_now);
+    can_stop.set(can_stop_now);
+    can_abort.set(can_abort_now);
 }

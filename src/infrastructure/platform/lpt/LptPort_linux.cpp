@@ -30,7 +30,7 @@ namespace infra::platform {
         opened_ = true;
     }
 
-    void LptPort::close() {
+    void LptPort::close() noexcept {
         if (!opened_)
             return;
 

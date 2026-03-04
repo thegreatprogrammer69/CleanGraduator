@@ -1,0 +1,10 @@
+#ifndef CLEANGRADUATOR_CALIBRATIONRECORDERCONFIG_H
+#define CLEANGRADUATOR_CALIBRATIONRECORDERCONFIG_H
+
+namespace infra::calib {
+    struct InMemoryCalibrationRecorderConfig {
+
+    };
+}
+
+#endif //CLEANGRADUATOR_CALIBRATIONRECORDERCONFIG_H

@@ -1,66 +1,114 @@
 #ifndef CLEANGRADUATOR_CALIBRATIONRESULT_H
 #define CLEANGRADUATOR_CALIBRATIONRESULT_H
-#include <algorithm>
-#include <cmath>
-#include <cstddef>
-#include <string>
-#include <vector>
 
 #include "CalibrationCell.h"
-#include "CalibrationCellSeverity.h"
+#include "CalibrationCellKey.h"
 
 namespace domain::common {
 
-class CalibrationResult {
+class CalibrationResult
+{
 public:
-    CalibrationResult() = default;
 
-    void addMeasurement(double angle) {
-        cells_.emplace_back(angle);
+    CalibrationResult(
+        std::vector<MotorDirection> directions,
+        std::vector<PointId> points,
+        std::vector<AngleSourceId> sources
+    )
+        : directions_(std::move(directions))
+        , points_(std::move(points))
+        , sources_(std::move(sources))
+    {
+        buildIndexMaps();
+
+        cells_.resize(
+            directions_.size() *
+            points_.size() *
+            sources_.size()
+        );
     }
 
-    void markLast(CalibrationCellSeverity severity, std::string message) {
-        if (cells_.empty()) return;
-        cells_.back().mark(severity, std::move(message));
+    CalibrationCell& cell(const CalibrationCellKey& key)
+    {
+        return cells_[index(
+            directionIndex(key.direction),
+            pointIndex(key.point),
+            sourceIndex(key.source)
+        )];
     }
 
-    const std::vector<CalibrationCell>& cells() const {
-        return cells_;
+    const CalibrationCell& cell(const CalibrationCellKey& key) const
+    {
+        return cells_[index(
+            directionIndex(key.direction),
+            pointIndex(key.point),
+            sourceIndex(key.source)
+        )];
     }
 
-    double angleRange() const {
-        if (cells_.size() < 2) return 0.0;
-        return std::fabs(cells_.front().angle() - cells_.back().angle());
+    const std::vector<MotorDirection>& directions() const noexcept
+    {
+        return directions_;
     }
 
-    double nonlinearity() const {
-        const std::size_t n = cells_.size();
-        if (n < 2) return 0.0;
+    const std::vector<PointId>& points() const noexcept
+    {
+        return points_;
+    }
 
-        // Среднее приращение угла
-        const double avrDelta =
-            (cells_.back().angle() - cells_.front().angle()) / double(n - 1);
-
-        // Максимальное отклонение Δᵢ от среднего
-        double maxD = 0.0;
-        for (std::size_t i = 0; i + 1 < n; ++i) {
-            const double d =
-                cells_[i + 1].angle() - cells_[i].angle();
-            const double dev = std::fabs(d - avrDelta);
-            if (dev > maxD) {
-                maxD = dev;
-            }
-        }
-
-        // Избежание деления на ноль
-        if (std::fabs(avrDelta) < 1e-15) {
-            return 0.0;
-        }
-
-        return (maxD / std::fabs(avrDelta)) * 100.0;
+    const std::vector<AngleSourceId>& sources() const noexcept
+    {
+        return sources_;
     }
 
 private:
+
+    // ----- index helpers -----------------------------------------------------
+
+    size_t directionIndex(MotorDirection d) const
+    {
+        return direction_index_.at(d);
+    }
+
+    size_t pointIndex(PointId p) const
+    {
+        return point_index_.at(p);
+    }
+
+    size_t sourceIndex(AngleSourceId s) const
+    {
+        return source_index_.at(s);
+    }
+
+    size_t index(size_t d, size_t p, size_t s) const
+    {
+        return d * points_.size() * sources_.size()
+             + p * sources_.size()
+             + s;
+    }
+
+    void buildIndexMaps()
+    {
+        for (size_t i = 0; i < directions_.size(); ++i)
+            direction_index_[directions_[i]] = i;
+
+        for (size_t i = 0; i < points_.size(); ++i)
+            point_index_[points_[i]] = i;
+
+        for (size_t i = 0; i < sources_.size(); ++i)
+            source_index_[sources_[i]] = i;
+    }
+
+private:
+
+    std::vector<MotorDirection> directions_;
+    std::vector<PointId> points_;
+    std::vector<AngleSourceId> sources_;
+
+    std::unordered_map<MotorDirection, size_t> direction_index_;
+    std::unordered_map<PointId, size_t> point_index_;
+    std::unordered_map<AngleSourceId, size_t> source_index_;
+
     std::vector<CalibrationCell> cells_;
 };
 

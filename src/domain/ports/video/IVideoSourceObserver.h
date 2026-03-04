@@ -1,18 +1,11 @@
 #ifndef CLEANGRADUATOR_IFRAMESINK_H
 #define CLEANGRADUATOR_IFRAMESINK_H
-
-namespace domain::common {
-    struct VideoSourceError;
-    struct VideoFramePacket;
-}
+#include "domain/core/video/VideoSourceEvent.h"
 
 namespace domain::ports {
     struct IVideoSourceObserver {
         virtual ~IVideoSourceObserver() = default;
-        virtual void onVideoFrame(const common::VideoFramePacket& packet) = 0;
-        virtual void onVideoSourceOpened() = 0;
-        virtual void onVideoSourceFailed(const common::VideoSourceError&) = 0;
-        virtual void onVideoSourceClosed() = 0;
+        virtual void onVideoSourceEvent(const common::VideoSourceEvent&) = 0;
     };
 }
 #endif //CLEANGRADUATOR_IFRAMESINK_H

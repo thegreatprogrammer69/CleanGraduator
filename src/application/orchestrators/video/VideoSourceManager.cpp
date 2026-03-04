@@ -75,3 +75,4 @@ const std::vector<AngleSourceId>& VideoSourceManager::opened() const
 {
     return opened_;
 }
+

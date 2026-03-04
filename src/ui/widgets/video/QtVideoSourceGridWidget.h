@@ -16,6 +16,7 @@ namespace ui {
         Q_OBJECT
         public:
         explicit QtVideoSourceGridWidget(
+            std::string renderer,
             mvvm::VideoSourceGridViewModel& model,
             QWidget *parent = nullptr);
 
@@ -37,6 +38,8 @@ namespace ui {
 
         bool m_inRecalc = false;
         mvvm::VideoSourceGridViewModel& m_model;
+
+        std::string renderer_;
     };
 
 }

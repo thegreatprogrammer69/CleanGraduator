@@ -3,7 +3,7 @@
 #include <vector>
 
 #include "domain/core/drivers/motor/MotorDirection.h"
-#include "../../../domain/ports/drivers/motor/IMotorDriverObserver.h"
+#include "domain/ports/drivers/motor/IMotorDriverObserver.h"
 
 
 namespace domain::ports {
@@ -27,17 +27,10 @@ namespace application::orchestrators {
 
     protected:
         // ===== IMotorDriverObserver =====
-        void onMotorStarted() override;
-        void onMotorStopped() override;
-        void onMotorStartFailed(const domain::common::MotorError &) override;
-        void onMotorLimitsStateChanged(domain::common::MotorLimitsState) override;
-        void onMotorDirectionChanged(domain::common::MotorDirection) override;
+        void onMotorEvent(const domain::common::MotorDriverEvent &event) override;
 
     private:
-        void notifyRunning(bool running);
-
-    public:
-
+        void notifyRunning(bool running) const;
 
     private:
         domain::ports::IMotorDriver& driver_;

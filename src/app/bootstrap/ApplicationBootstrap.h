@@ -5,8 +5,6 @@
 #include <string>
 #include <vector>
 
-#include "../../infrastructure/calibration/lifecycle/CalibrationLifecycle.h"
-
 namespace domain::ports {
     struct IValveDriver;
     struct IResultStore;
@@ -16,6 +14,7 @@ namespace domain::ports {
     struct IAngleSource;
     struct IVideoSource;
     struct IClock;
+    struct ISessionClock;
     struct ILogger;
     struct IMotorDriver;
 }
@@ -58,9 +57,8 @@ public:
     std::vector<std::unique_ptr<domain::ports::ILogger>> loggers;
 
     ////////////////////////////////////////////////////////////////////////////////////////
-    // Жизненный цикл и Время
-    std::unique_ptr<domain::ports::ICalibrationLifecycle> calibration_lifecycle;
-    domain::ports::IClock* session_clock;
+    // Время процесса
+    std::unique_ptr<domain::ports::ISessionClock> session_clock;
 
     ////////////////////////////////////////////////////////////////////////////////////////
     // Угломер и калибратор
@@ -82,7 +80,6 @@ public:
     ////////////////////////////////////////////////////////////////////////////////////////
     // Драйвер двигателя
     std::unique_ptr<domain::ports::IMotorDriver> motor_driver;
-    domain::ports::IValveDriver* valve_driver;
 
     ////////////////////////////////////////////////////////////////////////////////////////
     // Задатчик давления. Делавет весь процесс градуировки
@@ -119,7 +116,7 @@ private:
     void createLogSourcesStorage();
 
     ////////////////////////////////////////////////////////////////////////////////////////
-    void createLifecycle();
+    void createSessionClock();
     void createClock();
 
     ////////////////////////////////////////////////////////////////////////////////////////

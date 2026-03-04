@@ -26,7 +26,7 @@ namespace ui {
         void setupConnections();
         void bindViewModel();
 
-        void updateUiFromState(mvvm::DualValveControlViewModel::FlapsState state);
+        void updateUiFromState(domain::common::MotorFlapsState state);
 
     private:
         mvvm::DualValveControlViewModel& vm_;
@@ -37,7 +37,7 @@ namespace ui {
         QLabel* state_label_{nullptr};
 
         // подписка на Observable
-        mvvm::Observable<mvvm::DualValveControlViewModel::FlapsState>::Subscription state_sub_;
+        mvvm::Observable<domain::common::MotorFlapsState>::Subscription state_sub_;
     };
 
 } // namespace ui

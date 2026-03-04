@@ -16,13 +16,14 @@
 #include "domain/core/video/VideoFrame.h"
 #include "domain/core/video/VideoFramePacket.h"
 #include "domain/core/video/VideoSourceError.h"
+#include "domain/core/video/VideoSourceEvent.h"
 #include "domain/ports/clock/IClock.h"
 #include "domain/ports/logging/ILogger.h"
 
 
-
-
 namespace infra::camera {
+
+    using namespace domain::common;
 
 static int xioctl(int fd, unsigned long request, void* arg) {
     for (;;) {
@@ -45,8 +46,10 @@ bool V4LCamera::open() {
 
     auto abort_opening = [this]() {
         this->close();
-        const domain::common::VideoSourceError err{logger_.lastError()};
-        notifier_.notifyFailed(err);
+        const VideoSourceError err{logger_.lastError()};
+        VideoSourceEvent::Failed ev;
+        ev.error = err;
+        notifier_.notifyEvent(VideoSourceEvent(ev));
     };
 
     fd_ = ::open(config_.source.c_str(), O_RDWR | O_NONBLOCK, 0);
@@ -159,7 +162,8 @@ bool V4LCamera::open() {
     thread_ = std::thread(&V4LCamera::captureLoop, this);
     logger_.info("camera {} successfully opened", config_.source);
 
-    notifier_.notifyOpened();
+    VideoSourceEvent::Opened ev;
+    notifier_.notifyEvent(VideoSourceEvent(ev));
 
     return true;
 }
@@ -192,6 +196,18 @@ void V4LCamera::close() {
     }
 
     logger_.info("camera {} successfully closed", config_.source);
+}
+
+bool V4LCamera::isRunning() const noexcept {
+    return running_.load();
+}
+
+void V4LCamera::addSink(domain::ports::IVideoSink &s) {
+    notifier_.addSink(s);
+}
+
+void V4LCamera::removeSink(domain::ports::IVideoSink &s) {
+    notifier_.removeSink(s);
 }
 
 void V4LCamera::addObserver(domain::ports::IVideoSourceObserver &o) {
@@ -243,21 +259,22 @@ void V4LCamera::captureLoop() {
             break;
         }
     }
-    notifier_.notifyClosed();
+    VideoSourceEvent::Closed ev;
+    notifier_.notifyEvent(VideoSourceEvent(ev));
 }
 
 void V4LCamera::dispatchFrame(const uint8_t* data, size_t size) {
-    auto frame = std::make_shared<domain::common::VideoFrame>();
+    auto frame = std::make_shared<VideoFrame>();
     frame->width  = config_.width;
     frame->height = config_.height;
-    frame->format = domain::common::PixelFormat::YUYV;   // убедись что у тебя есть такой формат
-    frame->buffer = domain::common::VideoBuffer(static_cast<int>(size));
+    frame->format = PixelFormat::YUYV;   // убедись что у тебя есть такой формат
+    frame->buffer = VideoBuffer(static_cast<int>(size));
 
     std::memcpy(frame->buffer.data, data, size);
 
-    const domain::common::Timestamp ts = ports_.clock.now();
+    const Timestamp ts = ports_.clock.now();
 
-    domain::common::VideoFramePacket packet;
+    VideoFramePacket packet;
     packet.timestamp = ts;
     packet.frame = frame;
 

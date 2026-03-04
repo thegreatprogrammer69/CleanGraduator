@@ -49,7 +49,7 @@ public:
 
         btnValves->setChecked(true);
 
-        connect(group, &QButtonGroup::idClicked,
+        connect(group, QOverload<int>::of(&QButtonGroup::buttonClicked),
                 stack_, &QStackedWidget::setCurrentIndex);
 
         applyStyle();

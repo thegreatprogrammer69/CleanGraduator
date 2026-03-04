@@ -1,16 +1,15 @@
 #ifndef CLEANGRADUATOR_PRESSURESOURCENOTIFIER_H
 #define CLEANGRADUATOR_PRESSURESOURCENOTIFIER_H
 
-#include <algorithm>
-#include <vector>
-#include <mutex>
+#include "shared/ThreadSafeObserverList.h"
 
 namespace domain::common {
     struct PressurePacket;
-    struct PressureSourceError;
+    struct PressureSourceEvent;
 }
 
 namespace domain::ports {
+    struct IPressureSink;
     struct IPressureSourceObserver;
 }
 
@@ -21,14 +20,15 @@ namespace infra::pressure::detail {
         void addObserver(domain::ports::IPressureSourceObserver& observer);
         void removeObserver(domain::ports::IPressureSourceObserver& observer);
 
+        void addSink(domain::ports::IPressureSink& sink);
+        void removeSink(domain::ports::IPressureSink& sink);
+
         void notifyPressure(const domain::common::PressurePacket& packet);
-        void notifyOpened();
-        void notifyOpenFailed(const domain::common::PressureSourceError& error);
-        void notifyClosed(const domain::common::PressureSourceError& error);
+        void notifyEvent(const domain::common::PressureSourceEvent& event);
 
     private:
-        std::vector<domain::ports::IPressureSourceObserver*> observers_;
-        std::mutex mutex_;
+        ThreadSafeObserverList<domain::ports::IPressureSourceObserver> observers_;
+        ThreadSafeObserverList<domain::ports::IPressureSink> sinks_;
     };
 
 }

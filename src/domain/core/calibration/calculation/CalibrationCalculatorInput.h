@@ -2,12 +2,12 @@
 #define CLEANGRADUATOR_CALIBRATIONINPUT_H
 #include "../common/CalibrationMode.h"
 #include "../common/PressurePoints.h"
+#include "domain/core/calibration/recording/CalibrationSession.h"
 
 namespace domain::common {
 
     struct CalibrationCalculatorInput {
-        CalibrationMode mode;
-        PressurePoints points;
+        CalibrationSession calibration_session;
     };
 
 }

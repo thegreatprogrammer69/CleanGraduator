@@ -5,13 +5,15 @@
 #include "../../domain/ports/video/IVideoSourceObserver.h"
 #include "viewmodels/Observable.h"
 #include "domain/core/video/VideoFrame.h"
+#include "domain/core/video/VideoFramePacket.h"
+#include "domain/ports/video/IVideoSink.h"
 
 namespace domain::ports {
     struct IVideoSource;
 }
 
 namespace mvvm {
-    class VideoSourceViewModel final : domain::ports::IVideoSourceObserver {
+    class VideoSourceViewModel final : public domain::ports::IVideoSourceObserver, public domain::ports::IVideoSink {
     public:
         Observable<domain::common::VideoFramePtr> frame{};
         Observable<bool> is_opened{false};
@@ -24,9 +26,7 @@ namespace mvvm {
     private:
         // IVideoSourceObserver
         void onVideoFrame(const domain::common::VideoFramePacket &) override;
-        void onVideoSourceOpened() override;
-        void onVideoSourceFailed(const domain::common::VideoSourceError &) override;
-        void onVideoSourceClosed() override;
+        void onVideoSourceEvent(const domain::common::VideoSourceEvent &) override;
 
     private:
         domain::ports::IVideoSource &video_source_;

@@ -52,6 +52,7 @@ ui::QtMainWindow::QtMainWindow(
     /* ================= Левая часть: камеры ================= */
     m_cameras =
         new QtVideoSourceGridWidget(
+            "D3D11",
             model_.videoSourceGridViewModel(),
             this
         );

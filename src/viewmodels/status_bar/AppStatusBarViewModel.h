@@ -1,37 +1,40 @@
 #ifndef CLEANGRADUATOR_APPSTATUSBARVIEWMODEL_H
 #define CLEANGRADUATOR_APPSTATUSBARVIEWMODEL_H
+#include "application/orchestrators/calibration/process/CalibrationOrchestratorState.h"
 #include "domain/core/measurement/Timestamp.h"
-#include "domain/ports/calibration/lifecycle/ICalibrationLifecycleObserver.h"
+#include "application/ports/calibration/orchestration/CalibrationOrchestratorObserver.h"
 #include "viewmodels/Observable.h"
 
 
+namespace application::orchestrators {
+    class CalibrationOrchestrator;
+}
+
 namespace domain::ports {
-    struct ICalibrationLifecycle;
     struct IClock;
 }
 
 namespace mvvm {
     struct AppStatusBarViewModelDeps {
-        domain::ports::ICalibrationLifecycle& lifecycle;
+        application::orchestrators::CalibrationOrchestrator& orchestrator;
         domain::ports::IClock& session_clock;
         domain::ports::IClock& uptime_clock;
     };
-    class AppStatusBarViewModel final : public domain::ports::ICalibrationLifecycleObserver {
+    class AppStatusBarViewModel final : public application::ports::CalibrationOrchestratorObserver {
     public:
         explicit AppStatusBarViewModel(AppStatusBarViewModelDeps deps);
         ~AppStatusBarViewModel();
 
-        domain::common::CalibrationLifecycleState state();
+        application::orchestrators::CalibrationOrchestratorState state();
         domain::common::Timestamp sessionTime();
         domain::common::Timestamp uptimeTime();
 
-    protected:
-        void onCalibrationLifecycleStateChanged(domain::common::CalibrationLifecycleState newState, const std::string& lastError) override;
+        void onCalibrationOrchestratorEvent(const application::orchestrators::CalibrationOrchestratorEvent &ev) override;
 
     private:
-        std::atomic<domain::common::CalibrationLifecycleState> current_state_{};
+        std::atomic<application::orchestrators::CalibrationOrchestratorState> current_state_{};
 
-        domain::ports::ICalibrationLifecycle& lifecycle_;
+        application::orchestrators::CalibrationOrchestrator& orchestrator_;
         domain::ports::IClock& session_clock_;
         domain::ports::IClock& uptime_clock_;
     };

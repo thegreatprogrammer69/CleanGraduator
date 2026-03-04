@@ -3,7 +3,6 @@
 #include <stdexcept>
 #include <vector>
 
-#include "application/orchestrators/angle/AngleFromVideoInteractor.h"
 #include "application/orchestrators/video/VideoSourceManager.h"
 #include "application/ports/logging/ILoggerFactory.h"
 #include "infrastructure/calculation/angle/CastAnglemeter.h"
@@ -22,7 +21,6 @@
 #include "infrastructure/logging/ConsoleLogger.h"
 #include "infrastructure/logging/FileLogger.h"
 #include "infrastructure/logging/NamedMultiLogger.h"
-#include "infrastructure/motion/g540/as_lpt/G540LptMotorDriver.h"
 #include "infrastructure/overlay/crosshair/CrosshairVideoOverlay.h"
 #include "infrastructure/platform/com/ComPort.h"
 #include "infrastructure/pressure/PressureSourceNotifier.h"
@@ -34,6 +32,8 @@
 #include "domain/ports/video/IVideoSource.h"
 
 #include "domain/ports/calibration/result/IResultStore.h"
+#include "infrastructure/angle/from_video/AngleSourceFromVideo.h"
+#include "infrastructure/factory/AngleSourceFactory.h"
 #include "infrastructure/factory/MotorDriverFactory.h"
 
 using namespace mvvm;
@@ -47,12 +47,11 @@ using namespace infra::logging;
 using namespace infra::calc;
 using namespace infra::catalogs;
 using namespace infra::pressure;
-using namespace infra::motors;
+using namespace infra::motor;
 using namespace infra::overlay;
 using namespace infra::platform;
 using namespace infra::repo;
 using namespace infra::storage;
-using namespace infra::lifecycle;
 
 
 struct LoggerFactory final : ILoggerFactory {
@@ -78,7 +77,7 @@ ApplicationBootstrap::~ApplicationBootstrap() {
 void ApplicationBootstrap::initialize() {
     createLogSourcesStorage();
 
-    createLifecycle();
+    createSessionClock();
     createClock();
 
     createDisplacementCatalog();
@@ -130,10 +129,8 @@ void ApplicationBootstrap::createLogSourcesStorage() {
     log_sources_storage = std::make_unique<LogSourcesStorage>();
 }
 
-void ApplicationBootstrap::createLifecycle() {
-    auto* lifecycle = new CalibrationLifecycle();
-    session_clock = &lifecycle->sessionClock();
-    calibration_lifecycle = std::unique_ptr<CalibrationLifecycle>(lifecycle);
+void ApplicationBootstrap::createSessionClock() {
+    session_clock = std::make_unique<SessionClock>();
 }
 
 void ApplicationBootstrap::createClock() {
@@ -152,15 +149,14 @@ void ApplicationBootstrap::createAngleSources() {
     int idx = 1;
 
     for (const auto& video_source : video_sources) {
-        AngleFromVideoInteractorPorts ports{
+        infra::angle::AngleSourcePorts ports{
             createLogger("IAngleSource_" + std::to_string(idx)),
             *anglemeter,
             *video_source
         };
 
-        angle_sources.emplace_back(
-            std::make_unique<AngleFromVideoInteractor>(AngleSourceId{idx}, ports)
-        );
+        AngleSourceFactory factory(setup_dir_ + "/angle_sources.ini", ports);
+        angle_sources.emplace_back(factory.load(AngleSourceId{idx}));
 
         ++idx;
     }
@@ -236,7 +232,6 @@ void ApplicationBootstrap::createMotorDriver() {
     };
     MotorDriverFactory factory(setup_dir_ + "/motor.ini", ports);
     motor_driver = factory.load();
-    valve_driver = factory.load_valve_driver();
 
 }
 

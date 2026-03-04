@@ -6,7 +6,9 @@
 #include <string>
 
 #include "domain/core/pressure/PressurePacket.h"
+#include "domain/core/pressure/PressureSourceEvent.h"
 #include "domain/core/measurement/Pressure.h"
+#include "domain/ports/pressure/IPressureSink.h"
 #include "domain/ports/pressure/IPressureSourceObserver.h"
 #include "viewmodels/Observable.h"
 
@@ -24,7 +26,9 @@ namespace mvvm {
         domain::ports::IPressureSource& pressure_source;
     };
 
-    class PressureSensorStatusBarViewModel final : public domain::ports::IPressureSourceObserver {
+    class PressureSensorStatusBarViewModel final
+        : public domain::ports::IPressureSourceObserver
+        , public domain::ports::IPressureSink {
     public:
         explicit PressureSensorStatusBarViewModel(PressureSensorStatusBarViewModelDeps deps);
         ~PressureSensorStatusBarViewModel() override;
@@ -40,9 +44,7 @@ namespace mvvm {
 
     protected:
         void onPressurePacket(const domain::common::PressurePacket& packet) override;
-        void onPressureSourceOpened() override;
-        void onPressureSourceOpenFailed(const domain::common::PressureSourceError& err) override;
-        void onPressureSourceClosed(const domain::common::PressureSourceError& err) override;
+        void onPressureSourceEvent(const domain::common::PressureSourceEvent& event) override;
 
     private:
         domain::ports::IPressureSource& pressure_source_;

@@ -1,6 +1,6 @@
 #ifndef CLEANGRADUATOR_CROSSHAIRVIDEOOVERLAY_H
 #define CLEANGRADUATOR_CROSSHAIRVIDEOOVERLAY_H
-#include "../../../domain/ports/video/IVideoSourceOverlay.h"
+#include "domain/ports/video/IVideoSourceOverlay.h"
 #include "CrosshairVideoOverlayConfig.h"
 
 namespace infra::overlay {
@@ -8,7 +8,7 @@ namespace infra::overlay {
     public:
         explicit CrosshairVideoOverlay(CrosshairVideoOverlayConfig config);
         ~CrosshairVideoOverlay() override = default;
-        domain::common::VideoFramePacket draw(domain::common::VideoFramePacket) const override;
+        void draw(const domain::common::VideoFramePacket&) const override;
     private:
         CrosshairVideoOverlayConfig config_;
     };

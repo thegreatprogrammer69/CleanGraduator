@@ -15,17 +15,17 @@ namespace fmt {
 
         template <typename... Args>
         void info(const std::string& format, const Args&... args) {
-            logger_.info(fmt::fmt(format, args...));
+            logger_.info(fmt::format(format, args...));
         }
 
         template <typename... Args>
         void warn(const std::string& format, const Args&... args) {
-            logger_.warn(fmt::fmt(format, args...));
+            logger_.warn(fmt::format(format, args...));
         }
 
         template <typename... Args>
         void error(const std::string& format, const Args&... args) {
-            last_error_ = fmt::fmt(format, args...);
+            last_error_ = fmt::format(format, args...);
             logger_.error(last_error_);
         }
 

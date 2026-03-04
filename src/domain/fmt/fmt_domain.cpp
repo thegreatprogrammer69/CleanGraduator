@@ -4,10 +4,9 @@
 #include <ostream>
 
 #include "fmt.h"
-#include "../core/calibration/result/CalibrationCellSeverity.h"
-#include "../../application/models/calibration/GaugePressurePoints.h"
-#include "../core/calibration/common/PressurePoints.h"
-#include "domain/core/calibration/lifecycle/CalibrationLifecycleState.h"
+#include "domain/core/calibration/result/CalibrationCellSeverity.h"
+#include "application/models/calibration/GaugePressurePoints.h"
+#include "domain/core/calibration/common/PressurePoints.h"
 #include "domain/core/measurement/Angle.h"
 #include "domain/core/measurement/AngleUnit.h"
 #include "domain/core/measurement/Pressure.h"
@@ -39,7 +38,7 @@ std::ostream& operator<<(std::ostream& os, const AngleUnit& f) {
 }
 
 std::ostream& operator<<(std::ostream& os, const Pressure& f) {
-    os << fmt::fmt("{:.2f} {}", f.value(), f.unit());
+    os << fmt::format("{:.2f} {}", f.value(), f.unit());
     return os;
 }
 
@@ -108,23 +107,6 @@ std::ostream& operator<<(std::ostream& os, const VideoFrame& f) {
     return os;
 }
 
-std::ostream& operator<<(std::ostream& os, const CalibrationLifecycleState& f) {
-    switch (f) {
-        case CalibrationLifecycleState::Idle:
-            os << "Idle";
-            break;
-        case CalibrationLifecycleState::Starting:
-            os << "Starting";
-            break;
-        case CalibrationLifecycleState::Running:
-            os << "Running";
-            break;
-        case CalibrationLifecycleState::Stopping:
-            os << "Stopping";
-            break;
-    }
-    return os;
-}
 
 std::ostream & operator<<(std::ostream &os, const domain::common::CalibrationCellSeverity &f) {
     switch (f) {
@@ -157,7 +139,7 @@ std::ostream & operator<<(std::ostream &os, const domain::common::MotorDirection
 }
 
 std::ostream & operator<<(std::ostream &os, const PressurePoints &f) {
-    os << fmt::fmt("GaugePressurePoints{[{}]}", f);
+    os << fmt::format("GaugePressurePoints{[{}]}", f);
     return os;
 }
 

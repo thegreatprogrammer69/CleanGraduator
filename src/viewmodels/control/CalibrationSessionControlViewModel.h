@@ -3,20 +3,21 @@
 
 #include <string>
 
-#include "application/orchestrators/calibration/session/CalibrationSessionController.h"
-#include "domain/ports/calibration/lifecycle/ICalibrationLifecycle.h"
-#include "domain/ports/calibration/lifecycle/ICalibrationLifecycleObserver.h"
+#include "application/orchestrators/calibration/process/CalibrationOrchestrator.h"
+#include "application/orchestrators/calibration/process/CalibrationOrchestratorInput.h"
+#include "application/orchestrators/calibration/process/CalibrationOrchestratorState.h"
+#include "application/orchestrators/settings/CalibrationSettingsQuery.h"
+#include "domain/core/calibration/common/CalibrationMode.h"
 #include "viewmodels/Observable.h"
 
 namespace mvvm {
 
 struct CalibrationSessionControlViewModelDeps {
-    application::orchestrators::CalibrationSessionController& session_controller;
-    domain::ports::ICalibrationLifecycle& lifecycle;
+    application::orchestrators::CalibrationOrchestrator& orchestrator;
+    application::orchestrators::CalibrationSettingsQuery& settings_query;
 };
 
-class CalibrationSessionControlViewModel final
-    : public domain::ports::ICalibrationLifecycleObserver
+class CalibrationSessionControlViewModel final : public application::ports::CalibrationOrchestratorObserver
 {
 public:
     explicit CalibrationSessionControlViewModel(CalibrationSessionControlViewModelDeps deps);
@@ -27,9 +28,8 @@ public:
     void stopCalibration();
     void emergencyStop();
 
-    void onCalibrationLifecycleStateChanged(
-        domain::common::CalibrationLifecycleState newState,
-        const std::string& lastError) override;
+    void onCalibrationOrchestratorEvent(const application::orchestrators::CalibrationOrchestratorEvent &ev) override;
+
 
     Observable<domain::common::CalibrationMode> selected_mode{domain::common::CalibrationMode::Full};
     Observable<std::string> error_text{std::string()};
@@ -38,8 +38,10 @@ public:
     Observable<bool> can_abort{false};
 
 private:
-    application::orchestrators::CalibrationSessionController& session_controller_;
-    domain::ports::ICalibrationLifecycle& lifecycle_;
+    void applyState(application::orchestrators::CalibrationOrchestratorState state, const std::string& last_error);
+
+    application::orchestrators::CalibrationOrchestrator& orchestrator_;
+    application::orchestrators::CalibrationSettingsQuery& settings_query_;
 };
 
 } // namespace mvvm

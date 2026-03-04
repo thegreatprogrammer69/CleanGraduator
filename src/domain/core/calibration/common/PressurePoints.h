@@ -14,6 +14,13 @@ namespace domain::common {
         bool isCorrect() const {
             return value.size() > 1;
         }
+        std::vector<float> to(PressureUnit unit) const {
+            std::vector<float> result;
+            for (auto p : value) {
+                result.push_back(p.to(unit));
+            }
+            return result;
+        }
         bool operator==(const PressurePoints &other) const {  return value == other.value; }
     };
 }

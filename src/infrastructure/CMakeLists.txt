@@ -1,11 +1,13 @@
 set(SOURCES
+        angle/from_video/AngleSourceFromVideo.cpp
+        angle/fake/FakeAngleSourceFromVideo.cpp
+
         catalogs/FileDisplacementCatalog.cpp
         catalogs/FileGaugeCatalog.cpp
         catalogs/FilePrinterCatalog.cpp
         catalogs/FileGaugePrecisionCatalog.cpp
         catalogs/FilePressureUnitCatalog.cpp
 
-        utils/ini/IniFile.cpp
 
         calculation/calibration/LinearCalibrationCalculator.cpp
         calculation/angle/CastAnglemeter.cpp
@@ -16,8 +18,6 @@ set(SOURCES
         pressure/PressureSourceNotifier.cpp
         pressure/dm5002/DM5002PressureSensor.cpp
         pressure/fake/FakePressureSource.cpp
-
-        motion/g540/as_lpt/G540LptMotorDriver.cpp
 
         logging/ConsoleLogger.cpp
         logging/FileLogger.cpp
@@ -32,6 +32,7 @@ set(SOURCES
         storage/VideoAngleSourcesStorage.cpp
         storage/LogSourcesStorage.cpp
 
+        factory/AngleSourceFactory.cpp
         factory/AngleCalculatorFactory.cpp
         factory/CalibrationCalculatorFactory.cpp
         factory/VideoSourceFactory.cpp
@@ -39,11 +40,16 @@ set(SOURCES
         factory/PressureSourceFactory.cpp
         factory/MotorDriverFactory.cpp
 
-        motion/g540/as_lpt/G540LptMotorDriver.cpp
-
-        calibration/lifecycle/CalibrationLifecycle.cpp
         calibration/strats/stand4/Stand4FrequencyCalculator.cpp
         calibration/strats/stand4/Stand4CalibrationStrategy.cpp
+        calibration/recording/in_memory/InMemoryCalibrationRecorder.cpp
+
+        motor/g540/as_lpt/G540LptMotorDriver.cpp
+        motor/notifier/MotorDriverNotifier.cpp
+
+        utils/thread/ThreadWorker.cpp
+        utils/ini/IniFile.cpp
+        utils/watchdog/SoftwareWatchdog.cpp
 
 )
 

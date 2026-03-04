@@ -6,34 +6,38 @@
 #include <atomic>
 #include <optional>
 
+#include "Stand4CalibrationStrategyConfig.h"
 #include "domain/ports/drivers/motor/IMotorDriver.h"
-#include "domain/ports/drivers/valve/IValveDriver.h"
 
 #include "stand4logic.h"
 #include "Stand4FrequencyCalculator.h"
+#include "domain/fmt/Logger.h"
 #include "domain/ports/calibration/recording/ICalibrationRecorder.h"
+#include "domain/ports/pressure/IPressureSourceObserver.h"
+#include "infrastructure/calibration/strats/CalibrationStrategyPorts.h"
+#include "infrastructure/calibration/tracking/IPressurePointsTrackerObserver.h"
+#include "infrastructure/calibration/tracking/PressurePointsTracker.h"
 
 namespace infra::calib::stand4 {
     class Stand4CalibrationStrategy final
         : public domain::ports::ICalibrationStrategy
+        , tracking::IPressurePointsTrackerObserver
     {
     public:
-        Stand4CalibrationStrategy();
-
+        Stand4CalibrationStrategy(CalibrationStrategyPorts ports, Stand4CalibrationStrategyConfig config);
+        ~Stand4CalibrationStrategy();
         void bind(
             domain::ports::IMotorDriver& motor,
-            domain::ports::IValveDriver& valve,
             domain::ports::ICalibrationRecorder& recorder) override;
 
-        void begin(const domain::common::CalibrationBeginContext& ctx) override;
+        domain::common::CalibrationStrategyVerdict begin(const domain::common::CalibrationStrategyBeginContext& ctx) override;
 
-        domain::ports::CalibrationDecisionType feed(const domain::common::CalibrationFeedContext& ctx) override;
+        domain::common::CalibrationStrategyVerdict feed(const domain::common::CalibrationStrategyFeedContext& ctx) override;
 
         void end() override;
 
         bool isRunning() const override;
 
-    private:
         enum class State {
             Idle,
             Preload,
@@ -43,19 +47,35 @@ namespace infra::calib::stand4 {
             Fault
         };
 
-    private:
-        void updatePreload(const domain::common::CalibrationFeedContext& ctx);
-        void updateForward(const domain::common::CalibrationFeedContext& ctx);
-        void updateBackward(const domain::common::CalibrationFeedContext& ctx);
+    protected:
+        void onPressurePointsTrackerEvent(const tracking::PressurePointsTrackerEvent &) override;
 
     private:
+        void updatePreload(const domain::common::CalibrationStrategyFeedContext& ctx);
+        void updateForward(const domain::common::CalibrationStrategyFeedContext& ctx);
+        void updateBackward(const domain::common::CalibrationStrategyFeedContext& ctx);
+
+        void transition(State newState);
+
+        void transitionToPreload();
+        void transitionToForward();
+        void transitionToBackward();
+        void transitionToFinished();
+        void transitionToFault();
+
+
+    private:
+        fmt::Logger logger_;
+
         domain::ports::IMotorDriver* motor_{nullptr};
-        domain::ports::IValveDriver* valve_{nullptr};
         domain::ports::ICalibrationRecorder* recorder_{nullptr};
 
         Stand4FrequencyCalculator freq_calc_;
+        tracking::PressurePointsTracker points_tracker_;
 
         std::atomic<State> state_{State::Idle};
+
+        std::vector<float> pressure_points_;
 
         double p_preload_{0.0};
         double p_target_{0.0};

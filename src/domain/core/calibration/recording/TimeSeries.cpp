@@ -4,10 +4,9 @@
 #include <algorithm>
 
 namespace domain::common {
-
     TimeSeries::TimeSeries(
-        std::vector<double> time,
-        std::vector<double> value)
+        std::vector<float> time,
+        std::vector<float> value)
         : time_(std::move(time))
         , value_(std::move(value))
     {
@@ -21,16 +20,10 @@ namespace domain::common {
                 "TimeSeries: time vector must be monotonically non-decreasing");
         }
     }
-
     void TimeSeries::clear() { time_.clear(); value_.clear(); }
-
     bool TimeSeries::empty() const { return time_.empty(); }
-
     std::size_t TimeSeries::size() const { return time_.size(); }
-
-    const std::vector<double> & TimeSeries::time() const { return time_; }
-
-    const std::vector<double> & TimeSeries::value() const { return value_; }
-
-    void TimeSeries::push(double time, double value) { time_.push_back(time); value_.push_back(value); }
+    const std::vector<float> & TimeSeries::time() const { return time_; }
+    const std::vector<float> & TimeSeries::value() const { return value_; }
+    void TimeSeries::push(const float time, const float value) { time_.push_back(time); value_.push_back(value); }
 } // namespace domain::common

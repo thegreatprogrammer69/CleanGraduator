@@ -9,12 +9,12 @@
 
 namespace ui {
 
-static const char* toText(mvvm::DualValveControlViewModel::FlapsState s) {
-    using S = mvvm::DualValveControlViewModel::FlapsState;
+static const char* toText(domain::common::MotorFlapsState s) {
+    using S = domain::common::MotorFlapsState;
     switch (s) {
-        case S::FlapsUninitialized: return "Неизвестно";
-        case S::InputFlapOpened:    return "Впускной открыт";
-        case S::OutputFlapOpened:   return "Выпускной открыт";
+        case S::Uninitialized: return "Неизвестно";
+        case S::IntakeOpened:    return "Впускной открыт";
+        case S::ExhaustOpened:   return "Выпускной открыт";
         case S::FlapsClosed:        return "Клапана закрыты";
         default:                    return "Неизвестно";
     }
@@ -82,11 +82,11 @@ void QtDualValveControlWidget::bindViewModel()
 }
 
     void QtDualValveControlWidget::updateUiFromState(
-        mvvm::DualValveControlViewModel::FlapsState state)
+       domain::common::MotorFlapsState state)
 {
     state_label_->setText(QString::fromUtf8(toText(state)));
 
-    using S = mvvm::DualValveControlViewModel::FlapsState;
+    using S = domain::common::MotorFlapsState;
 
     // Базовое состояние — всё доступно
     open_input_btn_->setEnabled(true);
@@ -94,10 +94,10 @@ void QtDualValveControlWidget::bindViewModel()
     close_flaps_btn_->setEnabled(true);
 
     // Ограничения только для подтверждённых состояний
-    if (state == S::InputFlapOpened) {
+    if (state == S::IntakeOpened) {
         open_input_btn_->setEnabled(false);
     }
-    else if (state == S::OutputFlapOpened) {
+    else if (state == S::ExhaustOpened) {
         open_output_btn_->setEnabled(false);
     }
     else if (state == S::FlapsClosed) {

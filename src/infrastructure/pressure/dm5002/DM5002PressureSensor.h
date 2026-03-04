@@ -29,6 +29,9 @@ namespace infra::pressure {
         void addObserver(domain::ports::IPressureSourceObserver& observer) override;
         void removeObserver(domain::ports::IPressureSourceObserver& observer) override;
 
+        void addSink(domain::ports::IPressureSink &) override;
+        void removeSink(domain::ports::IPressureSink &) override;
+
     private:
         struct ReadResult {
             bool valid{false};
@@ -38,6 +41,8 @@ namespace infra::pressure {
 
         ReadResult readPressure();
         void run();
+
+    public:
 
     private:
         struct Impl;

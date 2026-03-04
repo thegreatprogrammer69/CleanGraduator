@@ -26,6 +26,8 @@ namespace {
 } // namespace
 
 int main(int argc, char *argv[]) {
+    QCoreApplication::setAttribute(Qt::AA_UseDesktopOpenGL);
+
     QApplication app(argc, argv);
 
     Q_INIT_RESOURCE(resources);
@@ -51,7 +53,7 @@ int main(int argc, char *argv[]) {
 
         ui_bootstrap.main_window->show();
 
-        application_bootstrap.motor_driver->initialize();
+        // application_bootstrap.motor_driver->initialize();
 
         // application_bootstrap.angle_sources[0]->start();
         // application_bootstrap.angle_sources[1]->start();

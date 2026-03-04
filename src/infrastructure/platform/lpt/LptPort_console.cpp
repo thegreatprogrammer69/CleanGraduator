@@ -26,16 +26,14 @@ namespace infra::platform {
         impl_ = new LptPortImpl{};
         opened_ = true;
 
-        std::cout << "[LPT] Open console port at 0x"
-                  << std::hex << address_ << std::dec << "\n";
+        std::cout << "[LPT] Open console port at 0x" << std::hex << address_ << std::dec << "\n";
     }
 
-    void LptPort::close() {
+    void LptPort::close() noexcept {
         if (!opened_)
             return;
 
-        std::cout << "[LPT] Close port 0x"
-                  << std::hex << address_ << std::dec << "\n";
+        std::cout << "[LPT] Close port 0x" << std::hex << address_ << std::dec << "\n";
 
         delete impl_;
         impl_ = nullptr;
@@ -55,8 +53,7 @@ namespace infra::platform {
 
         auto value = impl_->registers[offset];
 
-        std::cout << "[LPT] READ  reg[" << offset << "] = "
-                  << static_cast<int>(value) << "\n";
+        // std::cout << "[LPT] READ  reg[" << offset << "] = " << static_cast<int>(value) << "\n";
 
         return value;
     }
@@ -74,8 +71,7 @@ namespace infra::platform {
 
         impl_->registers[offset] = value;
 
-        std::cout << "[LPT] WRITE reg[" << offset << "] = "
-                  << static_cast<int>(value) << "\n";
+        // std::cout << "[LPT] WRITE reg[" << offset << "] = " << static_cast<int>(value) << "\n";
     }
 
     void LptPort::write(unsigned char value) {

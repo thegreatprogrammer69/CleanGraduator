@@ -1,0 +1,39 @@
+# --- Build directories ---
+/cmake-build-*/
+
+# --- Root resource folders (ignore only root ones) ---
+/catalogs/
+/styles/
+/setup/
+
+# --- CMake generated ---
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+compile_commands.json
+
+# --- IDE ---
+.idea/
+*.iml
+
+# --- Visual Studio ---
+.vs/
+*.vcxproj*
+*.sln
+*.user
+*.filters
+
+# --- Binaries ---
+*.exe
+*.dll
+*.so
+*.dylib
+*.lib
+*.a
+*.o
+*.obj
+
+# --- OS ---
+.DS_Store
+Thumbs.db

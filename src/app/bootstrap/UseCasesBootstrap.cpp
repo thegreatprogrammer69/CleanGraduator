@@ -1,10 +1,8 @@
 #include "UseCasesBootstrap.h"
 
 #include "ApplicationBootstrap.h"
-#include "application/orchestrators/calibration/process/CalibrationProcessOrchestrator.h"
-#include "application/orchestrators/calibration/process/CalibrationProcessOrchestratorPorts.h"
-#include "application/orchestrators/calibration/session/CalibrationSessionController.h"
-#include "application/orchestrators/calibration/session/CalibrationSessionControllerPorts.h"
+#include "application/orchestrators/calibration/process/CalibrationOrchestrator.h"
+#include "application/orchestrators/calibration/process/CalibrationOrchestratorPorts.h"
 #include "application/orchestrators/motor/MotorControlInteractor.h"
 #include "application/orchestrators/settings/CalibrationSettingsQuery.h"
 #include "application/usecases/cameras/CloseAllCameras.h"
@@ -12,20 +10,13 @@
 #include "application/usecases/cameras/OpenSelectedCameras.h"
 #include "domain/ports/calibration/recording/ICalibrationRecorder.h"
 #include "domain/ports/calibration/strategy/ICalibrationStrategy.h"
+#include "infrastructure/calibration/recording/in_memory/InMemoryCalibrationRecorder.h"
 #include "infrastructure/calibration/strats/stand4/Stand4CalibrationStrategy.h"
 
 using namespace application::usecase;
 using namespace application::orchestrators;
+using namespace infra::calib;
 
-namespace {
-class InMemoryCalibrationRecorder final : public domain::ports::ICalibrationRecorder {
-public:
-    void beginSession(int, domain::common::MotorDirection) override {}
-    void pushPressure(float, float) override {}
-    void pushAngle(domain::common::AngleSourceId, float, float) override {}
-    void endSession() override {}
-};
-} // namespace
 
 UseCasesBootstrap::UseCasesBootstrap(ApplicationBootstrap &application): app_(application) {}
 
@@ -42,7 +33,6 @@ void UseCasesBootstrap::initialize() {
     createCalibrationStrategy();
     createCalibrationRecorder();
     createCalibrationProcessOrchestrator();
-    createCalibrationSessionController();
 }
 
 void UseCasesBootstrap::createOpenSelectedCameras() {
@@ -75,33 +65,32 @@ void UseCasesBootstrap::createCalibrationSettingsQuery() {
 }
 
 void UseCasesBootstrap::createCalibrationStrategy() {
-    calibration_strategy = std::make_unique<infra::calib::stand4::Stand4CalibrationStrategy>();
+    CalibrationStrategyPorts ports {
+        app_.createLogger("Stand4CalibrationStrategy")
+    };
+    stand4::Stand4CalibrationStrategyConfig config {};
+    calibration_strategy = std::make_unique<stand4::Stand4CalibrationStrategy>(ports, config);
 }
 
 void UseCasesBootstrap::createCalibrationRecorder() {
-    calibration_recorder = std::make_unique<InMemoryCalibrationRecorder>();
+    CalibrationRecorderPorts ports {
+        app_.createLogger("InMemoryCalibrationRecorder")
+    };
+    InMemoryCalibrationRecorderConfig config {};
+    calibration_recorder = std::make_unique<InMemoryCalibrationRecorder>(ports, config);
 }
 
 void UseCasesBootstrap::createCalibrationProcessOrchestrator() {
-    CalibrationProcessOrchestratorPorts ports{
-        app_.createLogger("CalibrationProcessOrchestrator"),
+    CalibrationOrchestratorPorts ports{
+        app_.createLogger("CalibrationOrchestrator"),
         *app_.pressure_source,
+        *app_.video_source_manager,
         *app_.videoangle_sources_storage,
         *app_.motor_driver,
-        *app_.valve_driver,
+        *app_.session_clock,
         *calibration_strategy,
-        *calibration_recorder,
-        *app_.calibration_lifecycle
+        *calibration_recorder
     };
 
-    calibration_process_orchestrator = std::make_unique<CalibrationProcessOrchestrator>(ports);
-}
-
-void UseCasesBootstrap::createCalibrationSessionController() {
-    CalibrationSessionControllerPorts ports{
-        app_.createLogger("CalibrationSessionController"),
-        *calibration_settings_query
-    };
-
-    calibration_session_controller = std::make_unique<CalibrationSessionController>(ports, *calibration_process_orchestrator);
+    calibration_process_orchestrator = std::make_unique<CalibrationOrchestrator>(ports);
 }

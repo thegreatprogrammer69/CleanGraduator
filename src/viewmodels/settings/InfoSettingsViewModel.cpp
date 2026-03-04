@@ -44,7 +44,7 @@ void InfoSettingsViewModel::loadCatalogs() {
     }
 
     for (const auto& item : deps_.precision_catalog.list()) {
-        precisions_.emplace_back(fmt::fmt("{:.1f}%", item.precision.value));
+        precisions_.emplace_back(fmt::format("{:.1f}%", item.precision.value));
     }
 
     for (const auto& item : deps_.pressure_unit_catalog.list()) {

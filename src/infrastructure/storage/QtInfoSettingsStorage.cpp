@@ -1,4 +1,5 @@
 #include "QtInfoSettingsStorage.h"
+#include <QDebug>
 
 namespace {
     constexpr const char* GROUP = "InfoSettings";
@@ -48,7 +49,8 @@ InfoSettingsData QtInfoSettingsStorage::loadInfoSettings() {
 
 void QtInfoSettingsStorage::saveInfoSettings(const InfoSettingsData& data) {
     settings_.beginGroup(GROUP);
-
+    // qDebug() << "Settings file:" << settings_.fileName();
+    // qDebug() << "Status:" << settings_.status();
     settings_.setValue(KEY_DISPLACEMENT, data.displacement_idx);
     settings_.setValue(KEY_GAUGE, data.gauge_idx);
     settings_.setValue(KEY_PRECISION, data.precision_idx);
