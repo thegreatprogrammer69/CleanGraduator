@@ -1,7 +1,10 @@
 #include "Stand4CalibrationStrategy.h"
 
+#include "domain/core/calibration/recording/CalibrationSessionId.h"
 #include "domain/core/calibration/strategy/CalibrationStrategyBeginContext.h"
 #include "domain/core/calibration/strategy/CalibrationStrategyFeedContext.h"
+#include "domain/core/drivers/motor/MotorFlapsState.h"
+
 #include "infrastructure/calibration/tracking/PressurePointsTrackerEvent.h"
 
 using namespace domain;
@@ -13,18 +16,18 @@ using namespace infra::calib::tracking;
 
 namespace
 {
-    const char* toString(Stand4CalibrationStrategy::State s)
-    {
-        switch (s) {
-            case Stand4CalibrationStrategy::State::Idle:      return "Idle";
-            case Stand4CalibrationStrategy::State::Preload:   return "Preload";
-            case Stand4CalibrationStrategy::State::Forward:   return "Forward";
-            case Stand4CalibrationStrategy::State::Backward:  return "Backward";
-            case Stand4CalibrationStrategy::State::Finished:  return "Finished";
-            case Stand4CalibrationStrategy::State::Fault:     return "Fault";
-            default: return "Unknown";
-        }
+const char* toString(Stand4CalibrationStrategy::State s)
+{
+    switch (s) {
+        case Stand4CalibrationStrategy::State::Idle: return "Idle";
+        case Stand4CalibrationStrategy::State::Preload: return "Preload";
+        case Stand4CalibrationStrategy::State::Forward: return "Forward";
+        case Stand4CalibrationStrategy::State::Backward: return "Backward";
+        case Stand4CalibrationStrategy::State::Finished: return "Finished";
+        case Stand4CalibrationStrategy::State::Fault: return "Fault";
+        default: return "Unknown";
     }
+}
 }
 
 Stand4CalibrationStrategy::Stand4CalibrationStrategy(
@@ -41,29 +44,12 @@ Stand4CalibrationStrategy::Stand4CalibrationStrategy(
     (void)config;
 }
 
-Stand4CalibrationStrategy::~Stand4CalibrationStrategy() {
-    end();
-}
-
-void Stand4CalibrationStrategy::bind(IMotorDriver& motor,
-                                     ICalibrationRecorder& recorder)
-{
-    motor_ = &motor;
-    recorder_ = &recorder;
-}
-
 CalibrationStrategyVerdict
 Stand4CalibrationStrategy::begin(const CalibrationStrategyBeginContext& ctx)
 {
-    logger_.info("Запуск стратегии калибровки Stand4");
+    Verdict v;
 
-    if (!motor_ || !recorder_) {
-        logger_.error("Стратегия не привязана: motor_={}, recorder_={}",
-                      static_cast<bool>(motor_),
-                      static_cast<bool>(recorder_));
-        transitionToFault();
-        return CalibrationStrategyVerdict(CalibrationStrategyVerdict::None());
-    }
+    logger_.info("Запуск стратегии калибровки Stand4");
 
     pressure_points_ = ctx.pressure_points.to(ctx.pressure_unit);
 
@@ -78,103 +64,132 @@ Stand4CalibrationStrategy::begin(const CalibrationStrategyBeginContext& ctx)
     points_tracker_.setEnterThreshold(0.15);
     points_tracker_.setExitThreshold(0.1);
 
-    logger_.info("Параметры калибровки: preload={}, target={}, limit={}, dp_nominal={}",
-                 p_preload_, p_target_, p_limit_, dp_nominal_);
+    logger_.info(
+        "Параметры калибровки: preload={}, target={}, limit={}, dp_nominal={}",
+        p_preload_,
+        p_target_,
+        p_limit_,
+        dp_nominal_);
 
-    transitionToPreload();
+    transitionToPreload(v);
 
-    return CalibrationStrategyVerdict(CalibrationStrategyVerdict::None());
-}
-
-void Stand4CalibrationStrategy::end()
-{
-    logger_.info("Принудительное завершение стратегии");
-
-    if (motor_) {
-        motor_->setFlapsState(MotorFlapsState::FlapsClosed);
-        motor_->stop();
-    }
-
-    recorder_->endSession();
-    points_tracker_.endTracking();
-
-    transition(State::Idle);
-}
-
-bool Stand4CalibrationStrategy::isRunning() const
-{
-    const auto s = state_.load();
-    return s != State::Idle &&
-           s != State::Finished &&
-           s != State::Fault;
-}
-
-void Stand4CalibrationStrategy::onPressurePointsTrackerEvent(const PressurePointsTrackerEvent &ev) {
-    const auto s = state_.load();
-    if (s == State::Idle || s == State::Finished || s == State::Fault) return;
-    std::visit([this, s](const auto& e) {
-        using T = std::decay_t<decltype(e)>;
-
-        if constexpr (std::is_same_v<T, PressurePointsTrackerEvent::PointEntered>) {
-            MotorDirection direction;
-            if (s == State::Preload || s == State::Forward) {
-                direction = MotorDirection::Forward;
-            }
-            else if (s == State::Backward) {
-                direction = MotorDirection::Backward;
-            }
-            else {
-                return;
-            }
-
-            logger_.info("Зафиксирован вход в зону точки {} по направлению {}", e.index.id, direction);
-
-            CalibrationSessionId session;
-            session.point = e.index;
-            session.direction = direction;
-            recorder_->beginSession(session);
-        }
-
-        else if constexpr (std::is_same_v<T, PressurePointsTrackerEvent::PointExited>) {
-            recorder_->endSession();
-        }
-    },
-    ev.data);
+    return v;
 }
 
 CalibrationStrategyVerdict
 Stand4CalibrationStrategy::feed(const CalibrationStrategyFeedContext& ctx)
 {
+    Verdict v;
+
     const State current = state_.load();
 
     if (current == State::Finished) {
-        logger_.info("Калибровка завершена");
-        return CalibrationStrategyVerdict(CalibrationStrategyVerdict::Complete());
+        v.commands.push_back(Verdict::Complete{});
+        return v;
     }
 
     if (current == State::Idle) {
         logger_.warn("Получен feed в состоянии Idle");
-        return CalibrationStrategyVerdict(CalibrationStrategyVerdict::None());
+        return v;
     }
 
     if (current == State::Fault) {
         logger_.error("Получен feed в состоянии Fault");
-        return CalibrationStrategyVerdict(CalibrationStrategyVerdict::None());
+        return v;
     }
 
     points_tracker_.feed(ctx.pressure);
 
     switch (current) {
-        case State::Preload:   updatePreload(ctx);  break;
-        case State::Forward:   updateForward(ctx);  break;
-        case State::Backward:  updateBackward(ctx); break;
+        case State::Preload:   updatePreload(ctx, v); break;
+        case State::Forward:   updateForward(ctx, v); break;
+        case State::Backward:  updateBackward(ctx, v); break;
         default: break;
     }
 
     last_pressure_ = ctx.pressure;
     last_time_ = ctx.timestamp;
 
-    return CalibrationStrategyVerdict(CalibrationStrategyVerdict::None());
+    v.commands.insert(
+        v.commands.end(),
+        pending_.begin(),
+        pending_.end());
+
+    pending_.clear();
+
+    return v;
+}
+
+CalibrationStrategyVerdict
+Stand4CalibrationStrategy::end()
+{
+    Verdict v;
+
+    logger_.info("Принудительное завершение стратегии");
+
+    v.commands.push_back(
+        Verdict::MotorSetFlaps{MotorFlapsState::FlapsClosed});
+
+    v.commands.push_back(Verdict::MotorStop{});
+    v.commands.push_back(Verdict::EndSession{});
+
+    points_tracker_.endTracking();
+
+    transition(State::Idle);
+
+    return v;
+}
+
+bool Stand4CalibrationStrategy::isRunning() const
+{
+    const auto s = state_.load();
+
+    return s != State::Idle &&
+           s != State::Finished &&
+           s != State::Fault;
+}
+
+void Stand4CalibrationStrategy::onPressurePointsTrackerEvent(
+    const PressurePointsTrackerEvent& ev)
+{
+    const auto s = state_.load();
+
+    if (s == State::Idle || s == State::Finished || s == State::Fault)
+        return;
+
+    std::visit([this, s](const auto& e)
+    {
+        using T = std::decay_t<decltype(e)>;
+
+        if constexpr (std::is_same_v<T, PressurePointsTrackerEvent::PointEntered>)
+        {
+            MotorDirection direction;
+
+            if (s == State::Preload || s == State::Forward)
+                direction = MotorDirection::Forward;
+            else if (s == State::Backward)
+                direction = MotorDirection::Backward;
+            else
+                return;
+
+            logger_.info(
+                "Вход в зону точки {} по направлению {}",
+                e.index.id,
+                direction);
+
+            CalibrationSessionId session;
+            session.point = e.index;
+            session.direction = direction;
+
+            pending_.push_back(Verdict::Command{Verdict::BeginSession{session}});
+        }
+
+        else if constexpr (std::is_same_v<T, PressurePointsTrackerEvent::PointExited>)
+        {
+            pending_.emplace_back(Verdict::EndSession{});
+        }
+
+    }, ev.data);
 }
 
 /* ============================
@@ -182,46 +197,51 @@ Stand4CalibrationStrategy::feed(const CalibrationStrategyFeedContext& ctx)
    ============================ */
 
 void Stand4CalibrationStrategy::updatePreload(
-    const CalibrationStrategyFeedContext& ctx)
+    const CalibrationStrategyFeedContext& ctx,
+    Verdict& v)
 {
     const float p_cur = ctx.pressure;
 
-    logger_.info("Preload: текущее давление={}, требуемое давление={}",
-                 p_cur, p_preload_);
+    logger_.info(
+        "Preload: текущее давление={}, требуемое давление={}",
+        p_cur,
+        p_preload_);
 
     if (p_cur < p_preload_) {
-        motor_->setFlapsState(MotorFlapsState::IntakeOpened);
+        v.commands.push_back(Verdict::MotorSetFlaps{MotorFlapsState::IntakeOpened});
         return;
     }
 
-    logger_.info("Достигнуто целевое давление преднагрузки: {}", p_cur);
+    logger_.info("Достигнуто давление преднагрузки {}", p_cur);
 
-    transitionToForward();
+    transitionToForward(v);
 }
 
 void Stand4CalibrationStrategy::updateForward(
-    const CalibrationStrategyFeedContext& ctx)
+    const CalibrationStrategyFeedContext& ctx,
+    Verdict& v)
 {
     const float p_cur = ctx.pressure;
     const float dt = ctx.timestamp - last_time_;
 
-    if (dt <= 0.0f && last_time_ > 0.0f) {
-        logger_.warn("Некорректный интервал времени: dt={}, last_time={}, timestamp={}",
-                     dt, last_time_, ctx.timestamp);
-    }
-
     const float dp_cur =
         (last_time_ > 0.0f && dt > 0.0f)
-            ? (p_cur - last_pressure_) / dt
-            : 0.0f;
+        ? (p_cur - last_pressure_) / dt
+        : 0.0f;
 
-    logger_.info("Forward: давление={}, скорость изменения={}, dt={}",
-                 p_cur, dp_cur, dt);
+    logger_.info(
+        "Forward: давление={}, скорость={}, dt={}",
+        p_cur,
+        dp_cur,
+        dt);
 
     if (p_cur >= p_target_) {
-        logger_.info("Достигнуто целевое давление: {} >= {}",
-                     p_cur, p_target_);
-        transitionToBackward();
+        logger_.info(
+            "Достигнуто целевое давление {} >= {}",
+            p_cur,
+            p_target_);
+
+        transitionToBackward(v);
         return;
     }
 
@@ -231,32 +251,29 @@ void Stand4CalibrationStrategy::updateForward(
         dp_cur,
         dp_nominal_);
 
-    logger_.info("Расчёт частоты двигателя: {}", freq);
+    logger_.info("Расчёт частоты двигателя {}", freq);
 
-    motor_->setFrequency(MotorFrequency(freq));
+    v.commands.push_back(
+        Verdict::MotorSetFrequency{freq});
 }
 
-void Stand4CalibrationStrategy::updateBackward(
-    const CalibrationStrategyFeedContext& ctx)
+void Stand4CalibrationStrategy::updateBackward(const CalibrationStrategyFeedContext& ctx, Verdict& v)
 {
-
-    /// TODO
-    // if (motor_->limits().home) {
-    //     logger_.info("Достигнут начальный концевик, завершение калибровки");
-    //     transitionToFinished();
-    //     return;
-    // }
     if (ctx.pressure < 10) {
-        logger_.info("ДАВЛЕНИЕ МЕНЬШЕ 10 ЗАВЕРШЕНИЕ КАЛИБРОВКИ");
-        transitionToFinished();
+
+        logger_.info("ДАВЛЕНИЕ < 10 — завершение");
+
+        transitionToFinished(v);
+
         return;
     }
 
-    const int f_max = motor_->frequencyLimits().maxHz;
+    const int f_max = 2000; // можно брать из config
 
-    logger_.info("Возвращение двигателя домой, частота={}", f_max);
+    logger_.info("Возврат двигателя домой частота {}", f_max);
 
-    motor_->setFrequency(MotorFrequency(f_max));
+    v.commands.push_back(
+        Verdict::MotorSetFrequency{f_max});
 }
 
 /* ============================
@@ -267,54 +284,85 @@ void Stand4CalibrationStrategy::transition(State newState)
 {
     const State old = state_.load();
 
-    logger_.info("Переход состояния: {} -> {}",
-                 toString(old), toString(newState));
+    logger_.info(
+        "Переход состояния {} -> {}",
+        toString(old),
+        toString(newState));
 
     state_ = newState;
 }
 
-void Stand4CalibrationStrategy::transitionToPreload()
+void Stand4CalibrationStrategy::transitionToPreload(Verdict& v)
 {
     transition(State::Preload);
-    motor_->setFlapsState(MotorFlapsState::FlapsClosed);
-    points_tracker_.beginTracking(pressure_points_, MotorDirection::Forward);
+
+    v.commands.push_back(
+        Verdict::MotorSetFlaps{MotorFlapsState::FlapsClosed});
+
+    points_tracker_.beginTracking(
+        pressure_points_,
+        MotorDirection::Forward);
 }
 
-void Stand4CalibrationStrategy::transitionToForward()
+void Stand4CalibrationStrategy::transitionToForward(Verdict& v)
 {
     transition(State::Forward);
+
     freq_calc_.reset();
-    motor_->setFlapsState(MotorFlapsState::FlapsClosed);
-    motor_->setDirection(MotorDirection::Forward);
-    motor_->setFrequency(MotorFrequency(0));
-    motor_->start();
+
+    v.commands.push_back(
+        Verdict::MotorSetFlaps{MotorFlapsState::FlapsClosed});
+
+    v.commands.push_back(
+        Verdict::MotorSetDirection{MotorDirection::Forward});
+
+    v.commands.push_back(
+        Verdict::MotorSetFrequency{0});
+
+    v.commands.push_back(
+        Verdict::MotorStart{});
 }
 
-void Stand4CalibrationStrategy::transitionToBackward()
+void Stand4CalibrationStrategy::transitionToBackward(Verdict& v)
 {
     transition(State::Backward);
-    recorder_->endSession();
+
+    v.commands.push_back(Verdict::EndSession{});
+
     points_tracker_.endTracking();
-    points_tracker_.beginTracking(pressure_points_, MotorDirection::Backward);
-    motor_->setFrequency(MotorFrequency(0));
-    motor_->setDirection(MotorDirection::Backward);
+
+    points_tracker_.beginTracking(
+        pressure_points_,
+        MotorDirection::Backward);
+
+    v.commands.push_back(
+        Verdict::MotorSetFrequency{0});
+
+    v.commands.push_back(
+        Verdict::MotorSetDirection{MotorDirection::Backward});
 }
 
-void Stand4CalibrationStrategy::transitionToFinished()
+void Stand4CalibrationStrategy::transitionToFinished(Verdict& v)
 {
     transition(State::Finished);
-    recorder_->endSession();
+
+    v.commands.push_back(Verdict::EndSession{});
+
     points_tracker_.endTracking();
-    motor_->setFlapsState(MotorFlapsState::ExhaustOpened);
-    motor_->stop();
+
+    v.commands.push_back(
+        Verdict::MotorSetFlaps{MotorFlapsState::ExhaustOpened});
+
+    v.commands.push_back(
+        Verdict::MotorStop{});
 }
 
-void Stand4CalibrationStrategy::transitionToFault()
+void Stand4CalibrationStrategy::transitionToFault(Verdict& v)
 {
     transition(State::Fault);
-    recorder_->endSession();
+
+    v.commands.push_back(Verdict::EndSession{});
+    v.commands.push_back(Verdict::MotorStop{});
+
     points_tracker_.endTracking();
-    if (motor_) {
-        motor_->stop();
-    }
 }

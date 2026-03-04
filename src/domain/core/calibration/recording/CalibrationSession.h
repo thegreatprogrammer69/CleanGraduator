@@ -8,8 +8,7 @@
 
 namespace domain::common {
     struct CalibrationSession {
-        float pressure_point;
-        MotorDirection direction;
+        CalibrationSessionId id;
         PressureSeries pressure_series{};
         std::unordered_map<AngleSourceId, AngleSeries> angle_series{};
     };

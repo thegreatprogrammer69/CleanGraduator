@@ -1,20 +1,38 @@
 #ifndef CLEANGRADUATOR_CALIBRATIONVERDICT_H
 #define CLEANGRADUATOR_CALIBRATIONVERDICT_H
 #include <string>
+#include <vector>
 #include <variant>
+#include "../recording/CalibrationSessionId.h"
+#include "domain/core/drivers/motor/MotorFlapsState.h"
+#include "domain/core/drivers/motor/MotorDirection.h"
 
 namespace domain::common {
-    struct CalibrationStrategyVerdict {
-        struct None {};
-        struct Complete {};
-        struct Fault {
-            std::string error;
-        };
 
-        using Data = std::variant<None, Complete, Fault>;
-        Data data;
-        CalibrationStrategyVerdict(Data data) : data(std::move(data)) {}
+    struct CalibrationStrategyVerdict {
+
+        struct BeginSession { CalibrationSessionId id; };
+        struct EndSession {};
+
+        struct MotorSetFrequency { int freq; };
+        struct MotorSetDirection { MotorDirection direction; };
+        struct MotorSetFlaps { MotorFlapsState state; };
+        struct MotorStart {};
+        struct MotorStop {};
+
+        struct Complete {};
+        struct Fault { std::string error; };
+
+        using Command = std::variant<
+            BeginSession, EndSession,
+            MotorSetFrequency, MotorSetDirection,
+            MotorSetFlaps, MotorStart, MotorStop,
+            Complete, Fault
+        >;
+
+        std::vector<Command> commands;
     };
+
 }
 
 #endif //CLEANGRADUATOR_CALIBRATIONVERDICT_H

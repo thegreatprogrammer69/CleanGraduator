@@ -3,10 +3,11 @@
 
 namespace domain::common {
     struct PointId {
-        PointId(const unsigned int value) : value(value) {}
+        PointId(const unsigned int id, const float pressure) : id(id), pressure(pressure) {}
         PointId() = default;
-        unsigned int value;
-        bool operator==(const PointId& rhs) const { return value == rhs.value; }
+        unsigned int id;
+        float pressure;
+        bool operator==(const PointId& rhs) const { return id == rhs.id; }
     };
 }
 
@@ -17,7 +18,7 @@ namespace std {
     {
         size_t operator()(const domain::common::PointId& id) const noexcept
         {
-            return std::hash<int>{}(id.value);
+            return std::hash<int>{}(id.id);
         }
     };
 

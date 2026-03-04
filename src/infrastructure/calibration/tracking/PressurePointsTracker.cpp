@@ -69,12 +69,12 @@ void PressurePointsTracker::beginTracking(const std::vector<float>& points, Moto
     if (direction == MotorDirection::Forward) {
         for (std::size_t i = 0; i < points.size(); ++i) {
             ordered_points_.push_back(points[i]);
-            ordered_point_ids_.push_back(PointId(i));
+            ordered_point_ids_.push_back(PointId(i, points[i]));
         }
     } else {
         for (std::size_t i = points.size(); i-- > 0;) {
             ordered_points_.push_back(points[i]);
-            ordered_point_ids_.push_back(PointId(i));
+            ordered_point_ids_.push_back(PointId(i, points[i]));
         }
     }
 

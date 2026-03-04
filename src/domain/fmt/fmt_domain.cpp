@@ -4,7 +4,7 @@
 #include <ostream>
 
 #include "fmt.h"
-#include "domain/core/calibration/result/CalibrationCellSeverity.h"
+
 #include "application/models/calibration/GaugePressurePoints.h"
 #include "domain/core/calibration/common/PressurePoints.h"
 #include "domain/core/measurement/Angle.h"
@@ -108,23 +108,7 @@ std::ostream& operator<<(std::ostream& os, const VideoFrame& f) {
 }
 
 
-std::ostream & operator<<(std::ostream &os, const domain::common::CalibrationCellSeverity &f) {
-    switch (f) {
-        case CalibrationCellSeverity::None:
-            os << "None";
-            break;
-        case CalibrationCellSeverity::Info:
-            os << "Info";
-            break;
-        case CalibrationCellSeverity::Warning:
-            os << "Warning";
-            break;
-        case CalibrationCellSeverity::Error:
-            os << "Error";
-            break;
-    }
-    return os;
-}
+
 
 std::ostream & operator<<(std::ostream &os, const domain::common::MotorDirection &f) {
     switch (f) {

@@ -6,61 +6,68 @@
 
 #include "viewmodels/control/ControlViewModel.h"
 
-ui::QtControlWidget::QtControlWidget(mvvm::ControlViewModel &vm, QWidget *parent): QWidget(parent)
-                                                                                   , vm_(vm) {
+ui::QtControlWidget::QtControlWidget(mvvm::ControlViewModel &vm, QWidget *parent)
+        : QWidget(parent)
+        , vm_(vm)
+{
     setupUi();
     applyStyle();
 }
 
-void ui::QtControlWidget::setupUi() {
+void ui::QtControlWidget::setupUi()
+{
     auto* root = new QVBoxLayout(this);
-    root->setSpacing(0);
-    root->setContentsMargins(0, 0, 0, 0);
+    root->setSpacing(8);
+    root->setContentsMargins(0,0,0,0);
 
     // =============================
-    // Панель переключения (над карточкой)
+    // Switch bar
     // =============================
     auto* switchBar = new QHBoxLayout;
     switchBar->setSpacing(8);
-    switchBar->setAlignment(Qt::AlignCenter);
-
-    // Верхний отступ — чтобы визуально кнопки "сидели" на бордере карточки
-    switchBar->setContentsMargins(0, 0, 0, 0);
+    switchBar->setAlignment(Qt::AlignLeft);
 
     auto* btnValves = makeSwitchButton("Клапаны");
     auto* btnMotor  = makeSwitchButton("Управление двигателем");
-    auto* btnCalibration = makeSwitchButton("Калибровка");
 
     switchBar->addWidget(btnValves);
     switchBar->addWidget(btnMotor);
-    switchBar->addWidget(btnCalibration);
-    switchBar->addStretch(1);
+    switchBar->addStretch();
 
     root->addLayout(switchBar);
 
     // =============================
-    // Stack (карточки)
+    // Main content layout
     // =============================
+    auto* contentLayout = new QHBoxLayout;
+    contentLayout->setSpacing(12);
+    contentLayout->setContentsMargins(0,0,0,0);
+
+    // ---- Left: Calibration panel
+    auto* calibrationPage = makeCalibrationPage();
+    calibrationPage->setFixedWidth(320);
+
+    contentLayout->addWidget(calibrationPage);
+
+    // ---- Right: stacked pages
     stack_ = new QStackedWidget;
+    stack_->setContentsMargins(0,0,0,0);
 
-    // Поднимаем карточку вверх,
-    // чтобы её верхний border проходил через центр кнопок
-    stack_->setContentsMargins(0, 0, 0, 0);
+    stack_->addWidget(makeValvesPage()); // index 0
+    stack_->addWidget(makeMotorPage());  // index 1
 
-    root->addWidget(stack_);
+    contentLayout->addWidget(stack_, 1);
 
-    stack_->addWidget(makeValvesPage());
-    stack_->addWidget(makeMotorPage());
-    stack_->addWidget(makeCalibrationPage());
+    root->addLayout(contentLayout);
 
     // =============================
-    // Логика переключения
+    // Button group logic
     // =============================
     auto* group = new QButtonGroup(this);
     group->setExclusive(true);
-    group->addButton(btnValves, 0);
-    group->addButton(btnMotor, 1);
-    group->addButton(btnCalibration, 2);
+
+    group->addButton(btnValves,0);
+    group->addButton(btnMotor,1);
 
     btnValves->setChecked(true);
 
@@ -70,21 +77,23 @@ void ui::QtControlWidget::setupUi() {
             &QStackedWidget::setCurrentIndex);
 }
 
-QPushButton * ui::QtControlWidget::makeSwitchButton(const QString &text) {
+QPushButton * ui::QtControlWidget::makeSwitchButton(const QString &text)
+{
     auto* btn = new QPushButton(text);
     btn->setCheckable(true);
     btn->setCursor(Qt::PointingHandCursor);
-    btn->setProperty("role", "switchLink");
+    btn->setProperty("role","switchLink");
     return btn;
 }
 
-QWidget * ui::QtControlWidget::makeValvesPage() {
+QWidget * ui::QtControlWidget::makeValvesPage()
+{
     auto* page = new QWidget;
-    page->setAttribute(Qt::WA_StyledBackground, true);
-    page->setProperty("role", "card");
+    page->setAttribute(Qt::WA_StyledBackground,true);
+    page->setProperty("role","card");
 
     auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(16, 16, 16, 16);
+    layout->setContentsMargins(16,16,16,16);
     layout->setSpacing(8);
 
     auto* valvesWidget =
@@ -96,13 +105,14 @@ QWidget * ui::QtControlWidget::makeValvesPage() {
     return page;
 }
 
-QWidget * ui::QtControlWidget::makeMotorPage() {
+QWidget * ui::QtControlWidget::makeMotorPage()
+{
     auto* page = new QWidget;
-    page->setAttribute(Qt::WA_StyledBackground, true);
-    page->setProperty("role", "card");
+    page->setAttribute(Qt::WA_StyledBackground,true);
+    page->setProperty("role","card");
 
     auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(16, 16, 16, 16);
+    layout->setContentsMargins(16,16,16,16);
     layout->setSpacing(8);
 
     auto* motorWidget =
@@ -114,17 +124,20 @@ QWidget * ui::QtControlWidget::makeMotorPage() {
     return page;
 }
 
-QWidget * ui::QtControlWidget::makeCalibrationPage() {
+QWidget * ui::QtControlWidget::makeCalibrationPage()
+{
     auto* page = new QWidget;
-    page->setAttribute(Qt::WA_StyledBackground, true);
-    page->setProperty("role", "card");
+    page->setAttribute(Qt::WA_StyledBackground,true);
+    page->setProperty("role","card");
 
     auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(16, 16, 16, 16);
+    layout->setContentsMargins(16,16,16,16);
     layout->setSpacing(8);
 
     auto* calibrationWidget =
-            new QtCalibrationSessionControlWidget(vm_.calibrationViewModel(), page);
+            new QtCalibrationSessionControlWidget(
+                    vm_.calibrationViewModel(),
+                    page);
 
     layout->addWidget(calibrationWidget);
     layout->addStretch();
@@ -132,22 +145,18 @@ QWidget * ui::QtControlWidget::makeCalibrationPage() {
     return page;
 }
 
-void ui::QtControlWidget::applyStyle() {
+void ui::QtControlWidget::applyStyle()
+{
     setStyleSheet(R"(
 
 /* =========================
-   Switch Tabs (link style)
+   Switch Tabs
 =========================*/
 QPushButton[role="switchLink"] {
     background: transparent;
     border: none;
-
     padding: 4px;
     margin: 0px;
-
-    min-width: 0px;
-    min-height: 0px;
-
     font-size: 14px;
     font-weight: 600;
     color: #6B7280;
@@ -166,34 +175,34 @@ QPushButton[role="switchLink"]:checked {
     color: #111827;
 }
 
-        /* =========================
-           Card (оставлено как было)
-        ==========================*/
-        QWidget[role="card"] {
-            background: #FFFFFF;
-            border: 1px solid #9CA3AF;
-            border-radius: 6px;
-        }
+/* =========================
+   Card
+=========================*/
+QWidget[role="card"] {
+    background: #FFFFFF;
+    border: 1px solid #9CA3AF;
+    border-radius: 6px;
+}
 
-        /* =========================
-           Action Buttons
-        ==========================*/
-        QPushButton {
-            background: #F9FAFB;
-            border: 1px solid #D1D5DB;
-            border-radius: 6px;
-            padding: 8px;
-            font-size: 14px;
-        }
+/* =========================
+   Action buttons
+=========================*/
+QPushButton {
+    background: #F9FAFB;
+    border: 1px solid #D1D5DB;
+    border-radius: 6px;
+    padding: 8px;
+    font-size: 14px;
+}
 
-        QPushButton:hover {
-            background: #EFF6FF;
-            border: 1px solid #3B82F6;
-        }
+QPushButton:hover {
+    background: #EFF6FF;
+    border: 1px solid #3B82F6;
+}
 
-        QPushButton:pressed {
-            background: #DBEAFE;
-        }
+QPushButton:pressed {
+    background: #DBEAFE;
+}
 
-    )");
+)");
 }

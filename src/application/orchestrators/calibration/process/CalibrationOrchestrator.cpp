@@ -1,13 +1,11 @@
 #include "CalibrationOrchestrator.h"
 
-#include <algorithm>
 #include <stdexcept>
+#include <type_traits>
+#include <utility>
 #include <variant>
-#include <vector>
 
-#include "application/orchestrators/calibration/process/CalibrationOrchestratorEvent.h"
 #include "application/orchestrators/video/VideoSourceManager.h"
-#include "application/ports/calibration/orchestration/CalibrationOrchestratorObserver.h"
 #include "application/ports/video/IVideoAngleSourcesStorage.h"
 #include "domain/core/angle/AngleSourceEvent.h"
 #include "domain/core/angle/AngleSourcePacket.h"
@@ -26,7 +24,7 @@ using namespace domain::common;
 
 CalibrationOrchestrator::CalibrationOrchestrator(CalibrationOrchestratorPorts ports)
     : logger_(ports.logger)
-    , ports_(ports)
+    , ports_(std::move(ports))
     , inp_{}
 {
 }
@@ -38,15 +36,18 @@ CalibrationOrchestrator::~CalibrationOrchestrator()
 
 bool CalibrationOrchestrator::start(CalibrationOrchestratorInput input)
 {
+    logger_.info("CalibrationOrchestrator start requested");
+
     CalibrationOrchestratorState expected = CalibrationOrchestratorState::Stopped;
-    if (!state_.compare_exchange_strong(expected,
-                                        CalibrationOrchestratorState::Starting,
-                                        std::memory_order_acq_rel))
+    if (!state_.compare_exchange_strong(
+            expected,
+            CalibrationOrchestratorState::Starting,
+            std::memory_order_acq_rel))
     {
         return false;
     }
 
-    inp_ = input;
+    inp_ = std::move(input);
     opened_angle_sources_.clear();
 
     try
@@ -71,9 +72,10 @@ bool CalibrationOrchestrator::start(CalibrationOrchestratorInput input)
         {
             auto src = ports_.source_storage.at(id);
             if (!src)
-                throw std::runtime_error(fmt::format("Opened angle source is missing in storage: {}", id.value));
-            src->angle_source.start();
+                throw std::runtime_error(
+                    fmt::format("Opened angle source is missing in storage: {}", id.value));
 
+            src->angle_source.start();
             opened_angle_sources_.insert(id);
         }
 
@@ -93,24 +95,19 @@ bool CalibrationOrchestrator::start(CalibrationOrchestratorInput input)
         ctx.calibration_mode = inp_.calibration_mode;
         ctx.pressure_points  = inp_.pressure_points;
 
-        ports_.strategy.bind(ports_.motor_driver, ports_.recorder);
         const auto verdict = ports_.strategy.begin(ctx);
+        const auto exec = applyVerdict(verdict);
 
-        std::visit(
-            [this](const auto& e)
-            {
-                using T = std::decay_t<decltype(e)>;
+        if (exec.fault)
+            throw std::runtime_error(*exec.fault);
 
-                if constexpr (std::is_same_v<T, CalibrationStrategyVerdict::Fault>)
-                {
-                    logger_.error("Calibration strategy begin failed: {}", e.error);
-                    throw std::runtime_error(e.error);
-                }
-            },
-            verdict.data);
+        if (exec.complete)
+            throw std::runtime_error(
+                "Calibration strategy protocol error: begin() returned Complete");
 
-        state_.store(CalibrationOrchestratorState::Started,
-                     std::memory_order_release);
+        state_.store(
+            CalibrationOrchestratorState::Started,
+            std::memory_order_release);
 
         ports_.session_clock.start();
 
@@ -124,11 +121,11 @@ bool CalibrationOrchestrator::start(CalibrationOrchestratorInput input)
     {
         logger_.error("Calibration start failed: {}", e.what());
 
-        // rollback из Starting / partially-started
         teardown();
 
-        state_.store(CalibrationOrchestratorState::Stopped,
-                     std::memory_order_release);
+        state_.store(
+            CalibrationOrchestratorState::Stopped,
+            std::memory_order_release);
 
         CalibrationOrchestratorEvent::Failed ev;
         ev.error = e.what();
@@ -136,11 +133,13 @@ bool CalibrationOrchestrator::start(CalibrationOrchestratorInput input)
 
         return false;
     }
+
+    logger_.info("CalibrationOrchestrator starting");
 }
 
 void CalibrationOrchestrator::stop()
 {
-    CalibrationOrchestratorState current = state_.load(std::memory_order_acquire);
+    auto current = state_.load(std::memory_order_acquire);
 
     if (current == CalibrationOrchestratorState::Stopped ||
         current == CalibrationOrchestratorState::Stopping)
@@ -149,17 +148,19 @@ void CalibrationOrchestrator::stop()
     }
 
     CalibrationOrchestratorState expected = current;
-    if (!state_.compare_exchange_strong(expected,
-                                        CalibrationOrchestratorState::Stopping,
-                                        std::memory_order_acq_rel))
+    if (!state_.compare_exchange_strong(
+            expected,
+            CalibrationOrchestratorState::Stopping,
+            std::memory_order_acq_rel))
     {
         return;
     }
 
     teardown();
 
-    state_.store(CalibrationOrchestratorState::Stopped,
-                 std::memory_order_release);
+    state_.store(
+        CalibrationOrchestratorState::Stopped,
+        std::memory_order_release);
 
     notifyObservers(
         CalibrationOrchestratorEvent(
@@ -169,7 +170,7 @@ void CalibrationOrchestrator::stop()
 bool CalibrationOrchestrator::isRunning() const
 {
     return state_.load(std::memory_order_acquire)
-           == CalibrationOrchestratorState::Started;
+        == CalibrationOrchestratorState::Started;
 }
 
 void CalibrationOrchestrator::addObserver(ports::CalibrationOrchestratorObserver& observer)
@@ -211,16 +212,6 @@ void CalibrationOrchestrator::onPressureSourceEvent(const PressureSourceEvent& e
 
 void CalibrationOrchestrator::onPressurePacket(const PressurePacket& p)
 {
-    enum class Action
-    {
-        None,
-        Complete,
-        Fail
-    };
-
-    Action action = Action::None;
-    std::string error;
-
     if (state_.load(std::memory_order_acquire) != CalibrationOrchestratorState::Started)
         return;
 
@@ -229,27 +220,10 @@ void CalibrationOrchestrator::onPressurePacket(const PressurePacket& p)
     ctx.pressure  = p.pressure.to(inp_.pressure_unit);
 
     const auto verdict = ports_.strategy.feed(ctx);
+    const auto exec = applyVerdict(verdict);
 
-    std::visit(
-        [this, &action, &error](const auto& v)
-        {
-            using T = std::decay_t<decltype(v)>;
-
-            if constexpr (std::is_same_v<T, CalibrationStrategyVerdict::Complete>)
-            {
-                logger_.info("Calibration strategy finished successfully.");
-                action = Action::Complete;
-            }
-            else if constexpr (std::is_same_v<T, CalibrationStrategyVerdict::Fault>)
-            {
-                logger_.error("Calibration strategy failed: {}", v.error);
-                action = Action::Fail;
-                error = v.error;
-            }
-        },
-        verdict.data);
-
-    if (action == Action::None &&
+    if (!exec.complete &&
+        !exec.fault &&
         state_.load(std::memory_order_acquire) == CalibrationOrchestratorState::Started)
     {
         PressureSample sample;
@@ -258,13 +232,15 @@ void CalibrationOrchestrator::onPressurePacket(const PressurePacket& p)
         ports_.recorder.record(sample);
     }
 
-    if (action == Action::Complete)
+    if (exec.complete)
     {
+        logger_.info("Calibration strategy finished successfully.");
         stop();
     }
-    else if (action == Action::Fail)
+    else if (exec.fault)
     {
-        stopWithError(error);
+        logger_.error("Calibration strategy failed: {}", *exec.fault);
+        stopWithError(*exec.fault);
     }
 }
 
@@ -277,6 +253,7 @@ void CalibrationOrchestrator::onAnglePacket(const AngleSourcePacket& p)
     sample.id = p.source_id;
     sample.time = p.timestamp.asSeconds();
     sample.angle = p.angle.to(inp_.angle_unit);
+
     ports_.recorder.record(sample);
 }
 
@@ -340,7 +317,10 @@ void CalibrationOrchestrator::attachObservers()
     {
         auto it = ports_.source_storage.at(id);
         if (!it)
-            throw std::runtime_error(fmt::format("Angle source disappeared during attach: {}", id.value));
+        {
+            throw std::runtime_error(
+                fmt::format("Angle source disappeared during attach: {}", id.value));
+        }
 
         it->angle_source.addObserver(*this);
         it->angle_source.addSink(*this);
@@ -357,8 +337,10 @@ void CalibrationOrchestrator::detachObservers()
     {
         auto it = ports_.source_storage.at(id);
         if (it)
+        {
             it->angle_source.removeObserver(*this);
             it->angle_source.removeSink(*this);
+        }
     }
 }
 
@@ -375,11 +357,31 @@ void CalibrationOrchestrator::teardown()
 {
     detachObservers();
 
-    ports_.motor_driver.stop();
+    // Сначала даём стратегии корректно завершиться и вернуть shutdown-команды.
+    if (ports_.strategy.isRunning())
+    {
+        const auto end_verdict = ports_.strategy.end();
+        const auto exec = applyVerdict(end_verdict);
+
+        if (exec.fault)
+            logger_.warn("Strategy end() reported fault: {}", *exec.fault);
+    }
+    else
+    {
+        // defensive stop на случай частично поднятой системы
+        ports_.motor_driver.stop();
+    }
+
     ports_.pressure_source.stop();
 
-    if (ports_.strategy.isRunning())
-        ports_.strategy.end();
+    for (const auto& id : opened_angle_sources_)
+    {
+        auto src = ports_.source_storage.at(id);
+        if (src)
+            src->angle_source.stop();
+    }
+
+    opened_angle_sources_.clear();
     ports_.session_clock.stop();
 }
 
@@ -393,20 +395,90 @@ void CalibrationOrchestrator::stopWithError(const std::string& error)
     }
 
     CalibrationOrchestratorState expected = current;
-    if (!state_.compare_exchange_strong(expected,
-                                        CalibrationOrchestratorState::Stopping,
-                                        std::memory_order_acq_rel))
+    if (!state_.compare_exchange_strong(
+            expected,
+            CalibrationOrchestratorState::Stopping,
+            std::memory_order_acq_rel))
     {
         return;
     }
 
     teardown();
 
-    state_.store(CalibrationOrchestratorState::Stopped,
-                 std::memory_order_release);
+    state_.store(
+        CalibrationOrchestratorState::Stopped,
+        std::memory_order_release);
 
     CalibrationOrchestratorEvent::Failed ev;
     ev.error = error;
-
     notifyObservers(CalibrationOrchestratorEvent(ev));
+}
+
+CalibrationOrchestrator::StrategyExecutionResult
+CalibrationOrchestrator::applyVerdict(const StrategyVerdict& verdict)
+{
+    StrategyExecutionResult result;
+
+    for (const auto& command : verdict.commands)
+    {
+        std::visit(
+            [this, &result](const auto& c)
+            {
+                using T = std::decay_t<decltype(c)>;
+
+                if constexpr (std::is_same_v<T, StrategyVerdict::Complete>)
+                {
+                    result.complete = true;
+                }
+                else if constexpr (std::is_same_v<T, StrategyVerdict::Fault>)
+                {
+                    result.fault = c.error;
+                }
+                else
+                {
+                    applyCommand(c);
+                }
+            },
+            command);
+
+        if (result.complete || result.fault)
+            break;
+    }
+
+    return result;
+}
+
+void CalibrationOrchestrator::applyCommand(const StrategyVerdict::BeginSession& cmd)
+{
+    ports_.recorder.beginSession(cmd.id);
+}
+
+void CalibrationOrchestrator::applyCommand(const StrategyVerdict::EndSession&)
+{
+    ports_.recorder.endSession();
+}
+
+void CalibrationOrchestrator::applyCommand(const StrategyVerdict::MotorSetFrequency& cmd)
+{
+    ports_.motor_driver.setFrequency(MotorFrequency(cmd.freq));
+}
+
+void CalibrationOrchestrator::applyCommand(const StrategyVerdict::MotorSetDirection& cmd)
+{
+    ports_.motor_driver.setDirection(cmd.direction);
+}
+
+void CalibrationOrchestrator::applyCommand(const StrategyVerdict::MotorSetFlaps& cmd)
+{
+    ports_.motor_driver.setFlapsState(cmd.state);
+}
+
+void CalibrationOrchestrator::applyCommand(const StrategyVerdict::MotorStart&)
+{
+    ports_.motor_driver.start();
+}
+
+void CalibrationOrchestrator::applyCommand(const StrategyVerdict::MotorStop&)
+{
+    ports_.motor_driver.stop();
 }

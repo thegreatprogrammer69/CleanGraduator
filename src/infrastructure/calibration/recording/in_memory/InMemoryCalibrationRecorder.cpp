@@ -19,7 +19,6 @@ void InMemoryCalibrationRecorder::beginSession(CalibrationSessionId id) {
 
     CalibrationSession new_session;
     new_session.id = id;
-
     active_session_ = std::move(new_session);
 
     logger_.info("Calibration {}/{} session started.", id.point.id, id.direction);

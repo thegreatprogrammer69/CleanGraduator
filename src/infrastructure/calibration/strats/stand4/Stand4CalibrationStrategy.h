@@ -1,91 +1,103 @@
-#ifndef CLEANGRADUATOR_STAND4CALIBRATIONANGORITHM_H
-#define CLEANGRADUATOR_STAND4CALIBRATIONANGORITHM_H
+#ifndef CLEANGRADUATOR_STAND4CALIBRATIONSTRATEGY_H
+#define CLEANGRADUATOR_STAND4CALIBRATIONSTRATEGY_H
+
 #include "domain/ports/calibration/strategy/ICalibrationStrategy.h"
 
-
 #include <atomic>
-#include <optional>
+#include <vector>
 
 #include "Stand4CalibrationStrategyConfig.h"
-#include "domain/ports/drivers/motor/IMotorDriver.h"
-
 #include "stand4logic.h"
 #include "Stand4FrequencyCalculator.h"
+
 #include "domain/fmt/Logger.h"
-#include "domain/ports/calibration/recording/ICalibrationRecorder.h"
-#include "domain/ports/pressure/IPressureSourceObserver.h"
+
 #include "infrastructure/calibration/strats/CalibrationStrategyPorts.h"
 #include "infrastructure/calibration/tracking/IPressurePointsTrackerObserver.h"
 #include "infrastructure/calibration/tracking/PressurePointsTracker.h"
 
 namespace infra::calib::stand4 {
-    class Stand4CalibrationStrategy final
-        : public domain::ports::ICalibrationStrategy
-        , tracking::IPressurePointsTrackerObserver
-    {
-    public:
-        Stand4CalibrationStrategy(CalibrationStrategyPorts ports, Stand4CalibrationStrategyConfig config);
-        ~Stand4CalibrationStrategy();
-        void bind(
-            domain::ports::IMotorDriver& motor,
-            domain::ports::ICalibrationRecorder& recorder) override;
 
-        domain::common::CalibrationStrategyVerdict begin(const domain::common::CalibrationStrategyBeginContext& ctx) override;
+class Stand4CalibrationStrategy final
+    : public domain::ports::ICalibrationStrategy
+    , public tracking::IPressurePointsTrackerObserver
+{
+public:
+    using Verdict = domain::common::CalibrationStrategyVerdict;
+    using BeginContext = domain::common::CalibrationStrategyBeginContext;
+    using FeedContext  = domain::common::CalibrationStrategyFeedContext;
 
-        domain::common::CalibrationStrategyVerdict feed(const domain::common::CalibrationStrategyFeedContext& ctx) override;
+    Stand4CalibrationStrategy(
+        CalibrationStrategyPorts ports,
+        Stand4CalibrationStrategyConfig config);
 
-        void end() override;
+    Verdict begin(const BeginContext& ctx) override;
 
-        bool isRunning() const override;
+    Verdict feed(const FeedContext& ctx) override;
 
-        enum class State {
-            Idle,
-            Preload,
-            Forward,
-            Backward,
-            Finished,
-            Fault
-        };
+    Verdict end() override;
 
-    protected:
-        void onPressurePointsTrackerEvent(const tracking::PressurePointsTrackerEvent &) override;
+    bool isRunning() const override;
 
-    private:
-        void updatePreload(const domain::common::CalibrationStrategyFeedContext& ctx);
-        void updateForward(const domain::common::CalibrationStrategyFeedContext& ctx);
-        void updateBackward(const domain::common::CalibrationStrategyFeedContext& ctx);
-
-        void transition(State newState);
-
-        void transitionToPreload();
-        void transitionToForward();
-        void transitionToBackward();
-        void transitionToFinished();
-        void transitionToFault();
-
-
-    private:
-        fmt::Logger logger_;
-
-        domain::ports::IMotorDriver* motor_{nullptr};
-        domain::ports::ICalibrationRecorder* recorder_{nullptr};
-
-        Stand4FrequencyCalculator freq_calc_;
-        tracking::PressurePointsTracker points_tracker_;
-
-        std::atomic<State> state_{State::Idle};
-
-        std::vector<float> pressure_points_;
-
-        double p_preload_{0.0};
-        double p_target_{0.0};
-        double p_limit_{0.0};
-        double dp_nominal_{0.0};
-
-        double last_pressure_{0.0};
-        double last_time_{0.0};
+    enum class State {
+        Idle,
+        Preload,
+        Forward,
+        Backward,
+        Finished,
+        Fault
     };
-}
 
+protected:
+    void onPressurePointsTrackerEvent(
+        const tracking::PressurePointsTrackerEvent& ev) override;
 
-#endif //CLEANGRADUATOR_STAND4CALIBRATIONANGORITHM_H
+private:
+
+    /* ============================
+       UPDATE METHODS
+       ============================ */
+
+    void updatePreload(const FeedContext& ctx, Verdict& v);
+    void updateForward(const FeedContext& ctx, Verdict& v);
+    void updateBackward(const FeedContext& ctx, Verdict& v);
+
+    /* ============================
+       STATE TRANSITIONS
+       ============================ */
+
+    void transition(State newState);
+
+    void transitionToPreload(Verdict& v);
+    void transitionToForward(Verdict& v);
+    void transitionToBackward(Verdict& v);
+    void transitionToFinished(Verdict& v);
+    void transitionToFault(Verdict& v);
+
+private:
+
+    fmt::Logger logger_;
+
+    Stand4FrequencyCalculator freq_calc_;
+
+    tracking::PressurePointsTracker points_tracker_;
+
+    std::atomic<State> state_{State::Idle};
+
+    std::vector<float> pressure_points_;
+
+    double p_preload_{0.0};
+    double p_target_{0.0};
+    double p_limit_{0.0};
+    double dp_nominal_{0.0};
+
+    double last_pressure_{0.0};
+    double last_time_{0.0};
+
+    // команды, накопленные из tracker callbacks
+    std::vector<Verdict::Command> pending_;
+};
+
+} // namespace infra::calib::stand4
+
+#endif
