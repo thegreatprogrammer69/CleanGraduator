@@ -13,28 +13,18 @@ namespace domain::ports {
 namespace application::orchestrators {
     struct IMotorControlObserver;
 
-    class MotorControlInteractor final : domain::ports::IMotorDriverObserver
+    class MotorControlInteractor final
     {
     public:
         explicit MotorControlInteractor(domain::ports::IMotorDriver& driver);
 
-        ~MotorControlInteractor() override;
+        ~MotorControlInteractor();
 
         void start(int frequency, domain::common::MotorDirection dir);
         void stop();
-        void addObserver(IMotorControlObserver& obs);
-        void removeObserver(IMotorControlObserver& obs);
-
-    protected:
-        // ===== IMotorDriverObserver =====
-        void onMotorEvent(const domain::common::MotorDriverEvent &event) override;
-
-    private:
-        void notifyRunning(bool running) const;
 
     private:
         domain::ports::IMotorDriver& driver_;
-        std::vector<IMotorControlObserver*> observers_;
     };
 }
 

@@ -13,7 +13,7 @@ public:
     CalibrationResult(
         std::vector<MotorDirection> directions,
         std::vector<PointId> points,
-        std::vector<AngleSourceId> sources
+        std::vector<SourceId> sources
     )
         : directions_(std::move(directions))
         , points_(std::move(points))
@@ -32,8 +32,8 @@ public:
     {
         return cells_[index(
             directionIndex(key.direction),
-            pointIndex(key.point),
-            sourceIndex(key.source)
+            pointIndex(key.point_id),
+            sourceIndex(key.source_id)
         )];
     }
 
@@ -41,8 +41,8 @@ public:
     {
         return cells_[index(
             directionIndex(key.direction),
-            pointIndex(key.point),
-            sourceIndex(key.source)
+            pointIndex(key.point_id),
+            sourceIndex(key.source_id)
         )];
     }
 
@@ -56,7 +56,7 @@ public:
         return points_;
     }
 
-    const std::vector<AngleSourceId>& sources() const noexcept
+    const std::vector<SourceId>& sources() const noexcept
     {
         return sources_;
     }
@@ -75,7 +75,7 @@ private:
         return point_index_.at(p);
     }
 
-    size_t sourceIndex(AngleSourceId s) const
+    size_t sourceIndex(SourceId s) const
     {
         return source_index_.at(s);
     }
@@ -103,11 +103,11 @@ private:
 
     std::vector<MotorDirection> directions_;
     std::vector<PointId> points_;
-    std::vector<AngleSourceId> sources_;
+    std::vector<SourceId> sources_;
 
     std::unordered_map<MotorDirection, size_t> direction_index_;
     std::unordered_map<PointId, size_t> point_index_;
-    std::unordered_map<AngleSourceId, size_t> source_index_;
+    std::unordered_map<SourceId, size_t> source_index_;
 
     std::vector<CalibrationCell> cells_;
 };

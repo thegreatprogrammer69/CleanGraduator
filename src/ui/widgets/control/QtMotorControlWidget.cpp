@@ -33,6 +33,7 @@ void QtMotorControlWidget::setupUi()
 
     startButton_ = new QPushButton(tr("Старт"), this);
     stopButton_  = new QPushButton(tr("Стоп"), this);
+    stopButton_->setEnabled(false);
 
     auto* btnLayout = new QHBoxLayout();
     btnLayout->addWidget(startButton_);

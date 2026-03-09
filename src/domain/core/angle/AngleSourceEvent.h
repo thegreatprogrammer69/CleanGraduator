@@ -7,9 +7,9 @@ namespace domain::common {
 
     struct AngleSourceEvent {
 
-        struct Started { AngleSourceId id; };
-        struct Stopped { AngleSourceId id; };
-        struct Failed { AngleSourceId id; AngleSourceError error; };
+        struct Started { SourceId id; };
+        struct Stopped { SourceId id; };
+        struct Failed { SourceId id; AngleSourceError error; };
 
         using Data = std::variant<
             Started,

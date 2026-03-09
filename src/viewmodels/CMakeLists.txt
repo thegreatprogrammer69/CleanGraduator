@@ -1,15 +1,17 @@
 add_library(viewmodels STATIC
+        calibration/CalibrationSeriesViewModel.cpp
+
+        control/DualValveControlViewModel.cpp
+        control/MotorControlViewModel.cpp
+        control/CalibrationSessionControlViewModel.cpp
+        control/ControlViewModel.cpp
+
         video/VideoSourceViewModel.cpp
         video/VideoSourceGridViewModel.cpp
 
         settings/CameraGridSettingsViewModel.cpp
         settings/InfoSettingsViewModel.cpp
         settings/SettingsViewModel.cpp
-
-        control/DualValveControlViewModel.cpp
-        control/MotorControlViewModel.cpp
-        control/CalibrationSessionControlViewModel.cpp
-        control/ControlViewModel.cpp
 
         status_bar/AppStatusBarViewModel.cpp
         status_bar/MotorDriverStatusViewModel.cpp

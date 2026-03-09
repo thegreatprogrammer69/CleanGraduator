@@ -11,7 +11,7 @@
 namespace infra::angle {
 
 FakeAngleSourceFromVideo::FakeAngleSourceFromVideo(
-    domain::common::AngleSourceId id,
+    domain::common::SourceId id,
     AngleSourcePorts ports,
     FakeAngleSourceFromVideoConfig config)
     : id_(id)

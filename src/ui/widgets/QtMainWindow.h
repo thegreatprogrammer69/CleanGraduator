@@ -4,6 +4,7 @@
 #include <QMainWindow>
 
 #include "status_bar/QtAppStatusBarWidget.h"
+#include "viewmodels/calibration/CalibrationSeriesViewModel.h"
 
 class QDockWidget;
 class QWidget;
@@ -14,6 +15,7 @@ namespace mvvm {
 }
 
 namespace ui {
+    class QtCalibrationSeriesWidget;
 
     class QtLogViewerWidget;
     class QtVideoSourceGridWidget;
@@ -30,11 +32,17 @@ namespace ui {
     private:
         void createLogDock(mvvm::LogViewerViewModel& log_vm);
 
+        void createCalibrationDock(mvvm::CalibrationSeriesViewModel &vm);
+
     private:
 
         QtVideoSourceGridWidget* m_cameras = nullptr;
+
         QtLogViewerWidget* log_widget_ = nullptr;
         QDockWidget* log_dock_ = nullptr;
+
+        QtCalibrationSeriesWidget* calibration_widget_ = nullptr;
+        QDockWidget* calibration_dock_ = nullptr;
 
         mvvm::MainWindowViewModel& model_;
     };

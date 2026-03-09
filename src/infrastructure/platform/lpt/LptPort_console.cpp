@@ -46,10 +46,10 @@ namespace infra::platform {
 
     unsigned char LptPort::read(unsigned short offset) const {
         if (!opened_ || !impl_)
-            throw std::runtime_error("LptPort not opened");
+            return 0;
 
         if (offset >= impl_->registers.size())
-            throw std::out_of_range("LptPort offset out of range");
+            return 0;
 
         auto value = impl_->registers[offset];
 
@@ -64,10 +64,10 @@ namespace infra::platform {
 
     void LptPort::write(unsigned short offset, unsigned char value) {
         if (!opened_ || !impl_)
-            throw std::runtime_error("LptPort not opened");
+            return;
 
         if (offset >= impl_->registers.size())
-            throw std::out_of_range("LptPort offset out of range");
+            return;
 
         impl_->registers[offset] = value;
 

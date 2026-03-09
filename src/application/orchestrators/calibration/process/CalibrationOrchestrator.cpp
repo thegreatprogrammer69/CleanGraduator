@@ -105,6 +105,9 @@ bool CalibrationOrchestrator::start(CalibrationOrchestratorInput input)
             throw std::runtime_error(
                 "Calibration strategy protocol error: begin() returned Complete");
 
+        // НАЧАТЬ ЗАПИСЬ
+        ports_.recorder.startRecording();
+
         state_.store(
             CalibrationOrchestratorState::Started,
             std::memory_order_release);
@@ -383,6 +386,9 @@ void CalibrationOrchestrator::teardown()
 
     opened_angle_sources_.clear();
     ports_.session_clock.stop();
+
+    // ОСТАНОВИТЬ ЗАПИСЬ
+    ports_.recorder.stopRecording();
 }
 
 void CalibrationOrchestrator::stopWithError(const std::string& error)

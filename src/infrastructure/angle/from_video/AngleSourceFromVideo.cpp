@@ -13,7 +13,7 @@
 namespace infra::angle {
 
 AngleSourceFromVideo::AngleSourceFromVideo(
-    domain::common::AngleSourceId id,
+    domain::common::SourceId id,
     AngleSourcePorts ports,
     AngleSourceFromVideoConfig config)
     : id_(id)
@@ -71,6 +71,7 @@ void AngleSourceFromVideo::onVideoFrame(const domain::common::VideoFramePacket& 
     domain::common::Angle angle{};
     try {
         angle = anglemeter_.calculate(input);
+        logger_.info("angle calculated: {}", angle);
     } catch (const std::exception& ex) {
         logger_.error("angle calc failed (ts={}): {}", packet.timestamp, ex.what());
         return;

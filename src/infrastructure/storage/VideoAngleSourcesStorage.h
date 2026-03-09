@@ -16,7 +16,7 @@ namespace infra::storage {
 
         void add(application::models::VideoAngleSource source);
         std::vector<application::models::VideoAngleSource> all() override;
-        std::optional<application::models::VideoAngleSource> at(domain::common::AngleSourceId id) const override;
+        std::optional<application::models::VideoAngleSource> at(domain::common::SourceId id) const override;
 
     private:
         std::vector<application::models::VideoAngleSource> sources_;

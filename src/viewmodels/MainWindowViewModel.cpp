@@ -9,6 +9,10 @@ mvvm::MainWindowViewModel::MainWindowViewModel(MainWindowViewModelDeps deps)
 mvvm::MainWindowViewModel::~MainWindowViewModel() {
 }
 
+mvvm::CalibrationSeriesViewModel & mvvm::MainWindowViewModel::calibrationSeries() {
+    return deps_.calibration_series;
+}
+
 mvvm::LogViewerViewModel & mvvm::MainWindowViewModel::logViewerViewModel() {
     return deps_.log_viewer;
 }

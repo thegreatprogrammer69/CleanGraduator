@@ -1,19 +1,14 @@
 #ifndef CLEANGRADUATOR_QTCONTROLWIDGET_H
 #define CLEANGRADUATOR_QTCONTROLWIDGET_H
 
-
 #include <QWidget>
 #include <QVBoxLayout>
-#include <QStackedWidget>
-#include <QPushButton>
-#include <QVBoxLayout>
 #include <QHBoxLayout>
-#include <QButtonGroup>
+#include <QTabWidget>
 
 #include "QtDualValveControlWidget.h"
 #include "QtMotorControlWidget.h"
 #include "QtCalibrationSessionControlWidget.h"
-
 
 namespace mvvm {
     class ControlViewModel;
@@ -21,33 +16,27 @@ namespace mvvm {
 
 namespace ui {
 
-class QtControlWidget : public QWidget
-{
-    Q_OBJECT
-public:
-    explicit QtControlWidget(
-        mvvm::ControlViewModel& vm,
-        QWidget* parent = nullptr);
+    class QtControlWidget : public QWidget
+    {
+        Q_OBJECT
 
-private:
-    void setupUi();
+    public:
+        explicit QtControlWidget(
+            mvvm::ControlViewModel& vm,
+            QWidget* parent = nullptr);
 
-    QPushButton* makeSwitchButton(const QString& text);
+    private:
+        void setupUi();
 
-    QWidget* makeValvesPage();
+        QWidget* makeValvesPage();
+        QWidget* makeMotorPage();
+        QWidget* makeCalibrationPage();
 
-    QWidget* makeMotorPage();
-
-    QWidget* makeCalibrationPage();
-
-    void applyStyle();
-
-private:
-    mvvm::ControlViewModel& vm_;
-    QStackedWidget* stack_{nullptr};
-};
+    private:
+        mvvm::ControlViewModel& vm_;
+        QTabWidget* tabs_{nullptr};
+    };
 
 } // namespace ui
 
-
-#endif //CLEANGRADUATOR_QTCONTROLWIDGET_H
+#endif

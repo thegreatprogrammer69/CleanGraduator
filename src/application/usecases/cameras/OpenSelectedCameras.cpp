@@ -9,7 +9,7 @@ using namespace domain::common;
 
 std::vector<int> OpenSelectedCameras::execute(const std::vector<int>& indexes)
 {
-    std::vector<AngleSourceId> ids(indexes.begin(), indexes.end());
+    std::vector<SourceId> ids(indexes.begin(), indexes.end());
 
     manager_.open(ids);
 

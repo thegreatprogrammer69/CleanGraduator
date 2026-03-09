@@ -4,7 +4,7 @@
 #include <atomic>
 #include <cstdint>
 
-#include "domain/core/angle/AngleSourceId.h"
+#include "domain/core/angle/SourceId.h"
 #include "domain/fmt/Logger.h"
 #include "domain/ports/angle/IAngleSource.h"
 #include "domain/ports/video/IVideoSink.h"
@@ -29,7 +29,7 @@ namespace infra::angle {
     {
     public:
         FakeAngleSourceFromVideo(
-            domain::common::AngleSourceId id,
+            domain::common::SourceId id,
             AngleSourcePorts ports,
             FakeAngleSourceFromVideoConfig config);
 
@@ -54,7 +54,7 @@ namespace infra::angle {
 
         double computeAngle(std::uint64_t timestamp_ms) const;
 
-        domain::common::AngleSourceId id_;
+        domain::common::SourceId id_;
         domain::ports::IVideoSource& video_source_;
         fmt::Logger logger_;
         FakeAngleSourceFromVideoConfig config_;

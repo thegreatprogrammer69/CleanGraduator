@@ -1,14 +1,19 @@
 #include "MotorControlViewModel.h"
 
+#include <variant>
+
 #include "application/orchestrators/motor/MotorControlInteractor.h"
+#include "domain/core/drivers/motor/MotorDriverEvent.h"
+#include "domain/ports/drivers/motor/IMotorDriver.h"
 
 mvvm::MotorControlViewModel::MotorControlViewModel(MotorControlViewModelDeps deps)
-    : interactor_(deps.interactor) {
-    interactor_.addObserver(*this);
+    : interactor_(deps.interactor)
+    , motor_(deps.motor) {
+    motor_.addObserver(*this);
 }
 
 mvvm::MotorControlViewModel::~MotorControlViewModel() {
-    interactor_.removeObserver(*this);
+    motor_.removeObserver(*this);
 }
 
 void mvvm::MotorControlViewModel::start() {
@@ -27,6 +32,15 @@ void mvvm::MotorControlViewModel::setDirection(domain::common::MotorDirection d)
     direction_ = d;
 }
 
-void mvvm::MotorControlViewModel::onRunningChanged(bool running) {
-    is_running.set(running);
+void mvvm::MotorControlViewModel::onMotorEvent(const domain::common::MotorDriverEvent &ev) {
+    std::visit([this](const auto& event) {
+        using T = std::decay_t<decltype(event)>;
+
+        if constexpr (std::is_same_v<T, domain::common::MotorDriverEvent::Started>) {
+            is_running.set(true);
+        } else if constexpr (std::is_same_v<T, domain::common::MotorDriverEvent::Stopped>) {
+            is_running.set(false);
+        }
+
+    }, ev.data);
 }

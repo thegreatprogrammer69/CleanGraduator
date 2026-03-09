@@ -11,7 +11,7 @@ VideoSourceManager::VideoSourceManager(ports::IVideoAngleSourcesStorage &storage
 {
 }
 
-void VideoSourceManager::open(const std::vector<AngleSourceId>& ids)
+void VideoSourceManager::open(const std::vector<SourceId>& ids)
 {
     std::set new_ids(ids.begin(), ids.end());
     std::set current_ids(opened_.begin(), opened_.end());
@@ -71,7 +71,7 @@ void VideoSourceManager::closeAll()
     opened_.clear();
 }
 
-const std::vector<AngleSourceId>& VideoSourceManager::opened() const
+const std::vector<SourceId>& VideoSourceManager::opened() const
 {
     return opened_;
 }

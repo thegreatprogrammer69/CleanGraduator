@@ -33,6 +33,7 @@ int main(int argc, char *argv[]) {
     Q_INIT_RESOURCE(resources);
 
     app.setStyleSheet(appStyle());
+    app.setStyle("Windows");
 
     const std::string setup_dir = (argc > 1) ? argv[1] : "../../../setup";
     const std::string catalog_dir = (argc > 1) ? argv[1] : "../../../catalogs";

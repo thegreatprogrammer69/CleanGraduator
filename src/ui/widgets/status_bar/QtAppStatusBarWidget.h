@@ -1,4 +1,3 @@
-// ui/widgets/QtAppStatusBarWidget.h
 #ifndef CLEANGRADUATOR_QTAPPSTATUSBARWIDGET_H
 #define CLEANGRADUATOR_QTAPPSTATUSBARWIDGET_H
 
@@ -10,7 +9,6 @@
 
 namespace mvvm { class AppStatusBarViewModel; }
 
-class QFrame;
 class QLabel;
 
 namespace ui {
@@ -24,7 +22,6 @@ namespace ui {
     private:
         static QString stateToText(application::orchestrators::CalibrationOrchestratorState s);
         static QString formatHhMmSs(domain::common::Timestamp ts);
-        static QString stateAccent(application::orchestrators::CalibrationOrchestratorState s);
 
         void refreshAll();
 
@@ -35,15 +32,13 @@ namespace ui {
     private:
         mvvm::AppStatusBarViewModel& vm_;
 
-        QFrame* content_card_{nullptr};
-
-        QLabel* statusBadge_{nullptr};
+        QLabel* stateValue_{nullptr};
         QLabel* sessionValue_{nullptr};
         QLabel* uptimeValue_{nullptr};
 
         QTimer timer_;
     };
 
-} // namespace ui
+}
 
-#endif // CLEANGRADUATOR_QTAPPSTATUSBARWIDGET_H
+#endif

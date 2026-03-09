@@ -29,7 +29,7 @@ namespace infra::motor {
         void enableWatchdog(std::chrono::milliseconds timeout) override;
         void disableWatchdog() override;
 
-        void setFrequency(domain::common::MotorFrequency frequency) override;
+        void setFrequency(const domain::common::MotorFrequency& frequency) override;
         domain::common::MotorFrequency frequency() const override;
         domain::common::MotorFrequencyLimits frequencyLimits() const override;
 

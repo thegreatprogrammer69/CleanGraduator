@@ -4,6 +4,7 @@
 #include "UseCasesBootstrap.h"
 #include "viewmodels/logging/LogViewerViewModel.h"
 #include "viewmodels/MainWindowViewModel.h"
+#include "viewmodels/calibration/CalibrationSeriesViewModel.h"
 #include "viewmodels/control/CalibrationSessionControlViewModel.h"
 #include "viewmodels/control/ControlViewModel.h"
 #include "viewmodels/control/DualValveControlViewModel.h"
@@ -44,6 +45,7 @@ void ViewModelsBootstrap::initialize() {
     createCalibrationSessionControl();
     createControl();
 
+    createCalibrationSeriesViewer();
     createLogViewer();
 
     createMainWindow();
@@ -144,7 +146,8 @@ void ViewModelsBootstrap::createDualValveControl() {
 
 void ViewModelsBootstrap::createMotorControl() {
     MotorControlViewModelDeps deps {
-        *use_cases_.motor_control_interactor
+        *use_cases_.motor_control_interactor,
+        *app_.motor_driver
     };
     motor_control = std::make_unique<MotorControlViewModel>(deps);
 }
@@ -166,6 +169,14 @@ void ViewModelsBootstrap::createControl() {
     control = std::make_unique<ControlViewModel>(deps);
 }
 
+void ViewModelsBootstrap::createCalibrationSeriesViewer() {
+    CalibrationSeriesViewModelDeps deps {
+        *app_.video_source_manager,
+        *use_cases_.calibration_recorder
+    };
+    calibration_series = std::make_unique<CalibrationSeriesViewModel>(deps);
+}
+
 void ViewModelsBootstrap::createLogViewer() {
     log_viewer = std::make_unique<LogViewerViewModel>(*app_.log_sources_storage);
 }
@@ -178,6 +189,7 @@ void ViewModelsBootstrap::createMainWindow() {
     };
 
     MainWindowViewModelDeps deps{
+        *calibration_series,
         *log_viewer,
         *video_source_grid,
         *settings,

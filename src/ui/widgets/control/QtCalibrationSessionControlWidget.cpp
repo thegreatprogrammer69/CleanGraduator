@@ -36,6 +36,8 @@ void QtCalibrationSessionControlWidget::setupUi() {
     stopButton_ = new QPushButton(tr("Стоп"), this);
     emergencyStopButton_ = new QPushButton(tr("Экстренный стоп"), this);
 
+    emergencyStopButton_->setProperty("type", "danger");
+
     auto* modeLabel = new QLabel(tr("Режим калибровки:"), this);
 
     auto* buttonLayout = new QHBoxLayout();

@@ -4,7 +4,7 @@
 #include <cstdint>
 
 #include "AngleSourceFromVideoConfig.h"
-#include "domain/core/angle/AngleSourceId.h"
+#include "domain/core/angle/SourceId.h"
 #include "domain/fmt/Logger.h"
 #include "domain/ports/angle/IAngleSource.h"
 #include "domain/ports/video/IVideoSink.h"
@@ -22,7 +22,7 @@ namespace infra::angle {
         , public domain::ports::IAngleSource
     {
     public:
-        explicit AngleSourceFromVideo(domain::common::AngleSourceId id, AngleSourcePorts ports, AngleSourceFromVideoConfig config);
+        explicit AngleSourceFromVideo(domain::common::SourceId id, AngleSourcePorts ports, AngleSourceFromVideoConfig config);
         ~AngleSourceFromVideo() override;
 
         // IAngleSource
@@ -41,7 +41,7 @@ namespace infra::angle {
     private:
         enum class State : std::uint8_t { Stopped, Started };
 
-        domain::common::AngleSourceId id_;
+        domain::common::SourceId id_;
 
         domain::ports::IVideoSource&     video_source_;
         domain::ports::IAngleCalculator& anglemeter_;

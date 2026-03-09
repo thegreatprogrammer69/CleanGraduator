@@ -4,7 +4,6 @@
 #include "CalibrationCalculatorPorts.h"
 #include "domain/fmt/Logger.h"
 #include "domain/ports/calibration/calculation/ICalibrationCalculator.h"
-#include "domain/ports/calibration/result/IResultStore.h"
 
 namespace infra::calc {
     class LinearCalibrationCalculator : public domain::ports::ICalibrationCalculator {

@@ -1,11 +1,11 @@
 #ifndef CLEANGRADUATOR_ANGLESOURCEERROR_H
 #define CLEANGRADUATOR_ANGLESOURCEERROR_H
 #include <string>
-#include "AngleSourceId.h"
+#include "SourceId.h"
 
 namespace domain::common {
     struct AngleSourceError {
-        AngleSourceId id;
+        SourceId id;
         std::string error;
     };
 }

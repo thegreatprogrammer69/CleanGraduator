@@ -31,7 +31,7 @@ AngleSourceFactory::AngleSourceFactory(
 AngleSourceFactory::~AngleSourceFactory() = default;
 
 std::unique_ptr<domain::ports::IAngleSource>
-AngleSourceFactory::load(domain::common::AngleSourceId id)
+AngleSourceFactory::load(domain::common::SourceId id)
 {
     auto ini = loadIniOrThrow(ini_path_);
 

@@ -1,7 +1,7 @@
 #ifndef CLEANGRADUATOR_MOTORCONTROLVIEWMODEL_H
 #define CLEANGRADUATOR_MOTORCONTROLVIEWMODEL_H
-#include "application/orchestrators/motor/IMotorControlObserver.h"
 #include "domain/core/drivers/motor/MotorDirection.h"
+#include "domain/ports/drivers/motor/IMotorDriverObserver.h"
 #include "viewmodels/Observable.h"
 
 namespace application::orchestrators {
@@ -15,10 +15,10 @@ namespace domain::ports {
 namespace mvvm {
     struct MotorControlViewModelDeps {
         application::orchestrators::MotorControlInteractor& interactor;
+        domain::ports::IMotorDriver& motor;
     };
 
-    class MotorControlViewModel final
-        : application::orchestrators::IMotorControlObserver
+    class MotorControlViewModel final : domain::ports::IMotorDriverObserver
     {
     public:
         explicit MotorControlViewModel(MotorControlViewModelDeps deps);
@@ -33,12 +33,12 @@ namespace mvvm {
         Observable<bool> is_running{false};
 
     private:
-        // ===== IMotorControlObserver =====
-
-        void onRunningChanged(bool running) override;
+        // ===== IMotorDriverObserver =====
+        void onMotorEvent(const domain::common::MotorDriverEvent &event) override;
 
     private:
         application::orchestrators::MotorControlInteractor& interactor_;
+        domain::ports::IMotorDriver& motor_;
         int frequency_ = 0;
         domain::common::MotorDirection direction_ = domain::common::MotorDirection::Forward;
     };

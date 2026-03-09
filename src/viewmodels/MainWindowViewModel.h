@@ -8,8 +8,10 @@ namespace mvvm {
     class LogViewerViewModel;
     class SettingsViewModel;
     class VideoSourceGridViewModel;
+    class CalibrationSeriesViewModel;
 
     struct MainWindowViewModelDeps {
+        CalibrationSeriesViewModel &calibration_series;
         LogViewerViewModel &log_viewer;
         VideoSourceGridViewModel &grid;
         SettingsViewModel &settings;
@@ -21,6 +23,7 @@ namespace mvvm {
     public:
         explicit MainWindowViewModel(MainWindowViewModelDeps deps);
         ~MainWindowViewModel();
+        CalibrationSeriesViewModel& calibrationSeries();
         LogViewerViewModel& logViewerViewModel();
         VideoSourceGridViewModel& videoSourceGridViewModel();
         SettingsViewModel& settingsViewModel();

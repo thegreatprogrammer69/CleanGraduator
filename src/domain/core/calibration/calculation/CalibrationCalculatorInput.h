@@ -7,7 +7,9 @@
 namespace domain::common {
 
     struct CalibrationCalculatorInput {
-        CalibrationSession calibration_session;
+        float pressure_point;
+        AngleSeries angle_series;
+        PressureSeries pressure_series;
     };
 
 }

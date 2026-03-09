@@ -1,8 +1,16 @@
 add_library(ui STATIC
         resources.qrc
 
-        widgets/layout/QtStackPanelWidget.cpp
-        widgets/layout/QtStackPanelWidget.h
+        widgets/control/QtDualValveControlWidget.cpp
+        widgets/control/QtDualValveControlWidget.h
+        widgets/control/QtMotorControlWidget.cpp
+        widgets/control/QtMotorControlWidget.h
+        widgets/control/QtCalibrationSessionControlWidget.cpp
+        widgets/control/QtCalibrationSessionControlWidget.h
+        widgets/control/QtControlWidget.cpp
+        widgets/control/QtControlWidget.h
+
+        widgets/calibration/QtCalibrationSeriesWidget.cpp
 
         widgets/video/QtVideoSourceGridWidget.cpp
         widgets/video/QtVideoSourceGridWidget.h
@@ -15,15 +23,6 @@ add_library(ui STATIC
         widgets/settings/QtInfoSettingsWidget.h
         widgets/settings/QtSettingsWidget.cpp
         widgets/settings/QtSettingsWidget.h
-
-        widgets/control/QtDualValveControlWidget.cpp
-        widgets/control/QtDualValveControlWidget.h
-        widgets/control/QtMotorControlWidget.cpp
-        widgets/control/QtMotorControlWidget.h
-        widgets/control/QtCalibrationSessionControlWidget.cpp
-        widgets/control/QtCalibrationSessionControlWidget.h
-        widgets/control/QtControlWidget.cpp
-        widgets/control/QtControlWidget.h
 
         widgets/status_bar/QtAppStatusBarWidget.cpp
         widgets/status_bar/QtAppStatusBarWidget.h

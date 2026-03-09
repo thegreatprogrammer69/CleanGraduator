@@ -1,20 +1,21 @@
 #ifndef CLEANGRADUATOR_CALIBRATIONCELL_H
 #define CLEANGRADUATOR_CALIBRATIONCELL_H
 
+#include <optional>
+
+
 namespace domain::common {
 
-    class CalibrationCell
-    {
+    class CalibrationCell {
     public:
-
         CalibrationCell() = default;
 
-        void setAngle(float v) { angle_ = v; }
-        float angle() const { return angle_; }
+        void setAngle(std::optional<float> v) { angle_ = std::move(v); }
+        std::optional<float> angle() const { return angle_; }
 
     private:
 
-        float angle_ = 0.0f;
+        std::optional<float> angle_ = std::nullopt;
     };
 
 }

@@ -16,7 +16,7 @@ std::vector<VideoAngleSource> VideoAngleSourcesStorage::all()
     return sources_;  // возврат копии — безопасно
 }
 
-std::optional<VideoAngleSource> VideoAngleSourcesStorage::at(AngleSourceId id) const
+std::optional<VideoAngleSource> VideoAngleSourcesStorage::at(SourceId id) const
 {
     auto it = std::find_if(
         sources_.begin(),

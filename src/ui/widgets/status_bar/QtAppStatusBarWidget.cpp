@@ -1,11 +1,8 @@
-// ui/widgets/QtAppStatusBarWidget.cpp
 #include "QtAppStatusBarWidget.h"
 
-#include <QFrame>
+#include <QHBoxLayout>
 #include <QLabel>
-#include <QVariant>
-#include <QVBoxLayout>
-#include <QFormLayout>
+#include <QFont>
 
 #include <chrono>
 
@@ -13,111 +10,48 @@
 
 namespace ui {
 
-static QLabel* makeCaption(const QString& text, QWidget* parent) {
-    auto* l = new QLabel(text, parent);
-    l->setProperty("role", "caption");
-    return l;
-}
-
-static QLabel* makeValue(QWidget* parent) {
-    auto* l = new QLabel(parent);
-    l->setProperty("role", "value");
-    l->setTextInteractionFlags(Qt::TextSelectableByMouse);
-    return l;
-}
-
-static QLabel* makeTimeValue(QWidget* parent) {
-    auto* l = makeValue(parent);
-    l->setProperty("role", "timeValue");
-    return l;
-}
-
-QtAppStatusBarWidget::QtAppStatusBarWidget(mvvm::AppStatusBarViewModel& vm, QWidget* parent)
-    : QWidget(parent)
-    , vm_(vm)
+static QLabel* makeSeparator(QWidget* parent)
 {
-    auto* root = new QVBoxLayout(this);
-    root->setContentsMargins(0, 0, 0, 0);
-    root->setSpacing(0);
+    auto* l = new QLabel("|", parent);
+    return l;
+}
 
-    content_card_ = new QFrame(this);
-    content_card_->setObjectName("contentCard");
-    content_card_->setFrameShape(QFrame::NoFrame);
+static QLabel* makeTime(QWidget* parent)
+{
+    auto* l = new QLabel(parent);
 
-    // Базовый стиль карточки + типографика (можно перенести в общий .qss)
-    content_card_->setStyleSheet(R"(
-        QLabel[role="caption"] {
-            color: #6B7280;
-            font-size: 12px;
-        }
-        QLabel[role="value"] {
-            color: #111827;
-            font-size: 13px;
-            font-weight: 600;
-        }
-        QLabel[role="timeValue"] {
-            font-family: "Consolas", "DejaVu Sans Mono", monospace;
-            font-size: 15px;
-            letter-spacing: 1px;
-        }
-        QLabel[role="statusBadge"] {
-            padding: 3px 8px;
-            border-radius: 8px;
-            font-weight: 700;
-        }
-    )");
+    QFont f = l->font();
+    f.setFamily("Consolas");
+    l->setFont(f);
 
-    auto* card = new QVBoxLayout(content_card_);
-    card->setContentsMargins(12, 10, 12, 10);
-    card->setSpacing(8);
+    return l;
+}
 
-    // Верхняя строка: "Статус" + badge
-    {
-        auto* row = new QHBoxLayout();
-        row->setContentsMargins(0, 0, 0, 0);
-        row->setSpacing(8);
+    QtAppStatusBarWidget::QtAppStatusBarWidget(mvvm::AppStatusBarViewModel& vm, QWidget* parent)
+        : QWidget(parent)
+        , vm_(vm)
+{
+    auto* layout = new QHBoxLayout(this);
+    layout->setContentsMargins(4,0,4,0);
+    layout->setSpacing(6);
 
-        // auto* caption = makeCaption(tr("Статус"), content_card_);
-        statusBadge_ = new QLabel(content_card_);
-        statusBadge_->setProperty("role", "statusBadge");
-        statusBadge_->setTextInteractionFlags(Qt::TextSelectableByMouse);
-        statusBadge_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-        statusBadge_->setAlignment(Qt::AlignHCenter | Qt::AlignVCenter);
+    stateValue_ = new QLabel(this);
 
-        // row->addWidget(caption);
-        row->addWidget(statusBadge_, 1);
-        row->addStretch();
+    uptimeValue_ = makeTime(this);
+    sessionValue_ = makeTime(this);
 
-        card->addLayout(row);
-    }
+    layout->addWidget(stateValue_);
 
-    // Нижние 2 строки ровно по колонкам: FormLayout
-    {
-        auto* form = new QFormLayout();
-        form->setContentsMargins(0, 0, 0, 0);
-        form->setHorizontalSpacing(12);
-        form->setVerticalSpacing(6);
-        form->setLabelAlignment(Qt::AlignLeft | Qt::AlignVCenter);
-        form->setFormAlignment(Qt::AlignTop);
-        form->setRowWrapPolicy(QFormLayout::DontWrapRows);
+    layout->addWidget(makeSeparator(this));
 
-        sessionValue_ = makeTimeValue(content_card_);
-        uptimeValue_  = makeTimeValue(content_card_);
+    layout->addWidget(uptimeValue_);
 
-        sessionValue_->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
-        uptimeValue_->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+    layout->addWidget(makeSeparator(this));
 
-        form->addRow(makeCaption(tr("Процесс"), content_card_), sessionValue_);
-        form->addRow(makeCaption(tr("Программа"), content_card_), uptimeValue_);
+    layout->addWidget(sessionValue_);
 
-        card->addLayout(form);
-    }
-
-    root->addWidget(content_card_);
-
-    // Таймер обновления — 250мс достаточно, 75мс визуально смысла почти не даёт
     timer_.setInterval(250);
-    connect(&timer_, &QTimer::timeout, this, [this] { refreshAll(); });
+    connect(&timer_, &QTimer::timeout, this, [this]{ refreshAll(); });
     timer_.start();
 
     refreshAll();
@@ -134,23 +68,7 @@ void QtAppStatusBarWidget::refreshAll()
 
 void QtAppStatusBarWidget::setState(application::orchestrators::CalibrationOrchestratorState s)
 {
-    const auto txt = stateToText(s);
-    const auto accent = stateAccent(s);
-
-    statusBadge_->setText(txt);
-
-    // Badge цвет: лёгкий фон + рамка + текст
-    statusBadge_->setStyleSheet(QString(
-        "QLabel {"
-        " background: %1;"
-        " border: 1px solid %2;"
-        " color: %3;"
-        "}"
-    ).arg(
-        accent + "22",   // фон (с альфой)
-        accent + "55",   // border
-        accent           // текст
-    ));
+    stateValue_->setText(stateToText(s));
 }
 
 void QtAppStatusBarWidget::setSession(domain::common::Timestamp ts)
@@ -166,42 +84,32 @@ void QtAppStatusBarWidget::setUptime(domain::common::Timestamp ts)
 QString QtAppStatusBarWidget::stateToText(application::orchestrators::CalibrationOrchestratorState s)
 {
     using S = application::orchestrators::CalibrationOrchestratorState;
-    switch (s) {
-        case S::Stopped:  return tr("Ожидание");
-        case S::Starting: return tr("Запуск");
-        case S::Started:  return tr("В процессе");
-        case S::Stopping: return tr("Остановка");
-    }
-    return tr("Неизвестно");
-}
 
-QString QtAppStatusBarWidget::stateAccent(application::orchestrators::CalibrationOrchestratorState s)
-{
-    using S = application::orchestrators::CalibrationOrchestratorState;
     switch (s) {
-        case S::Stopped:  return "#6B7280"; // gray
-        case S::Started:  return "#059669"; // green
-        case S::Starting: return "#2563EB"; // blue
-        case S::Stopping: return "#D97706"; // amber
+        case S::Stopped:  return QObject::tr("Ожидание");
+        case S::Starting: return QObject::tr("Запуск");
+        case S::Started:  return QObject::tr("В процессе");
+        case S::Stopping: return QObject::tr("Остановка");
     }
-    return "#111827";
+
+    return QObject::tr("Неизвестно");
 }
 
 QString QtAppStatusBarWidget::formatHhMmSs(domain::common::Timestamp ts)
 {
-    const auto d = ts.toDuration();
-
     using namespace std::chrono;
-    const auto total = duration_cast<seconds>(d).count();
+
+    const auto total =
+        duration_cast<seconds>(ts.toDuration()).count();
 
     const auto h = total / 3600;
     const auto m = (total % 3600) / 60;
     const auto s = total % 60;
 
     return QString("%1:%2:%3")
-        .arg(qint64(h), 2, 10, QChar('0'))
-        .arg(qint64(m), 2, 10, QChar('0'))
-        .arg(qint64(s), 2, 10, QChar('0'));
+        .arg(qint64(h),2,10,QChar('0'))
+        .arg(qint64(m),2,10,QChar('0'))
+        .arg(qint64(s),2,10,QChar('0'));
 }
 
-} // namespace ui
+}

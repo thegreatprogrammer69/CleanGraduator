@@ -4,13 +4,13 @@
 
 #include "CalibrationSessionId.h"
 #include "TimeSeries.h"
-#include "domain/core/angle/AngleSourceId.h"
+#include "domain/core/angle/SourceId.h"
 
 namespace domain::common {
     struct CalibrationSession {
         CalibrationSessionId id;
         PressureSeries pressure_series{};
-        std::unordered_map<AngleSourceId, AngleSeries> angle_series{};
+        std::unordered_map<SourceId, AngleSeries> angle_series{};
     };
 }
 

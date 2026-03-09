@@ -14,15 +14,20 @@
 namespace {
 
 // Плитка с видео внутри (аналог makeCameraTile из старого кода)
-static QFrame* makeTile(const std::string& renderer, mvvm::VideoSourceViewModel& model, QWidget* parent)
-{
-    auto* tile = new QFrame(parent);
-    tile->setObjectName("cameraTile");
-    tile->setAttribute(Qt::WA_StyledBackground, true);
+    static QFrame* makeTile(const std::string& renderer, mvvm::VideoSourceViewModel& model, QWidget* parent)
+    {
+        auto* tile = new QFrame(parent);
+        tile->setObjectName("cameraTile");
+        tile->setAttribute(Qt::WA_StyledBackground, true);
 
-    auto* l = new QVBoxLayout(tile);
-    l->setContentsMargins(0, 0, 0, 0);
-    l->setSpacing(0);
+        // Рамка
+        tile->setFrameShape(QFrame::Box);
+        tile->setFrameShadow(QFrame::Raised);
+        tile->setLineWidth(1);
+
+        auto* l = new QVBoxLayout(tile);
+        l->setContentsMargins(0, 0, 0, 0);
+        l->setSpacing(0);
 
 #ifdef PLATFORM_WINDOWS
         l->addWidget(new ui::QtD3D11VideoSourceWidget(model, tile));
@@ -30,8 +35,8 @@ static QFrame* makeTile(const std::string& renderer, mvvm::VideoSourceViewModel&
         l->addWidget(new ui::QtGLVideoSourceWidget(model, tile));
 #endif
 
-    return tile;
-}
+        return tile;
+    }
 
 } // namespace
 
@@ -50,7 +55,7 @@ QtVideoSourceGridWidget::QtVideoSourceGridWidget(std::string renderer, mvvm::Vid
 
     m_grid = new QGridLayout(this);
     m_grid->setContentsMargins(0, 0, 0, 0);
-    m_grid->setSpacing(2);
+    m_grid->setSpacing(0);
 
     // По вертикали хотим тянуться, по горизонтали — фиксироваться вычисленной шириной
     setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding);

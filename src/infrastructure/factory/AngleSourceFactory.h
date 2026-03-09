@@ -6,7 +6,7 @@
 
 #include "domain/ports/angle/IAngleSource.h"
 #include "../angle/AngleSourcePorts.h"
-#include "domain/core/angle/AngleSourceId.h"
+#include "domain/core/angle/SourceId.h"
 
 namespace infra::repo {
 
@@ -18,7 +18,7 @@ namespace infra::repo {
 
         ~AngleSourceFactory();
 
-        std::unique_ptr<domain::ports::IAngleSource> load(domain::common::AngleSourceId id);
+        std::unique_ptr<domain::ports::IAngleSource> load(domain::common::SourceId id);
 
     private:
         std::string ini_path_;

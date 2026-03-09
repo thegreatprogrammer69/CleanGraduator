@@ -76,9 +76,6 @@ namespace infra::motor {
             return true;
         }
 
-        // 3. Переход Stopped -> Running
-        logger_.info("Starting motor driver");
-
         // 4. Сброс ошибок
         resetError();
 
@@ -90,15 +87,18 @@ namespace infra::motor {
 
         // 6. Запуск worker thread
         if (!thread_worker_.isRunning()) {
-            logger_.info("Starting worker thread");
             thread_worker_.start();
         } else {
-            logger_.info("Resuming worker thread");
             thread_worker_.resume();
         }
 
         // 7. Обновление состояния
         state_ = MotorDriverState::Running;
+
+        logger_.info("Motor driver started");
+
+        MotorDriverEvent::Started ev;
+        notifier_.notifyEvent(MotorDriverEvent(ev));
 
         return true;
     }
@@ -107,22 +107,30 @@ namespace infra::motor {
 
         // 1. Предупреждение при повторной остановке
         if (state_ == MotorDriverState::Stopped) {
-            logger_.warn("Stop called while already stopped");
+            logger_.warn("Driver already stopped");
+            return;
         }
 
         // 2. Пауза worker thread
         thread_worker_.pause();
 
+        setFrequency(MotorFrequency(0));
+
         // 3. Обновление состояния
         state_ = MotorDriverState::Stopped;
 
         logger_.info("Motor driver stopped");
+
+        MotorDriverEvent::Stopped ev;
+        notifier_.notifyEvent(MotorDriverEvent(ev));
     }
 
     void G540LptMotorDriver::emergencyStop()
     {
         // 1. Немедленная остановка worker-потока
         thread_worker_.stop();
+
+        setFrequency(MotorFrequency(0));
 
         // 2. Обновление состояние
         state_ = MotorDriverState::Stopped;
@@ -137,9 +145,15 @@ namespace infra::motor {
         err.message = "Emergency stop triggered";
         error_.store(err);
 
-        MotorDriverEvent::Fault ev;
-        ev.error = err;
-        notifier_.notifyEvent(MotorDriverEvent(ev));
+    MotorDriverEvent::Fault fault_ev;
+    fault_ev.error = err;
+    notifier_.notifyEvent(MotorDriverEvent(fault_ev));
+
+    MotorDriverEvent::EmergencyStopped stop_ev;
+    notifier_.notifyEvent(MotorDriverEvent(stop_ev));
+
+    MotorDriverEvent::Stopped stopped_ev;
+    notifier_.notifyEvent(MotorDriverEvent(stopped_ev));
     }
 
     MotorDriverState G540LptMotorDriver::state() const {
@@ -162,9 +176,10 @@ namespace infra::motor {
         software_watchdog_.stop();
     }
 
-    void G540LptMotorDriver::setFrequency(const MotorFrequency frequency) {
-        frequency_ = frequency;
-        frequency_.clampTo(config_.max_freq_hz);
+    void G540LptMotorDriver::setFrequency(const MotorFrequency& frequency) {
+        auto new_frequency = frequency;
+        new_frequency.clampTo(config_.max_freq_hz);
+        frequency_ = new_frequency;
     }
 
     MotorFrequency G540LptMotorDriver::frequency() const {
@@ -179,7 +194,14 @@ namespace infra::motor {
     }
 
     void G540LptMotorDriver::setDirection(const MotorDirection dir) {
+        if (direction_ == dir)
+            return;
+
         direction_ = dir;
+
+        MotorDriverEvent::DirectionChanged ev;
+        ev.direction = dir;
+        notifier_.notifyEvent(MotorDriverEvent(ev));
     }
 
     MotorDirection G540LptMotorDriver::direction() const {

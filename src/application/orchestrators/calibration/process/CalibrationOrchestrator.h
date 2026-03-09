@@ -12,7 +12,7 @@
 #include "CalibrationOrchestratorState.h"
 #include "application/orchestrators/calibration/process/CalibrationOrchestratorEvent.h"
 #include "application/ports/calibration/orchestration/CalibrationOrchestratorObserver.h"
-#include "domain/core/angle/AngleSourceId.h"
+#include "domain/core/angle/SourceId.h"
 #include "domain/core/calibration/strategy/CalibrationStrategyVerdict.h"
 #include "domain/fmt/Logger.h"
 #include "domain/ports/angle/IAngleSink.h"
@@ -85,7 +85,7 @@ private:
         CalibrationOrchestratorState::Stopped
     };
 
-    std::set<domain::common::AngleSourceId> opened_angle_sources_;
+    std::set<domain::common::SourceId> opened_angle_sources_;
 
     mutable std::mutex lifecycle_mutex_;
     ThreadSafeObserverList<ports::CalibrationOrchestratorObserver> observers_;

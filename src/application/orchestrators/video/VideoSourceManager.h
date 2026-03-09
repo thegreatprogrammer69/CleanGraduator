@@ -5,20 +5,20 @@
 
 
 namespace application::orchestrators {
-    using domain::common::AngleSourceId;
+    using domain::common::SourceId;
     class VideoSourceManager {
     public:
         explicit VideoSourceManager(ports::IVideoAngleSourcesStorage& storage);
 
-        void open(const std::vector<AngleSourceId>& ids);
+        void open(const std::vector<SourceId>& ids);
         void openAll();
         void closeAll();
 
-        const std::vector<AngleSourceId>& opened() const;
+        const std::vector<SourceId>& opened() const;
 
     private:
         ports::IVideoAngleSourcesStorage& storage_;
-        std::vector<AngleSourceId> opened_;
+        std::vector<SourceId> opened_;
     };
 }
 

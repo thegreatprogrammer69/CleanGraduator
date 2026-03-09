@@ -30,7 +30,7 @@ namespace domain::ports {
         virtual void disableWatchdog() = 0;
 
         // --- Motion config ---
-        virtual void setFrequency(common::MotorFrequency) = 0;
+        virtual void setFrequency(const common::MotorFrequency&) = 0;
         virtual common::MotorFrequency frequency() const = 0;
         virtual common::MotorFrequencyLimits frequencyLimits() const = 0;
 

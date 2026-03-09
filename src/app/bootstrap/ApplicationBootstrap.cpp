@@ -31,7 +31,6 @@
 #include "viewmodels/settings/SettingsViewModel.h"
 #include "domain/ports/video/IVideoSource.h"
 
-#include "domain/ports/calibration/result/IResultStore.h"
 #include "infrastructure/angle/from_video/AngleSourceFromVideo.h"
 #include "infrastructure/factory/AngleSourceFactory.h"
 #include "infrastructure/factory/MotorDriverFactory.h"
@@ -156,7 +155,7 @@ void ApplicationBootstrap::createAngleSources() {
         };
 
         AngleSourceFactory factory(setup_dir_ + "/angle_sources.ini", ports);
-        angle_sources.emplace_back(factory.load(AngleSourceId{idx}));
+        angle_sources.emplace_back(factory.load(SourceId{idx}));
 
         ++idx;
     }
@@ -167,7 +166,7 @@ void ApplicationBootstrap::createVideoSourcesStorage() {
 
     for (int idx = 0; idx < video_sources.size(); ++idx) {
         VideoAngleSource source{
-             AngleSourceId{idx + 1},
+             SourceId{idx + 1},
             *angle_sources[idx],
             *video_sources[idx]
         };

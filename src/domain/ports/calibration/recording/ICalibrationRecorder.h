@@ -10,11 +10,16 @@ namespace domain::common {
 }
 
 namespace domain::ports {
+    struct ICalibrationRecorderObserver;
 
     struct ICalibrationRecorder {
         virtual ~ICalibrationRecorder() = default;
 
-        // write
+        // recording lifecycle
+        virtual void startRecording() = 0;
+        virtual void stopRecording() = 0;
+
+        // session lifecycle
         virtual void beginSession(common::CalibrationSessionId id) = 0;
         virtual void record(const common::PressureSample&) = 0;
         virtual void record(const common::AngleSample&) = 0;
@@ -22,9 +27,13 @@ namespace domain::ports {
 
         // read
         virtual std::vector<common::CalibrationSessionId> sessions() const = 0;
-        virtual std::optional<common::CalibrationSession> session(common::CalibrationSessionId id) const = 0;
+        virtual std::optional<common::CalibrationSession>
+        session(common::CalibrationSessionId id) const = 0;
+
+        // observing
+        virtual void addObserver(ICalibrationRecorderObserver& observer) = 0;
+        virtual void removeObserver(ICalibrationRecorderObserver& observer) = 0;
     };
 
 }
-
 #endif //CLEANGRADUATOR_IPRESSURERECORDER_H
