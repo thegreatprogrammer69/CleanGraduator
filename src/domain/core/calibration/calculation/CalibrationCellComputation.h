@@ -9,7 +9,6 @@ namespace domain::common {
     struct CalibrationCellComputation
     {
         CalibrationCell cell;
-        std::vector<CalibrationCellIssue> issues;
     };
 
 }

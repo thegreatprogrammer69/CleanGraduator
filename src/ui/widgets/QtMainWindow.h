@@ -4,7 +4,7 @@
 #include <QMainWindow>
 
 #include "status_bar/QtAppStatusBarWidget.h"
-#include "viewmodels/calibration/CalibrationSeriesViewModel.h"
+#include "../../viewmodels/calibration/recording/CalibrationSeriesViewModel.h"
 
 class QDockWidget;
 class QWidget;

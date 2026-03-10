@@ -2,14 +2,18 @@
 #define CLEANGRADUATOR_CALIBRATIONRECORDEREVENT_H
 #include <variant>
 
+#include "domain/core/calibration/common/CalibrationLayout.h"
 #include "AngleSample.h"
 #include "CalibrationSessionId.h"
+#include "CalibrationSession.h"
 #include "PressureSample.h"
 
 namespace domain::common {
     struct CalibrationRecorderEvent {
 
-        struct RecordingStarted {};
+        struct RecordingStarted {
+            CalibrationLayout layout;
+        };
         struct RecordingStopped {};
 
         struct SessionStarted {
@@ -26,6 +30,7 @@ namespace domain::common {
 
         struct SessionEnded {
             CalibrationSessionId id;
+            CalibrationSession result;
         };
 
         using Data = std::variant<

@@ -7,7 +7,7 @@ namespace domain::ports {
     public:
         virtual ~ICalibrationResultSource() = default;
 
-        virtual const common::CalibrationResult& currentResult() const = 0;
+        virtual const std::optional<common::CalibrationResult>& currentResult() const = 0;
 
         virtual void addObserver(ICalibrationResultObserver&) = 0;
         virtual void removeObserver(ICalibrationResultObserver&) = 0;

@@ -17,7 +17,7 @@ InMemoryCalibrationRecorder::InMemoryCalibrationRecorder(
 {
 }
 
-void InMemoryCalibrationRecorder::startRecording()
+void InMemoryCalibrationRecorder::startRecording(CalibrationLayout layout)
 {
     if (recording_active_)
         return;
@@ -26,8 +26,7 @@ void InMemoryCalibrationRecorder::startRecording()
 
     logger_.info("Calibration recording started.");
 
-    notify(CalibrationRecorderEvent(
-        CalibrationRecorderEvent::RecordingStarted{}));
+    notify(CalibrationRecorderEvent(CalibrationRecorderEvent::RecordingStarted{layout}));
 }
 
 void InMemoryCalibrationRecorder::stopRecording()

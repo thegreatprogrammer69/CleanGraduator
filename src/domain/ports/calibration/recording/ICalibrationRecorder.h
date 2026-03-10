@@ -1,9 +1,11 @@
 #ifndef CLEANGRADUATOR_IPRESSURERECORDER_H
 #define CLEANGRADUATOR_IPRESSURERECORDER_H
+#include <optional>
 #include "domain/core/calibration/recording/AngleSample.h"
 #include "domain/core/calibration/recording/CalibrationSession.h"
 #include "domain/core/calibration/recording/CalibrationSessionId.h"
 #include "domain/core/calibration/recording/PressureSample.h"
+#include "domain/core/calibration/common/CalibrationLayout.h"
 
 namespace domain::common {
     enum class MotorDirection;
@@ -16,11 +18,11 @@ namespace domain::ports {
         virtual ~ICalibrationRecorder() = default;
 
         // recording lifecycle
-        virtual void startRecording() = 0;
+        virtual void startRecording(common::CalibrationLayout) = 0;
         virtual void stopRecording() = 0;
 
         // session lifecycle
-        virtual void beginSession(common::CalibrationSessionId id) = 0;
+        virtual void beginSession(common::CalibrationSessionId) = 0;
         virtual void record(const common::PressureSample&) = 0;
         virtual void record(const common::AngleSample&) = 0;
         virtual void endSession() = 0;

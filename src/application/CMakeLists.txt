@@ -2,11 +2,10 @@ add_library(application STATIC
         fmt/fmt_application.cpp
 
         orchestrators/calibration/process/CalibrationOrchestrator.cpp
+        orchestrators/calibration/result/CalibrationResultBuilder.cpp
         orchestrators/video/VideoSourceManager.cpp
         orchestrators/settings/CalibrationSettingsQuery.cpp
         orchestrators/motor/MotorControlInteractor.cpp
-
-        usecases/settings/ConfigureComponent.cpp
 
         usecases/cameras/OpenSelectedCameras.cpp
         usecases/cameras/CloseAllCameras.cpp

@@ -4,7 +4,7 @@
 #include "UseCasesBootstrap.h"
 #include "viewmodels/logging/LogViewerViewModel.h"
 #include "viewmodels/MainWindowViewModel.h"
-#include "viewmodels/calibration/CalibrationSeriesViewModel.h"
+#include "../../viewmodels/calibration/recording/CalibrationSeriesViewModel.h"
 #include "viewmodels/control/CalibrationSessionControlViewModel.h"
 #include "viewmodels/control/ControlViewModel.h"
 #include "viewmodels/control/DualValveControlViewModel.h"

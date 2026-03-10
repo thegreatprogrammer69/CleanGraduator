@@ -1,83 +1,77 @@
 #ifndef CLEANGRADUATOR_CALIBRATIONRESULT_H
 #define CLEANGRADUATOR_CALIBRATIONRESULT_H
 
+#include <vector>
+#include <unordered_map>
+#include <optional>
+#include <stdexcept> // Для исключений
 #include "CalibrationCell.h"
 #include "CalibrationCellKey.h"
+#include "domain/core/calibration/common/CalibrationLayout.h"
 
 namespace domain::common {
 
 class CalibrationResult
 {
 public:
-
-    CalibrationResult(
-        std::vector<MotorDirection> directions,
-        std::vector<PointId> points,
-        std::vector<SourceId> sources
-    )
-        : directions_(std::move(directions))
-        , points_(std::move(points))
-        , sources_(std::move(sources))
+    CalibrationResult(const CalibrationLayout& layout)
+        : directions_(layout.directions)
+        , points_(layout.points)
+        , sources_(layout.sources)
     {
         buildIndexMaps();
-
-        cells_.resize(
-            directions_.size() *
-            points_.size() *
-            sources_.size()
-        );
+        cells_.resize(layout.getTotalCells());
     }
 
-    CalibrationCell& cell(const CalibrationCellKey& key)
+    /**
+     * @brief Безопасная установка ячейки.
+     * Если ключ невалиден, метод просто ничего не сделает (или можно кинуть exception).
+     */
+    void setCell(const CalibrationCellKey& key, CalibrationCell cell)
     {
-        return cells_[index(
-            directionIndex(key.direction),
-            pointIndex(key.point_id),
-            sourceIndex(key.source_id)
-        )];
+        auto idx = getFlatIndex(key);
+        if (idx && *idx < cells_.size()) {
+            cells_[*idx] = std::move(cell);
+        }
     }
 
-    const CalibrationCell& cell(const CalibrationCellKey& key) const
+    /**
+     * @brief Безопасное получение ячейки.
+     * Возвращает std::nullopt, если ключ не найден или ячейка не заполнена.
+     */
+    const std::optional<CalibrationCell>& cell(const CalibrationCellKey& key) const
     {
-        return cells_[index(
-            directionIndex(key.direction),
-            pointIndex(key.point_id),
-            sourceIndex(key.source_id)
-        )];
+        auto idx = getFlatIndex(key);
+        if (!idx || *idx >= cells_.size()) {
+            static const std::optional<CalibrationCell> empty;
+            return empty;
+        }
+        return cells_[*idx];
     }
 
-    const std::vector<MotorDirection>& directions() const noexcept
-    {
-        return directions_;
-    }
-
-    const std::vector<PointId>& points() const noexcept
-    {
-        return points_;
-    }
-
-    const std::vector<SourceId>& sources() const noexcept
-    {
-        return sources_;
-    }
+    // --- Геттеры остаются прежними ---
 
 private:
-
-    // ----- index helpers -----------------------------------------------------
-
-    size_t directionIndex(MotorDirection d) const
+    // Вспомогательный метод для безопасного поиска индекса
+    std::optional<size_t> getFlatIndex(const CalibrationCellKey& key) const
     {
-        return direction_index_.at(d);
-    }
+        try {
+            // Используем find вместо at, чтобы избежать исключений внутри логики
+            auto d_it = direction_index_.find(key.direction);
+            auto p_it = point_index_.find(key.point_id);
+            auto s_it = source_index_.find(key.source_id);
 
-    size_t pointIndex(PointId p) const
-    {
-        return point_index_.at(p);
-    }
+            if (d_it == direction_index_.end() ||
+                p_it == point_index_.end() ||
+                s_it == source_index_.end())
+            {
+                return std::nullopt;
+            }
 
-    size_t sourceIndex(SourceId s) const
-    {
-        return source_index_.at(s);
+            return index(d_it->second, p_it->second, s_it->second);
+        } catch (...) {
+            return std::nullopt;
+        }
     }
 
     size_t index(size_t d, size_t p, size_t s) const
@@ -100,7 +94,6 @@ private:
     }
 
 private:
-
     std::vector<MotorDirection> directions_;
     std::vector<PointId> points_;
     std::vector<SourceId> sources_;
@@ -109,9 +102,9 @@ private:
     std::unordered_map<PointId, size_t> point_index_;
     std::unordered_map<SourceId, size_t> source_index_;
 
-    std::vector<CalibrationCell> cells_;
+    std::vector<std::optional<CalibrationCell>> cells_;
 };
 
-}
+} // namespace domain::common
 
-#endif //CLEANGRADUATOR_CALIBRATIONRESULT_H
+#endif

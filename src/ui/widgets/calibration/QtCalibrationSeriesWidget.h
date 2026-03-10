@@ -5,7 +5,7 @@
 
 #include <optional>
 
-#include "viewmodels/calibration/CalibrationSeriesViewModel.h"
+#include "../../../viewmodels/calibration/recording/CalibrationSeriesViewModel.h"
 
 QT_BEGIN_NAMESPACE
 class QComboBox;

@@ -106,7 +106,20 @@ bool CalibrationOrchestrator::start(CalibrationOrchestratorInput input)
                 "Calibration strategy protocol error: begin() returned Complete");
 
         // НАЧАТЬ ЗАПИСЬ
-        ports_.recorder.startRecording();
+        {
+            CalibrationLayout calibration_layout;
+            calibration_layout.sources = std::vector(opened_angle_sources_.begin(), opened_angle_sources_.end());
+            calibration_layout.directions.push_back(MotorDirection::Forward);
+            if (input.calibration_mode == CalibrationMode::Full) {
+                calibration_layout.directions.push_back(MotorDirection::Backward);
+            }
+            int i = 0;
+            for (const auto& pp : input.pressure_points.value) {
+                calibration_layout.points.push_back(PointId(i, pp.to(input.pressure_unit)));
+                i++;
+            }
+            ports_.recorder.startRecording(calibration_layout);
+        }
 
         state_.store(
             CalibrationOrchestratorState::Started,

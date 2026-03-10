@@ -7,6 +7,7 @@
 
 #include "InMemoryCalibrationRecorderConfig.h"
 #include "../CalibrationRecorderPorts.h"
+#include "domain/core/calibration/common/CalibrationLayout.h"
 #include "domain/fmt/Logger.h"
 #include "domain/ports/calibration/recording/ICalibrationRecorder.h"
 #include "domain/core/calibration/recording/CalibrationRecorderEvent.h"
@@ -21,7 +22,7 @@ namespace infra::calib {
             InMemoryCalibrationRecorderConfig config
         );
 
-        void startRecording() override;
+        void startRecording(domain::common::CalibrationLayout layout) override;
         void stopRecording() override;
 
         void beginSession(domain::common::CalibrationSessionId id) override;

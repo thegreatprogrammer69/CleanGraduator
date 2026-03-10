@@ -1,6 +1,7 @@
 #ifndef CLEANGRADUATOR_CALIBRATIONRESULTBUILDER_H
 #define CLEANGRADUATOR_CALIBRATIONRESULTBUILDER_H
 #include "CalibrationResultBuilderPorts.h"
+#include "domain/fmt/Logger.h"
 #include "domain/ports/calibration/recording/ICalibrationRecorderObserver.h"
 #include "domain/ports/calibration/result/ICalibrationResultSource.h"
 #include "shared/ThreadSafeObserverList.h"
@@ -11,19 +12,26 @@ namespace application::orchestrators {
         public domain::ports::ICalibrationResultSource
     {
     public:
-        // TODO Я сегодня остановился здесь
         explicit CalibrationResultBuilder(CalibrationResultBuilderPorts ports);
+        ~CalibrationResultBuilder();
 
         // ICalibrationRecorderObserver
         void onCalibrationRecorderEvent(const domain::common::CalibrationRecorderEvent &ev) override;
 
         // ICalibrationResultSource
-        const domain::common::CalibrationResult & currentResult() const override;
+        const std::optional<domain::common::CalibrationResult>& currentResult() const override;
         void addObserver(domain::ports::ICalibrationResultObserver &) override;
         void removeObserver(domain::ports::ICalibrationResultObserver &) override;
 
     private:
-        domain::common::CalibrationResult calibration_result_;
+        void handleEvent(const domain::common::CalibrationRecorderEvent::RecordingStarted& e);
+        void handleEvent(const domain::common::CalibrationRecorderEvent::SessionEnded& e);
+
+    private:
+        fmt::Logger logger_;
+        CalibrationResultBuilderPorts ports_;
+        std::optional<domain::common::CalibrationResult> active_result_;
+        std::optional<domain::common::CalibrationLayout> active_layout_;
         ThreadSafeObserverList<domain::ports::ICalibrationResultObserver> observers_;
     };
 }
