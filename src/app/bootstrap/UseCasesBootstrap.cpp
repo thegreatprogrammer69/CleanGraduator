@@ -30,8 +30,6 @@ void UseCasesBootstrap::initialize() {
 
     createMotorControlInteractor();
     createCalibrationSettingsQuery();
-    createCalibrationStrategy();
-    createCalibrationRecorder();
     createCalibrationProcessOrchestrator();
 }
 
@@ -64,21 +62,6 @@ void UseCasesBootstrap::createCalibrationSettingsQuery() {
     calibration_settings_query = std::make_unique<CalibrationSettingsQuery>(ports);
 }
 
-void UseCasesBootstrap::createCalibrationStrategy() {
-    CalibrationStrategyPorts ports {
-        app_.createLogger("Stand4CalibrationStrategy")
-    };
-    stand4::Stand4CalibrationStrategyConfig config {};
-    calibration_strategy = std::make_unique<stand4::Stand4CalibrationStrategy>(ports, config);
-}
-
-void UseCasesBootstrap::createCalibrationRecorder() {
-    CalibrationRecorderPorts ports {
-        app_.createLogger("InMemoryCalibrationRecorder")
-    };
-    InMemoryCalibrationRecorderConfig config {};
-    calibration_recorder = std::make_unique<InMemoryCalibrationRecorder>(ports, config);
-}
 
 void UseCasesBootstrap::createCalibrationProcessOrchestrator() {
     CalibrationOrchestratorPorts ports{
@@ -88,8 +71,8 @@ void UseCasesBootstrap::createCalibrationProcessOrchestrator() {
         *app_.videoangle_sources_storage,
         *app_.motor_driver,
         *app_.session_clock,
-        *calibration_strategy,
-        *calibration_recorder
+        *app_.calibration_strategy,
+        *app_.calibration_recorder
     };
 
     calibration_process_orchestrator = std::make_unique<CalibrationOrchestrator>(ports);

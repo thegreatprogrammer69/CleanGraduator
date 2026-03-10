@@ -10,7 +10,13 @@ add_library(ui STATIC
         widgets/control/QtControlWidget.cpp
         widgets/control/QtControlWidget.h
 
-        widgets/calibration/QtCalibrationSeriesWidget.cpp
+        widgets/calibration/recording/QtCalibrationSeriesWidget.cpp
+        widgets/calibration/recording/QtCalibrationSeriesWidget.h
+        widgets/calibration/result/QtCalibrationResultTableModel.cpp
+        widgets/calibration/result/QtCalibrationResultTableModel.h
+        widgets/calibration/result/QtCalibrationResultTableWidget.cpp
+        widgets/calibration/result/QtCalibrationResultTableWidget.h
+
 
         widgets/video/QtVideoSourceGridWidget.cpp
         widgets/video/QtVideoSourceGridWidget.h

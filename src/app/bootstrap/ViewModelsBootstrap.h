@@ -4,6 +4,7 @@
 #include <vector>
 
 namespace mvvm {
+    class CalibrationResultTableViewModel;
     class CalibrationSeriesViewModel;
     class ControlViewModel;
     class MotorControlViewModel;
@@ -42,11 +43,12 @@ public:
     std::unique_ptr<mvvm::MotorDriverStatusViewModel> motor_driver_status;
     std::unique_ptr<mvvm::PressureSensorStatusBarViewModel> pressure_sensor_status;
 
-
     std::unique_ptr<mvvm::DualValveControlViewModel> dual_valve_control;
     std::unique_ptr<mvvm::MotorControlViewModel> motor_control;
     std::unique_ptr<mvvm::CalibrationSessionControlViewModel> calibration_session_control;
     std::unique_ptr<mvvm::ControlViewModel> control;
+
+    std::unique_ptr<mvvm::CalibrationResultTableViewModel> calibration_result_table;
 
     std::unique_ptr<mvvm::LogViewerViewModel> log_viewer;
     std::unique_ptr<mvvm::CalibrationSeriesViewModel> calibration_series;
@@ -72,6 +74,8 @@ private:
     void createMotorControl();
     void createCalibrationSessionControl();
     void createControl();
+
+    void createCalibrationResultTable();
 
     void createCalibrationSeriesViewer();
     void createLogViewer();

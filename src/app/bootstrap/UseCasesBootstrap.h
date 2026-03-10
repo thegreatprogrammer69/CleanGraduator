@@ -1,6 +1,7 @@
 #ifndef CLEANGRADUATOR_USECASESBOOTSTRAP_H
 #define CLEANGRADUATOR_USECASESBOOTSTRAP_H
 #include <memory>
+#include "domain/ports/calibration/result/ICalibrationResultSource.h"
 
 
 namespace application::orchestrators {
@@ -36,10 +37,7 @@ public:
 
     std::unique_ptr<application::orchestrators::MotorControlInteractor> motor_control_interactor;
     std::unique_ptr<application::orchestrators::CalibrationSettingsQuery> calibration_settings_query;
-    std::unique_ptr<domain::ports::ICalibrationStrategy> calibration_strategy;
-    std::unique_ptr<domain::ports::ICalibrationRecorder> calibration_recorder;
     std::unique_ptr<application::orchestrators::CalibrationOrchestrator> calibration_process_orchestrator;
-
 
     // Конфигурируемы объект
     // std::unique_ptr<application::usecase::ConfigureComponent> configure_component;
@@ -53,8 +51,6 @@ private:
 
     void createMotorControlInteractor();
     void createCalibrationSettingsQuery();
-    void createCalibrationStrategy();
-    void createCalibrationRecorder();
     void createCalibrationProcessOrchestrator();
 
 };

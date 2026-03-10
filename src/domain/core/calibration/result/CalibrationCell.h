@@ -10,15 +10,19 @@ namespace domain::common {
     class CalibrationCell {
     public:
         CalibrationCell() = default;
-        CalibrationCell(const float angle, std::vector<CalibrationCellIssue> issues)
-            : angle_(angle), issues_(std::move(issues))
+        CalibrationCell(std::optional<float> angle, std::vector<CalibrationCellIssue> issues)
+            : angle_(std::move(angle)), issues_(std::move(issues))
         {}
 
-        float angle() const { return angle_; }
-        const std::vector<CalibrationCellIssue>& issues() { return issues_; }
+        std::optional<float> angle() const { return angle_; }
+        const std::vector<CalibrationCellIssue>& issues() const { return issues_; }
+
+        bool operator==(const CalibrationCell& other) const {
+            return angle_ == other.angle_;
+        }
 
     private:
-        float angle_{};
+        std::optional<float> angle_{};
         std::vector<CalibrationCellIssue> issues_{};
     };
 

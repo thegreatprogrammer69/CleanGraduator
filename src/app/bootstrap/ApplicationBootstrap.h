@@ -6,6 +6,9 @@
 #include <vector>
 
 namespace domain::ports {
+    struct ICalibrationRecorder;
+    class ICalibrationStrategy;
+    class ICalibrationResultSource;
     struct IValveDriver;
     struct IResultStore;
     struct IPressureSource;
@@ -63,7 +66,7 @@ public:
     ////////////////////////////////////////////////////////////////////////////////////////
     // Угломер и калибратор
     std::unique_ptr<domain::ports::IAngleCalculator> anglemeter;
-    std::unique_ptr<domain::ports::ICalibrationCalculator> calibrator;
+
 
     ////////////////////////////////////////////////////////////////////////////////////////
     // Видеокамеры
@@ -86,8 +89,11 @@ public:
     // std::unique_ptr<domain::ports::IPressureActuator> pressure_actuator;
 
     ////////////////////////////////////////////////////////////////////////////////////////
-    // Хранение результата
-
+    // Калибровка
+    std::unique_ptr<domain::ports::ICalibrationCalculator> calibration_calculator;
+    std::unique_ptr<domain::ports::ICalibrationStrategy> calibration_strategy;
+    std::unique_ptr<domain::ports::ICalibrationRecorder> calibration_recorder;
+    std::unique_ptr<domain::ports::ICalibrationResultSource> calibration_result_source;
 
     ////////////////////////////////////////////////////////////////////////////////////////
     // Каталоги
@@ -120,7 +126,6 @@ private:
 
     ////////////////////////////////////////////////////////////////////////////////////////
     void createAnglemeter();
-    void createCalibrator();
 
     ////////////////////////////////////////////////////////////////////////////////////////
     void createVideoSources();
@@ -131,6 +136,12 @@ private:
     ////////////////////////////////////////////////////////////////////////////////////////
     void createPressureSource();
     void createMotorDriver();
+
+    ////////////////////////////////////////////////////////////////////////////////////////
+    void createCalibrationStrategy();
+    void createCalibrationRecorder();
+    void createCalibrationCalculator();
+    void createCalibrationResultSource();
 
     ////////////////////////////////////////////////////////////////////////////////////////
     void createDisplacementCatalog();

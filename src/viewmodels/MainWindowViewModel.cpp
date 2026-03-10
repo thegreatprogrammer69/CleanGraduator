@@ -29,6 +29,10 @@ mvvm::ControlViewModel & mvvm::MainWindowViewModel::controlViewModel() {
     return deps_.control;
 }
 
+mvvm::CalibrationResultTableViewModel & mvvm::MainWindowViewModel::calibrationResultTableViewModel() {
+    return deps_.calibration_result_table;
+}
+
 mvvm::StatusBarViewModels mvvm::MainWindowViewModel::statusBarViewModels() {
     return deps_.status_bar;
 }

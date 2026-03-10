@@ -1,5 +1,6 @@
 add_library(viewmodels STATIC
         calibration/recording/CalibrationSeriesViewModel.cpp
+        calibration/result/CalibrationResultTableViewModel.cpp
 
         control/DualValveControlViewModel.cpp
         control/MotorControlViewModel.cpp
@@ -20,8 +21,7 @@ add_library(viewmodels STATIC
         logging/LogViewerViewModel.cpp
 
         MainWindowViewModel.cpp
-        calibration/result/CalibrationResultTableViewModel.cpp
-        calibration/result/CalibrationResultTableViewModel.h
+
 )
 
 target_include_directories(viewmodels

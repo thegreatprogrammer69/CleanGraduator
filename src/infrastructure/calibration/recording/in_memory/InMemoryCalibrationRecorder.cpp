@@ -127,6 +127,7 @@ void InMemoryCalibrationRecorder::endSession()
 
     CalibrationRecorderEvent::SessionEnded ev;
     ev.id = session.id;
+    ev.result = session;
 
     notify(CalibrationRecorderEvent(ev));
 

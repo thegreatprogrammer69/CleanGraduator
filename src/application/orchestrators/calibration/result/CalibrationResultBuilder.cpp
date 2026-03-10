@@ -2,20 +2,20 @@
 
 #include "domain/ports/calibration/calculation/ICalibrationCalculator.h"
 
-
-
 using namespace application::orchestrators;
 using namespace domain::common;
 
-// TODO ёпта, надо улучшить логирование
 
-CalibrationResultBuilder::Cali brationResultBuilder(CalibrationResultBuilderPorts ports)
+
+CalibrationResultBuilder::CalibrationResultBuilder(CalibrationResultBuilderPorts ports)
     : logger_(ports.logger), ports_(ports)
 {
+    ports_.calibration_recorder.addObserver(*this);
     logger_.info("CalibrationResultBuilder constructor called");
 }
 
 CalibrationResultBuilder::~CalibrationResultBuilder() {
+    ports_.calibration_recorder.removeObserver(*this);
     logger_.info("CalibrationResultBuilder destructor called");
 }
 
@@ -37,13 +37,29 @@ void CalibrationResultBuilder::onCalibrationRecorderEvent(const CalibrationRecor
 }
 
 void CalibrationResultBuilder::handleEvent(const CalibrationRecorderEvent::RecordingStarted &e) {
-    logger_.info("Handling RecordingStarted event");
+    logger_.info("RecordingStarted: points_count={} sources_count={} directions_count={}",
+        e.layout.points.size(), e.layout.sources.size(), e.layout.directions.size());
+
     active_layout_ = e.layout;
     active_result_ = CalibrationResult(e.layout);
+
+    observers_.notify([this] (domain::ports::ICalibrationResultObserver &o) {
+        o.onCalibrationResultUpdated(*active_result_);
+    });
 }
 
 void CalibrationResultBuilder::handleEvent(const CalibrationRecorderEvent::SessionEnded &e) {
-    if (!active_result_ || !active_layout_) return;
+    if (!active_result_ || !active_layout_) {
+        logger_.warn("SessionEnded received but no active calibration session");
+        return;
+    }
+
+    logger_.info(
+        "SessionEnded: direction={}, pressure={}",
+        e.id.direction,
+        e.result.id.point.pressure
+    );
+
 
     CalibrationCellKey key;
     key.direction = e.id.direction;
@@ -56,6 +72,11 @@ void CalibrationResultBuilder::handleEvent(const CalibrationRecorderEvent::Sessi
 
         key.source_id = source_id;
 
+        logger_.info(
+            "Processing camera {}: angle_samples={}, pressure_samples={}",
+            source_id.value, it->second.size(), e.result.pressure_series.size());
+
+
         CalibrationCalculatorInput calculator_input {
             e.result.id.point.pressure,
             it->second, // Используем найденное значение
@@ -64,6 +85,15 @@ void CalibrationResultBuilder::handleEvent(const CalibrationRecorderEvent::Sessi
 
         const auto result = ports_.calibration_calculator.compute(calculator_input);
         active_result_->setCell(key, result.cell);
+
+        logger_.info(
+            "Calibration cell updated: source={}, direction={}, pressure={}, angle={}, issues_count={}",
+            key.source_id.value,
+            key.direction,
+            key.point_id.pressure,
+            result.cell.angle(),
+            result.cell.issues().size()
+        );
 
         observers_.notify([this] (domain::ports::ICalibrationResultObserver &o) {
             o.onCalibrationResultUpdated(*active_result_);

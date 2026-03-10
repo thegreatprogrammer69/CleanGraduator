@@ -3,6 +3,7 @@
 #include <stdexcept>
 #include <vector>
 
+#include "application/orchestrators/calibration/result/CalibrationResultBuilder.h"
 #include "application/orchestrators/video/VideoSourceManager.h"
 #include "application/ports/logging/ILoggerFactory.h"
 #include "infrastructure/calculation/angle/CastAnglemeter.h"
@@ -32,6 +33,10 @@
 #include "domain/ports/video/IVideoSource.h"
 
 #include "infrastructure/angle/from_video/AngleSourceFromVideo.h"
+#include "infrastructure/calibration/recording/in_memory/InMemoryCalibrationRecorder.h"
+#include "infrastructure/calibration/strats/CalibrationStrategyPorts.h"
+#include "infrastructure/calibration/strats/stand4/Stand4CalibrationStrategy.h"
+#include "infrastructure/calibration/strats/stand4/Stand4CalibrationStrategyConfig.h"
 #include "infrastructure/factory/AngleSourceFactory.h"
 #include "infrastructure/factory/MotorDriverFactory.h"
 
@@ -86,7 +91,6 @@ void ApplicationBootstrap::initialize() {
     createPressureUnitCatalog();
 
     createAnglemeter();
-    createCalibrator();
 
     createVideoSources();
     createAngleSources();
@@ -95,6 +99,12 @@ void ApplicationBootstrap::initialize() {
 
     createPressureSource();
     createMotorDriver();
+
+    createCalibrationStrategy();
+    createCalibrationRecorder();
+    createCalibrationCalculator();
+    createCalibrationResultSource();
+
 
     createInfoSettingsStorage();
 }
@@ -197,18 +207,6 @@ void ApplicationBootstrap::createAnglemeter() {
     anglemeter = factory.load();
 }
 
-void ApplicationBootstrap::createCalibrator() {
-    CalibrationCalculatorPorts ports{
-        createLogger("ICalibrationCalculator")
-    };
-
-    CalibrationCalculatorFactory factory(
-        setup_dir_ + "/calibrator.ini",
-        ports
-    );
-
-    // calibrator = factory.load();
-}
 
 void ApplicationBootstrap::createPressureSource() {
     PressureSourcePorts ports{
@@ -232,6 +230,44 @@ void ApplicationBootstrap::createMotorDriver() {
     MotorDriverFactory factory(setup_dir_ + "/motor.ini", ports);
     motor_driver = factory.load();
 
+}
+
+void ApplicationBootstrap::createCalibrationStrategy() {
+    infra::calib::CalibrationStrategyPorts ports {
+        createLogger("Stand4CalibrationStrategy")
+    };
+    infra::calib::stand4::Stand4CalibrationStrategyConfig config {};
+    calibration_strategy = std::make_unique<infra::calib::stand4::Stand4CalibrationStrategy>(ports, config);
+}
+
+void ApplicationBootstrap::createCalibrationRecorder() {
+    infra::calib::CalibrationRecorderPorts ports {
+        createLogger("InMemoryCalibrationRecorder")
+    };
+    infra::calib::InMemoryCalibrationRecorderConfig config {};
+    calibration_recorder = std::make_unique<infra::calib::InMemoryCalibrationRecorder>(ports, config);
+}
+
+void ApplicationBootstrap::createCalibrationCalculator() {
+    CalibrationCalculatorPorts ports{
+        createLogger("CalibrationCalculator")
+    };
+
+    CalibrationCalculatorFactory factory(
+        setup_dir_ + "/calibrator.ini",
+        ports
+    );
+
+    calibration_calculator = factory.load();
+}
+
+void ApplicationBootstrap::createCalibrationResultSource() {
+    CalibrationResultBuilderPorts ports {
+        createLogger("CalibrationResultBuilder"),
+        *calibration_calculator,
+        *calibration_recorder
+    };
+    calibration_result_source = std::make_unique<CalibrationResultBuilder>(ports);
 }
 
 void ApplicationBootstrap::createDisplacementCatalog() {

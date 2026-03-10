@@ -110,12 +110,12 @@ bool CalibrationOrchestrator::start(CalibrationOrchestratorInput input)
             CalibrationLayout calibration_layout;
             calibration_layout.sources = std::vector(opened_angle_sources_.begin(), opened_angle_sources_.end());
             calibration_layout.directions.push_back(MotorDirection::Forward);
-            if (input.calibration_mode == CalibrationMode::Full) {
+            if (inp_.calibration_mode == CalibrationMode::Full) {
                 calibration_layout.directions.push_back(MotorDirection::Backward);
             }
             int i = 0;
-            for (const auto& pp : input.pressure_points.value) {
-                calibration_layout.points.push_back(PointId(i, pp.to(input.pressure_unit)));
+            for (const auto& pp : inp_.pressure_points.value) {
+                calibration_layout.points.push_back(PointId(i, pp.to(inp_.pressure_unit)));
                 i++;
             }
             ports_.recorder.startRecording(calibration_layout);

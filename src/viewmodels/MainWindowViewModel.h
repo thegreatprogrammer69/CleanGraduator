@@ -4,6 +4,7 @@
 
 
 namespace mvvm {
+    class CalibrationResultTableViewModel;
     class ControlViewModel;
     class LogViewerViewModel;
     class SettingsViewModel;
@@ -16,6 +17,7 @@ namespace mvvm {
         VideoSourceGridViewModel &grid;
         SettingsViewModel &settings;
         ControlViewModel &control;
+        CalibrationResultTableViewModel& calibration_result_table;
         StatusBarViewModels status_bar;
     };
 
@@ -28,6 +30,7 @@ namespace mvvm {
         VideoSourceGridViewModel& videoSourceGridViewModel();
         SettingsViewModel& settingsViewModel();
         ControlViewModel& controlViewModel();
+        CalibrationResultTableViewModel& calibrationResultTableViewModel();
         StatusBarViewModels statusBarViewModels();
 
     private:

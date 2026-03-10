@@ -26,7 +26,8 @@
 #include "ui/widgets/status_bar/QtMotorDriverStatusBarWidget.h"
 #include "ui/widgets/status_bar/QtPressureSensorStatusBarWidget.h"
 
-#include "calibration/QtCalibrationSeriesWidget.h"
+#include "calibration/result/QtCalibrationResultTableWidget.h"
+#include "calibration/recording/QtCalibrationSeriesWidget.h"
 #include "logging/QtLogViewerWidget.h"
 #include "video/QtVideoSourceGridWidget.h"
 #include "viewmodels/MainWindowViewModel.h"
@@ -93,21 +94,23 @@ ui::QtMainWindow::QtMainWindow(
 
     /* ----- Карточка: таблица ----- */
 
-    auto* tableCard = new QFrame(processPage);
-    tableCard->setObjectName("contentCard");
-    tableCard->setAttribute(Qt::WA_StyledBackground, true);
-    tableCard->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    // auto* tableCard = new QFrame(processPage);
+    // tableCard->setObjectName("contentCard");
+    // tableCard->setAttribute(Qt::WA_StyledBackground, true);
+    // tableCard->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    //
+    // auto* tableLayout = new QVBoxLayout(tableCard);
+    // tableLayout->setContentsMargins(12, 12, 12, 12);
+    //
+    // auto* table = new QTableWidget(8, 16, tableCard);
+    // table->horizontalHeader()->setStretchLastSection(true);
+    // table->verticalHeader()->setVisible(false);
+    // table->setSelectionMode(QAbstractItemView::NoSelection);
+    // table->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    //
+    // tableLayout->addWidget(table);
 
-    auto* tableLayout = new QVBoxLayout(tableCard);
-    tableLayout->setContentsMargins(12, 12, 12, 12);
-
-    auto* table = new QTableWidget(8, 16, tableCard);
-    table->horizontalHeader()->setStretchLastSection(true);
-    table->verticalHeader()->setVisible(false);
-    table->setSelectionMode(QAbstractItemView::NoSelection);
-    table->setEditTriggers(QAbstractItemView::NoEditTriggers);
-
-    tableLayout->addWidget(table);
+    auto* calibrationResultTable = new QtCalibrationResultTableWidget(model_.calibrationResultTableViewModel());
 
 
     /* ----- Карточка: управление ----- */
@@ -126,7 +129,7 @@ ui::QtMainWindow::QtMainWindow(
 
     controlLayout->addWidget(controlWidget, 0, Qt::AlignRight);
 
-    processLayout->addWidget(tableCard, 1);
+    processLayout->addWidget(calibrationResultTable, 1);
     processLayout->addWidget(controlCard, 0);
 
 

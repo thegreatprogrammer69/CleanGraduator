@@ -5,6 +5,7 @@
 #include "viewmodels/logging/LogViewerViewModel.h"
 #include "viewmodels/MainWindowViewModel.h"
 #include "../../viewmodels/calibration/recording/CalibrationSeriesViewModel.h"
+#include "viewmodels/calibration/result/CalibrationResultTableViewModel.h"
 #include "viewmodels/control/CalibrationSessionControlViewModel.h"
 #include "viewmodels/control/ControlViewModel.h"
 #include "viewmodels/control/DualValveControlViewModel.h"
@@ -44,6 +45,8 @@ void ViewModelsBootstrap::initialize() {
     createMotorControl();
     createCalibrationSessionControl();
     createControl();
+
+    createCalibrationResultTable();
 
     createCalibrationSeriesViewer();
     createLogViewer();
@@ -169,10 +172,17 @@ void ViewModelsBootstrap::createControl() {
     control = std::make_unique<ControlViewModel>(deps);
 }
 
+void ViewModelsBootstrap::createCalibrationResultTable() {
+    CalibrationResultTableViewModelDeps deps {
+        *app_.calibration_result_source
+    };
+    calibration_result_table = std::make_unique<CalibrationResultTableViewModel>(deps);
+}
+
 void ViewModelsBootstrap::createCalibrationSeriesViewer() {
     CalibrationSeriesViewModelDeps deps {
         *app_.video_source_manager,
-        *use_cases_.calibration_recorder
+        *app_.calibration_recorder
     };
     calibration_series = std::make_unique<CalibrationSeriesViewModel>(deps);
 }
@@ -188,12 +198,13 @@ void ViewModelsBootstrap::createMainWindow() {
         *pressure_sensor_status
     };
 
-    MainWindowViewModelDeps deps{
+    MainWindowViewModelDeps deps {
         *calibration_series,
         *log_viewer,
         *video_source_grid,
         *settings,
         *control,
+        *calibration_result_table,
         status_bar_view_models
     };
 

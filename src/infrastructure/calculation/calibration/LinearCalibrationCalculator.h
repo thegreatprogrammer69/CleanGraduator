@@ -8,12 +8,12 @@
 namespace infra::calc {
     class LinearCalibrationCalculator : public domain::ports::ICalibrationCalculator {
     public:
-        ~LinearCalibrationCalculator() override;
         LinearCalibrationCalculator(CalibrationCalculatorPorts, LinearCalibrationCalculatorConfig);
+        ~LinearCalibrationCalculator() override;
         domain::common::CalibrationCellComputation compute(const domain::common::CalibrationCalculatorInput&) const override;
     private:
-        LinearCalibrationCalculatorConfig config_;
         mutable fmt::Logger logger_;
+        LinearCalibrationCalculatorConfig config_;
     };
 }
 

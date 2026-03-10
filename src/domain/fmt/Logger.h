@@ -14,17 +14,17 @@ namespace fmt {
             : logger_(logger) {}
 
         template <typename... Args>
-        void info(const std::string& format, const Args&... args) {
+        void info(const std::string& format, const Args&... args) const {
             logger_.info(fmt::format(format, args...));
         }
 
         template <typename... Args>
-        void warn(const std::string& format, const Args&... args) {
+        void warn(const std::string& format, const Args&... args) const {
             logger_.warn(fmt::format(format, args...));
         }
 
         template <typename... Args>
-        void error(const std::string& format, const Args&... args) {
+        void error(const std::string& format, const Args&... args) const {
             last_error_ = fmt::format(format, args...);
             logger_.error(last_error_);
         }
@@ -37,7 +37,7 @@ namespace fmt {
 
     private:
         domain::ports::ILogger& logger_;
-        std::string last_error_;
+        mutable std::string last_error_;
     };
 
 }

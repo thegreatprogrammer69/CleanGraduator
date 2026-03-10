@@ -58,7 +58,7 @@ QtVideoSourceGridWidget::QtVideoSourceGridWidget(std::string renderer, mvvm::Vid
     m_grid->setSpacing(0);
 
     // По вертикали хотим тянуться, по горизонтали — фиксироваться вычисленной шириной
-    setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding);
+    setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Preferred);
 
     rebuildFromModel();
     recalcSizes();
@@ -162,8 +162,12 @@ void QtVideoSourceGridWidget::recalcSizes()
 
     // Применяем размеры всем созданным плиткам
     for (auto* tile : m_tiles) {
-        if (tile)
-            tile->setFixedSize(tileW, tileH);
+        if (!tile)
+            continue;
+
+        tile->setMinimumSize(0, 0);
+        tile->setMaximumSize(QWIDGETSIZE_MAX, QWIDGETSIZE_MAX);
+        tile->resize(tileW, tileH);
     }
 
     // Фиксируем ширину всего виджета сетки (m_cols колонок + spacing)

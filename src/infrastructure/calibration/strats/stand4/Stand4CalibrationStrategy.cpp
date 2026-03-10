@@ -270,7 +270,7 @@ void Stand4CalibrationStrategy::updateBackward(const CalibrationStrategyFeedCont
 
     const int f_max = 2000; // можно брать из config
 
-    logger_.info("Возврат двигателя домой частота {}", f_max);
+   logger_.info("Возврат двигателя домой частота {}", f_max);
 
     v.commands.push_back(
         Verdict::MotorSetFrequency{f_max});

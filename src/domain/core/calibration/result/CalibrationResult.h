@@ -50,6 +50,29 @@ public:
     }
 
     // --- Геттеры остаются прежними ---
+    const std::vector<MotorDirection>& directions() const noexcept
+    {
+        return directions_;
+    }
+
+    const std::vector<PointId>& points() const noexcept
+    {
+        return points_;
+    }
+
+    const std::vector<SourceId>& sources() const noexcept
+    {
+        return sources_;
+    }
+
+    size_t totalCells() const noexcept
+    {
+        return cells_.size();
+    }
+
+    bool operator==(const CalibrationResult& other) const {
+        return cells_ == other.cells_;
+    }
 
 private:
     // Вспомогательный метод для безопасного поиска индекса
