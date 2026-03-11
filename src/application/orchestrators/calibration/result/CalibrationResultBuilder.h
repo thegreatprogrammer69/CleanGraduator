@@ -26,6 +26,7 @@ namespace application::orchestrators {
     private:
         void handleEvent(const domain::common::CalibrationRecorderEvent::RecordingStarted& e);
         void handleEvent(const domain::common::CalibrationRecorderEvent::SessionEnded& e);
+        void handleEvent(const domain::common::CalibrationRecorderEvent::RecordingStopped& e);
 
     private:
         fmt::Logger logger_;

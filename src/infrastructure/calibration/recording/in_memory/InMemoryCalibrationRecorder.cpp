@@ -45,6 +45,7 @@ void InMemoryCalibrationRecorder::stopRecording()
         CalibrationRecorderEvent::RecordingStopped{}));
 }
 
+
 void InMemoryCalibrationRecorder::beginSession(CalibrationSessionId id)
 {
     if (active_session_)

@@ -30,9 +30,14 @@ namespace ui {
         Qt::ItemFlags flags(const QModelIndex& index) const override;
 
     private:
+        struct Cell final {
+            QVariant display{};
+            QString tooltip{};
+            std::optional<domain::common::CalibrationIssueSeverity> max_severity{};
+        };
         struct Row final {
             QVariant label{};
-            QVector<QVariant> values{};
+            QVector<Cell> cells{};
         };
 
         void applyResult(std::optional<domain::common::CalibrationResult> result);

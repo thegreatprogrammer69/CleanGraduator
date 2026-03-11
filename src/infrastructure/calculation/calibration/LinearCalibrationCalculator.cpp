@@ -90,65 +90,109 @@ namespace {
         validate_angle_series_count(inp, config, issues);
     }
 
-    float interpolate_time(
-        const std::vector<float>& time,
-        const std::vector<float>& values,
-        float value)
-    {
-        if (time.size() != values.size() || time.size() < 2)
-            throw std::invalid_argument("Invalid pressure series");
-
-        for (size_t i = 0; i + 1 < values.size(); ++i)
-        {
-            const float v0 = values[i];
-            const float v1 = values[i + 1];
-
-            const float t0 = time[i];
-            const float t1 = time[i + 1];
-
-            // пропускаем вырожденные сегменты
-            if (v0 == v1 || t0 == t1)
-                continue;
-
-            if ((value >= v0 && value <= v1) || (value >= v1 && value <= v0))
-            {
-                const float k = (value - v0) / (v1 - v0);
-                return t0 + k * (t1 - t0);
-            }
-        }
-
-        throw std::out_of_range("Pressure point outside series range");
+float interpolate_time(
+    const std::vector<float>& time,
+    const std::vector<float>& values,
+    float value)
+{
+    if (time.size() != values.size() || time.size() < 2) {
+        throw std::invalid_argument("Invalid pressure series");
     }
 
-    float interpolate_value(
-        const std::vector<float>& time,
-        const std::vector<float>& values,
-        float t)
-    {
-        if (time.size() != values.size() || time.size() < 2)
-            throw std::invalid_argument("Invalid angle series");
+    auto eval = [](float x0, float y0, float x1, float y1, float x) -> float {
+        const float k = (x - x0) / (x1 - x0);
+        return y0 + k * (y1 - y0);
+    };
 
-        for (size_t i = 0; i + 1 < time.size(); ++i)
-        {
-            const float t0 = time[i];
-            const float t1 = time[i + 1];
+    bool has_segment = false;
+    float best_result = 0.0f;
+    float best_distance = 0.0f;
 
-            const float v0 = values[i];
-            const float v1 = values[i + 1];
+    for (size_t i = 0; i + 1 < values.size(); ++i) {
+        const float v0 = values[i];
+        const float v1 = values[i + 1];
 
-            // пропускаем вырожденные сегменты
-            if (t0 == t1 || v0 == v1)
-                continue;
+        const float t0 = time[i];
+        const float t1 = time[i + 1];
 
-            if ((t >= t0 && t <= t1) || (t >= t1 && t <= t0))
-            {
-                const float k = (t - t0) / (t1 - t0);
-                return v0 + k * (v1 - v0);
-            }
+        // Пропускаем вырожденные сегменты
+        if (v0 == v1 || t0 == t1) {
+            continue;
         }
 
-        throw std::out_of_range("Time outside series range");
+        // Обычная интерполяция: точка попала внутрь сегмента
+        if ((value >= v0 && value <= v1) || (value >= v1 && value <= v0)) {
+            return eval(v0, t0, v1, t1, value);
+        }
+
+        // Кандидат для экстраполяции: выбираем сегмент, ближайший к value
+        const float dist = std::min(std::fabs(value - v0), std::fabs(value - v1));
+
+        if (!has_segment || dist < best_distance) {
+            has_segment = true;
+            best_distance = dist;
+            best_result = eval(v0, t0, v1, t1, value);
+        }
     }
+
+    if (!has_segment) {
+        throw std::invalid_argument("No valid pressure segments for interpolation");
+    }
+
+    return best_result;
+}
+
+float interpolate_value(
+    const std::vector<float>& time,
+    const std::vector<float>& values,
+    float t)
+{
+    if (time.size() != values.size() || time.size() < 2) {
+        throw std::invalid_argument("Invalid angle series");
+    }
+
+    auto eval = [](float x0, float y0, float x1, float y1, float x) -> float {
+        const float k = (x - x0) / (x1 - x0);
+        return y0 + k * (y1 - y0);
+    };
+
+    bool has_segment = false;
+    float best_result = 0.0f;
+    float best_distance = 0.0f;
+
+    for (size_t i = 0; i + 1 < time.size(); ++i) {
+        const float t0 = time[i];
+        const float t1 = time[i + 1];
+
+        const float v0 = values[i];
+        const float v1 = values[i + 1];
+
+        // Пропускаем вырожденные сегменты
+        if (t0 == t1 || v0 == v1) {
+            continue;
+        }
+
+        // Обычная интерполяция
+        if ((t >= t0 && t <= t1) || (t >= t1 && t <= t0)) {
+            return eval(t0, v0, t1, v1, t);
+        }
+
+        // Кандидат для экстраполяции
+        const float dist = std::min(std::fabs(t - t0), std::fabs(t - t1));
+
+        if (!has_segment || dist < best_distance) {
+            has_segment = true;
+            best_distance = dist;
+            best_result = eval(t0, v0, t1, v1, t);
+        }
+    }
+
+    if (!has_segment) {
+        throw std::invalid_argument("No valid angle segments for interpolation");
+    }
+
+    return best_result;
+}
 
 } // namespace
 

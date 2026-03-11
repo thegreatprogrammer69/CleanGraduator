@@ -17,6 +17,9 @@ add_library(domain STATIC
         core/calibration/analysis/CalibrationIssueSeverity.h
         core/calibration/calculation/CalibrationCellComputation.h
         core/calibration/common/CalibrationLayout.h
+        core/calibration/result/CalibrationResult.cpp
+        core/calibration/result/CalibrationResultIssue.h
+        core/calibration/result/CalibrationResultIssueType.h
 )
 
 

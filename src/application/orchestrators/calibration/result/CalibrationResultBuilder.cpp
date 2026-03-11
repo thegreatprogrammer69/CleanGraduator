@@ -101,6 +101,13 @@ void CalibrationResultBuilder::handleEvent(const CalibrationRecorderEvent::Sessi
     }
 }
 
+void CalibrationResultBuilder::handleEvent(const CalibrationRecorderEvent::RecordingStopped &e) {
+    if (!active_result_) return;
+    active_result_->markReady();
+    observers_.notify([this] (domain::ports::ICalibrationResultObserver &o) {
+        o.onCalibrationResultUpdated(*active_result_);
+    });
+}
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
 

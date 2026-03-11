@@ -14,109 +14,43 @@ namespace domain::common {
 class CalibrationResult
 {
 public:
-    CalibrationResult(const CalibrationLayout& layout)
-        : directions_(layout.directions)
-        , points_(layout.points)
-        , sources_(layout.sources)
-    {
-        buildIndexMaps();
-        cells_.resize(layout.getTotalCells());
-    }
+    explicit CalibrationResult(const CalibrationLayout& layout);
 
     /**
      * @brief Безопасная установка ячейки.
      * Если ключ невалиден, метод просто ничего не сделает (или можно кинуть exception).
      */
-    void setCell(const CalibrationCellKey& key, CalibrationCell cell)
-    {
-        auto idx = getFlatIndex(key);
-        if (idx && *idx < cells_.size()) {
-            cells_[*idx] = std::move(cell);
-        }
-    }
+    void setCell(const CalibrationCellKey& key, CalibrationCell cell);
 
     /**
      * @brief Безопасное получение ячейки.
      * Возвращает std::nullopt, если ключ не найден или ячейка не заполнена.
      */
-    const std::optional<CalibrationCell>& cell(const CalibrationCellKey& key) const
-    {
-        auto idx = getFlatIndex(key);
-        if (!idx || *idx >= cells_.size()) {
-            static const std::optional<CalibrationCell> empty;
-            return empty;
-        }
-        return cells_[*idx];
-    }
+    const std::optional<CalibrationCell>& cell(const CalibrationCellKey& key) const;
 
     // --- Геттеры остаются прежними ---
-    const std::vector<MotorDirection>& directions() const noexcept
-    {
-        return directions_;
-    }
+    const std::vector<MotorDirection>& directions() const noexcept;
+    const std::vector<PointId>& points() const noexcept;
+    const std::vector<SourceId>& sources() const noexcept;
+    size_t totalCells() const noexcept;
 
-    const std::vector<PointId>& points() const noexcept
-    {
-        return points_;
-    }
+    bool isReady() const noexcept;
+    void markReady() noexcept;
 
-    const std::vector<SourceId>& sources() const noexcept
-    {
-        return sources_;
-    }
-
-    size_t totalCells() const noexcept
-    {
-        return cells_.size();
-    }
-
-    bool operator==(const CalibrationResult& other) const {
-        return cells_ == other.cells_;
-    }
+    bool operator==(const CalibrationResult& other) const;
 
 private:
     // Вспомогательный метод для безопасного поиска индекса
-    std::optional<size_t> getFlatIndex(const CalibrationCellKey& key) const
-    {
-        try {
-            // Используем find вместо at, чтобы избежать исключений внутри логики
-            auto d_it = direction_index_.find(key.direction);
-            auto p_it = point_index_.find(key.point_id);
-            auto s_it = source_index_.find(key.source_id);
+    std::optional<size_t> getFlatIndex(const CalibrationCellKey& key) const;
 
-            if (d_it == direction_index_.end() ||
-                p_it == point_index_.end() ||
-                s_it == source_index_.end())
-            {
-                return std::nullopt;
-            }
+    size_t index(size_t d, size_t p, size_t s) const;
 
-            return index(d_it->second, p_it->second, s_it->second);
-        } catch (...) {
-            return std::nullopt;
-        }
-    }
-
-    size_t index(size_t d, size_t p, size_t s) const
-    {
-        return d * points_.size() * sources_.size()
-             + p * sources_.size()
-             + s;
-    }
-
-    void buildIndexMaps()
-    {
-        for (size_t i = 0; i < directions_.size(); ++i)
-            direction_index_[directions_[i]] = i;
-
-        for (size_t i = 0; i < points_.size(); ++i)
-            point_index_[points_[i]] = i;
-
-        for (size_t i = 0; i < sources_.size(); ++i)
-            source_index_[sources_[i]] = i;
-    }
+    void buildIndexMaps();
 
 private:
+    bool ready_ = false;
+    std::size_t filled_cells_;
+
     std::vector<MotorDirection> directions_;
     std::vector<PointId> points_;
     std::vector<SourceId> sources_;
