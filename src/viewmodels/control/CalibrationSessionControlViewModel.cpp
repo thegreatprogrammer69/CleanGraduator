@@ -28,6 +28,7 @@ void CalibrationSessionControlViewModel::setCalibrationMode(domain::common::Cali
 }
 
 void CalibrationSessionControlViewModel::startCalibration() {
+    settings_query_.load();
     const auto pressure_points = settings_query_.currentGaugePressurePoints();
     const auto pressure_unit = settings_query_.currentPressureUnit();
 

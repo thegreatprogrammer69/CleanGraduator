@@ -44,9 +44,10 @@ namespace application::orchestrators {
 
         std::optional<std::filesystem::path> currentSaveResultPath() const;
 
+        void load();
 
     private:
-        void load();
+
         void normalize();
 
     private:

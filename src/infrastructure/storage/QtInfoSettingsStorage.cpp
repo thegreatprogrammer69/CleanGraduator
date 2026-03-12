@@ -27,6 +27,7 @@ QtInfoSettingsStorage::QtInfoSettingsStorage(
 QtInfoSettingsStorage::~QtInfoSettingsStorage() = default;
 
 InfoSettingsData QtInfoSettingsStorage::loadInfoSettings() {
+    settings_.sync();
     settings_.beginGroup(GROUP);
 
     InfoSettingsData data;
