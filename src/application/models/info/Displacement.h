@@ -6,7 +6,7 @@
 namespace application::models {
     struct Displacement {
         int id;
-        std::wstring name;
+        std::string name;
     };
 }
 

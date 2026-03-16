@@ -43,7 +43,7 @@ set(SOURCES
         calibration/strats/stand4/Stand4FrequencyCalculator.cpp
         calibration/strats/stand4/Stand4CalibrationStrategy.cpp
         calibration/recording/in_memory/InMemoryCalibrationRecorder.cpp
-        calibration/result/FileCalibrationResultSaver.cpp
+        calibration/result/in_file/FileCalibrationResultSaver.cpp
 
         motor/g540/as_lpt/G540LptMotorDriver.cpp
         motor/notifier/MotorDriverNotifier.cpp
@@ -81,6 +81,9 @@ elseif(UNIX)
             platform/sleep/sleep_linux.cpp
             video/linux/v4l/V4LCamera.cpp
             video/linux/gstreamer/GStreamerCamera.cpp
+            calibration/batch/BatchContextProviderPorts.h
+            calibration/batch/BatchContextProvider.cpp
+            calibration/batch/BatchContextProvider.h
     )
 endif()
 

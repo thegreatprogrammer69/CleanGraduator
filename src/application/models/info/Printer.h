@@ -5,8 +5,8 @@
 
 namespace application::models {
     struct Printer {
-        std::wstring name;
-        std::wstring path;
+        std::string name;
+        std::string path;
     };
 }
 

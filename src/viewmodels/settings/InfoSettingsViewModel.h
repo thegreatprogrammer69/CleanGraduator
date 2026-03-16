@@ -43,7 +43,6 @@ namespace mvvm {
     private:
         void loadCatalogs();
         void loadSelection();
-        static std::string toUtf8(const std::wstring& value);
 
     private:
         InfoSettingsViewModelDeps deps_;

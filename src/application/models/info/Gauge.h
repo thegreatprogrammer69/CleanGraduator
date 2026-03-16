@@ -6,7 +6,7 @@
 
 namespace application::models {
     struct Gauge {
-        std::wstring name;
+        std::string name;
         model::GaugePressurePoints points;
     };
 }

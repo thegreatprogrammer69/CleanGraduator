@@ -5,6 +5,7 @@
 #include "application/ports/catalogs/IGaugePrecisionCatalog.h"
 #include "application/ports/catalogs/IPressureUnitCatalog.h"
 #include "application/ports/catalogs/IPrinterCatalog.h"
+#include "domain/fmt/fmt.h"
 
 using namespace application::orchestrators;
 using namespace application::models;
@@ -17,6 +18,13 @@ CalibrationSettingsQuery::CalibrationSettingsQuery(CalibrationSettingsQueryPorts
     , pressure_unit_catalog_(ports.pressure_unit_catalog)
     , printer_catalog_(ports.printer_catalog) {
     load();
+}
+
+std::optional<std::string> CalibrationSettingsQuery::currentGaugeName() const {
+    if (auto gauge = gauge_catalog_.at(data_.gauge_idx)) {
+        return gauge->name;
+    }
+    return std::nullopt;
 }
 
 std::optional<domain::common::PressurePoints> CalibrationSettingsQuery::currentGaugePressurePoints() const {
@@ -48,7 +56,11 @@ std::optional<domain::common::PressureUnit> CalibrationSettingsQuery::currentPre
 }
 
 std::optional<std::filesystem::path> CalibrationSettingsQuery::currentSaveResultPath() const {
-    // TODO
+    if (auto printer = printer_catalog_.at(data_.printer_idx)) {
+        if (auto displacement = displacement_catalog_.at(data_.displacement_idx)) {
+            return fmt::format("", printer->p ath, displacement->id);
+        }
+    }
     return std::nullopt;
 }
 

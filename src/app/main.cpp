@@ -52,6 +52,7 @@ int main(int argc, char *argv[]) {
         UiBootstrap ui_bootstrap(view_models_bootstrap);
         ui_bootstrap.initialize();
 
+        ui_bootstrap.main_window->setMinimumSize(1280, 960);
         ui_bootstrap.main_window->show();
 
         // application_bootstrap.motor_driver->initialize();

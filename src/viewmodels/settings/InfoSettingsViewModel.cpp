@@ -36,11 +36,11 @@ void InfoSettingsViewModel::save() {
 
 void InfoSettingsViewModel::loadCatalogs() {
     for (const auto& item : deps_.displacement_catalog.list()) {
-        displacements_.emplace_back(toUtf8(item.name));
+        displacements_.emplace_back(item.name);
     }
 
     for (const auto& item : deps_.gauge_catalog.list()) {
-        gauges_.emplace_back(toUtf8(item.name));
+        gauges_.emplace_back(item.name);
     }
 
     for (const auto& item : deps_.precision_catalog.list()) {
@@ -62,7 +62,7 @@ void InfoSettingsViewModel::loadCatalogs() {
     }
 
     for (const auto& item : deps_.printer_catalog.list()) {
-        printers_.emplace_back(toUtf8(item.name));
+        printers_.emplace_back(item.name);
     }
 }
 
@@ -74,9 +74,4 @@ void InfoSettingsViewModel::loadSelection() {
     selectedPrecision.set(data.precision_idx);
     selectedPressureUnit.set(data.pressure_unit_idx);
     selectedPrinter.set(data.printer_idx);
-}
-
-std::string InfoSettingsViewModel::toUtf8(const std::wstring& value) {
-    std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> conv;
-    return conv.to_bytes(value);
 }

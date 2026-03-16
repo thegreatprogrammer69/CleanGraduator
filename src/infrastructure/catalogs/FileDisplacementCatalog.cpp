@@ -12,10 +12,6 @@
 #include "application/fmt/fmt_application.h"
 
 namespace {
-std::wstring from_utf8(std::string_view s) {
-    std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> conv;
-    return conv.from_bytes(s.data(), s.data() + s.size());
-}
 
 void trim(std::string& s) {
     auto notSpace = [](unsigned char ch) { return !std::isspace(ch); };
@@ -84,7 +80,7 @@ FileDisplacementCatalog::FileDisplacementCatalog(CatalogPorts ports, std::string
         try {
             Displacement d;
             d.id = id;
-            d.name = from_utf8(namePart);
+            d.name = namePart;
             displacements_.push_back(d);
             logger_.info("Loaded displacement model: {}", displacements_.back());
         } catch (const std::range_error&) {

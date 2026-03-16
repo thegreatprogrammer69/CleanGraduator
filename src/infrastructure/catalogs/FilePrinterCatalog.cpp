@@ -11,11 +11,6 @@
 #include "application/fmt/fmt_application.h"
 
 namespace {
-std::wstring from_utf8(std::string_view s) {
-    std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> conv;
-    return conv.from_bytes(s.data(), s.data() + s.size());
-}
-
 void trim(std::string& s) {
     auto notSpace = [](unsigned char ch) { return !std::isspace(ch); };
     s.erase(s.begin(), std::find_if(s.begin(), s.end(), notSpace));
@@ -78,8 +73,8 @@ FilePrinterCatalog::FilePrinterCatalog(CatalogPorts ports, std::string filePath)
 
         try {
             application::models::Printer printer;
-            printer.name = from_utf8(name);
-            printer.path = from_utf8(path);
+            printer.name = name;
+            printer.path = path;
             printers_.push_back(printer);
             logger_.info("Loaded printer model: {}", printers_.back());
         } catch (const std::range_error&) {

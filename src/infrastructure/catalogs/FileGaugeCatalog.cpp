@@ -12,10 +12,6 @@
 #include "application/fmt/fmt_application.h"
 
 namespace {
-std::wstring from_utf8(std::string_view s) {
-    std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> conv;
-    return conv.from_bytes(s.data(), s.data() + s.size());
-}
 
 void trim(std::string& s) {
     auto notSpace = [](unsigned char ch) { return !std::isspace(ch); };
@@ -109,7 +105,7 @@ FileGaugeCatalog::FileGaugeCatalog(CatalogPorts ports, std::string filePath)
 
         try {
             application::models::Gauge g;
-            g.name = from_utf8(name_utf8);
+            g.name = name_utf8;
             g.points.value = std::move(values);
             gauges_.push_back(g);
             logger_.info("Loaded gauge model: {}", gauges_.back());

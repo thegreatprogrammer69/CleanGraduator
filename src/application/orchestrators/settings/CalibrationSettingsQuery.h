@@ -38,6 +38,7 @@ namespace application::orchestrators {
     public:
         explicit CalibrationSettingsQuery(CalibrationSettingsQueryPorts ports);
 
+        std::optional<std::string> currentGaugeName() const;
         std::optional<domain::common::PressurePoints> currentGaugePressurePoints() const;
         std::optional<domain::common::GaugePrecision> currentPrecision() const;
         std::optional<domain::common::PressureUnit> currentPressureUnit() const;
