@@ -4,7 +4,7 @@
 #include "infrastructure/calibration/result/CalibrationResultSaverPorts.h"
 
 namespace infra::calib {
-    class FileCalibrationResultSaver : public application::ports::ICalibrationResultSaver {
+    class FileCalibrationResultSaver final : public application::ports::ICalibrationResultSaver {
     public:
         explicit FileCalibrationResultSaver(CalibrationResultSaverPorts ports);
 
@@ -13,8 +13,6 @@ namespace infra::calib {
     private:
         CalibrationResultSaverPorts ports_;
     };
-
-}
 }
 
 

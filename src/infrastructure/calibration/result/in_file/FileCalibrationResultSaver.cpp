@@ -2,6 +2,12 @@
 
 #include <fstream>
 
+namespace {
+    void write_result(const domain::common::CalibrationResult& result) {
+
+    }
+}
+
 namespace infra::calib {
 
     FileCalibrationResultSaver::FileCalibrationResultSaver(CalibrationResultSaverPorts ports)
