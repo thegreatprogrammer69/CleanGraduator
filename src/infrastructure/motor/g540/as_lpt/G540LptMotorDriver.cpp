@@ -267,8 +267,8 @@ namespace infra::motor {
     MotorLimitsState G540LptMotorDriver::limits() const {
         const auto state = readState();
         MotorLimitsState limits_state;
-        limits_state.home = (state & config_.bit_begin_limit_switch) != 0;
-        limits_state.end  = (state & config_.bit_end_limit_switch) != 0;
+        limits_state.home = (state & (1 << config_.bit_begin_limit_switch)) != 0;
+        limits_state.end  = (state & (1 << config_.bit_end_limit_switch)) != 0;
         return limits_state;
     }
 

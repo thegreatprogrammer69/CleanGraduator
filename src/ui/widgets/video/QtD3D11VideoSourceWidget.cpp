@@ -1,18 +1,18 @@
 #include <algorithm>
 #include <cstring>
-#include <iterator>
 #include <mutex>
+
 #include <qglobal.h>
 #include <QMetaObject>
 #include <QPaintEvent>
 #include <QResizeEvent>
 #include <QShowEvent>
-#include <qtextstream.h>
+#include <QDebug>
 
-#include "app/ControlPanelWidget.h"
 #include "domain/core/video/PixelFormat.h"
 #include "domain/core/video/VideoFrame.h"
 #include "viewmodels/video/VideoSourceViewModel.h"
+
 #ifdef PLATFORM_WINDOWS
 
 #include "QtD3D11VideoSourceWidget.h"
@@ -21,19 +21,7 @@
 #error This implementation requires Windows + Direct3D 11
 #endif
 
-#include <QMetaObject>
-#include <QShowEvent>
-#include <QResizeEvent>
-#include <QPaintEvent>
-#include <QDebug>
-
 #include <d3dcompiler.h>
-
-#include <algorithm>
-#include <cstring>
-
-#include "domain/core/video/VideoFrame.h"
-#include "viewmodels/video/VideoSourceViewModel.h"
 
 using namespace ui;
 using namespace domain::common;
@@ -60,10 +48,10 @@ VSOut main(uint vertexId : SV_VertexID)
     };
 
     float2 uvs[4] = {
-        float2(0.0, 1.0),
         float2(0.0, 0.0),
-        float2(1.0, 1.0),
-        float2(1.0, 0.0)
+        float2(0.0, 1.0),
+        float2(1.0, 0.0),
+        float2(1.0, 1.0)
     };
 
     o.pos = float4(positions[vertexId], 0.0, 1.0);
@@ -73,19 +61,15 @@ VSOut main(uint vertexId : SV_VertexID)
 )";
 
 static constexpr const char* kPixelShaderHlsl = R"(
-Texture2D    gVideoTex : register(t0);
-SamplerState gSampler  : register(s0);
+Texture2D<float> gVideoTex : register(t0);
+SamplerState     gSampler  : register(s0);
 
 cbuffer Params : register(b0)
 {
     uint uNoVideo;
-    uint uFormat;      // 0 = RGBA, 1 = YUYV packed
     uint uWidth;
     uint uHeight;
-    uint uPackedWidth;
-    uint _pad0;
-    uint _pad1;
-    uint _pad2;
+    uint uTextureWidthBytes;
 };
 
 struct VSOut
@@ -94,20 +78,6 @@ struct VSOut
     float2 uv  : TEXCOORD0;
 };
 
-float3 yuvToRgb(float y, float u, float v)
-{
-    // BT.601 limited range (похоже на то, что обычно приходит с камер YUYV)
-    float Y = max(y - 16.0 / 255.0, 0.0) * 1.16438356;
-    float U = u - 0.5;
-    float V = v - 0.5;
-
-    float r = Y + 1.59602678 * V;
-    float g = Y - 0.39176229 * U - 0.81296764 * V;
-    float b = Y + 2.01723214 * U;
-
-    return saturate(float3(r, g, b));
-}
-
 float4 main(VSOut i) : SV_TARGET
 {
     if (uNoVideo != 0)
@@ -115,34 +85,21 @@ float4 main(VSOut i) : SV_TARGET
         return float4(0.05, 0.05, 0.05, 1.0);
     }
 
+    uint width  = max(uWidth,  1u);
+    uint height = max(uHeight, 1u);
+
     float2 uv = saturate(i.uv);
 
-    // 0 = уже обычная RGBA8 текстура
-    if (uFormat == 0)
-    {
-        return gVideoTex.Sample(gSampler, uv);
-    }
+    uint x = min((uint)(uv.x * (float)width),  width  - 1u);
+    uint y = min((uint)(uv.y * (float)height), height - 1u);
 
-    // 1 = YUYV packed into RGBA8:
-    // texel.r = Y0, texel.g = U, texel.b = Y1, texel.a = V
-    float fw = max((float)uWidth, 1.0);
-    float fh = max((float)uHeight, 1.0);
-    float fpw = max((float)uPackedWidth, 1.0);
+    uint baseX = x * 3u;
 
-    float px = min(uv.x * fw, fw - 1.0);
-    float py = min(uv.y * fh, fh - 1.0);
+    float b = gVideoTex.Load(int3((int)(baseX + 0u), (int)y, 0));
+    float g = gVideoTex.Load(int3((int)(baseX + 1u), (int)y, 0));
+    float r = gVideoTex.Load(int3((int)(baseX + 2u), (int)y, 0));
 
-    uint ix = (uint)px;
-    float packedX = (floor(px * 0.5) + 0.5) / fpw;
-    float packedY = (floor(py) + 0.5) / fh;
-
-    float4 s = gVideoTex.Sample(gSampler, float2(packedX, packedY));
-
-    float y = ((ix & 1u) == 0u) ? s.r : s.b;
-    float u = s.g;
-    float v = s.a;
-
-    return float4(yuvToRgb(y, u, v), 1.0);
+    return float4(r, g, b, 1.0);
 }
 )";
 
@@ -156,8 +113,6 @@ QtD3D11VideoSourceWidget::QtD3D11VideoSourceWidget(mvvm::VideoSourceViewModel& m
     setAttribute(Qt::WA_NoSystemBackground, true);
     setAutoFillBackground(false);
 
-    // Если Observable может дергать callback не из UI thread —
-    // это безопаснее, чем прямой вызов QWidget::update() из worker thread.
     frame_sub_ = model.frame.subscribe([this](const auto& a) {
         const auto frame = a.new_value;
         QMetaObject::invokeMethod(
@@ -182,7 +137,8 @@ QtD3D11VideoSourceWidget::QtD3D11VideoSourceWidget(mvvm::VideoSourceViewModel& m
     });
 }
 
-QtD3D11VideoSourceWidget::~QtD3D11VideoSourceWidget() {
+QtD3D11VideoSourceWidget::~QtD3D11VideoSourceWidget()
+{
     releaseVideoTexture();
     releaseBackBuffer();
     swap_chain_.Reset();
@@ -194,20 +150,23 @@ QtD3D11VideoSourceWidget::~QtD3D11VideoSourceWidget() {
     device_.Reset();
 }
 
-void QtD3D11VideoSourceWidget::showEvent(QShowEvent* event) {
+void QtD3D11VideoSourceWidget::showEvent(QShowEvent* event)
+{
     QWidget::showEvent(event);
     ensureD3D();
     update();
 }
 
-void QtD3D11VideoSourceWidget::resizeEvent(QResizeEvent* event) {
+void QtD3D11VideoSourceWidget::resizeEvent(QResizeEvent* event)
+{
     QWidget::resizeEvent(event);
     if (d3d_inited_) {
         resizeSwapChain();
     }
 }
 
-void QtD3D11VideoSourceWidget::paintEvent(QPaintEvent* event) {
+void QtD3D11VideoSourceWidget::paintEvent(QPaintEvent* event)
+{
     QWidget::paintEvent(event);
 
     if (!ensureD3D()) {
@@ -223,7 +182,7 @@ void QtD3D11VideoSourceWidget::paintEvent(QPaintEvent* event) {
     }
 
     bool hasRenderableFrame = false;
-    if (frame && (frame->format == PixelFormat::RGB24 || frame->format == PixelFormat::YUYV)) {
+    if (frame && frame->format == PixelFormat::RGB24) {
         if (ensureVideoTexture(*frame)) {
             hasRenderableFrame = uploadFrame(*frame);
         }
@@ -232,13 +191,15 @@ void QtD3D11VideoSourceWidget::paintEvent(QPaintEvent* event) {
     render(!isOpened || !hasRenderableFrame);
 }
 
-void QtD3D11VideoSourceWidget::setVideoFrame(VideoFramePtr frame) {
+void QtD3D11VideoSourceWidget::setVideoFrame(VideoFramePtr frame)
+{
     std::lock_guard lock(mutex_);
     current_frame_ = std::move(frame);
     update();
 }
 
-bool QtD3D11VideoSourceWidget::ensureD3D() {
+bool QtD3D11VideoSourceWidget::ensureD3D()
+{
     if (d3d_inited_) {
         return true;
     }
@@ -265,11 +226,11 @@ bool QtD3D11VideoSourceWidget::ensureD3D() {
     return true;
 }
 
-bool QtD3D11VideoSourceWidget::createDevice() {
+bool QtD3D11VideoSourceWidget::createDevice()
+{
     UINT flags = 0;
+
 #ifndef NDEBUG
-    // Для старых машин debug layer часто не установлен.
-    // Если включать — делать это опционально.
     // flags |= D3D11_CREATE_DEVICE_DEBUG;
 #endif
 
@@ -302,7 +263,8 @@ bool QtD3D11VideoSourceWidget::createDevice() {
     return true;
 }
 
-bool QtD3D11VideoSourceWidget::createSwapChain() {
+bool QtD3D11VideoSourceWidget::createSwapChain()
+{
     ComPtr<IDXGIDevice> dxgiDevice;
     if (FAILED(device_.As(&dxgiDevice)) || !dxgiDevice) {
         return false;
@@ -328,12 +290,10 @@ bool QtD3D11VideoSourceWidget::createSwapChain() {
     desc.BufferDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
     desc.BufferDesc.RefreshRate.Numerator = 0;
     desc.BufferDesc.RefreshRate.Denominator = 1;
-
     desc.SampleDesc.Count = 1;
     desc.SampleDesc.Quality = 0;
-
     desc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-    desc.BufferCount = 1; // Win7-safe
+    desc.BufferCount = 1;
     desc.OutputWindow = hwnd_;
     desc.Windowed = TRUE;
     desc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
@@ -349,7 +309,8 @@ bool QtD3D11VideoSourceWidget::createSwapChain() {
     return true;
 }
 
-bool QtD3D11VideoSourceWidget::createBackBuffer() {
+bool QtD3D11VideoSourceWidget::createBackBuffer()
+{
     if (!swap_chain_) {
         return false;
     }
@@ -369,14 +330,16 @@ bool QtD3D11VideoSourceWidget::createBackBuffer() {
     return true;
 }
 
-void QtD3D11VideoSourceWidget::releaseBackBuffer() {
+void QtD3D11VideoSourceWidget::releaseBackBuffer()
+{
     if (context_) {
         context_->OMSetRenderTargets(0, nullptr, nullptr);
     }
     rtv_.Reset();
 }
 
-void QtD3D11VideoSourceWidget::resizeSwapChain() {
+void QtD3D11VideoSourceWidget::resizeSwapChain()
+{
     if (!swap_chain_) {
         return;
     }
@@ -402,13 +365,14 @@ void QtD3D11VideoSourceWidget::resizeSwapChain() {
     createBackBuffer();
 }
 
-void QtD3D11VideoSourceWidget::releaseVideoTexture() {
+void QtD3D11VideoSourceWidget::releaseVideoTexture()
+{
     video_srv_.Reset();
     video_texture_.Reset();
     textureInitialized_ = false;
     frameWidth_ = 0;
     frameHeight_ = 0;
-    packedWidth_ = 0;
+    textureWidthBytes_ = 0;
 }
 
 bool QtD3D11VideoSourceWidget::compileShader(
@@ -418,6 +382,7 @@ bool QtD3D11VideoSourceWidget::compileShader(
     ID3DBlob** blob)
 {
     UINT flags = D3DCOMPILE_ENABLE_STRICTNESS;
+
 #ifndef NDEBUG
     flags |= D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
 #endif
@@ -446,7 +411,8 @@ bool QtD3D11VideoSourceWidget::compileShader(
     return true;
 }
 
-bool QtD3D11VideoSourceWidget::createShaders() {
+bool QtD3D11VideoSourceWidget::createShaders()
+{
     if (vertex_shader_ && pixel_shader_ && constant_buffer_ && sampler_) {
         return true;
     }
@@ -487,7 +453,7 @@ bool QtD3D11VideoSourceWidget::createShaders() {
     }
 
     D3D11_SAMPLER_DESC sampDesc = {};
-    sampDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+    sampDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
     sampDesc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
     sampDesc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
     sampDesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
@@ -501,32 +467,31 @@ bool QtD3D11VideoSourceWidget::createShaders() {
     return true;
 }
 
-bool QtD3D11VideoSourceWidget::ensureVideoTexture(const VideoFrame& frame) {
-    const bool isYuyv = (frame.format == PixelFormat::YUYV);
-
-    if (isYuyv && (frame.width % 2) != 0) {
+bool QtD3D11VideoSourceWidget::ensureVideoTexture(const VideoFrame& frame)
+{
+    if (frame.format != PixelFormat::RGB24) {
         return false;
     }
 
-    const int desiredPackedWidth = isYuyv ? (frame.width / 2) : frame.width;
+    const int desiredWidth = frame.width;
     const int desiredHeight = frame.height;
+    const int desiredTextureWidthBytes = frame.width * 3;
 
     if (textureInitialized_
-        && currentFormat_ == frame.format
-        && packedWidth_ == desiredPackedWidth
+        && frameWidth_ == desiredWidth
         && frameHeight_ == desiredHeight
-        && frameWidth_ == frame.width) {
+        && textureWidthBytes_ == desiredTextureWidthBytes) {
         return true;
     }
 
     releaseVideoTexture();
 
     D3D11_TEXTURE2D_DESC texDesc = {};
-    texDesc.Width = static_cast<UINT>(desiredPackedWidth);
+    texDesc.Width = static_cast<UINT>(desiredTextureWidthBytes);
     texDesc.Height = static_cast<UINT>(desiredHeight);
     texDesc.MipLevels = 1;
     texDesc.ArraySize = 1;
-    texDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+    texDesc.Format = DXGI_FORMAT_R8_UNORM;
     texDesc.SampleDesc.Count = 1;
     texDesc.Usage = D3D11_USAGE_DYNAMIC;
     texDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
@@ -547,16 +512,16 @@ bool QtD3D11VideoSourceWidget::ensureVideoTexture(const VideoFrame& frame) {
     }
 
     textureInitialized_ = true;
-    currentFormat_ = frame.format;
     frameWidth_ = frame.width;
     frameHeight_ = frame.height;
-    packedWidth_ = desiredPackedWidth;
+    textureWidthBytes_ = desiredTextureWidthBytes;
 
     return true;
 }
 
-bool QtD3D11VideoSourceWidget::uploadFrame(const VideoFrame& frame) {
-    if (!video_texture_) {
+bool QtD3D11VideoSourceWidget::uploadFrame(const VideoFrame& frame)
+{
+    if (!video_texture_ || frame.format != PixelFormat::RGB24) {
         return false;
     }
 
@@ -572,37 +537,19 @@ bool QtD3D11VideoSourceWidget::uploadFrame(const VideoFrame& frame) {
         return false;
     }
 
-    if (frame.format == PixelFormat::YUYV) {
-        const size_t srcRowBytes = static_cast<size_t>(frame.width) * 2; // YUYV
-        for (int y = 0; y < frame.height; ++y) {
-            auto* dstRow = static_cast<unsigned char*>(mapped.pData) + static_cast<size_t>(y) * mapped.RowPitch;
-            const auto* srcRow = src + static_cast<size_t>(y) * srcRowBytes;
-            std::memcpy(dstRow, srcRow, srcRowBytes);
-        }
-    }
-    else if (frame.format == PixelFormat::RGB24) {
-        for (int y = 0; y < frame.height; ++y) {
-            auto* dstRow = static_cast<unsigned char*>(mapped.pData) + static_cast<size_t>(y) * mapped.RowPitch;
-            const auto* srcRow = src + static_cast<size_t>(y) * static_cast<size_t>(frame.width) * 3;
-
-            for (int x = 0; x < frame.width; ++x) {
-                dstRow[x * 4 + 0] = srcRow[x * 3 + 0]; // R
-                dstRow[x * 4 + 1] = srcRow[x * 3 + 1]; // G
-                dstRow[x * 4 + 2] = srcRow[x * 3 + 2]; // B
-                dstRow[x * 4 + 3] = 255;               // A
-            }
-        }
-    }
-    else {
-        context_->Unmap(video_texture_.Get(), 0);
-        return false;
+    const size_t srcRowBytes = static_cast<size_t>(frame.width) * 3;
+    for (int y = 0; y < frame.height; ++y) {
+        auto* dstRow = static_cast<unsigned char*>(mapped.pData) + static_cast<size_t>(y) * mapped.RowPitch;
+        const auto* srcRow = src + static_cast<size_t>(y) * srcRowBytes;
+        std::memcpy(dstRow, srcRow, srcRowBytes);
     }
 
     context_->Unmap(video_texture_.Get(), 0);
     return true;
 }
 
-void QtD3D11VideoSourceWidget::render(bool noVideo) {
+void QtD3D11VideoSourceWidget::render(bool noVideo)
+{
     if (!context_ || !rtv_ || !swap_chain_) {
         return;
     }
@@ -623,10 +570,9 @@ void QtD3D11VideoSourceWidget::render(bool noVideo) {
 
     ShaderParams params = {};
     params.noVideo = noVideo ? 1u : 0u;
-    params.format = (currentFormat_ == PixelFormat::YUYV) ? 1u : 0u;
     params.width = static_cast<unsigned int>(std::max(1, frameWidth_));
     params.height = static_cast<unsigned int>(std::max(1, frameHeight_));
-    params.packedWidth = static_cast<unsigned int>(std::max(1, packedWidth_));
+    params.textureWidthBytes = static_cast<unsigned int>(std::max(1, textureWidthBytes_));
 
     context_->UpdateSubresource(constant_buffer_.Get(), 0, nullptr, &params, 0, 0);
 
@@ -647,13 +593,10 @@ void QtD3D11VideoSourceWidget::render(bool noVideo) {
 
     context_->Draw(4, 0);
 
-    // Разлинковка SRV, чтобы потом безопасно пересоздавать texture
     ID3D11ShaderResourceView* nullSrvs[] = { nullptr };
     context_->PSSetShaderResources(0, 1, nullSrvs);
 
-    // Для multi-stream dashboard обычно лучше не блокироваться на vsync.
-    // Если нужен vsync, поменяйте на Present(1, 0).
     swap_chain_->Present(0, 0);
 }
 
-#endif
+#endif // PLATFORM_WINDOWS

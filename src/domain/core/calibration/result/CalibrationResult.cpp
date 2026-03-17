@@ -1,8 +1,11 @@
 #include "CalibrationResult.h"
 
-domain::common::CalibrationResult::CalibrationResult(const CalibrationLayout &layout): directions_(layout.directions)
+domain::common::CalibrationResult::CalibrationResult(const CalibrationLayout &layout, application::models::Gauge gauge)
+    : directions_(layout.directions)
     , points_(layout.points)
-    , sources_(layout.sources) {
+    , sources_(layout.sources)
+    , gauge_(std::move(gauge))
+{
     buildIndexMaps();
     cells_.resize(layout.getTotalCells());
 }
@@ -38,6 +41,10 @@ const std::vector<domain::common::PointId> & domain::common::CalibrationResult::
 
 const std::vector<domain::common::SourceId> & domain::common::CalibrationResult::sources() const noexcept {
     return sources_;
+}
+
+const application::models::Gauge & domain::common::CalibrationResult::gauge() const noexcept {
+    return gauge_;
 }
 
 size_t domain::common::CalibrationResult::totalCells() const noexcept {

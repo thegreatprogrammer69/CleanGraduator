@@ -47,6 +47,12 @@ add_library(ui STATIC
 
 )
 
+if(WIN32)
+    target_compile_definitions(ui PRIVATE PLATFORM_WINDOWS)
+elseif(UNIX)
+    target_compile_definitions(ui PRIVATE PLATFORM_LINUX)
+endif()
+
 target_include_directories(ui
         PUBLIC
         ${PROJECT_SOURCE_DIR}/src

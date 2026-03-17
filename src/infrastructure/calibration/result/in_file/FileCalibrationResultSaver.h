@@ -1,6 +1,7 @@
 #ifndef CLEANGRADUATOR_FILECALIBRATIONRESULTSAVER_H
 #define CLEANGRADUATOR_FILECALIBRATIONRESULTSAVER_H
 #include "application/ports/calibration/result/ICalibrationResultSaver.h"
+#include "domain/fmt/Logger.h"
 #include "infrastructure/calibration/result/CalibrationResultSaverPorts.h"
 
 namespace infra::calib {
@@ -11,7 +12,8 @@ namespace infra::calib {
         Result save(const domain::common::CalibrationResult& result) override;
 
     private:
-        CalibrationResultSaverPorts ports_;
+        fmt::Logger logger_;
+        application::ports::IBatchContextProvider& batch_context_provider_;
     };
 }
 

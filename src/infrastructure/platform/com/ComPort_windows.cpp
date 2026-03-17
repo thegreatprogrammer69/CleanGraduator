@@ -1,6 +1,52 @@
 #include "ComPort.h"
 #include <windows.h>
 #include <stdexcept>
+#include <string>
+
+namespace {
+
+std::wstring to_wstring(const std::string& str) {
+    if (str.empty()) return {};
+
+    int size_needed = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1, nullptr, 0);
+    std::wstring wstr(size_needed - 1, 0);
+
+    MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1, wstr.data(), size_needed);
+    return wstr;
+}
+
+std::string get_last_error_message(DWORD error) {
+    if (error == 0) return {};
+
+    LPSTR buffer = nullptr;
+
+    size_t size = FormatMessageA(
+        FORMAT_MESSAGE_ALLOCATE_BUFFER |
+        FORMAT_MESSAGE_FROM_SYSTEM |
+        FORMAT_MESSAGE_IGNORE_INSERTS,
+        nullptr,
+        error,
+        MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+        (LPSTR)&buffer,
+        0,
+        nullptr
+    );
+
+    std::string message(buffer, size);
+    LocalFree(buffer);
+
+    return message;
+}
+
+[[noreturn]] void throw_last_error(const std::string& prefix) {
+    DWORD err = GetLastError();
+    std::string msg = prefix +
+                      " (code=" + std::to_string(err) +
+                      "): " + get_last_error_message(err);
+    throw std::runtime_error(msg);
+}
+
+} // anonymous namespace
 
 namespace infra::platform {
 
@@ -28,9 +74,10 @@ void ComPort::open(const std::string& port) {
     impl_ = new ComPortImpl();
 
     std::string full = "\\\\.\\" + port;
+    std::wstring wfull = to_wstring(full);
 
-    HANDLE h = CreateFileA(
-        full.c_str(),
+    HANDLE h = CreateFileW(
+        wfull.c_str(),
         GENERIC_READ | GENERIC_WRITE,
         0,
         nullptr,
@@ -42,7 +89,7 @@ void ComPort::open(const std::string& port) {
     if (h == INVALID_HANDLE_VALUE) {
         delete impl_;
         impl_ = nullptr;
-        throw std::runtime_error("CreateFile failed");
+        throw_last_error("CreateFileW failed");
     }
 
     impl_->handle = h;
@@ -51,7 +98,7 @@ void ComPort::open(const std::string& port) {
     dcb.DCBlength = sizeof(dcb);
 
     if (!GetCommState(h, &dcb))
-        throw std::runtime_error("GetCommState failed");
+        throw_last_error("GetCommState failed");
 
     dcb.BaudRate = CBR_9600;
     dcb.ByteSize = 8;
@@ -59,7 +106,7 @@ void ComPort::open(const std::string& port) {
     dcb.Parity   = NOPARITY;
 
     if (!SetCommState(h, &dcb))
-        throw std::runtime_error("SetCommState failed");
+        throw_last_error("SetCommState failed");
 
     COMMTIMEOUTS timeouts{};
     timeouts.ReadIntervalTimeout         = 1;
@@ -68,7 +115,10 @@ void ComPort::open(const std::string& port) {
     timeouts.WriteTotalTimeoutConstant   = 500;
     timeouts.WriteTotalTimeoutMultiplier = 8;
 
-    SetCommTimeouts(h, &timeouts);
+    if (!SetCommTimeouts(h, &timeouts))
+        throw_last_error("SetCommTimeouts failed");
+
+    PurgeComm(impl_->handle, PURGE_RXCLEAR | PURGE_TXCLEAR);
 }
 
 void ComPort::close() {
@@ -88,7 +138,9 @@ bool ComPort::isOpen() const noexcept {
 
 void ComPort::flush() {
     if (!isOpen()) return;
-    PurgeComm(impl_->handle, PURGE_RXCLEAR | PURGE_TXCLEAR);
+
+    if (!PurgeComm(impl_->handle, PURGE_RXCLEAR | PURGE_TXCLEAR))
+        throw_last_error("PurgeComm failed");
 }
 
 std::size_t ComPort::read(unsigned char* buffer, std::size_t size) {
@@ -96,7 +148,7 @@ std::size_t ComPort::read(unsigned char* buffer, std::size_t size) {
 
     DWORD bytesRead = 0;
     if (!ReadFile(impl_->handle, buffer, (DWORD)size, &bytesRead, nullptr))
-        return 0;
+        throw_last_error("ReadFile failed");
 
     return bytesRead;
 }
@@ -106,9 +158,9 @@ std::size_t ComPort::write(const unsigned char* data, std::size_t size) {
 
     DWORD bytesWritten = 0;
     if (!WriteFile(impl_->handle, data, (DWORD)size, &bytesWritten, nullptr))
-        return 0;
+        throw_last_error("WriteFile failed");
 
     return bytesWritten;
 }
 
-}
+} // namespace infra::platform

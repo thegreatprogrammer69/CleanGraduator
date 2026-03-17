@@ -25,13 +25,16 @@ LptPort::~LptPort() {
 
 void LptPort::open(unsigned short address) {
     if (opened_)
-        throw std::runtime_error("LptPort already opened");
+        return;
 
     impl_ = new LptPortImpl();
 
     impl_->dll = LoadLibraryW(L"WinRing0x64.dll");
-    if (!impl_->dll)
+    if (!impl_->dll) {
+        delete impl_;
+        impl_ = nullptr;
         throw std::runtime_error("Failed to load WinRing0");
+    }
 
     impl_->initializeOls =
         reinterpret_cast<InitializeOlsFunc>(
@@ -49,8 +52,18 @@ void LptPort::open(unsigned short address) {
         reinterpret_cast<WriteIoPortByteFunc>(
             GetProcAddress(impl_->dll, "WriteIoPortByte"));
 
-    if (!impl_->initializeOls())
+    if (!impl_->initializeOls ||
+        !impl_->deinitializeOls ||
+        !impl_->readIoPortByte ||
+        !impl_->writeIoPortByte) {
+        close();
+        throw std::runtime_error("Failed to get WinRing0 functions");
+    }
+
+    if (!impl_->initializeOls()) {
+        close();
         throw std::runtime_error("InitializeOls failed");
+    }
 
     address_ = address;
     opened_ = true;
@@ -71,6 +84,7 @@ void LptPort::close() noexcept {
         impl_ = nullptr;
     }
 
+    address_ = 0;
     opened_ = false;
 }
 
@@ -85,6 +99,10 @@ unsigned char LptPort::read(unsigned short offset) const {
     return impl_->readIoPortByte(address_ + offset);
 }
 
+unsigned char LptPort::read() const {
+    return read(0);
+}
+
 void LptPort::write(unsigned short offset, unsigned char value) {
     if (!opened_)
         throw std::runtime_error("LptPort not opened");
@@ -92,4 +110,8 @@ void LptPort::write(unsigned short offset, unsigned char value) {
     impl_->writeIoPortByte(address_ + offset, value);
 }
 
+void LptPort::write(unsigned char value) {
+    write(0, value);
 }
+
+} // namespace infra::platform

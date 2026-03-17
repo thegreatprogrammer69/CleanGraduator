@@ -5,7 +5,6 @@
 #include <unordered_map>
 #include <vector>
 
-#include "InMemoryCalibrationRecorderConfig.h"
 #include "../CalibrationRecorderPorts.h"
 #include "domain/core/calibration/common/CalibrationLayout.h"
 #include "domain/fmt/Logger.h"
@@ -13,13 +12,16 @@
 #include "domain/core/calibration/recording/CalibrationRecorderEvent.h"
 #include "shared/ThreadSafeObserverList.h"
 
+namespace application::orchestrators {
+    class CalibrationSettingsQuery;
+}
+
 namespace infra::calib {
 
     class InMemoryCalibrationRecorder final : public domain::ports::ICalibrationRecorder {
     public:
         InMemoryCalibrationRecorder(
-            CalibrationRecorderPorts ports,
-            InMemoryCalibrationRecorderConfig config
+            CalibrationRecorderPorts ports
         );
 
         void startRecording(domain::common::CalibrationLayout layout) override;
@@ -44,7 +46,7 @@ namespace infra::calib {
         void notify(const domain::common::CalibrationRecorderEvent& ev);
 
         fmt::Logger logger_;
-        InMemoryCalibrationRecorderConfig config_;
+        application::orchestrators::CalibrationSettingsQuery& calibration_settings_;
 
         bool recording_active_ = false;
 

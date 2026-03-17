@@ -7,6 +7,7 @@
 #include <stdexcept> // Для исключений
 #include "CalibrationCell.h"
 #include "CalibrationCellKey.h"
+#include "application/models/info/Gauge.h"
 #include "domain/core/calibration/common/CalibrationLayout.h"
 
 namespace domain::common {
@@ -14,7 +15,7 @@ namespace domain::common {
 class CalibrationResult
 {
 public:
-    explicit CalibrationResult(const CalibrationLayout& layout);
+    explicit CalibrationResult(const CalibrationLayout& layout, application::models::Gauge gauge);
 
     /**
      * @brief Безопасная установка ячейки.
@@ -32,6 +33,7 @@ public:
     const std::vector<MotorDirection>& directions() const noexcept;
     const std::vector<PointId>& points() const noexcept;
     const std::vector<SourceId>& sources() const noexcept;
+    const application::models::Gauge& gauge() const noexcept;
     size_t totalCells() const noexcept;
 
     bool isReady() const noexcept;
@@ -60,6 +62,8 @@ private:
     std::unordered_map<SourceId, size_t> source_index_;
 
     std::vector<std::optional<CalibrationCell>> cells_;
+
+    application::models::Gauge gauge_;
 };
 
 } // namespace domain::common

@@ -4,8 +4,8 @@
 
 namespace application::models {
     struct BatchContext {
-        int number;
-        std::filesystem::path directory;
+        int party_id;
+        std::filesystem::path full_path;
     };
 
 }

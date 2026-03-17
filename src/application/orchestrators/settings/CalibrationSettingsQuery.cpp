@@ -20,11 +20,15 @@ CalibrationSettingsQuery::CalibrationSettingsQuery(CalibrationSettingsQueryPorts
     load();
 }
 
-std::optional<std::string> CalibrationSettingsQuery::currentGaugeName() const {
+std::optional<Gauge> CalibrationSettingsQuery::currentGauge() const {
     if (auto gauge = gauge_catalog_.at(data_.gauge_idx)) {
-        return gauge->name;
+        return gauge;
     }
     return std::nullopt;
+}
+
+std::optional<Displacement> CalibrationSettingsQuery::currentDisplacement() const {
+    return displacement_catalog_.at(data_.displacement_idx);
 }
 
 std::optional<domain::common::PressurePoints> CalibrationSettingsQuery::currentGaugePressurePoints() const {
@@ -38,6 +42,7 @@ std::optional<domain::common::PressurePoints> CalibrationSettingsQuery::currentG
             points.value.push_back(domain::common::Pressure(p, *pressure_unit));
         }
     }
+
     return points;
 }
 
@@ -55,10 +60,10 @@ std::optional<domain::common::PressureUnit> CalibrationSettingsQuery::currentPre
     return std::nullopt;
 }
 
-std::optional<std::filesystem::path> CalibrationSettingsQuery::currentSaveResultPath() const {
+std::optional<std::string> CalibrationSettingsQuery::currentBatchPath() const {
     if (auto printer = printer_catalog_.at(data_.printer_idx)) {
         if (auto displacement = displacement_catalog_.at(data_.displacement_idx)) {
-            return fmt::format("", printer->p ath, displacement->id);
+            return printer->path;
         }
     }
     return std::nullopt;

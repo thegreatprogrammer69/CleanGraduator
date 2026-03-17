@@ -3,6 +3,10 @@
 #include "domain/ports/calibration/recording/ICalibrationRecorder.h"
 #include "domain/ports/logging/ILogger.h"
 
+namespace application::orchestrators {
+    class CalibrationSettingsQuery;
+}
+
 namespace domain::ports {
     class ICalibrationCalculator;
 }

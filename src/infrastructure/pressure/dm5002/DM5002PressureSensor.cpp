@@ -47,7 +47,7 @@ ProtocolLayout layoutFor(DM5002PressureSensorConfig::Protocol p) {
             };
         case DM5002PressureSensorConfig::Protocol::RF:
             return ProtocolLayout{
-                /*request*/ { 0x00, 0x01 },
+                /*request*/ { 0x01 },
                 /*response_length*/ 5,
                 /*unit_index*/ 0,
                 /*float_indices*/ { 4, 3, 2, 1 }

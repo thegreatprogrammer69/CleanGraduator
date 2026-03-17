@@ -26,7 +26,10 @@ void InMemoryCalibrationRecorder::startRecording(CalibrationLayout layout)
 
     logger_.info("Calibration recording started.");
 
-    notify(CalibrationRecorderEvent(CalibrationRecorderEvent::RecordingStarted{layout}));
+    CalibrationRecorderEvent::RecordingStarted e;
+    e.layout = layout;
+    e.gauge =
+    notify(CalibrationRecorderEvent(e));
 }
 
 void InMemoryCalibrationRecorder::stopRecording()

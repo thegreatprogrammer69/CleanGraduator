@@ -233,7 +233,7 @@ void DShowCamera::onFrame(double /*time*/, unsigned char* data, long size) {
     auto frame = std::make_shared<VideoFrame>();
     frame->width = width;
     frame->height = height;
-    frame->format = PixelFormat::YUYV;
+    frame->format = PixelFormat::RGB24;
     frame->buffer = VideoBuffer(size);
 
     std::memcpy(frame->buffer.data, data, static_cast<size_t>(size));
@@ -322,7 +322,7 @@ bool DShowCamera::createSampleGrabber() {
 
     AM_MEDIA_TYPE mt{};
     mt.majortype = MEDIATYPE_Video;
-    mt.subtype = MEDIASUBTYPE_YUY2;
+    mt.subtype = MEDIASUBTYPE_RGB24;
     mt.formattype = FORMAT_VideoInfo;
 
     hr = impl_->grabber->SetMediaType(&mt);

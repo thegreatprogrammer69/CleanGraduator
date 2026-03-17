@@ -6,40 +6,48 @@
 #include "application/orchestrators/calibration/process/CalibrationOrchestratorEvent.h"
 
 using namespace mvvm;
+using namespace application::orchestrators;
 
-CalibrationSessionControlViewModel::CalibrationSessionControlViewModel(CalibrationSessionControlViewModelDeps deps)
+CalibrationSessionControlViewModel::CalibrationSessionControlViewModel(
+    CalibrationSessionControlViewModelDeps deps)
     : orchestrator_(deps.orchestrator)
     , settings_query_(deps.settings_query)
 {
     orchestrator_.addObserver(*this);
-    applyState(
-        orchestrator_.isRunning()
-            ? application::orchestrators::CalibrationOrchestratorState::Started
-            : application::orchestrators::CalibrationOrchestratorState::Stopped,
-        "");
+
+    const auto initial_state = orchestrator_.isRunning()
+        ? CalibrationOrchestratorState::Started
+        : CalibrationOrchestratorState::Stopped;
+
+    applyState(initial_state, "");
 }
 
 CalibrationSessionControlViewModel::~CalibrationSessionControlViewModel() {
     orchestrator_.removeObserver(*this);
 }
 
-void CalibrationSessionControlViewModel::setCalibrationMode(domain::common::CalibrationMode mode) {
+void CalibrationSessionControlViewModel::setCalibrationMode(
+    domain::common::CalibrationMode mode)
+{
     selected_mode.set(mode);
 }
 
 void CalibrationSessionControlViewModel::startCalibration() {
+    applyState(CalibrationOrchestratorState::Starting, "");
+
     settings_query_.load();
+
     const auto pressure_points = settings_query_.currentGaugePressurePoints();
-    const auto pressure_unit = settings_query_.currentPressureUnit();
+    const auto pressure_unit   = settings_query_.currentPressureUnit();
 
     if (!pressure_points || !pressure_points->isCorrect() || !pressure_unit) {
         applyState(
-            application::orchestrators::CalibrationOrchestratorState::Stopped,
+            CalibrationOrchestratorState::Stopped,
             "Не удалось запустить: проверьте настройки шкалы и единиц давления.");
         return;
     }
 
-    application::orchestrators::CalibrationOrchestratorInput input{
+    CalibrationOrchestratorInput input{
         selected_mode.get_copy(),
         *pressure_unit,
         domain::common::AngleUnit::deg,
@@ -48,48 +56,55 @@ void CalibrationSessionControlViewModel::startCalibration() {
 
     if (!orchestrator_.start(input)) {
         applyState(
-            application::orchestrators::CalibrationOrchestratorState::Stopped,
+            CalibrationOrchestratorState::Stopped,
             "Не удалось запустить процесс калибровки.");
     }
 }
 
 void CalibrationSessionControlViewModel::stopCalibration() {
+    applyState(CalibrationOrchestratorState::Stopping, "");
     orchestrator_.stop();
 }
 
 void CalibrationSessionControlViewModel::emergencyStop() {
+    // Можно оставить так или выделить отдельное состояние при желании
+    applyState(CalibrationOrchestratorState::Stopping, "");
     orchestrator_.stop();
 }
 
 void CalibrationSessionControlViewModel::onCalibrationOrchestratorEvent(
-    const application::orchestrators::CalibrationOrchestratorEvent &ev) {
+    const CalibrationOrchestratorEvent& ev)
+{
     std::visit([this](const auto& event) {
         using T = std::decay_t<decltype(event)>;
 
-        if constexpr (std::is_same_v<T, application::orchestrators::CalibrationOrchestratorEvent::Started>) {
-            applyState(application::orchestrators::CalibrationOrchestratorState::Started, "");
-        } else if constexpr (std::is_same_v<T, application::orchestrators::CalibrationOrchestratorEvent::Stopped>) {
-            applyState(application::orchestrators::CalibrationOrchestratorState::Stopped, "");
-        } else if constexpr (std::is_same_v<T, application::orchestrators::CalibrationOrchestratorEvent::Failed>) {
-            applyState(application::orchestrators::CalibrationOrchestratorState::Stopped, event.error);
+        if constexpr (std::is_same_v<T, CalibrationOrchestratorEvent::Started>) {
+            applyState(CalibrationOrchestratorState::Started, "");
+        }
+        else if constexpr (std::is_same_v<T, CalibrationOrchestratorEvent::Stopped>) {
+            applyState(CalibrationOrchestratorState::Stopped, "");
+        }
+        else if constexpr (std::is_same_v<T, CalibrationOrchestratorEvent::Failed>) {
+            applyState(CalibrationOrchestratorState::Stopped, event.error);
         }
     }, ev.data);
 }
 
 void CalibrationSessionControlViewModel::applyState(
-    application::orchestrators::CalibrationOrchestratorState state,
+    CalibrationOrchestratorState state,
     const std::string& last_error)
 {
     error_text.set(last_error);
 
-    const bool can_start_now = state == application::orchestrators::CalibrationOrchestratorState::Stopped;
-    const bool can_stop_now =
-        state == application::orchestrators::CalibrationOrchestratorState::Starting
-        || state == application::orchestrators::CalibrationOrchestratorState::Started
-        || state == application::orchestrators::CalibrationOrchestratorState::Stopping;
-    const bool can_abort_now = state == application::orchestrators::CalibrationOrchestratorState::Started;
+    const bool is_stopped  = state == CalibrationOrchestratorState::Stopped;
+    const bool is_active   =
+        state == CalibrationOrchestratorState::Starting ||
+        state == CalibrationOrchestratorState::Started  ||
+        state == CalibrationOrchestratorState::Stopping;
 
-    can_start.set(can_start_now);
-    can_stop.set(can_stop_now);
-    can_abort.set(can_abort_now);
+    const bool is_started  = state == CalibrationOrchestratorState::Started;
+
+    can_start.set(is_stopped);
+    can_stop.set(is_active);
+    can_abort.set(is_started);
 }

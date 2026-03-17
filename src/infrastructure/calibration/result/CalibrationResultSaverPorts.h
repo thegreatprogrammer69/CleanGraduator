@@ -1,10 +1,18 @@
 #ifndef CLEANGRADUATOR_CALIBRATIONRESULTSAVERPORTS_H
 #define CLEANGRADUATOR_CALIBRATIONRESULTSAVERPORTS_H
-#include "application/orchestrators/settings/CalibrationSettingsQuery.h"
+
+namespace domain::ports {
+    struct ILogger;
+}
+
+namespace application::ports {
+    struct IBatchContextProvider;
+}
 
 namespace infra::calib {
     struct CalibrationResultSaverPorts {
-        application::orchestrators::CalibrationSettingsQuery& settings_query_;
+        domain::ports::ILogger& logger;
+        application::ports::IBatchContextProvider& batch_context_provider;
     };
 }
 

@@ -259,12 +259,10 @@ void Stand4CalibrationStrategy::updateForward(
 
 void Stand4CalibrationStrategy::updateBackward(const CalibrationStrategyFeedContext& ctx, Verdict& v)
 {
+    // TODO ИСПРАВИТЬ передав в стх нужную инфу
     if (ctx.pressure < 10) {
-
         logger_.info("ДАВЛЕНИЕ < 10 — завершение");
-
         transitionToFinished(v);
-
         return;
     }
 

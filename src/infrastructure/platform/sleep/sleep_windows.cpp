@@ -1,6 +1,7 @@
 #include "sleep.h"
 #include <windows.h>
 #include <thread>
+#include <immintrin.h>
 
 namespace infra::platform {
     void sleep(std::chrono::steady_clock::duration duration) {
@@ -10,26 +11,11 @@ namespace infra::platform {
     void precise_sleep(std::chrono::steady_clock::duration duration) {
         using namespace std::chrono;
 
-        // Переводим в 100-нс интервалы (Windows FILETIME unit)
-        auto ns = duration_cast<nanoseconds>(duration).count();
+        const auto start = steady_clock::now();
+        const auto end = start + duration;
 
-        if (ns <= 0) {
-            return;
+        while (steady_clock::now() < end) {
+            _mm_pause();
         }
-
-        // Относительное время — отрицательное значение
-        LARGE_INTEGER dueTime;
-        dueTime.QuadPart = -static_cast<LONGLONG>(ns / 100);
-
-        HANDLE timer = CreateWaitableTimer(nullptr, TRUE, nullptr);
-        if (!timer) {
-            return; // можно логировать ошибку
-        }
-
-        if (SetWaitableTimer(timer, &dueTime, 0, nullptr, nullptr, FALSE)) {
-            WaitForSingleObject(timer, INFINITE);
-        }
-
-        CloseHandle(timer);
     }
 }

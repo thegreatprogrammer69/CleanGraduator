@@ -6,13 +6,14 @@
 namespace infra::calib::stand4 {
     inline domain::common::Pressure computePreloadPressure(const domain::common::PressurePoints &p) {
         const auto& last_point = p.value.back();
+        const auto& firts_point = p.value[1];
         if (last_point.kgfcm2() < 200) {
-            return last_point * 0.87;
+            return firts_point * 0.87;
         }
         if (last_point.kgfcm2() < 300) {
-            return last_point * 0.35;
+            return firts_point * 0.35;
         }
-        return p.value[1] * 0.26;
+        return firts_point * 0.26;
     }
 
     inline domain::common::Pressure computeTargetPressure(const domain::common::PressurePoints &p, const double overload = 0.075) {
