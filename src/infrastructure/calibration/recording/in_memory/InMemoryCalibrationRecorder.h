@@ -20,11 +20,9 @@ namespace infra::calib {
 
     class InMemoryCalibrationRecorder final : public domain::ports::ICalibrationRecorder {
     public:
-        InMemoryCalibrationRecorder(
-            CalibrationRecorderPorts ports
-        );
+        explicit InMemoryCalibrationRecorder(CalibrationRecorderPorts ports);
 
-        void startRecording(domain::common::CalibrationLayout layout) override;
+        void startRecording(domain::common::CalibrationRecordingContext ctx) override;
         void stopRecording() override;
 
         void beginSession(domain::common::CalibrationSessionId id) override;
@@ -46,7 +44,6 @@ namespace infra::calib {
         void notify(const domain::common::CalibrationRecorderEvent& ev);
 
         fmt::Logger logger_;
-        application::orchestrators::CalibrationSettingsQuery& calibration_settings_;
 
         bool recording_active_ = false;
 

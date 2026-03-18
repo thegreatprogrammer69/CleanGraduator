@@ -8,7 +8,6 @@ namespace domain::ports {
 namespace infra::calib {
     struct CalibrationRecorderPorts {
         domain::ports::ILogger& logger;
-        application::orchestrators::CalibrationSettingsQuery& calibration_settings;
     };
 }
 

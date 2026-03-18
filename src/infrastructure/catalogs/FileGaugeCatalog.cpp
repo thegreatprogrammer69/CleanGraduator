@@ -27,7 +27,7 @@ std::vector<std::string> split(const std::string& s, char delim) {
     return out;
 }
 
-bool tryParseDouble(std::string token, double& out) {
+bool tryParseDouble(std::string token, float& out) {
     std::replace(token.begin(), token.end(), ',', '.');
     trim(token);
 
@@ -83,14 +83,14 @@ FileGaugeCatalog::FileGaugeCatalog(CatalogPorts ports, std::string filePath)
             continue;
         }
 
-        std::vector<double> values;
+        std::vector<float> values;
 
         for (size_t i = 1; i < parts.size(); ++i) {
             auto token = parts[i];
             trim(token);
             if (token.empty()) continue;
 
-            double v{};
+            float v{};
             if (tryParseDouble(token, v)) {
                 values.push_back(v);
             } else {

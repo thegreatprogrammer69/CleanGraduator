@@ -6,13 +6,14 @@
 #include "domain/core/measurement/PressureUnit.h"
 #include <vector>
 
+#include "application/models/info/Gauge.h"
 
 namespace application::orchestrators {
     struct CalibrationOrchestratorInput {
         domain::common::CalibrationMode calibration_mode;
         domain::common::PressureUnit pressure_unit;
         domain::common::AngleUnit angle_unit;
-        domain::common::PressurePoints pressure_points;
+        models::Gauge gauge;
     };
 }
 

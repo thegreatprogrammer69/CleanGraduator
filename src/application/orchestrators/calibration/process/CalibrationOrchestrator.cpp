@@ -93,7 +93,7 @@ bool CalibrationOrchestrator::start(CalibrationOrchestratorInput input)
         CalibrationStrategyBeginContext ctx;
         ctx.pressure_unit    = inp_.pressure_unit;
         ctx.calibration_mode = inp_.calibration_mode;
-        ctx.pressure_points  = inp_.pressure_points;
+        ctx.pressure_points  = PressurePoints::from(inp_.gauge.points.value, inp_.pressure_unit);
 
         const auto verdict = ports_.strategy.begin(ctx);
         const auto exec = applyVerdict(verdict);
@@ -108,17 +108,26 @@ bool CalibrationOrchestrator::start(CalibrationOrchestratorInput input)
         // НАЧАТЬ ЗАПИСЬ
         {
             CalibrationLayout calibration_layout;
+
             calibration_layout.sources = std::vector(opened_angle_sources_.begin(), opened_angle_sources_.end());
             calibration_layout.directions.push_back(MotorDirection::Forward);
+
             if (inp_.calibration_mode == CalibrationMode::Full) {
                 calibration_layout.directions.push_back(MotorDirection::Backward);
             }
+
             int i = 0;
-            for (const auto& pp : inp_.pressure_points.value) {
-                calibration_layout.points.push_back(PointId(i, pp.to(inp_.pressure_unit)));
+            for (const auto& pp : inp_.gauge.points.value) {
+                calibration_layout.points.push_back(PointId(i, pp));
                 i++;
             }
-            ports_.recorder.startRecording(calibration_layout);
+
+            CalibrationRecordingContext recording_context {
+                calibration_layout,
+                inp_.gauge,
+            };
+
+            ports_.recorder.startRecording(recording_context);
         }
 
         state_.store(

@@ -20,6 +20,7 @@ add_library(domain STATIC
         core/calibration/result/CalibrationResult.cpp
         core/calibration/result/CalibrationResultIssue.h
         core/calibration/result/CalibrationResultIssueType.h
+        core/calibration/recording/CalibrationRecordingContext.h
 )
 
 

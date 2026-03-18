@@ -8,16 +8,12 @@ using namespace infra::calib;
 using namespace domain::common;
 using namespace domain::ports;
 
-InMemoryCalibrationRecorder::InMemoryCalibrationRecorder(
-    CalibrationRecorderPorts ports,
-    InMemoryCalibrationRecorderConfig config
-)
+InMemoryCalibrationRecorder::InMemoryCalibrationRecorder(CalibrationRecorderPorts ports)
     : logger_(ports.logger)
-    , config_(std::move(config))
 {
 }
 
-void InMemoryCalibrationRecorder::startRecording(CalibrationLayout layout)
+void InMemoryCalibrationRecorder::startRecording(CalibrationRecordingContext ctx)
 {
     if (recording_active_)
         return;
@@ -27,8 +23,8 @@ void InMemoryCalibrationRecorder::startRecording(CalibrationLayout layout)
     logger_.info("Calibration recording started.");
 
     CalibrationRecorderEvent::RecordingStarted e;
-    e.layout = layout;
-    e.gauge =
+    e.layout = ctx.layout;
+    e.gauge = ctx.gauge;
     notify(CalibrationRecorderEvent(e));
 }
 

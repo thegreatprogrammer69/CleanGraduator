@@ -6,6 +6,7 @@
 #include "domain/core/calibration/recording/CalibrationSessionId.h"
 #include "domain/core/calibration/recording/PressureSample.h"
 #include "domain/core/calibration/common/CalibrationLayout.h"
+#include "domain/core/calibration/recording/CalibrationRecordingContext.h"
 
 namespace domain::common {
     enum class MotorDirection;
@@ -18,7 +19,7 @@ namespace domain::ports {
         virtual ~ICalibrationRecorder() = default;
 
         // recording lifecycle
-        virtual void startRecording(common::CalibrationLayout) = 0;
+        virtual void startRecording(common::CalibrationRecordingContext) = 0;
         virtual void stopRecording() = 0;
 
         // session lifecycle

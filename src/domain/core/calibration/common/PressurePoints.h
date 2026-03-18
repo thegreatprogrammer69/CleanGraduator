@@ -21,6 +21,13 @@ namespace domain::common {
             }
             return result;
         }
+        static PressurePoints from(const std::vector<float>& points, PressureUnit unit) {
+            PressurePoints result;
+            for (auto p : points) {
+                result.value.push_back(Pressure(p, unit));
+            }
+            return result;
+        }
         bool operator==(const PressurePoints &other) const {  return value == other.value; }
     };
 }

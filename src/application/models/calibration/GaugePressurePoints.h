@@ -4,11 +4,11 @@
 
 namespace application::model {
     struct GaugePressurePoints {
-        explicit GaugePressurePoints(std::vector<double> points)
+        explicit GaugePressurePoints(std::vector<float> points)
             : value(std::move(points))
         {}
         GaugePressurePoints() = default;
-        std::vector<double> value;
+        std::vector<float> value;
         bool isCorrect() const {
             return value.size() > 1;
         }
