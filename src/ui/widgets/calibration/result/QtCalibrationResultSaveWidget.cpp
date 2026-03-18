@@ -22,8 +22,7 @@ QtCalibrationResultSaveWidget::QtCalibrationResultSaveWidget(
 
 QtCalibrationResultSaveWidget::~QtCalibrationResultSaveWidget() = default;
 
-void QtCalibrationResultSaveWidget::setupUi()
-{
+void QtCalibrationResultSaveWidget::setupUi() {
     auto* rootLayout = new QVBoxLayout(this);
     rootLayout->setContentsMargins(12, 10, 12, 10);
     rootLayout->setSpacing(8);
@@ -42,27 +41,33 @@ void QtCalibrationResultSaveWidget::setupUi()
     topLayout->addStretch(1);
     topLayout->addWidget(stateLabel_);
 
-    auto* buttonLayout = new QHBoxLayout();
-    buttonLayout->setSpacing(8);
-
     saveButton_ = new QPushButton(tr("Сохранить партию"), this);
+
+    auto* mainButtonLayout = new QHBoxLayout();
+    mainButtonLayout->setSpacing(8);
+    mainButtonLayout->addWidget(saveButton_);
+    mainButtonLayout->addStretch(1);
+
+    auto* secondaryButtonLayout = new QHBoxLayout();
+    secondaryButtonLayout->setSpacing(8);
+
     showInExplorerButton_ = new QPushButton(tr("Показать в проводнике"), this);
     saveAsButton_ = new QPushButton(tr("Сохранить как"), this);
 
-    showInExplorerButton_->setProperty("secondary", true);
-    saveAsButton_->setProperty("secondary", true);
+    showInExplorerButton_->setProperty("type", "secondary");
+    saveAsButton_->setProperty("type", "secondary");
 
-    buttonLayout->addWidget(saveButton_);
-    buttonLayout->addWidget(showInExplorerButton_);
-    buttonLayout->addWidget(saveAsButton_);
-    buttonLayout->addStretch(1);
+    secondaryButtonLayout->addWidget(showInExplorerButton_);
+    secondaryButtonLayout->addWidget(saveAsButton_);
+    secondaryButtonLayout->addStretch(1);
 
     errorLabel_ = new QLabel(this);
     errorLabel_->setWordWrap(true);
     errorLabel_->setStyleSheet("color: #b91c1c;");
 
     rootLayout->addLayout(topLayout);
-    rootLayout->addLayout(buttonLayout);
+    rootLayout->addLayout(mainButtonLayout);
+    rootLayout->addLayout(secondaryButtonLayout);
     rootLayout->addWidget(errorLabel_);
 }
 
