@@ -10,7 +10,8 @@ namespace infra::calib {
     public:
         ~BatchContextProvider() override;
         explicit BatchContextProvider(BatchContextProviderPorts ports);
-        std::optional<application::models::BatchContext> current() override;
+        std::optional<application::models::BatchContext> peekNext() override;
+        std::optional<application::models::BatchContext> createNext() override;
 
     private:
         fmt::Logger logger_;

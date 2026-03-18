@@ -9,11 +9,12 @@ namespace infra::calib {
     public:
         explicit FileCalibrationResultSaver(CalibrationResultSaverPorts ports);
 
-        Result save(const domain::common::CalibrationResult& result) override;
+        Result save(
+            const domain::common::CalibrationResult& result,
+            const std::filesystem::path& directory) override;
 
     private:
         fmt::Logger logger_;
-        application::ports::IBatchContextProvider& batch_context_provider_;
     };
 }
 
