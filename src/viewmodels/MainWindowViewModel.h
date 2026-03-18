@@ -4,6 +4,7 @@
 
 
 namespace mvvm {
+    class CalibrationResultSaveViewModel;
     class CalibrationResultTableViewModel;
     class ControlViewModel;
     class LogViewerViewModel;
@@ -18,6 +19,7 @@ namespace mvvm {
         SettingsViewModel &settings;
         ControlViewModel &control;
         CalibrationResultTableViewModel& calibration_result_table;
+        CalibrationResultSaveViewModel& calibration_result_save;
         StatusBarViewModels status_bar;
     };
 
@@ -31,6 +33,7 @@ namespace mvvm {
         SettingsViewModel& settingsViewModel();
         ControlViewModel& controlViewModel();
         CalibrationResultTableViewModel& calibrationResultTableViewModel();
+        CalibrationResultSaveViewModel& calibrationResultSaveViewModel();
         StatusBarViewModels statusBarViewModels();
 
     private:

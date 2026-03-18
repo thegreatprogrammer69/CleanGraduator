@@ -2,8 +2,6 @@
 
 #include <fstream>
 
-#include "application/ports/batch/IBatchContextProvider.h"
-
 namespace {
 
     constexpr double deg_to_rad(double deg) {
@@ -52,13 +50,21 @@ namespace {
 namespace infra::calib {
 
     FileCalibrationResultSaver::FileCalibrationResultSaver(CalibrationResultSaverPorts ports)
-        : logger_(ports.logger), batch_context_provider_(ports.batch_context_provider) {}
+        : logger_(ports.logger) {}
 
 
     application::ports::ICalibrationResultSaver::Result
-    FileCalibrationResultSaver::save(const domain::common::CalibrationResult& result) {
-        write_result(result, batch_context_provider_.current()->full_path);
-        return {true, ""};
+    FileCalibrationResultSaver::save(const domain::common::CalibrationResult& result,
+                                     const std::filesystem::path& directory) {
+        std::error_code ec;
+        std::filesystem::create_directories(directory, ec);
+        if (ec) {
+            logger_.error("Failed to create calibration result directory {}: {}", directory.string(), ec.message());
+            return {false, "Не удалось создать директорию для сохранения.", {}};
+        }
+
+        write_result(result, directory);
+        return {true, "", directory};
     }
 
 }

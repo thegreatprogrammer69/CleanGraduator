@@ -3,6 +3,10 @@
 #include <memory>
 #include "domain/ports/calibration/result/ICalibrationResultSource.h"
 
+namespace application::ports {
+    struct IBatchContextProvider;
+    class ICalibrationResultSaver;
+}
 
 namespace application::orchestrators {
     class MotorControlInteractor;
@@ -17,6 +21,7 @@ namespace domain::ports {
 
 namespace application::usecase {
     class CalibrationSessionControl;
+    class SaveCalibrationResult;
     class CloseAllCameras;
     class OpenAllCameras;
     class OpenSelectedCameras;
@@ -36,6 +41,9 @@ public:
     std::unique_ptr<application::usecase::OpenAllCameras> open_all_cameras;
     std::unique_ptr<application::usecase::CloseAllCameras> close_all_cameras;
     std::unique_ptr<application::usecase::CalibrationSessionControl> calibration_session_control;
+    std::unique_ptr<application::ports::IBatchContextProvider> batch_context_provider;
+    std::unique_ptr<application::ports::ICalibrationResultSaver> calibration_result_saver;
+    std::unique_ptr<application::usecase::SaveCalibrationResult> save_calibration_result;
 
     std::unique_ptr<application::orchestrators::MotorControlInteractor> motor_control_interactor;
     std::unique_ptr<application::orchestrators::CalibrationContextProvider> calibration_context_provider;
@@ -55,6 +63,9 @@ private:
     void createCalibrationContextProvider();
     void createCalibrationProcessOrchestrator();
     void createCalibrationSessionControl();
+    void createBatchContextProvider();
+    void createCalibrationResultSaver();
+    void createSaveCalibrationResult();
 
 };
 

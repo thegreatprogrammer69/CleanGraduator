@@ -33,6 +33,10 @@ mvvm::CalibrationResultTableViewModel & mvvm::MainWindowViewModel::calibrationRe
     return deps_.calibration_result_table;
 }
 
+mvvm::CalibrationResultSaveViewModel & mvvm::MainWindowViewModel::calibrationResultSaveViewModel() {
+    return deps_.calibration_result_save;
+}
+
 mvvm::StatusBarViewModels mvvm::MainWindowViewModel::statusBarViewModels() {
     return deps_.status_bar;
 }
