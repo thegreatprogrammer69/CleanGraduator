@@ -19,6 +19,7 @@
 #include "domain/ports/drivers/motor/IMotorDriver.h"
 #include "domain/ports/pressure/IPressureSource.h"
 
+using namespace application;
 using namespace application::orchestrators;
 using namespace domain::common;
 

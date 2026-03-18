@@ -4,6 +4,7 @@
 
 #include "../../../domain/ports/video/IVideoSource.h"
 
+using namespace application;
 using namespace application::orchestrators;
 
 VideoSourceManager::VideoSourceManager(ports::IVideoAngleSourcesStorage &storage)

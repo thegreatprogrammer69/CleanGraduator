@@ -51,7 +51,6 @@ private:
 
 private:
     bool ready_ = false;
-    std::size_t filled_cells_;
 
     std::vector<MotorDirection> directions_;
     std::vector<PointId> points_;

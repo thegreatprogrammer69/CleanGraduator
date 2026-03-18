@@ -361,7 +361,6 @@ namespace infra::motor {
         platform::precise_sleep(half_period);
     }
 
-
     std::uint8_t G540LptMotorDriver::readState() const {
         constexpr std::uint8_t invert_mask = 1 << 7;
         return lpt_port_.read(1) ^ invert_mask;

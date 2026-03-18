@@ -12,13 +12,22 @@ domain::common::CalibrationResult::CalibrationResult(const CalibrationLayout &la
 
 void domain::common::CalibrationResult::setCell(const CalibrationCellKey &key, CalibrationCell cell) {
     auto idx = getFlatIndex(key);
-    if (!idx)
-        return;
+    if (!idx) return;
 
-    if (!cells_[*idx].has_value())
-        ++filled_cells_;
+    if ((key.point_id.id == 0 || key.point_id.id == points_.size() - 1)
+        && key.direction == MotorDirection::Backward) return;
 
     cells_[*idx] = std::move(cell);
+
+    if ((key.point_id.id == 0 || key.point_id.id == points_.size() - 1)
+        && key.direction == MotorDirection::Forward)
+    {
+        auto new_key = key;
+        new_key.direction = MotorDirection::Backward;
+        auto new_idx = getFlatIndex(new_key);
+        if (!new_idx) return;
+        cells_[*new_idx] = std::move(cell);
+    }
 }
 
 const std::optional<domain::common::CalibrationCell> & domain::common::CalibrationResult::cell(

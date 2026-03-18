@@ -1,6 +1,7 @@
 #ifndef CLEANGRADUATOR_ANGLE_H
 #define CLEANGRADUATOR_ANGLE_H
 
+#include <algorithm>
 #include <stdexcept>
 #include <cmath>
 #include "AngleUnit.h"

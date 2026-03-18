@@ -6,6 +6,7 @@
 #include "application/ports/catalogs/IPressureUnitCatalog.h"
 #include "application/ports/catalogs/IPrinterCatalog.h"
 
+using namespace application;
 using namespace application::orchestrators;
 using namespace application::models;
 

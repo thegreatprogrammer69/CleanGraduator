@@ -11,6 +11,7 @@ using namespace domain;
 using namespace domain::common;
 using namespace domain::ports;
 
+using namespace infra::calib;
 using namespace infra::calib::stand4;
 using namespace infra::calib::tracking;
 
@@ -266,7 +267,7 @@ void Stand4CalibrationStrategy::updateForward(
 void Stand4CalibrationStrategy::updateBackward(const CalibrationStrategyFeedContext& ctx, Verdict& v)
 {
     // if (ctx.pressure < 10) {
-    if (ctx.limits_state.end) {
+    if (ctx.limits_state.home) {
         logger_.info("Двигатель дошёл до конечного концевика");
         transitionToFinished(v);
     }

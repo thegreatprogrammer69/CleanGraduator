@@ -153,8 +153,8 @@ QVariant QtCalibrationResultTableModel::headerData(
     }
 
     if (orientation == Qt::Horizontal) {
-        return QStringLiteral("у.%1.%2")
-            .arg(section % 2 == 0 ? QStringLiteral("п") : QStringLiteral("о"))
+        return tr("у.%1.%2")
+            .arg(section % 2 == 0 ? tr("п") : tr("о"))
             .arg(section / 2 + 1);
     }
 

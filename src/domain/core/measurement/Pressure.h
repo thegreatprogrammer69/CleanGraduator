@@ -1,5 +1,6 @@
 ﻿#ifndef GRADUATOR_PRESSURE_H
 #define GRADUATOR_PRESSURE_H
+#include <algorithm>
 #include <stdexcept>
 #include <cmath>
 
