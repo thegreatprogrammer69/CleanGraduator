@@ -235,6 +235,12 @@ void Stand4CalibrationStrategy::updateForward(
         dp_cur,
         dt);
 
+    if (ctx.limits_state.end) {
+        logger_.error("Конечный концевик был активен во время обратного хода");
+        v.commands.push_back(Verdict::Fault{logger_.lastError()});
+        return;
+    }
+
     if (p_cur >= p_target_) {
         logger_.info(
             "Достигнуто целевое давление {} >= {}",
@@ -259,11 +265,10 @@ void Stand4CalibrationStrategy::updateForward(
 
 void Stand4CalibrationStrategy::updateBackward(const CalibrationStrategyFeedContext& ctx, Verdict& v)
 {
-    // TODO ИСПРАВИТЬ передав в стх нужную инфу
-    if (ctx.pressure < 10) {
-        logger_.info("ДАВЛЕНИЕ < 10 — завершение");
+    // if (ctx.pressure < 10) {
+    if (ctx.limits_state.end) {
+        logger_.info("Двигатель дошёл до конечного концевика");
         transitionToFinished(v);
-        return;
     }
 
     const int f_max = 2000; // можно брать из config

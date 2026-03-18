@@ -243,6 +243,7 @@ void CalibrationOrchestrator::onPressurePacket(const PressurePacket& p)
     CalibrationStrategyFeedContext ctx;
     ctx.timestamp = p.timestamp.asSeconds();
     ctx.pressure  = p.pressure.to(inp_.pressure_unit);
+    ctx.limits_state = ports_.motor_driver.limits();
 
     const auto verdict = ports_.strategy.feed(ctx);
     const auto exec = applyVerdict(verdict);
