@@ -34,6 +34,8 @@
 
 #include "infrastructure/angle/from_video/AngleSourceFromVideo.h"
 #include "infrastructure/calibration/recording/in_memory/InMemoryCalibrationRecorder.h"
+#include "infrastructure/calibration/result/in_file/FileCalibrationResultSaver.h"
+#include "infrastructure/system/QtDesktopServices.h"
 #include "infrastructure/calibration/strats/CalibrationStrategyPorts.h"
 #include "infrastructure/calibration/strats/stand4/Stand4CalibrationStrategy.h"
 #include "infrastructure/calibration/strats/stand4/Stand4CalibrationStrategyConfig.h"
@@ -56,6 +58,8 @@ using namespace infra::overlay;
 using namespace infra::platform;
 using namespace infra::repo;
 using namespace infra::storage;
+using namespace infra::calib;
+using namespace infra::system;
 
 
 struct LoggerFactory final : ILoggerFactory {
@@ -107,6 +111,8 @@ void ApplicationBootstrap::initialize() {
 
 
     createInfoSettingsStorage();
+    createCalibrationResultSaver();
+    createDesktopServices();
 }
 
 ILogger & ApplicationBootstrap::createLogger(const std::string &logger_name) {
@@ -347,6 +353,17 @@ void ApplicationBootstrap::createInfoSettingsStorage() {
         );
 }
 
+void ApplicationBootstrap::createCalibrationResultSaver() {
+    CalibrationResultSaverPorts ports {
+        createLogger("CalibrationResultSaver")
+    };
+
+    calibration_result_saver = std::make_unique<FileCalibrationResultSaver>(ports);
+}
+
+void ApplicationBootstrap::createDesktopServices() {
+    desktop_services = std::make_unique<QtDesktopServices>();
+}
 
 void ApplicationBootstrap::createProcessRunner() {
 

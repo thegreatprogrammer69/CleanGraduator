@@ -8,8 +8,10 @@
 #include "application/usecases/cameras/CloseAllCameras.h"
 #include "application/usecases/cameras/OpenAllCameras.h"
 #include "application/usecases/cameras/OpenSelectedCameras.h"
+#include "application/usecases/calibration/result/SaveCalibrationResult.h"
 #include "domain/ports/calibration/recording/ICalibrationRecorder.h"
 #include "domain/ports/calibration/strategy/ICalibrationStrategy.h"
+#include "infrastructure/calibration/batch/BatchContextProvider.h"
 #include "infrastructure/calibration/recording/in_memory/InMemoryCalibrationRecorder.h"
 #include "infrastructure/calibration/strats/stand4/Stand4CalibrationStrategy.h"
 
@@ -31,6 +33,8 @@ void UseCasesBootstrap::initialize() {
     createMotorControlInteractor();
     createCalibrationSettingsQuery();
     createCalibrationProcessOrchestrator();
+    createBatchContextProvider();
+    createSaveCalibrationResult();
 }
 
 void UseCasesBootstrap::createOpenSelectedCameras() {
@@ -76,4 +80,24 @@ void UseCasesBootstrap::createCalibrationProcessOrchestrator() {
     };
 
     calibration_process_orchestrator = std::make_unique<CalibrationOrchestrator>(ports);
+}
+
+void UseCasesBootstrap::createBatchContextProvider() {
+    infra::calib::BatchContextProviderPorts ports{
+        app_.createLogger("BatchContextProvider"),
+        *calibration_settings_query
+    };
+
+    batch_context_provider = std::make_unique<infra::calib::BatchContextProvider>(ports);
+}
+
+void UseCasesBootstrap::createSaveCalibrationResult() {
+    application::usecase::SaveCalibrationResultDeps deps{
+        *app_.calibration_result_source,
+        *batch_context_provider,
+        *app_.calibration_result_saver,
+        *app_.desktop_services
+    };
+
+    save_calibration_result = std::make_unique<application::usecase::SaveCalibrationResult>(deps);
 }

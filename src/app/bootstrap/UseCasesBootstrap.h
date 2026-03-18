@@ -10,6 +10,10 @@ namespace application::orchestrators {
     class CalibrationOrchestrator;
 }
 
+namespace application::ports {
+    struct IBatchContextProvider;
+}
+
 namespace domain::ports {
     class ICalibrationStrategy;
     struct ICalibrationRecorder;
@@ -19,6 +23,7 @@ namespace application::usecase {
     class CloseAllCameras;
     class OpenAllCameras;
     class OpenSelectedCameras;
+    class SaveCalibrationResult;
 }
 
 class ApplicationBootstrap;
@@ -38,6 +43,8 @@ public:
     std::unique_ptr<application::orchestrators::MotorControlInteractor> motor_control_interactor;
     std::unique_ptr<application::orchestrators::CalibrationSettingsQuery> calibration_settings_query;
     std::unique_ptr<application::orchestrators::CalibrationOrchestrator> calibration_process_orchestrator;
+    std::unique_ptr<application::ports::IBatchContextProvider> batch_context_provider;
+    std::unique_ptr<application::usecase::SaveCalibrationResult> save_calibration_result;
 
     // Конфигурируемы объект
     // std::unique_ptr<application::usecase::ConfigureComponent> configure_component;
@@ -52,6 +59,8 @@ private:
     void createMotorControlInteractor();
     void createCalibrationSettingsQuery();
     void createCalibrationProcessOrchestrator();
+    void createBatchContextProvider();
+    void createSaveCalibrationResult();
 
 };
 
