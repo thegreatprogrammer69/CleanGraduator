@@ -244,8 +244,7 @@ void ApplicationBootstrap::createCalibrationRecorder() {
     infra::calib::CalibrationRecorderPorts ports {
         createLogger("InMemoryCalibrationRecorder")
     };
-    infra::calib::InMemoryCalibrationRecorderConfig config {};
-    calibration_recorder = std::make_unique<infra::calib::InMemoryCalibrationRecorder>(ports, config);
+    calibration_recorder = std::make_unique<infra::calib::InMemoryCalibrationRecorder>(ports);
 }
 
 void ApplicationBootstrap::createCalibrationCalculator() {
