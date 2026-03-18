@@ -6,6 +6,7 @@
 #include <QMetaObject>
 #include <QUrl>
 #include <QVBoxLayout>
+#include <QVariant>
 
 namespace ui {
 

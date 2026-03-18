@@ -40,6 +40,7 @@ set(SOURCES
         factory/PressureSourceFactory.cpp
         factory/MotorDriverFactory.cpp
 
+        calibration/batch/BatchContextProvider.cpp
         calibration/strats/stand4/Stand4FrequencyCalculator.cpp
         calibration/strats/stand4/Stand4CalibrationStrategy.cpp
         calibration/recording/in_memory/InMemoryCalibrationRecorder.cpp

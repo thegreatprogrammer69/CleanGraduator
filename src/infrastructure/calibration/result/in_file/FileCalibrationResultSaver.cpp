@@ -17,8 +17,8 @@ namespace {
             if (!file.is_open())
                 continue;
 
-            file << "       320       240       230";
-            file << result.gauge().name;
+            file << "       320       240       230" << std::endl;
+            file << result.gauge().name << std::endl;
 
             for (const auto& point_id : result.points()) {
 
@@ -34,13 +34,19 @@ namespace {
                         if (val->angle()) {
                             file << deg_to_rad(*val->angle()) << " ";
                         }
+                        else {
+                            file << "0.0 ";
+                        }
+                    }
+                    else {
+                        file << "0.0 ";
                     }
                 };
 
                 write_angle(domain::common::MotorDirection::Forward);
                 write_angle(domain::common::MotorDirection::Backward);
 
-                file << "0.0 0.0";
+                file << "0.0 0.0" << std::endl;
             }
         }
     }
