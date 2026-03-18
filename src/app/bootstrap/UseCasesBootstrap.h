@@ -1,6 +1,7 @@
 #ifndef CLEANGRADUATOR_USECASESBOOTSTRAP_H
 #define CLEANGRADUATOR_USECASESBOOTSTRAP_H
 #include <memory>
+#include "application/ports/batch/IBatchContextProvider.h"
 #include "domain/ports/calibration/result/ICalibrationResultSource.h"
 
 
@@ -19,6 +20,7 @@ namespace application::usecase {
     class CloseAllCameras;
     class OpenAllCameras;
     class OpenSelectedCameras;
+    class SaveCalibrationResult;
 }
 
 class ApplicationBootstrap;
@@ -35,9 +37,12 @@ public:
     std::unique_ptr<application::usecase::OpenAllCameras> open_all_cameras;
     std::unique_ptr<application::usecase::CloseAllCameras> close_all_cameras;
 
+    std::unique_ptr<application::ports::IBatchContextProvider> batch_context_provider;
+
     std::unique_ptr<application::orchestrators::MotorControlInteractor> motor_control_interactor;
     std::unique_ptr<application::orchestrators::CalibrationSettingsQuery> calibration_settings_query;
     std::unique_ptr<application::orchestrators::CalibrationOrchestrator> calibration_process_orchestrator;
+    std::unique_ptr<application::usecase::SaveCalibrationResult> save_calibration_result;
 
     // Конфигурируемы объект
     // std::unique_ptr<application::usecase::ConfigureComponent> configure_component;
@@ -52,6 +57,8 @@ private:
     void createMotorControlInteractor();
     void createCalibrationSettingsQuery();
     void createCalibrationProcessOrchestrator();
+    void createBatchContextProvider();
+    void createSaveCalibrationResult();
 
 };
 

@@ -2,7 +2,6 @@
 #include "application/orchestrators/settings/CalibrationSettingsQuery.h"
 #include <QDate>
 #include <QDir>
-#include <QRegularExpression>
 
 #include "application/models/info/Displacement.h"
 
@@ -14,9 +13,19 @@ infra::calib::BatchContextProvider::BatchContextProvider(BatchContextProviderPor
 {
 }
 
-
 std::optional<application::models::BatchContext>
 infra::calib::BatchContextProvider::current() {
+    return current_context_;
+}
+
+std::optional<application::models::BatchContext>
+infra::calib::BatchContextProvider::allocate() {
+    current_context_ = createContext();
+    return current_context_;
+}
+
+std::optional<application::models::BatchContext>
+infra::calib::BatchContextProvider::createContext() {
 
     if (!settings_query_.currentBatchPath()) {
         logger_.warn("BatchContextProvider: batch path is not set");

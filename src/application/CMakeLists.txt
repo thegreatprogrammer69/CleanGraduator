@@ -10,7 +10,9 @@ add_library(application STATIC
         usecases/cameras/OpenSelectedCameras.cpp
         usecases/cameras/CloseAllCameras.cpp
         usecases/cameras/OpenAllCameras.cpp
+        usecases/calibration/result/SaveCalibrationResult.cpp
         ports/calibration/result/ICalibrationResultSaver.h
+        ports/calibration/result/ICalibrationResultExplorer.h
 
 )
 
