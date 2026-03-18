@@ -10,6 +10,9 @@ namespace infra::calib {
         explicit FileCalibrationResultSaver(CalibrationResultSaverPorts ports);
 
         Result save(const domain::common::CalibrationResult& result) override;
+        Result saveToDirectory(
+            const domain::common::CalibrationResult& result,
+            const std::filesystem::path& directory) override;
 
     private:
         fmt::Logger logger_;

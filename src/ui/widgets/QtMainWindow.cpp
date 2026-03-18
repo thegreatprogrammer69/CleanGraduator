@@ -27,6 +27,7 @@
 #include "ui/widgets/status_bar/QtPressureSensorStatusBarWidget.h"
 
 #include "calibration/result/QtCalibrationResultTableWidget.h"
+#include "calibration/result/QtCalibrationResultSaveWidget.h"
 #include "calibration/recording/QtCalibrationSeriesWidget.h"
 #include "logging/QtLogViewerWidget.h"
 #include "video/QtVideoSourceGridWidget.h"
@@ -111,6 +112,7 @@ ui::QtMainWindow::QtMainWindow(
     // tableLayout->addWidget(table);
 
     auto* calibrationResultTable = new QtCalibrationResultTableWidget(model_.calibrationResultTableViewModel());
+    auto* calibrationResultSave = new QtCalibrationResultSaveWidget(model_.calibrationResultSaveViewModel(), processPage);
 
 
     /* ----- Карточка: управление ----- */
@@ -129,6 +131,7 @@ ui::QtMainWindow::QtMainWindow(
 
     controlLayout->addWidget(controlWidget, 0, Qt::AlignRight);
 
+    processLayout->addWidget(calibrationResultSave, 0);
     processLayout->addWidget(calibrationResultTable, 1);
     processLayout->addWidget(controlCard, 0);
 

@@ -9,9 +9,14 @@
 #include "application/usecases/cameras/OpenAllCameras.h"
 #include "application/usecases/cameras/OpenSelectedCameras.h"
 #include "application/usecases/calibration/CalibrationSessionControl.h"
+#include "application/usecases/calibration/SaveCalibrationResult.h"
 #include "domain/ports/calibration/recording/ICalibrationRecorder.h"
 #include "domain/ports/calibration/strategy/ICalibrationStrategy.h"
+#include "infrastructure/calibration/batch/BatchContextProvider.h"
+#include "infrastructure/calibration/batch/BatchContextProviderPorts.h"
 #include "infrastructure/calibration/recording/in_memory/InMemoryCalibrationRecorder.h"
+#include "infrastructure/calibration/result/in_file/FileCalibrationResultSaver.h"
+#include "infrastructure/calibration/result/CalibrationResultSaverPorts.h"
 #include "infrastructure/calibration/strats/stand4/Stand4CalibrationStrategy.h"
 
 using namespace application::usecase;
@@ -31,8 +36,11 @@ void UseCasesBootstrap::initialize() {
 
     createMotorControlInteractor();
     createCalibrationContextProvider();
+    createBatchContextProvider();
     createCalibrationProcessOrchestrator();
     createCalibrationSessionControl();
+    createCalibrationResultSaver();
+    createSaveCalibrationResult();
 }
 
 void UseCasesBootstrap::createOpenSelectedCameras() {
@@ -84,4 +92,29 @@ void UseCasesBootstrap::createCalibrationSessionControl() {
     calibration_session_control = std::make_unique<CalibrationSessionControl>(
         *calibration_process_orchestrator,
         *calibration_context_provider);
+}
+
+void UseCasesBootstrap::createBatchContextProvider() {
+    BatchContextProviderPorts ports{
+        app_.createLogger("BatchContextProvider"),
+        *calibration_context_provider
+    };
+    batch_context_provider = std::make_unique<BatchContextProvider>(ports);
+}
+
+void UseCasesBootstrap::createCalibrationResultSaver() {
+    CalibrationResultSaverPorts ports{
+        app_.createLogger("FileCalibrationResultSaver"),
+        *batch_context_provider
+    };
+    calibration_result_saver = std::make_unique<FileCalibrationResultSaver>(ports);
+}
+
+void UseCasesBootstrap::createSaveCalibrationResult() {
+    application::usecase::SaveCalibrationResultDeps deps{
+        *app_.calibration_result_source,
+        *calibration_result_saver,
+        *batch_context_provider
+    };
+    save_calibration_result = std::make_unique<application::usecase::SaveCalibrationResult>(deps);
 }
