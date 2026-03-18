@@ -2,13 +2,10 @@
 #define CLEANGRADUATOR_QTCONTROLWIDGET_H
 
 #include <QWidget>
-#include <QVBoxLayout>
-#include <QHBoxLayout>
-#include <QTabWidget>
 
+#include "QtCalibrationSessionControlWidget.h"
 #include "QtDualValveControlWidget.h"
 #include "QtMotorControlWidget.h"
-#include "QtCalibrationSessionControlWidget.h"
 
 namespace mvvm {
     class ControlViewModel;
@@ -28,13 +25,14 @@ namespace ui {
     private:
         void setupUi();
 
+        QWidget* makeResultSection();
+        QWidget* makeCalibrationSection();
+        QWidget* makeControlSection();
         QWidget* makeValvesPage();
         QWidget* makeMotorPage();
-        QWidget* makeCalibrationPage();
 
     private:
         mvvm::ControlViewModel& vm_;
-        QTabWidget* tabs_{nullptr};
     };
 
 } // namespace ui

@@ -26,7 +26,6 @@
 #include "ui/widgets/status_bar/QtMotorDriverStatusBarWidget.h"
 #include "ui/widgets/status_bar/QtPressureSensorStatusBarWidget.h"
 
-#include "calibration/result/QtCalibrationResultSaveWidget.h"
 #include "calibration/result/QtCalibrationResultTableWidget.h"
 #include "calibration/recording/QtCalibrationSeriesWidget.h"
 #include "logging/QtLogViewerWidget.h"
@@ -113,18 +112,6 @@ ui::QtMainWindow::QtMainWindow(
 
     auto* calibrationResultTable = new QtCalibrationResultTableWidget(model_.calibrationResultTableViewModel());
 
-    auto* saveResultCard = new QFrame(processPage);
-    saveResultCard->setObjectName("contentCard");
-    saveResultCard->setAttribute(Qt::WA_StyledBackground, true);
-    saveResultCard->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Minimum);
-
-    auto* saveResultLayout = new QVBoxLayout(saveResultCard);
-    saveResultLayout->setContentsMargins(0, 0, 0, 0);
-
-    auto* saveResultWidget = new QtCalibrationResultSaveWidget(model_.calibrationResultSaveViewModel(), saveResultCard);
-    saveResultLayout->addWidget(saveResultWidget);
-
-
     /* ----- Карточка: управление ----- */
 
     auto* controlCard = new QFrame(processPage);
@@ -142,7 +129,6 @@ ui::QtMainWindow::QtMainWindow(
     controlLayout->addWidget(controlWidget, 0, Qt::AlignRight);
 
     processLayout->addWidget(calibrationResultTable, 1);
-    processLayout->addWidget(saveResultCard, 0);
     processLayout->addWidget(controlCard, 0);
 
 

@@ -1,10 +1,33 @@
 #include "QtControlWidget.h"
 
+#include <QFrame>
 #include <QHBoxLayout>
+#include <QLabel>
 #include <QTabWidget>
 #include <QVBoxLayout>
 
 #include "viewmodels/control/ControlViewModel.h"
+#include "../calibration/result/QtCalibrationResultSaveWidget.h"
+
+namespace {
+QWidget* makeSectionContainer(QWidget* parent, const QString& title)
+{
+    auto* section = new QFrame(parent);
+    section->setObjectName("contentCard");
+    section->setAttribute(Qt::WA_StyledBackground, true);
+    section->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Minimum);
+
+    auto* layout = new QVBoxLayout(section);
+    layout->setContentsMargins(12, 12, 12, 12);
+    layout->setSpacing(8);
+
+    auto* titleLabel = new QLabel(title, section);
+    titleLabel->setStyleSheet("font-size: 14px; font-weight: 600;");
+    layout->addWidget(titleLabel);
+
+    return section;
+}
+}
 
 ui::QtControlWidget::QtControlWidget(
         mvvm::ControlViewModel& vm,
@@ -19,38 +42,53 @@ void ui::QtControlWidget::setupUi()
 {
     auto* root = new QHBoxLayout(this);
     root->setSpacing(12);
-    root->setContentsMargins(0,0,0,0);
+    root->setContentsMargins(0, 0, 0, 0);
 
-    // -------------------------
-    // Левая часть — градуировка
-    // -------------------------
+    root->addWidget(makeResultSection(), 1);
+    root->addWidget(makeCalibrationSection(), 1);
+    root->addWidget(makeControlSection(), 1);
+}
 
-    auto* calibrationTabs = new QTabWidget(this);
-    calibrationTabs->setTabPosition(QTabWidget::North);
+QWidget* ui::QtControlWidget::makeResultSection()
+{
+    auto* section = makeSectionContainer(this, tr("Результат"));
+    auto* layout = qobject_cast<QVBoxLayout*>(section->layout());
 
+    auto* widget = new QtCalibrationResultSaveWidget(vm_.calibrationResultSaveViewModel(), section);
+    layout->addWidget(widget);
+    layout->addStretch();
 
-    calibrationTabs->addTab(
-        makeCalibrationPage(),
-        tr("Градуировка"));
+    return section;
+}
 
-    root->addWidget(calibrationTabs);
+QWidget* ui::QtControlWidget::makeCalibrationSection()
+{
+    auto* section = makeSectionContainer(this, tr("Градуировка"));
+    auto* layout = qobject_cast<QVBoxLayout*>(section->layout());
 
-    // -------------------------
-    // Правая часть — управление
-    // -------------------------
+    auto* widget = new QtCalibrationSessionControlWidget(
+        vm_.calibrationViewModel(),
+        section);
 
-    tabs_ = new QTabWidget(this);
-    tabs_->setTabPosition(QTabWidget::North);
+    layout->addWidget(widget);
+    layout->addStretch();
 
-    tabs_->addTab(
-        makeValvesPage(),
-        tr("Клапаны"));
+    return section;
+}
 
-    tabs_->addTab(
-        makeMotorPage(),
-        tr("Двигатель"));
+QWidget* ui::QtControlWidget::makeControlSection()
+{
+    auto* section = makeSectionContainer(this, tr("Управление мотором/клапанами"));
+    auto* layout = qobject_cast<QVBoxLayout*>(section->layout());
 
-    root->addWidget(tabs_, 1);
+    auto* tabs = new QTabWidget(section);
+    tabs->setTabPosition(QTabWidget::North);
+    tabs->addTab(makeValvesPage(), tr("Клапаны"));
+    tabs->addTab(makeMotorPage(), tr("Двигатель"));
+
+    layout->addWidget(tabs);
+
+    return section;
 }
 
 QWidget* ui::QtControlWidget::makeValvesPage()
@@ -58,7 +96,7 @@ QWidget* ui::QtControlWidget::makeValvesPage()
     auto* page = new QWidget;
 
     auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(16,16,16,16);
+    layout->setContentsMargins(4, 4, 4, 4);
 
     auto* widget =
         new QtDualValveControlWidget(
@@ -66,6 +104,7 @@ QWidget* ui::QtControlWidget::makeValvesPage()
             page);
 
     layout->addWidget(widget);
+    layout->addStretch();
 
     return page;
 }
@@ -75,28 +114,11 @@ QWidget* ui::QtControlWidget::makeMotorPage()
     auto* page = new QWidget;
 
     auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(16,16,16,16);
+    layout->setContentsMargins(4, 4, 4, 4);
 
     auto* widget =
         new QtMotorControlWidget(
             vm_.motorViewModel(),
-            page);
-
-    layout->addWidget(widget);
-
-    return page;
-}
-
-QWidget* ui::QtControlWidget::makeCalibrationPage()
-{
-    auto* page = new QWidget;
-
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(16,0,16,16);
-
-    auto* widget =
-        new QtCalibrationSessionControlWidget(
-            vm_.calibrationViewModel(),
             page);
 
     layout->addWidget(widget);

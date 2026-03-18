@@ -45,10 +45,10 @@ void ViewModelsBootstrap::initialize() {
     createDualValveControl();
     createMotorControl();
     createCalibrationSessionControl();
-    createControl();
 
     createCalibrationResultTable();
     createCalibrationResultSave();
+    createControl();
 
     createCalibrationSeriesViewer();
     createLogViewer();
@@ -168,7 +168,8 @@ void ViewModelsBootstrap::createControl() {
     ControlViewModelDeps deps {
         *dual_valve_control,
         *motor_control,
-        *calibration_session_control
+        *calibration_session_control,
+        *calibration_result_save
     };
     control = std::make_unique<ControlViewModel>(deps);
 }
