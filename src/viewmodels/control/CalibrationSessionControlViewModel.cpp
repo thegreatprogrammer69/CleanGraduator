@@ -37,10 +37,10 @@ void CalibrationSessionControlViewModel::startCalibration() {
 
     settings_query_.load();
 
-    const auto pressure_points = settings_query_.currentGaugePressurePoints();
+    const auto gauge = settings_query_.currentGauge();
     const auto pressure_unit   = settings_query_.currentPressureUnit();
 
-    if (!pressure_points || !pressure_points->isCorrect() || !pressure_unit) {
+    if (!gauge || !gauge->points.isCorrect() || !pressure_unit) {
         applyState(
             CalibrationOrchestratorState::Stopped,
             "Не удалось запустить: проверьте настройки шкалы и единиц давления.");
@@ -51,7 +51,7 @@ void CalibrationSessionControlViewModel::startCalibration() {
         selected_mode.get_copy(),
         *pressure_unit,
         domain::common::AngleUnit::deg,
-        *pressure_points
+        *gauge
     };
 
     if (!orchestrator_.start(input)) {
