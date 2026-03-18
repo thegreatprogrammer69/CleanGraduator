@@ -10,6 +10,11 @@ namespace application::ports {
         virtual ~IBatchContextProvider() = default;
         virtual std::optional<models::BatchContext> current() = 0;
     };
+
+    struct IBatchContextAllocator {
+        virtual ~IBatchContextAllocator() = default;
+        virtual std::optional<models::BatchContext> allocate() = 0;
+    };
 }
 
 #endif //CLEANGRADUATOR_IBATCHNUMBERPROVIDER_H

@@ -27,6 +27,7 @@
 #include "ui/widgets/status_bar/QtPressureSensorStatusBarWidget.h"
 
 #include "calibration/result/QtCalibrationResultTableWidget.h"
+#include "calibration/result/QtCalibrationResultSaveWidget.h"
 #include "calibration/recording/QtCalibrationSeriesWidget.h"
 #include "logging/QtLogViewerWidget.h"
 #include "video/QtVideoSourceGridWidget.h"
@@ -110,7 +111,20 @@ ui::QtMainWindow::QtMainWindow(
     //
     // tableLayout->addWidget(table);
 
-    auto* calibrationResultTable = new QtCalibrationResultTableWidget(model_.calibrationResultTableViewModel());
+    auto* calibrationResultCard = new QFrame(processPage);
+    calibrationResultCard->setObjectName("contentCard");
+    calibrationResultCard->setAttribute(Qt::WA_StyledBackground, true);
+    calibrationResultCard->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+
+    auto* calibrationResultLayout = new QVBoxLayout(calibrationResultCard);
+    calibrationResultLayout->setContentsMargins(12, 12, 12, 12);
+    calibrationResultLayout->setSpacing(12);
+
+    auto* saveWidget = new QtCalibrationResultSaveWidget(model_.calibrationResultSaveViewModel(), calibrationResultCard);
+    auto* calibrationResultTable = new QtCalibrationResultTableWidget(model_.calibrationResultTableViewModel(), calibrationResultCard);
+
+    calibrationResultLayout->addWidget(saveWidget);
+    calibrationResultLayout->addWidget(calibrationResultTable, 1);
 
 
     /* ----- Карточка: управление ----- */
@@ -129,7 +143,7 @@ ui::QtMainWindow::QtMainWindow(
 
     controlLayout->addWidget(controlWidget, 0, Qt::AlignRight);
 
-    processLayout->addWidget(calibrationResultTable, 1);
+    processLayout->addWidget(calibrationResultCard, 1);
     processLayout->addWidget(controlCard, 0);
 
 

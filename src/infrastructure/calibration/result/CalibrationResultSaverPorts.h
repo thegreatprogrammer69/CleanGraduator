@@ -5,14 +5,9 @@ namespace domain::ports {
     struct ILogger;
 }
 
-namespace application::ports {
-    struct IBatchContextProvider;
-}
-
 namespace infra::calib {
     struct CalibrationResultSaverPorts {
         domain::ports::ILogger& logger;
-        application::ports::IBatchContextProvider& batch_context_provider;
     };
 }
 

@@ -44,6 +44,7 @@ set(SOURCES
         calibration/strats/stand4/Stand4CalibrationStrategy.cpp
         calibration/recording/in_memory/InMemoryCalibrationRecorder.cpp
         calibration/result/in_file/FileCalibrationResultSaver.cpp
+        calibration/result/desktop/DesktopCalibrationResultExplorer.cpp
 
         motor/g540/as_lpt/G540LptMotorDriver.cpp
         motor/notifier/MotorDriverNotifier.cpp

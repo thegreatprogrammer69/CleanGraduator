@@ -31,6 +31,8 @@ namespace application::ports {
     struct IGaugeCatalog;
     struct IDisplacementCatalog;
     struct IVideoAngleSourcesStorage;
+    struct ICalibrationResultSaver;
+    class ICalibrationResultExplorer;
 }
 
 namespace application::orchestrators {
@@ -107,6 +109,8 @@ public:
     // Сохранение настроек
     std::unique_ptr<application::ports::IInfoSettingsStorage> info_settings_storage;
 
+    std::unique_ptr<application::ports::ICalibrationResultSaver> calibration_result_saver;
+    std::unique_ptr<application::ports::ICalibrationResultExplorer> calibration_result_explorer;
 
     ////////////////////////////////////////////////////////////////////////////////////////
     // Реагирует на состояние и запускает какие-либо процессы
@@ -152,6 +156,8 @@ private:
 
     ////////////////////////////////////////////////////////////////////////////////////////
     void createInfoSettingsStorage();
+    void createCalibrationResultSaver();
+    void createCalibrationResultExplorer();
 
     ////////////////////////////////////////////////////////////////////////////////////////
     void createProcessRunner();
