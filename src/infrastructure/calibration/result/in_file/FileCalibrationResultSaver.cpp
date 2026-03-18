@@ -2,6 +2,8 @@
 
 #include <fstream>
 
+#include <QDir>
+
 #include "application/ports/batch/IBatchContextProvider.h"
 
 namespace {
@@ -10,14 +12,14 @@ namespace {
         return deg * 3.141592653589793 / 180.0;
     }
 
-    void write_result(const domain::common::CalibrationResult& result,
+    bool write_result(const domain::common::CalibrationResult& result,
                       const std::filesystem::path& path)
     {
         for (const auto& source_id : result.sources()) {
 
             std::ofstream file(path / ("scale" + std::to_string(source_id.value) + ".tbl"));
             if (!file.is_open())
-                continue;
+                return false;
 
             file << "       320       240       230";
             file << result.gauge().name;
@@ -45,6 +47,8 @@ namespace {
                 file << "0.0 0.0";
             }
         }
+
+        return true;
     }
 
 } // namespace
@@ -57,8 +61,34 @@ namespace infra::calib {
 
     application::ports::ICalibrationResultSaver::Result
     FileCalibrationResultSaver::save(const domain::common::CalibrationResult& result) {
-        write_result(result, batch_context_provider_.current()->full_path);
-        return {true, ""};
+        const auto batch = batch_context_provider_.allocateNext();
+        if (!batch) {
+            return {false, "Не удалось определить каталог партии для сохранения.", {}};
+        }
+
+        return writeToPath(result, batch->full_path);
+    }
+
+    application::ports::ICalibrationResultSaver::Result
+    FileCalibrationResultSaver::saveAs(const domain::common::CalibrationResult& result, const std::filesystem::path& output_path) {
+        return writeToPath(result, output_path);
+    }
+
+    application::ports::ICalibrationResultSaver::Result
+    FileCalibrationResultSaver::writeToPath(const domain::common::CalibrationResult& result, const std::filesystem::path& output_path)
+    {
+        QDir dir(QString::fromStdString(output_path.string()));
+        if (!dir.exists() && !dir.mkpath(".")) {
+            logger_.error("Failed to create directory {}", output_path.string());
+            return {false, "Не удалось создать папку для сохранения.", {}};
+        }
+
+        if (!write_result(result, output_path)) {
+            logger_.error("Failed to write calibration result to {}", output_path.string());
+            return {false, "Не удалось записать файлы результата.", {}};
+        }
+
+        return {true, "", output_path};
     }
 
 }
