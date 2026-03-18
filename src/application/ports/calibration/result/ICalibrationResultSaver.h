@@ -1,5 +1,6 @@
 #ifndef CLEANGRADUATOR_ICALIBRATIONRESULTSAVER_H
 #define CLEANGRADUATOR_ICALIBRATIONRESULTSAVER_H
+#include <filesystem>
 #include <optional>
 #include "domain/core/calibration/result/CalibrationResult.h"
 
@@ -10,9 +11,14 @@ namespace application::ports {
         struct Result {
             bool success;
             std::string error;
+            std::optional<int> party_id;
+            std::optional<std::filesystem::path> directory;
         };
         virtual ~ICalibrationResultSaver() = default;
         virtual Result save(const domain::common::CalibrationResult& result) = 0;
+        virtual Result saveToDirectory(
+            const domain::common::CalibrationResult& result,
+            const std::filesystem::path& directory) = 0;
     };
 
 }

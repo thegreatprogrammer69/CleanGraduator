@@ -2,7 +2,6 @@
 
 #include <QDate>
 #include <QDir>
-#include <QRegularExpression>
 
 #include "application/orchestrators/settings/CalibrationContextProvider.h"
 
@@ -16,7 +15,19 @@ infra::calib::BatchContextProvider::BatchContextProvider(BatchContextProviderPor
 }
 
 std::optional<application::models::BatchContext>
-infra::calib::BatchContextProvider::current()
+infra::calib::BatchContextProvider::previewNext() const
+{
+    return buildNextContext(false);
+}
+
+std::optional<application::models::BatchContext>
+infra::calib::BatchContextProvider::allocateNext()
+{
+    return buildNextContext(true);
+}
+
+std::optional<application::models::BatchContext>
+infra::calib::BatchContextProvider::buildNextContext(const bool create_directory) const
 {
     const auto calibration_context = context_provider_.current();
     if (!calibration_context) {
@@ -24,38 +35,37 @@ infra::calib::BatchContextProvider::current()
         return std::nullopt;
     }
 
-    std::string base_path = calibration_context->batch_path();
-    std::string date = QDate::currentDate().toString("dd.MM.yyyy").toStdString();
-    std::string path = base_path + "/" + date;
+    const std::string base_path = calibration_context->batch_path();
+    const std::string date = QDate::currentDate().toString("dd.MM.yyyy").toStdString();
+    const std::string path = base_path + "/" + date;
+    const int displacement_id = calibration_context->displacement.id;
 
-    int displacement_id = calibration_context->displacement.id;
-
-    QDir baseDir(QString::fromStdString(path));
-    if (!baseDir.exists() && !baseDir.mkpath(".")) {
+    QDir base_dir(QString::fromStdString(path));
+    if (!base_dir.exists() && !base_dir.mkpath(".")) {
         logger_.error("Failed to create directory {}", path);
         return std::nullopt;
     }
 
-    int party_id = 1;
-    std::string full_path;
+    constexpr int max_attempts = 10000;
+    for (int party_id = 1; party_id < max_attempts; ++party_id) {
+        const std::string full_path = path + "/p" + std::to_string(party_id) + "-" + std::to_string(displacement_id);
+        const QDir candidate_dir(QString::fromStdString(full_path));
 
-    const int max_attempts = 10000;
-
-    while (party_id < max_attempts) {
-        full_path = path + "/p" +
-                    std::to_string(party_id) +
-                    "-" +
-                    std::to_string(displacement_id);
-
-        QDir attempt;
-        if (attempt.mkdir(QString::fromStdString(full_path))) {
-            application::models::BatchContext ctx;
-            ctx.party_id = party_id;
-            ctx.full_path = full_path;
-            return ctx;
+        if (candidate_dir.exists()) {
+            continue;
         }
 
-        party_id++;
+        if (create_directory) {
+            QDir parent_dir;
+            if (!parent_dir.mkdir(QString::fromStdString(full_path))) {
+                continue;
+            }
+        }
+
+        application::models::BatchContext ctx;
+        ctx.party_id = party_id;
+        ctx.full_path = full_path;
+        return ctx;
     }
 
     logger_.error("Failed to allocate party_id after {} attempts", max_attempts);
