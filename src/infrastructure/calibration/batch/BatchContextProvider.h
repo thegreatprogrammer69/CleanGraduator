@@ -9,7 +9,11 @@ namespace infra::calib {
     public:
         ~BatchContextProvider() override;
         explicit BatchContextProvider(BatchContextProviderPorts ports);
-        std::optional<application::models::BatchContext> current() override;
+        std::optional<application::models::BatchContext> previewNext() const override;
+        std::optional<application::models::BatchContext> allocateNext() override;
+
+    private:
+        std::optional<application::models::BatchContext> resolveNext(bool create_directory) const;
 
     private:
         fmt::Logger logger_;

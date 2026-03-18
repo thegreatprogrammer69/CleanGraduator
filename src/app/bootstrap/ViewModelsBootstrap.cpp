@@ -6,6 +6,7 @@
 #include "viewmodels/MainWindowViewModel.h"
 #include "../../viewmodels/calibration/recording/CalibrationSeriesViewModel.h"
 #include "viewmodels/calibration/result/CalibrationResultTableViewModel.h"
+#include "viewmodels/calibration/result/CalibrationResultSaveViewModel.h"
 #include "viewmodels/control/CalibrationSessionControlViewModel.h"
 #include "viewmodels/control/ControlViewModel.h"
 #include "viewmodels/control/DualValveControlViewModel.h"
@@ -47,6 +48,7 @@ void ViewModelsBootstrap::initialize() {
     createControl();
 
     createCalibrationResultTable();
+    createCalibrationResultSave();
 
     createCalibrationSeriesViewer();
     createLogViewer();
@@ -179,6 +181,15 @@ void ViewModelsBootstrap::createCalibrationResultTable() {
     calibration_result_table = std::make_unique<CalibrationResultTableViewModel>(deps);
 }
 
+void ViewModelsBootstrap::createCalibrationResultSave() {
+    CalibrationResultSaveViewModelDeps deps {
+        *use_cases_.save_calibration_result,
+        *app_.calibration_result_source
+    };
+
+    calibration_result_save = std::make_unique<CalibrationResultSaveViewModel>(deps);
+}
+
 void ViewModelsBootstrap::createCalibrationSeriesViewer() {
     CalibrationSeriesViewModelDeps deps {
         *app_.video_source_manager,
@@ -205,6 +216,7 @@ void ViewModelsBootstrap::createMainWindow() {
         *settings,
         *control,
         *calibration_result_table,
+        *calibration_result_save,
         status_bar_view_models
     };
 

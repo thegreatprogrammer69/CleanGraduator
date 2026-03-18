@@ -25,6 +25,9 @@ namespace domain::ports {
 namespace application::ports {
     struct ILogSourcesStorage;
     struct IInfoSettingsStorage;
+    struct IBatchContextProvider;
+    struct ICalibrationResultSaver;
+    class IDesktopServices;
     struct IPrinterCatalog;
     struct IPressureUnitCatalog;
     struct IGaugePrecisionCatalog;
@@ -106,6 +109,8 @@ public:
     ////////////////////////////////////////////////////////////////////////////////////////
     // Сохранение настроек
     std::unique_ptr<application::ports::IInfoSettingsStorage> info_settings_storage;
+    std::unique_ptr<application::ports::ICalibrationResultSaver> calibration_result_saver;
+    std::unique_ptr<application::ports::IDesktopServices> desktop_services;
 
 
     ////////////////////////////////////////////////////////////////////////////////////////
@@ -152,6 +157,8 @@ private:
 
     ////////////////////////////////////////////////////////////////////////////////////////
     void createInfoSettingsStorage();
+    void createCalibrationResultSaver();
+    void createDesktopServices();
 
     ////////////////////////////////////////////////////////////////////////////////////////
     void createProcessRunner();
