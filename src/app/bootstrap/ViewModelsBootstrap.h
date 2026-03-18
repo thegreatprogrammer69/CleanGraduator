@@ -5,6 +5,7 @@
 
 namespace mvvm {
     class CalibrationResultTableViewModel;
+    class CalibrationResultSaveViewModel;
     class CalibrationSeriesViewModel;
     class ControlViewModel;
     class MotorControlViewModel;
@@ -49,6 +50,7 @@ public:
     std::unique_ptr<mvvm::ControlViewModel> control;
 
     std::unique_ptr<mvvm::CalibrationResultTableViewModel> calibration_result_table;
+    std::unique_ptr<mvvm::CalibrationResultSaveViewModel> calibration_result_save;
 
     std::unique_ptr<mvvm::LogViewerViewModel> log_viewer;
     std::unique_ptr<mvvm::CalibrationSeriesViewModel> calibration_series;
@@ -76,6 +78,7 @@ private:
     void createControl();
 
     void createCalibrationResultTable();
+    void createCalibrationResultSave();
 
     void createCalibrationSeriesViewer();
     void createLogViewer();
