@@ -6,13 +6,13 @@ namespace domain::ports {
 }
 
 namespace application::orchestrators {
-    class CalibrationSettingsQuery;
+    class CalibrationContextProvider;
 }
 
 namespace infra::calib {
     struct BatchContextProviderPorts {
         domain::ports::ILogger& logger_;
-        application::orchestrators::CalibrationSettingsQuery& settings_query_;
+        application::orchestrators::CalibrationContextProvider& context_provider_;
     };
 }
 

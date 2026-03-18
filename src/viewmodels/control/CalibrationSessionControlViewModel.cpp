@@ -10,12 +10,11 @@ using namespace application::orchestrators;
 
 CalibrationSessionControlViewModel::CalibrationSessionControlViewModel(
     CalibrationSessionControlViewModelDeps deps)
-    : orchestrator_(deps.orchestrator)
-    , settings_query_(deps.settings_query)
+    : control_(deps.control)
 {
-    orchestrator_.addObserver(*this);
+    control_.addObserver(*this);
 
-    const auto initial_state = orchestrator_.isRunning()
+    const auto initial_state = control_.isRunning()
         ? CalibrationOrchestratorState::Started
         : CalibrationOrchestratorState::Stopped;
 
@@ -23,7 +22,7 @@ CalibrationSessionControlViewModel::CalibrationSessionControlViewModel(
 }
 
 CalibrationSessionControlViewModel::~CalibrationSessionControlViewModel() {
-    orchestrator_.removeObserver(*this);
+    control_.removeObserver(*this);
 }
 
 void CalibrationSessionControlViewModel::setCalibrationMode(
@@ -34,42 +33,21 @@ void CalibrationSessionControlViewModel::setCalibrationMode(
 
 void CalibrationSessionControlViewModel::startCalibration() {
     applyState(CalibrationOrchestratorState::Starting, "");
-
-    settings_query_.load();
-
-    const auto gauge = settings_query_.currentGauge();
-    const auto pressure_unit   = settings_query_.currentPressureUnit();
-
-    if (!gauge || !gauge->points.isCorrect() || !pressure_unit) {
-        applyState(
-            CalibrationOrchestratorState::Stopped,
-            "Не удалось запустить: проверьте настройки шкалы и единиц давления.");
-        return;
-    }
-
-    CalibrationOrchestratorInput input{
-        selected_mode.get_copy(),
-        *pressure_unit,
-        domain::common::AngleUnit::deg,
-        *gauge
-    };
-
-    if (!orchestrator_.start(input)) {
-        applyState(
-            CalibrationOrchestratorState::Stopped,
-            "Не удалось запустить процесс калибровки.");
+    std::string error_text;
+    if (!control_.start(selected_mode.get_copy(), error_text)) {
+        applyState(CalibrationOrchestratorState::Stopped, error_text);
     }
 }
 
 void CalibrationSessionControlViewModel::stopCalibration() {
     applyState(CalibrationOrchestratorState::Stopping, "");
-    orchestrator_.stop();
+    control_.stop();
 }
 
 void CalibrationSessionControlViewModel::emergencyStop() {
     // Можно оставить так или выделить отдельное состояние при желании
     applyState(CalibrationOrchestratorState::Stopping, "");
-    orchestrator_.stop();
+    control_.emergencyStop();
 }
 
 void CalibrationSessionControlViewModel::onCalibrationOrchestratorEvent(

@@ -12,10 +12,6 @@
 #include "domain/core/calibration/recording/CalibrationRecorderEvent.h"
 #include "shared/ThreadSafeObserverList.h"
 
-namespace application::orchestrators {
-    class CalibrationSettingsQuery;
-}
-
 namespace infra::calib {
 
     class InMemoryCalibrationRecorder final : public domain::ports::ICalibrationRecorder {

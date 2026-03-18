@@ -1,5 +1,6 @@
 #ifndef CLEANGRADUATOR_BATCHCONTEXTPROVIDER_H
 #define CLEANGRADUATOR_BATCHCONTEXTPROVIDER_H
+
 #include "BatchContextProviderPorts.h"
 #include "application/ports/batch/IBatchContextProvider.h"
 #include "domain/fmt/Logger.h"
@@ -13,9 +14,8 @@ namespace infra::calib {
 
     private:
         fmt::Logger logger_;
-        application::orchestrators::CalibrationSettingsQuery& settings_query_;
+        application::orchestrators::CalibrationContextProvider& context_provider_;
     };
 }
-
 
 #endif //CLEANGRADUATOR_BATCHCONTEXTPROVIDER_H

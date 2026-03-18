@@ -1,38 +1,34 @@
 #include "BatchContextProvider.h"
-#include "application/orchestrators/settings/CalibrationSettingsQuery.h"
+
 #include <QDate>
 #include <QDir>
 #include <QRegularExpression>
 
-#include "application/models/info/Displacement.h"
+#include "application/orchestrators/settings/CalibrationContextProvider.h"
 
 infra::calib::BatchContextProvider::~BatchContextProvider() {
 }
 
 infra::calib::BatchContextProvider::BatchContextProvider(BatchContextProviderPorts ports)
-    : logger_(ports.logger_), settings_query_(ports.settings_query_)
+    : logger_(ports.logger_)
+    , context_provider_(ports.context_provider_)
 {
 }
 
-
 std::optional<application::models::BatchContext>
-infra::calib::BatchContextProvider::current() {
-
-    if (!settings_query_.currentBatchPath()) {
-        logger_.warn("BatchContextProvider: batch path is not set");
+infra::calib::BatchContextProvider::current()
+{
+    const auto calibration_context = context_provider_.current();
+    if (!calibration_context) {
+        logger_.warn("BatchContextProvider: calibration context is not set");
         return std::nullopt;
     }
 
-    if (!settings_query_.currentDisplacement()) {
-        logger_.warn("BatchContextProvider: displacement is not set");
-        return std::nullopt;
-    }
-
-    std::string base_path = *settings_query_.currentBatchPath();
+    std::string base_path = calibration_context->batch_path();
     std::string date = QDate::currentDate().toString("dd.MM.yyyy").toStdString();
     std::string path = base_path + "/" + date;
 
-    int displacement_id = *settings_query_.currentDisplacement()->id;
+    int displacement_id = calibration_context->displacement.id;
 
     QDir baseDir(QString::fromStdString(path));
     if (!baseDir.exists() && !baseDir.mkpath(".")) {
@@ -46,7 +42,6 @@ infra::calib::BatchContextProvider::current() {
     const int max_attempts = 10000;
 
     while (party_id < max_attempts) {
-
         full_path = path + "/p" +
                     std::to_string(party_id) +
                     "-" +

@@ -3,7 +3,6 @@
 
 #include <vector>
 
-#include "application/orchestrators/settings/CalibrationSettingsQuery.h"
 #include "application/orchestrators/video/VideoSourceManager.h"
 #include "domain/core/calibration/recording/CalibrationRecorderEvent.h"
 #include "domain/ports/calibration/recording/ICalibrationRecorder.h"

@@ -4,12 +4,13 @@ add_library(application STATIC
         orchestrators/calibration/process/CalibrationOrchestrator.cpp
         orchestrators/calibration/result/CalibrationResultBuilder.cpp
         orchestrators/video/VideoSourceManager.cpp
-        orchestrators/settings/CalibrationSettingsQuery.cpp
+        orchestrators/settings/CalibrationContextProvider.cpp
         orchestrators/motor/MotorControlInteractor.cpp
 
         usecases/cameras/OpenSelectedCameras.cpp
         usecases/cameras/CloseAllCameras.cpp
         usecases/cameras/OpenAllCameras.cpp
+        usecases/calibration/CalibrationSessionControl.cpp
         ports/calibration/result/ICalibrationResultSaver.h
 
 )

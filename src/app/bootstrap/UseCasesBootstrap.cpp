@@ -4,10 +4,11 @@
 #include "application/orchestrators/calibration/process/CalibrationOrchestrator.h"
 #include "application/orchestrators/calibration/process/CalibrationOrchestratorPorts.h"
 #include "application/orchestrators/motor/MotorControlInteractor.h"
-#include "application/orchestrators/settings/CalibrationSettingsQuery.h"
+#include "application/orchestrators/settings/CalibrationContextProvider.h"
 #include "application/usecases/cameras/CloseAllCameras.h"
 #include "application/usecases/cameras/OpenAllCameras.h"
 #include "application/usecases/cameras/OpenSelectedCameras.h"
+#include "application/usecases/calibration/CalibrationSessionControl.h"
 #include "domain/ports/calibration/recording/ICalibrationRecorder.h"
 #include "domain/ports/calibration/strategy/ICalibrationStrategy.h"
 #include "infrastructure/calibration/recording/in_memory/InMemoryCalibrationRecorder.h"
@@ -29,8 +30,9 @@ void UseCasesBootstrap::initialize() {
     createCloseAllCameras();
 
     createMotorControlInteractor();
-    createCalibrationSettingsQuery();
+    createCalibrationContextProvider();
     createCalibrationProcessOrchestrator();
+    createCalibrationSessionControl();
 }
 
 void UseCasesBootstrap::createOpenSelectedCameras() {
@@ -49,8 +51,8 @@ void UseCasesBootstrap::createMotorControlInteractor() {
     motor_control_interactor = std::make_unique<MotorControlInteractor>(*app_.motor_driver);
 }
 
-void UseCasesBootstrap::createCalibrationSettingsQuery() {
-    CalibrationSettingsQueryPorts ports{
+void UseCasesBootstrap::createCalibrationContextProvider() {
+    CalibrationContextProviderPorts ports{
         *app_.info_settings_storage,
         *app_.displacement_catalog,
         *app_.gauge_catalog,
@@ -59,7 +61,7 @@ void UseCasesBootstrap::createCalibrationSettingsQuery() {
         *app_.printer_catalog
     };
 
-    calibration_settings_query = std::make_unique<CalibrationSettingsQuery>(ports);
+    calibration_context_provider = std::make_unique<CalibrationContextProvider>(ports);
 }
 
 
@@ -76,4 +78,10 @@ void UseCasesBootstrap::createCalibrationProcessOrchestrator() {
     };
 
     calibration_process_orchestrator = std::make_unique<CalibrationOrchestrator>(ports);
+}
+
+void UseCasesBootstrap::createCalibrationSessionControl() {
+    calibration_session_control = std::make_unique<CalibrationSessionControl>(
+        *calibration_process_orchestrator,
+        *calibration_context_provider);
 }
