@@ -8,21 +8,22 @@
 #include "application/usecases/cameras/CloseAllCameras.h"
 #include "application/usecases/cameras/OpenAllCameras.h"
 #include "application/usecases/cameras/OpenSelectedCameras.h"
+#include "application/usecases/calibration/CalibrationResultSaveControl.h"
 #include "application/usecases/calibration/CalibrationSessionControl.h"
 #include "domain/ports/calibration/recording/ICalibrationRecorder.h"
 #include "domain/ports/calibration/strategy/ICalibrationStrategy.h"
+#include "infrastructure/calibration/batch/BatchContextProvider.h"
 #include "infrastructure/calibration/recording/in_memory/InMemoryCalibrationRecorder.h"
+#include "infrastructure/calibration/result/in_file/FileCalibrationResultSaver.h"
 #include "infrastructure/calibration/strats/stand4/Stand4CalibrationStrategy.h"
+#include "infrastructure/desktop/qt/QtFileExplorerLauncher.h"
 
 using namespace application::usecase;
 using namespace application::orchestrators;
 using namespace infra::calib;
 
-
 UseCasesBootstrap::UseCasesBootstrap(ApplicationBootstrap &application): app_(application) {}
-
-UseCasesBootstrap::~UseCasesBootstrap() {
-}
+UseCasesBootstrap::~UseCasesBootstrap() = default;
 
 void UseCasesBootstrap::initialize() {
     createOpenSelectedCameras();
@@ -33,23 +34,16 @@ void UseCasesBootstrap::initialize() {
     createCalibrationContextProvider();
     createCalibrationProcessOrchestrator();
     createCalibrationSessionControl();
+    createBatchContextProvider();
+    createCalibrationResultSaver();
+    createFileExplorerLauncher();
+    createCalibrationResultSaveControl();
 }
 
-void UseCasesBootstrap::createOpenSelectedCameras() {
-    open_selected_cameras = std::make_unique<OpenSelectedCameras>(*app_.video_source_manager);
-}
-
-void UseCasesBootstrap::createOpenAllCameras() {
-    open_all_cameras = std::make_unique<OpenAllCameras>(*app_.video_source_manager);
-}
-
-void UseCasesBootstrap::createCloseAllCameras() {
-    close_all_cameras = std::make_unique<CloseAllCameras>(*app_.video_source_manager);
-}
-
-void UseCasesBootstrap::createMotorControlInteractor() {
-    motor_control_interactor = std::make_unique<MotorControlInteractor>(*app_.motor_driver);
-}
+void UseCasesBootstrap::createOpenSelectedCameras() { open_selected_cameras = std::make_unique<OpenSelectedCameras>(*app_.video_source_manager); }
+void UseCasesBootstrap::createOpenAllCameras() { open_all_cameras = std::make_unique<OpenAllCameras>(*app_.video_source_manager); }
+void UseCasesBootstrap::createCloseAllCameras() { close_all_cameras = std::make_unique<CloseAllCameras>(*app_.video_source_manager); }
+void UseCasesBootstrap::createMotorControlInteractor() { motor_control_interactor = std::make_unique<MotorControlInteractor>(*app_.motor_driver); }
 
 void UseCasesBootstrap::createCalibrationContextProvider() {
     CalibrationContextProviderPorts ports{
@@ -63,7 +57,6 @@ void UseCasesBootstrap::createCalibrationContextProvider() {
 
     calibration_context_provider = std::make_unique<CalibrationContextProvider>(ports);
 }
-
 
 void UseCasesBootstrap::createCalibrationProcessOrchestrator() {
     CalibrationOrchestratorPorts ports{
@@ -84,4 +77,32 @@ void UseCasesBootstrap::createCalibrationSessionControl() {
     calibration_session_control = std::make_unique<CalibrationSessionControl>(
         *calibration_process_orchestrator,
         *calibration_context_provider);
+}
+
+void UseCasesBootstrap::createBatchContextProvider() {
+    BatchContextProviderPorts ports{
+        app_.createLogger("BatchContextProvider"),
+        *calibration_context_provider
+    };
+    batch_context_provider = std::make_unique<BatchContextProvider>(ports);
+}
+
+void UseCasesBootstrap::createCalibrationResultSaver() {
+    CalibrationResultSaverPorts ports{
+        app_.createLogger("CalibrationResultSaver"),
+        *batch_context_provider
+    };
+    calibration_result_saver = std::make_unique<FileCalibrationResultSaver>(ports);
+}
+
+void UseCasesBootstrap::createFileExplorerLauncher() {
+    file_explorer_launcher = std::make_unique<infra::desktop::QtFileExplorerLauncher>();
+}
+
+void UseCasesBootstrap::createCalibrationResultSaveControl() {
+    calibration_result_save_control = std::make_unique<CalibrationResultSaveControl>(
+        *app_.calibration_result_source,
+        *calibration_result_saver,
+        *batch_context_provider,
+        *file_explorer_launcher);
 }
