@@ -23,6 +23,10 @@ namespace domain::ports {
 }
 
 namespace application::ports {
+    class ICalibrationResultSaver;
+}
+
+namespace application::ports {
     struct ILogSourcesStorage;
     struct IInfoSettingsStorage;
     struct IPrinterCatalog;
@@ -94,6 +98,7 @@ public:
     std::unique_ptr<domain::ports::ICalibrationStrategy> calibration_strategy;
     std::unique_ptr<domain::ports::ICalibrationRecorder> calibration_recorder;
     std::unique_ptr<domain::ports::ICalibrationResultSource> calibration_result_source;
+    std::unique_ptr<application::ports::ICalibrationResultSaver> calibration_result_saver;
 
     ////////////////////////////////////////////////////////////////////////////////////////
     // Каталоги
@@ -142,6 +147,7 @@ private:
     void createCalibrationRecorder();
     void createCalibrationCalculator();
     void createCalibrationResultSource();
+    void createCalibrationResultSaver();
 
     ////////////////////////////////////////////////////////////////////////////////////////
     void createDisplacementCatalog();

@@ -34,6 +34,7 @@
 
 #include "infrastructure/angle/from_video/AngleSourceFromVideo.h"
 #include "infrastructure/calibration/recording/in_memory/InMemoryCalibrationRecorder.h"
+#include "infrastructure/calibration/result/in_file/FileCalibrationResultSaver.h"
 #include "infrastructure/calibration/strats/CalibrationStrategyPorts.h"
 #include "infrastructure/calibration/strats/stand4/Stand4CalibrationStrategy.h"
 #include "infrastructure/calibration/strats/stand4/Stand4CalibrationStrategyConfig.h"
@@ -107,6 +108,7 @@ void ApplicationBootstrap::initialize() {
 
 
     createInfoSettingsStorage();
+    createCalibrationResultSaver();
 }
 
 ILogger & ApplicationBootstrap::createLogger(const std::string &logger_name) {
@@ -349,4 +351,12 @@ void ApplicationBootstrap::createInfoSettingsStorage() {
 
 void ApplicationBootstrap::createProcessRunner() {
 
+}
+
+
+void ApplicationBootstrap::createCalibrationResultSaver() {
+    infra::calib::CalibrationResultSaverPorts ports {
+        createLogger("CalibrationResultSaver")
+    };
+    calibration_result_saver = std::make_unique<infra::calib::FileCalibrationResultSaver>(ports);
 }

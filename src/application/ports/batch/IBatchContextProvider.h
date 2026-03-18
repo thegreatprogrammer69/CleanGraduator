@@ -8,7 +8,8 @@
 namespace application::ports {
     struct IBatchContextProvider {
         virtual ~IBatchContextProvider() = default;
-        virtual std::optional<models::BatchContext> current() = 0;
+        virtual std::optional<models::BatchContext> peekNext() = 0;
+        virtual std::optional<models::BatchContext> createNext() = 0;
     };
 }
 
