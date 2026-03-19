@@ -61,7 +61,33 @@ private:
         std::optional<std::string> fault;
     };
 
+    struct StartResult
+    {
+        std::optional<std::string> error;
+
+        [[nodiscard]] bool ok() const
+        {
+            return !error.has_value();
+        }
+
+        static StartResult success()
+        {
+            return {};
+        }
+
+        static StartResult failure(std::string message)
+        {
+            return StartResult{std::move(message)};
+        }
+    };
+
 private:
+    StartResult prepareMotor();
+    StartResult prepareSources();
+    StartResult startPressureSource();
+    StartResult beginStrategy();
+    void startRecording();
+
     void attachObservers();
     void detachObservers();
 

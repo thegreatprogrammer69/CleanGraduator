@@ -15,7 +15,7 @@
 namespace {
     QString appStyle()
     {
-        QFile file("styles/style.qss");
+        QFile file("../../../styles/style.qss");
         if (!file.open(QFile::ReadOnly | QFile::Text)) {
             return QString(); // или логирование ошибки
         }
@@ -26,8 +26,6 @@ namespace {
 } // namespace
 
 int main(int argc, char *argv[]) {
-    QCoreApplication::setAttribute(Qt::AA_UseDesktopOpenGL);
-
     QApplication app(argc, argv);
 
     Q_INIT_RESOURCE(resources);
@@ -35,9 +33,9 @@ int main(int argc, char *argv[]) {
     app.setStyleSheet(appStyle());
     app.setStyle("Windows");
 
-    const std::string setup_dir = (argc > 1) ? argv[1] : "setup";
-    const std::string catalog_dir = (argc > 1) ? argv[1] : "catalogs";
-    const std::string log_dir = (argc > 1) ? argv[1] : "logs";
+    const std::string setup_dir = (argc > 1) ? argv[1] : "../../../setup";
+    const std::string catalog_dir = (argc > 1) ? argv[1] : "../../../catalogs";
+    const std::string log_dir = (argc > 1) ? argv[1] : "../../../logs";
 
     try {
         ApplicationBootstrap application_bootstrap(setup_dir, catalog_dir, log_dir);
