@@ -179,6 +179,7 @@ void ViewModelsBootstrap::createControl() {
 
 void ViewModelsBootstrap::createCalibrationResultTable() {
     CalibrationResultTableViewModelDeps deps {
+        *app_.calibration_recorder,
         *app_.calibration_result_source,
         *app_.calibration_result_validation_source
     };

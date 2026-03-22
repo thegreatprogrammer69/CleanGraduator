@@ -2,6 +2,7 @@
 #define CLEANGRADUATOR_QTCALIBRATIONRESULTTABLEMODEL_H
 
 #include <optional>
+#include <unordered_map>
 #include <QAbstractTableModel>
 #include <QVector>
 #include <QString>
@@ -41,15 +42,35 @@ namespace ui {
             QVector<Cell> cells{};
         };
 
+        static constexpr int kCameraCount = 8;
+        static constexpr int kColumnsPerCamera = 2;
+        static constexpr int kColumnCount = kCameraCount * kColumnsPerCamera;
+
         void applyResult(std::optional<domain::common::CalibrationResult> result);
         void rebuildRows(const domain::common::CalibrationResult& result);
         void applyValidation(const std::optional<domain::common::CalibrationResultValidation>& validation);
+        void applyInfo(const mvvm::CalibrationResultInfo& info);
+
+        Row buildSpanRow(
+            const QString& label,
+            const std::unordered_map<domain::common::SourceId, QString>& values) const;
+        static QString formatMeasurementCount(
+            const std::unordered_map<domain::common::SourceId, int>& counts,
+            domain::common::SourceId source_id);
+        static std::optional<float> computeScaleSpan(
+            const domain::common::CalibrationResult& result,
+            domain::common::SourceId source_id);
+        static std::optional<float> computeScaleNonlinearity(
+            const domain::common::CalibrationResult& result,
+            domain::common::SourceId source_id);
 
     private:
         mvvm::CalibrationResultTableViewModel& vm_;
+        mvvm::Observable<mvvm::CalibrationResultInfo>::Subscription info_sub_;
         mvvm::Observable<std::optional<domain::common::CalibrationResult>>::Subscription current_result_sub_;
         mvvm::Observable<std::optional<domain::common::CalibrationResultValidation>>::Subscription current_validation_sub_;
 
+        mvvm::CalibrationResultInfo current_info_{};
         std::optional<domain::common::CalibrationResult> current_result_;
         std::optional<domain::common::CalibrationResultValidation> current_validation_;
         QVector<Row> rows_;
