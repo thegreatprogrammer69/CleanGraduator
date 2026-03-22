@@ -99,6 +99,7 @@ void ViewModelsBootstrap::createInfoSettings() {
         *app_.precision_catalog,
         *app_.pressure_unit_catalog,
         *app_.printer_catalog,
+        *use_cases_.clibration_result_validation_source,
     };
 
     info_settings =
@@ -159,7 +160,8 @@ void ViewModelsBootstrap::createMotorControl() {
 
 void ViewModelsBootstrap::createCalibrationSessionControl() {
     CalibrationSessionControlViewModelDeps deps{
-        *use_cases_.calibration_session_control
+        *use_cases_.calibration_session_control,
+        *use_cases_.clibration_result_validation_source
     };
     calibration_session_control = std::make_unique<CalibrationSessionControlViewModel>(deps);
 }
@@ -176,7 +178,8 @@ void ViewModelsBootstrap::createControl() {
 
 void ViewModelsBootstrap::createCalibrationResultTable() {
     CalibrationResultTableViewModelDeps deps {
-        *app_.calibration_result_source
+        *app_.calibration_result_source,
+        *use_cases_.clibration_result_validation_source
     };
     calibration_result_table = std::make_unique<CalibrationResultTableViewModel>(deps);
 }

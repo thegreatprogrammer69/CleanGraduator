@@ -6,6 +6,7 @@
 #include "application/orchestrators/calibration/process/CalibrationOrchestratorInput.h"
 #include "application/orchestrators/calibration/process/CalibrationOrchestratorState.h"
 #include "application/usecases/calibration/CalibrationSessionControl.h"
+#include "domain/ports/calibration/result/IClibrationResultValidationSource.h"
 #include "domain/core/calibration/common/CalibrationMode.h"
 #include "viewmodels/Observable.h"
 
@@ -13,6 +14,7 @@ namespace mvvm {
 
 struct CalibrationSessionControlViewModelDeps {
     application::usecase::CalibrationSessionControl& control;
+    domain::ports::IClibrationResultValidationSource& validation_source;
 };
 
 class CalibrationSessionControlViewModel final : public application::ports::CalibrationOrchestratorObserver
@@ -22,6 +24,7 @@ public:
     ~CalibrationSessionControlViewModel() override;
 
     void setCalibrationMode(domain::common::CalibrationMode mode);
+    void setKuModeEnabled(bool enabled);
     void startCalibration();
     void stopCalibration();
     void emergencyStop();
@@ -30,6 +33,7 @@ public:
 
 
     Observable<domain::common::CalibrationMode> selected_mode{domain::common::CalibrationMode::Full};
+    Observable<bool> ku_mode_enabled{false};
     Observable<std::string> error_text{std::string()};
     Observable<bool> can_start{true};
     Observable<bool> can_stop{false};
@@ -39,6 +43,7 @@ private:
     void applyState(application::orchestrators::CalibrationOrchestratorState state, const std::string& last_error);
 
     application::usecase::CalibrationSessionControl& control_;
+    domain::ports::IClibrationResultValidationSource& validation_source_;
 };
 
 } // namespace mvvm

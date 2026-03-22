@@ -3,6 +3,7 @@
 #include "ApplicationBootstrap.h"
 #include "application/orchestrators/calibration/process/CalibrationOrchestrator.h"
 #include "application/orchestrators/calibration/process/CalibrationOrchestratorPorts.h"
+#include "application/orchestrators/calibration/result/ClibrationResultValidationSource.h"
 #include "application/orchestrators/motor/MotorControlInteractor.h"
 #include "application/orchestrators/settings/CalibrationContextProvider.h"
 #include "application/usecases/cameras/CloseAllCameras.h"
@@ -36,6 +37,7 @@ void UseCasesBootstrap::initialize() {
     createCalibrationContextProvider();
     createCalibrationProcessOrchestrator();
     createCalibrationSessionControl();
+    createClibrationResultValidationSource();
     createBatchContextProvider();
     createCalibrationResultSaver();
     createSaveCalibrationResult();
@@ -90,6 +92,16 @@ void UseCasesBootstrap::createCalibrationSessionControl() {
     calibration_session_control = std::make_unique<CalibrationSessionControl>(
         *calibration_process_orchestrator,
         *calibration_context_provider);
+}
+
+void UseCasesBootstrap::createClibrationResultValidationSource() {
+    ClibrationResultValidationSourceDeps deps{
+        *app_.calibration_result_source,
+        *calibration_context_provider
+    };
+
+    clibration_result_validation_source =
+        std::make_unique<ClibrationResultValidationSource>(deps);
 }
 
 void UseCasesBootstrap::createBatchContextProvider() {

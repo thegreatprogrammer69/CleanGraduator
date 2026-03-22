@@ -26,6 +26,20 @@ QString buildIssuesTooltip(const std::vector<domain::common::CalibrationCellIssu
     return lines.join('\n');
 }
 
+QString buildValidationTooltip(const std::vector<domain::common::ClibrationResultValidationIssue>& issues)
+{
+    if (issues.empty()) {
+        return {};
+    }
+
+    QStringList lines;
+    lines.push_back(QStringLiteral("Проблемы валидации:"));
+    for (const auto& issue : issues) {
+        lines.push_back(QStringLiteral("• %1").arg(QString::fromStdString(issue.message)));
+    }
+    return lines.join('\n');
+}
+
 std::optional<domain::common::CalibrationIssueSeverity> maxSeverityOf(
     const std::vector<domain::common::CalibrationCellIssue>& issues)
 {
@@ -59,6 +73,25 @@ QVariant backgroundForSeverity(domain::common::CalibrationIssueSeverity severity
     return {};
 }
 
+QString decorateDisplay(const QVariant& value, std::optional<domain::common::CalibrationIssueSeverity> severity)
+{
+    QString display = value.toString();
+    if (!severity.has_value()) {
+        return display;
+    }
+
+    switch (*severity) {
+        case domain::common::CalibrationIssueSeverity::Info:
+            return display + QStringLiteral(" ℹ");
+        case domain::common::CalibrationIssueSeverity::Warning:
+            return display + QStringLiteral(" ⚠");
+        case domain::common::CalibrationIssueSeverity::Error:
+            return display + QStringLiteral(" ⛔");
+    }
+
+    return display;
+}
+
 } // namespace
 
 QtCalibrationResultTableModel::QtCalibrationResultTableModel(
@@ -72,9 +105,21 @@ QtCalibrationResultTableModel::QtCalibrationResultTableModel(
 
         QMetaObject::invokeMethod(this, [this, copy] {
             try {
-                applyResult(copy);
+                applyState(copy, current_validation_);
             } catch (...) {
                 qCritical() << "Unknown exception in QtCalibrationResultTableModel::applyResult";
+            }
+        }, Qt::QueuedConnection);
+    });
+
+    current_validation_sub_ = vm_.current_validation.subscribe([this](const auto& e) {
+        const auto copy = e.new_value;
+
+        QMetaObject::invokeMethod(this, [this, copy] {
+            try {
+                applyState(current_result_, copy);
+            } catch (...) {
+                qCritical() << "Unknown exception in QtCalibrationResultTableModel::applyState(validation)";
             }
         }, Qt::QueuedConnection);
     });
@@ -117,7 +162,7 @@ QVariant QtCalibrationResultTableModel::data(const QModelIndex& index, int role)
     const auto& cell = row.cells[index.column()];
 
     if (role == Qt::DisplayRole) {
-        return cell.display;
+        return decorateDisplay(cell.display, cell.max_severity);
     }
 
     if (role == Qt::ToolTipRole) {
@@ -129,8 +174,8 @@ QVariant QtCalibrationResultTableModel::data(const QModelIndex& index, int role)
     }
 
     if (role == Qt::BackgroundRole) {
-        if (cell.max_severity.has_value()) {
-            return backgroundForSeverity(*cell.max_severity);
+        if (cell.validation_severity.has_value()) {
+            return backgroundForSeverity(*cell.validation_severity);
         }
     }
 
@@ -178,22 +223,26 @@ Qt::ItemFlags QtCalibrationResultTableModel::flags(const QModelIndex& index) con
     return Qt::ItemIsEnabled | Qt::ItemIsSelectable;
 }
 
-void QtCalibrationResultTableModel::applyResult(
-    std::optional<domain::common::CalibrationResult> result)
+void QtCalibrationResultTableModel::applyState(
+    std::optional<domain::common::CalibrationResult> result,
+    std::optional<domain::common::ClibrationResultValidation> validation)
 {
     beginResetModel();
 
     current_result_ = std::move(result);
+    current_validation_ = std::move(validation);
     rows_.clear();
 
     if (current_result_.has_value()) {
-        rebuildRows(*current_result_);
+        rebuildRows(*current_result_, current_validation_);
     }
 
     endResetModel();
 }
 
-void QtCalibrationResultTableModel::rebuildRows(const domain::common::CalibrationResult& result)
+void QtCalibrationResultTableModel::rebuildRows(
+    const domain::common::CalibrationResult& result,
+    const std::optional<domain::common::ClibrationResultValidation>& validation)
 {
     rows_.clear();
 
@@ -220,6 +269,17 @@ void QtCalibrationResultTableModel::rebuildRows(const domain::common::Calibratio
                     const auto& issues = cell->issues();
                     uiCell.tooltip = buildIssuesTooltip(issues);
                     uiCell.max_severity = maxSeverityOf(issues);
+                }
+
+                if (validation.has_value()) {
+                    const auto& validation_issues = validation->issues(key);
+                    if (!validation_issues.empty()) {
+                        const auto validation_tooltip = buildValidationTooltip(validation_issues);
+                        uiCell.tooltip = uiCell.tooltip.isEmpty()
+                            ? validation_tooltip
+                            : uiCell.tooltip + QStringLiteral("\n\n") + validation_tooltip;
+                        uiCell.validation_severity = validation_issues.front().severity;
+                    }
                 }
 
                 row.cells.push_back(std::move(uiCell));
