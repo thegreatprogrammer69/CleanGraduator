@@ -1,6 +1,8 @@
 #ifndef CLEANGRADUATOR_CALIBRATIONRESULTTABLEVIEWMODEL_H
 #define CLEANGRADUATOR_CALIBRATIONRESULTTABLEVIEWMODEL_H
 #include "domain/ports/calibration/result/ICalibrationResultObserver.h"
+#include "domain/ports/calibration/result/IClibrationResultValidationObserver.h"
+#include "domain/ports/calibration/result/IClibrationResultValidationSource.h"
 #include "viewmodels/Observable.h"
 
 namespace domain::ports {
@@ -10,19 +12,23 @@ namespace domain::ports {
 namespace mvvm {
     struct CalibrationResultTableViewModelDeps {
         domain::ports::ICalibrationResultSource& result_source;
+        domain::ports::IClibrationResultValidationSource& validation_source;
     };
 
-    class CalibrationResultTableViewModel final : domain::ports::ICalibrationResultObserver {
+    class CalibrationResultTableViewModel final : public domain::ports::ICalibrationResultObserver, public domain::ports::IClibrationResultValidationObserver {
     public:
         explicit CalibrationResultTableViewModel(CalibrationResultTableViewModelDeps deps);
         ~CalibrationResultTableViewModel() override;
 
         void onCalibrationResultUpdated(const domain::common::CalibrationResult &result) override;
+        void onClibrationResultValidationUpdated(const domain::common::ClibrationResultValidation& validation) override;
 
         Observable<std::optional<domain::common::CalibrationResult>> current_result;
+        Observable<std::optional<domain::common::ClibrationResultValidation>> current_validation;
 
     private:
         domain::ports::ICalibrationResultSource& result_source_;
+        domain::ports::IClibrationResultValidationSource& validation_source_;
     };
 }
 

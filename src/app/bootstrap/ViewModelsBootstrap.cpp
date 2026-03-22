@@ -6,6 +6,7 @@
 #include "viewmodels/MainWindowViewModel.h"
 #include "../../viewmodels/calibration/recording/CalibrationSeriesViewModel.h"
 #include "viewmodels/calibration/result/CalibrationResultSaveViewModel.h"
+#include "viewmodels/calibration/result/CalibrationResultValidationViewModel.h"
 #include "viewmodels/calibration/result/CalibrationResultTableViewModel.h"
 #include "viewmodels/control/CalibrationSessionControlViewModel.h"
 #include "viewmodels/control/ControlViewModel.h"
@@ -46,6 +47,7 @@ void ViewModelsBootstrap::initialize() {
     createMotorControl();
     createCalibrationSessionControl();
 
+    createCalibrationResultValidation();
     createCalibrationResultTable();
     createCalibrationResultSave();
     createControl();
@@ -174,9 +176,20 @@ void ViewModelsBootstrap::createControl() {
     control = std::make_unique<ControlViewModel>(deps);
 }
 
+void ViewModelsBootstrap::createCalibrationResultValidation() {
+    CalibrationResultValidationViewModelDeps deps {
+        *app_.calibration_result_source,
+        *use_cases_.calibration_context_provider,
+        *info_settings,
+        *calibration_session_control
+    };
+    calibration_result_validation = std::make_unique<CalibrationResultValidationViewModel>(deps);
+}
+
 void ViewModelsBootstrap::createCalibrationResultTable() {
     CalibrationResultTableViewModelDeps deps {
-        *app_.calibration_result_source
+        *app_.calibration_result_source,
+        *calibration_result_validation
     };
     calibration_result_table = std::make_unique<CalibrationResultTableViewModel>(deps);
 }
