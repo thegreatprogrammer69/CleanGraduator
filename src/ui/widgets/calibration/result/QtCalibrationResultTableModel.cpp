@@ -8,6 +8,8 @@
 #include <QColor>
 #include <QIcon>
 #include <QStyle>
+#include <cmath>
+#include <limits>
 
 namespace ui {
 
@@ -105,6 +107,31 @@ QIcon iconForSeverity(domain::common::CalibrationIssueSeverity severity)
     return {};
 }
 
+std::optional<float> angleFor(
+    const domain::common::CalibrationResult& result,
+    const domain::common::PointId& point,
+    const domain::common::SourceId& source,
+    domain::common::MotorDirection direction)
+{
+    const domain::common::CalibrationCellKey key{point, source, direction};
+    const auto cell = result.cell(key);
+    if (!cell || !cell->angle()) {
+        return std::nullopt;
+    }
+
+    return cell->angle();
+}
+
+QString formatFloat(float value, int precision = 2)
+{
+    return QString::number(value, 'f', precision);
+}
+
+QString formatPercent(float value)
+{
+    return QStringLiteral("%1%").arg(QString::number(value, 'f', 2));
+}
+
 } // namespace
 
 QtCalibrationResultTableModel::QtCalibrationResultTableModel(
@@ -135,6 +162,23 @@ QtCalibrationResultTableModel::QtCalibrationResultTableModel(
             }
         }, Qt::QueuedConnection);
     });
+
+    info_snapshot_sub_ = vm_.info_snapshot.subscribe([this](const auto& e) {
+        const auto copy = e.new_value;
+        QMetaObject::invokeMethod(this, [this, copy] {
+            info_snapshot_ = copy;
+            if (!current_result_) {
+                beginResetModel();
+                rows_.clear();
+                endResetModel();
+                return;
+            }
+
+            beginResetModel();
+            rebuildRows(*current_result_);
+            endResetModel();
+        }, Qt::QueuedConnection);
+    }, false);
 }
 
 int QtCalibrationResultTableModel::rowCount(const QModelIndex& parent) const
@@ -235,6 +279,11 @@ Qt::ItemFlags QtCalibrationResultTableModel::flags(const QModelIndex& index) con
     return Qt::ItemIsEnabled | Qt::ItemIsSelectable;
 }
 
+bool QtCalibrationResultTableModel::shouldSpanPairColumns(int row) const
+{
+    return row >= 0 && row < rows_.size() && rows_[row].span_pair_columns;
+}
+
 void QtCalibrationResultTableModel::applyResult(
     std::optional<domain::common::CalibrationResult> result)
 {
@@ -262,6 +311,138 @@ void QtCalibrationResultTableModel::applyValidation(
     beginResetModel();
     rebuildRows(*current_result_);
     endResetModel();
+}
+
+QtCalibrationResultTableModel::Cell QtCalibrationResultTableModel::makePairCell(const QVariant& display) const
+{
+    Cell cell;
+    cell.display = display;
+    return cell;
+}
+
+int QtCalibrationResultTableModel::columnForSourceDirection(int source_index, domain::common::MotorDirection direction)
+{
+    return source_index * 2 + (direction == domain::common::MotorDirection::Backward ? 1 : 0);
+}
+
+QtCalibrationResultTableModel::Row QtCalibrationResultTableModel::buildOverallAngleRow(
+    const domain::common::CalibrationResult& result) const
+{
+    Row row;
+    row.label = QStringLiteral("общ.");
+    row.span_pair_columns = true;
+    row.cells.resize(columnCount());
+
+    if (result.points().empty()) {
+        return row;
+    }
+
+    const auto& first_point = result.points().front();
+    const auto& last_point = result.points().back();
+
+    for (int source_index = 0; source_index < result.sources().size(); ++source_index) {
+        const auto source = result.sources()[source_index];
+        const auto first_angle = angleFor(result, first_point, source, domain::common::MotorDirection::Forward);
+        const auto last_angle = angleFor(result, last_point, source, domain::common::MotorDirection::Forward);
+        if (!first_angle || !last_angle) {
+            continue;
+        }
+
+        row.cells[columnForSourceDirection(source_index, domain::common::MotorDirection::Forward)] =
+            makePairCell(formatFloat(*last_angle - *first_angle));
+    }
+
+    return row;
+}
+
+QtCalibrationResultTableModel::Row QtCalibrationResultTableModel::buildNonlinearityRow(
+    const domain::common::CalibrationResult& result) const
+{
+    Row row;
+    row.label = QStringLiteral("нелин.");
+    row.cells.resize(columnCount());
+
+    const auto& points = result.points();
+    if (points.size() < 2) {
+        return row;
+    }
+
+    for (int source_index = 0; source_index < result.sources().size(); ++source_index) {
+        const auto source = result.sources()[source_index];
+        for (const auto direction : {domain::common::MotorDirection::Forward, domain::common::MotorDirection::Backward}) {
+            std::vector<float> angles;
+            angles.reserve(points.size());
+
+            for (const auto& point : points) {
+                const auto angle = angleFor(result, point, source, direction);
+                if (!angle) {
+                    angles.clear();
+                    break;
+                }
+                angles.push_back(*angle);
+            }
+
+            if (angles.size() < 2) {
+                continue;
+            }
+
+            const float avr_delta = (angles.back() - angles.front()) / static_cast<float>(angles.size() - 1);
+            if (std::abs(avr_delta) < std::numeric_limits<float>::epsilon()) {
+                row.cells[columnForSourceDirection(source_index, direction)].display = QStringLiteral("—");
+                continue;
+            }
+
+            float max_d = 0.0F;
+            for (int i = 0; i + 1 < static_cast<int>(angles.size()); ++i) {
+                max_d = std::max(max_d, std::abs((angles[i + 1] - angles[i]) - avr_delta));
+            }
+
+            row.cells[columnForSourceDirection(source_index, direction)].display = formatPercent((max_d / std::abs(avr_delta)) * 100.0F);
+        }
+    }
+
+    return row;
+}
+
+QtCalibrationResultTableModel::Row QtCalibrationResultTableModel::buildMeasurementCountRow() const
+{
+    Row row;
+    row.label = QStringLiteral("кол-во");
+    row.cells.resize(columnCount());
+
+    for (int source_index = 0; source_index < info_snapshot_.source_ids.size(); ++source_index) {
+        const auto source = info_snapshot_.source_ids[source_index];
+        const auto it = info_snapshot_.counts_by_source.find(source);
+        if (it == info_snapshot_.counts_by_source.end()) {
+            continue;
+        }
+
+        row.cells[columnForSourceDirection(source_index, domain::common::MotorDirection::Forward)].display = it->second.forward;
+        row.cells[columnForSourceDirection(source_index, domain::common::MotorDirection::Backward)].display = it->second.backward;
+    }
+
+    return row;
+}
+
+QtCalibrationResultTableModel::Row QtCalibrationResultTableModel::buildCurrentAngleRow() const
+{
+    Row row;
+    row.label = QStringLiteral("тек. уг.");
+    row.span_pair_columns = true;
+    row.cells.resize(columnCount());
+
+    for (int source_index = 0; source_index < info_snapshot_.source_ids.size(); ++source_index) {
+        const auto source = info_snapshot_.source_ids[source_index];
+        const auto it = info_snapshot_.current_angle_by_source.find(source);
+        if (it == info_snapshot_.current_angle_by_source.end()) {
+            continue;
+        }
+
+        row.cells[columnForSourceDirection(source_index, domain::common::MotorDirection::Forward)] =
+            makePairCell(formatFloat(it->second));
+    }
+
+    return row;
 }
 
 void QtCalibrationResultTableModel::rebuildRows(const domain::common::CalibrationResult& result)
@@ -306,6 +487,11 @@ void QtCalibrationResultTableModel::rebuildRows(const domain::common::Calibratio
 
         rows_.push_back(std::move(row));
     }
+
+    rows_.push_back(buildOverallAngleRow(result));
+    rows_.push_back(buildNonlinearityRow(result));
+    rows_.push_back(buildMeasurementCountRow());
+    rows_.push_back(buildCurrentAngleRow());
 }
 
 } // namespace ui
