@@ -1,6 +1,7 @@
 add_library(viewmodels STATIC
         calibration/recording/CalibrationSeriesViewModel.cpp
         calibration/result/CalibrationResultTableViewModel.cpp
+        calibration/result/CalibrationResultValidationViewModel.cpp
         calibration/result/CalibrationResultSaveViewModel.cpp
 
         control/DualValveControlViewModel.cpp

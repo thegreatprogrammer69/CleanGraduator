@@ -34,6 +34,7 @@ public:
     Observable<bool> can_start{true};
     Observable<bool> can_stop{false};
     Observable<bool> can_abort{false};
+    Observable<bool> correction_u{false};
 
 private:
     void applyState(application::orchestrators::CalibrationOrchestratorState state, const std::string& last_error);
