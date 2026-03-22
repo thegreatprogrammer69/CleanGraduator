@@ -129,19 +129,7 @@ void CalibrationResultTableViewModel::updateCurrentInfo()
 
 void CalibrationResultTableViewModel::refreshMeasurementCountsFromRecorder()
 {
-    info_.measurement_counts.clear();
-
-    for (const auto& session_id : recorder_.sessions()) {
-        const auto session = recorder_.session(session_id);
-        if (!session) {
-            continue;
-        }
-
-        for (const auto& [source_id, series] : session->angle_series) {
-            info_.measurement_counts[source_id][session_id.direction] +=
-                static_cast<int>(series.size());
-        }
-    }
+    info_.measurement_counts = recorder_.angleCounts();
 }
 
 std::optional<float> CalibrationResultTableViewModel::calculateNonlinearity(

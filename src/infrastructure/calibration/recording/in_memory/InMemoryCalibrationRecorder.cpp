@@ -20,6 +20,9 @@ void InMemoryCalibrationRecorder::startRecording(CalibrationRecordingContext ctx
 
     recording_active_ = true;
 
+    angle_counts_.clear();
+    last_direction_.reset();
+
     logger_.info("Calibration recording started.");
 
     CalibrationRecorderEvent::RecordingStarted e;
@@ -59,6 +62,7 @@ void InMemoryCalibrationRecorder::beginSession(CalibrationSessionId id)
     new_session.id = id;
 
     active_session_ = std::move(new_session);
+    last_direction_ = id.direction;
 
     logger_.info(
         "Calibration {}/{} session started.",
@@ -89,6 +93,11 @@ void InMemoryCalibrationRecorder::record(const AngleSample& sample)
     if (active_session_)
     {
         active_session_->angle_series[sample.id].push(sample.time, sample.angle);
+    }
+
+    if (last_direction_)
+    {
+        ++angle_counts_[sample.id][*last_direction_];
     }
 
     CalibrationRecorderEvent::AngleSampleRecorded ev;
@@ -195,4 +204,8 @@ void InMemoryCalibrationRecorder::notify(
         {
             o.onCalibrationRecorderEvent(ev);
         });
+}
+domain::ports::CalibrationAngleCounts InMemoryCalibrationRecorder::angleCounts() const
+{
+    return angle_counts_;
 }

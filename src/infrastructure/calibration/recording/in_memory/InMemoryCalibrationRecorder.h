@@ -32,6 +32,8 @@ namespace infra::calib {
             domain::common::CalibrationSessionId id
         ) const override;
 
+        domain::ports::CalibrationAngleCounts angleCounts() const override;
+
         void addObserver(domain::ports::ICalibrationRecorderObserver& observer) override;
         void removeObserver(domain::ports::ICalibrationRecorderObserver& observer) override;
 
@@ -44,6 +46,8 @@ namespace infra::calib {
         bool recording_active_ = false;
 
         std::optional<domain::common::CalibrationSession> active_session_;
+        std::optional<domain::common::MotorDirection> last_direction_;
+        domain::ports::CalibrationAngleCounts angle_counts_;
 
         std::unordered_map<
             domain::common::CalibrationSessionId,
