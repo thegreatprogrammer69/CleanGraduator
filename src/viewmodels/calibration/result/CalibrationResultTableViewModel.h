@@ -69,6 +69,7 @@ namespace mvvm {
         domain::ports::ICalibrationResultValidationSource& validation_source_;
         domain::ports::ICalibrationRecorder& recorder_;
         CalibrationResultInfo info_;
+        std::optional<domain::common::MotorDirection> active_direction_;
     };
 }
 

@@ -77,15 +77,22 @@ void CalibrationResultTableViewModel::onCalibrationRecorderEvent(const Calibrati
 
         if constexpr (std::is_same_v<T, CalibrationRecorderEvent::RecordingStarted>) {
             resetInfo();
+            active_direction_.reset();
+            updateCurrentInfo();
+        } else if constexpr (std::is_same_v<T, CalibrationRecorderEvent::SessionStarted>) {
+            active_direction_ = e.id.direction;
+            for (auto& [source_id, counts] : info_.measurement_counts) {
+                counts[e.id.direction] = 0;
+            }
             updateCurrentInfo();
         } else if constexpr (std::is_same_v<T, CalibrationRecorderEvent::AngleSampleRecorded>) {
             info_.current_angles[e.sample.id] = e.sample.angle;
+            if (active_direction_) {
+                ++info_.measurement_counts[e.sample.id][*active_direction_];
+            }
             updateCurrentInfo();
         } else if constexpr (std::is_same_v<T, CalibrationRecorderEvent::SessionEnded>) {
-            for (const auto& [source_id, series] : e.result.angle_series) {
-                info_.measurement_counts[source_id][e.id.direction] =
-                    static_cast<int>(series.size());
-            }
+            active_direction_.reset();
             updateCurrentInfo();
         }
     }, ev.data);
