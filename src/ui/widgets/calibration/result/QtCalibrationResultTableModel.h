@@ -33,7 +33,9 @@ namespace ui {
         struct Cell final {
             QVariant display{};
             QString tooltip{};
+            QString base_tooltip{};
             std::optional<domain::common::CalibrationIssueSeverity> max_severity{};
+            std::optional<domain::common::ClibrationResultValidation::Issues> validation_issues{};
         };
         struct Row final {
             QVariant label{};
@@ -41,13 +43,17 @@ namespace ui {
         };
 
         void applyResult(std::optional<domain::common::CalibrationResult> result);
+        void applyValidation(std::optional<domain::common::ClibrationResultValidation> validation);
         void rebuildRows(const domain::common::CalibrationResult& result);
+        void rebuildValidationMarkup();
 
     private:
         mvvm::CalibrationResultTableViewModel& vm_;
         mvvm::Observable<std::optional<domain::common::CalibrationResult>>::Subscription current_result_sub_;
+        mvvm::Observable<std::optional<domain::common::ClibrationResultValidation>>::Subscription current_validation_sub_;
 
         std::optional<domain::common::CalibrationResult> current_result_;
+        std::optional<domain::common::ClibrationResultValidation> current_validation_;
         QVector<Row> rows_;
     };
 

@@ -31,6 +31,7 @@ namespace mvvm {
         const std::vector<std::string>& precisions() const;
         const std::vector<std::string>& pressureUnits() const;
         const std::vector<std::string>& printers() const;
+        double selectedPrecisionValue() const;
 
         Observable<int> selectedDisplacement;
         Observable<int> selectedGauge;
@@ -52,6 +53,7 @@ namespace mvvm {
         std::vector<std::string> precisions_;
         std::vector<std::string> pressure_units_;
         std::vector<std::string> printers_;
+        std::vector<double> precision_values_;
     };
 }
 

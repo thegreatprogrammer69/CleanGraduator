@@ -7,6 +7,7 @@
 #include "../../viewmodels/calibration/recording/CalibrationSeriesViewModel.h"
 #include "viewmodels/calibration/result/CalibrationResultSaveViewModel.h"
 #include "viewmodels/calibration/result/CalibrationResultTableViewModel.h"
+#include "viewmodels/calibration/result/ClibrationResultValidationSource.h"
 #include "viewmodels/control/CalibrationSessionControlViewModel.h"
 #include "viewmodels/control/ControlViewModel.h"
 #include "viewmodels/control/DualValveControlViewModel.h"
@@ -175,8 +176,16 @@ void ViewModelsBootstrap::createControl() {
 }
 
 void ViewModelsBootstrap::createCalibrationResultTable() {
+    ClibrationResultValidationSourceDeps validation_deps {
+        *app_.calibration_result_source,
+        *info_settings,
+        *calibration_session_control
+    };
+    calibration_result_validation_source = std::make_unique<ClibrationResultValidationSource>(validation_deps);
+
     CalibrationResultTableViewModelDeps deps {
-        *app_.calibration_result_source
+        *app_.calibration_result_source,
+        *calibration_result_validation_source
     };
     calibration_result_table = std::make_unique<CalibrationResultTableViewModel>(deps);
 }
