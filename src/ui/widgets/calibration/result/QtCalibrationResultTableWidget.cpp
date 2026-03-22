@@ -8,6 +8,8 @@
 
 namespace ui {
 
+static void applySpans(QTableView* table, QtCalibrationResultTableModel& model);
+
 QtCalibrationResultTableWidget::QtCalibrationResultTableWidget(
     mvvm::CalibrationResultTableViewModel& vm,
     QWidget* parent)
@@ -21,6 +23,7 @@ QtCalibrationResultTableWidget::QtCalibrationResultTableWidget(
     QMetaObject::invokeMethod(this, [this] {
         updateGeometry();
         updateSectionSizes();
+        applySpans(this, model_);
     }, Qt::QueuedConnection);
 }
 
@@ -60,6 +63,7 @@ void QtCalibrationResultTableWidget::connectModelSignals()
         QMetaObject::invokeMethod(this, [this] {
             updateGeometry();
             updateSectionSizes();
+            applySpans(this, model_);
             viewport()->update();
         }, Qt::QueuedConnection);
     };
@@ -73,10 +77,22 @@ void QtCalibrationResultTableWidget::connectModelSignals()
     connect(&model_, &QAbstractItemModel::columnsRemoved, this, refresh);
 }
 
+static void applySpans(QTableView* table, QtCalibrationResultTableModel& model)
+{
+    table->clearSpans();
+    for (int row = 0; row < model.rowCount(); ++row) {
+        if (!model.shouldSpanPair(row)) continue;
+        for (int col = 0; col < model.columnCount(); col += 2) {
+            table->setSpan(row, col, 1, 2);
+        }
+    }
+}
+
 void QtCalibrationResultTableWidget::resizeEvent(QResizeEvent* event)
 {
     QTableView::resizeEvent(event);
     updateSectionSizes();
+    applySpans(this, model_);
 }
 
 void QtCalibrationResultTableWidget::showEvent(QShowEvent* event)
@@ -84,6 +100,7 @@ void QtCalibrationResultTableWidget::showEvent(QShowEvent* event)
     QTableView::showEvent(event);
     updateGeometry();
     updateSectionSizes();
+    applySpans(this, model_);
 }
 
 QSize QtCalibrationResultTableWidget::sizeHint() const
