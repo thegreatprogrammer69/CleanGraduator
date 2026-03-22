@@ -2,6 +2,10 @@
 #define CLEANGRADUATOR_CALIBRATIONSERIESVIEWMODEL_H
 
 #include <vector>
+#include <optional>
+#include <unordered_map>
+
+#include "domain/core/drivers/motor/MotorDirection.h"
 
 #include "application/orchestrators/video/VideoSourceManager.h"
 #include "domain/core/calibration/recording/CalibrationRecorderEvent.h"
@@ -57,11 +61,14 @@ namespace mvvm {
         Observable<PressureEntry> current_pressure{};
         Observable<std::pair<domain::common::SourceId, AngleEntry>> current_angle{};
         Observable<std::vector<domain::common::SourceId>> source_ids{};
+        Observable<int> revision{};
 
         // history access
         const std::vector<PressureEntry>& pressureHistory() const;
         const std::vector<AngleEntry>& angleHistory(domain::common::SourceId source_id) const;
         const std::vector<domain::common::SourceId> &openedSources() const;
+        int angleMeasurementCount(domain::common::SourceId source_id, domain::common::MotorDirection direction) const;
+        std::optional<float> currentAngle(domain::common::SourceId source_id) const;
 
     protected:
 
@@ -73,8 +80,12 @@ namespace mvvm {
 
         std::vector<PressureEntry> pressure_history_;
         std::unordered_map<domain::common::SourceId, std::vector<AngleEntry>> angle_history_;
+        std::unordered_map<domain::common::SourceId, std::unordered_map<domain::common::MotorDirection, int>> angle_measurement_count_;
+        std::unordered_map<domain::common::SourceId, float> current_angles_;
 
         bool in_session_ = false;
+        std::optional<domain::common::MotorDirection> current_session_direction_;
+        int revision_counter_ = 0;
     };
 
 }

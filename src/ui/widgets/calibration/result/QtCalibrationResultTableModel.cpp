@@ -8,13 +8,24 @@
 #include <QColor>
 #include <QIcon>
 #include <QStyle>
+#include <algorithm>
+#include <cmath>
+#include <limits>
 
 namespace ui {
 
 namespace {
 
+using domain::common::CalibrationCellKey;
+using domain::common::CalibrationIssueSeverity;
+using domain::common::CalibrationResult;
+using domain::common::CalibrationResultValidation;
+using domain::common::MotorDirection;
+using domain::common::PointId;
+using domain::common::SourceId;
+
 QString buildIssuesTooltip(const std::vector<domain::common::CalibrationCellIssue>& issues,
-                          const domain::common::CalibrationResultValidation::Issues& validation_issues)
+                          const CalibrationResultValidation::Issues& validation_issues)
 {
     QStringList lines;
 
@@ -38,7 +49,7 @@ QString buildIssuesTooltip(const std::vector<domain::common::CalibrationCellIssu
     return lines.join('\n');
 }
 
-std::optional<domain::common::CalibrationIssueSeverity> maxSeverityOf(
+std::optional<CalibrationIssueSeverity> maxSeverityOf(
     const std::vector<domain::common::CalibrationCellIssue>& issues)
 {
     if (issues.empty()) {
@@ -55,8 +66,8 @@ std::optional<domain::common::CalibrationIssueSeverity> maxSeverityOf(
     return maxSeverity;
 }
 
-std::optional<domain::common::CalibrationIssueSeverity> maxValidationSeverityOf(
-    const domain::common::CalibrationResultValidation::Issues& issues)
+std::optional<CalibrationIssueSeverity> maxValidationSeverityOf(
+    const CalibrationResultValidation::Issues& issues)
 {
     if (issues.empty()) {
         return std::nullopt;
@@ -72,37 +83,106 @@ std::optional<domain::common::CalibrationIssueSeverity> maxValidationSeverityOf(
     return maxSeverity;
 }
 
-QVariant backgroundForSeverity(domain::common::CalibrationIssueSeverity severity)
+QVariant backgroundForSeverity(CalibrationIssueSeverity severity)
 {
-    using Severity = domain::common::CalibrationIssueSeverity;
-
     switch (severity) {
-        case Severity::Info:
+        case CalibrationIssueSeverity::Info:
             return QBrush(QColor(210, 240, 255));
-        case Severity::Warning:
+        case CalibrationIssueSeverity::Warning:
             return QBrush(QColor(255, 236, 179));
-        case Severity::Error:
+        case CalibrationIssueSeverity::Error:
             return QBrush(QColor(255, 205, 210));
     }
 
     return {};
 }
 
-QIcon iconForSeverity(domain::common::CalibrationIssueSeverity severity)
+QIcon iconForSeverity(CalibrationIssueSeverity severity)
 {
     auto* style = QApplication::style();
-    using Severity = domain::common::CalibrationIssueSeverity;
 
     switch (severity) {
-        case Severity::Info:
+        case CalibrationIssueSeverity::Info:
             return style->standardIcon(QStyle::SP_MessageBoxInformation);
-        case Severity::Warning:
+        case CalibrationIssueSeverity::Warning:
             return style->standardIcon(QStyle::SP_MessageBoxWarning);
-        case Severity::Error:
+        case CalibrationIssueSeverity::Error:
             return style->standardIcon(QStyle::SP_MessageBoxCritical);
     }
 
     return {};
+}
+
+std::optional<float> angleFor(const CalibrationResult& result, SourceId source_id, MotorDirection direction, PointId point)
+{
+    CalibrationCellKey key;
+    key.source_id = source_id;
+    key.direction = direction;
+    key.point_id = point;
+
+    const auto cell = result.cell(key);
+    if (!cell || !cell->angle()) {
+        return std::nullopt;
+    }
+
+    return *cell->angle();
+}
+
+QString formatFloat(std::optional<float> value, int precision = 2, const QString& suffix = {})
+{
+    if (!value) {
+        return {};
+    }
+
+    return QStringLiteral("%1%2")
+        .arg(QString::number(*value, 'f', precision), suffix);
+}
+
+std::optional<float> totalAngle(const CalibrationResult& result, SourceId source_id)
+{
+    const auto& points = result.points();
+    if (points.size() < 2) {
+        return std::nullopt;
+    }
+
+    const auto first = angleFor(result, source_id, MotorDirection::Forward, points.front());
+    const auto last = angleFor(result, source_id, MotorDirection::Forward, points.back());
+    if (!first || !last) {
+        return std::nullopt;
+    }
+
+    return *last - *first;
+}
+
+std::optional<float> nonlinearity(const CalibrationResult& result, SourceId source_id, MotorDirection direction)
+{
+    const auto& points = result.points();
+    if (points.size() < 2) {
+        return std::nullopt;
+    }
+
+    std::vector<float> angles;
+    angles.reserve(points.size());
+    for (const auto& point : points) {
+        const auto angle = angleFor(result, source_id, direction, point);
+        if (!angle) {
+            return std::nullopt;
+        }
+        angles.push_back(*angle);
+    }
+
+    const float avrDelta = (angles.back() - angles.front()) / static_cast<float>(angles.size() - 1);
+    if (std::fabs(avrDelta) <= std::numeric_limits<float>::epsilon()) {
+        return std::nullopt;
+    }
+
+    float maxD = 0.0f;
+    for (size_t i = 0; i + 1 < angles.size(); ++i) {
+        const float delta = angles[i + 1] - angles[i];
+        maxD = std::max(maxD, std::fabs(delta - avrDelta));
+    }
+
+    return (maxD / std::fabs(avrDelta)) * 100.0f;
 }
 
 } // namespace
@@ -135,6 +215,16 @@ QtCalibrationResultTableModel::QtCalibrationResultTableModel(
             }
         }, Qt::QueuedConnection);
     });
+
+    supplemental_revision_sub_ = vm_.supplemental_revision.subscribe([this](const auto&) {
+        QMetaObject::invokeMethod(this, [this] {
+            try {
+                notifySupplementalChanged();
+            } catch (...) {
+                qCritical() << "Unknown exception in QtCalibrationResultTableModel::notifySupplementalChanged";
+            }
+        }, Qt::QueuedConnection);
+    }, false);
 }
 
 int QtCalibrationResultTableModel::rowCount(const QModelIndex& parent) const
@@ -235,8 +325,18 @@ Qt::ItemFlags QtCalibrationResultTableModel::flags(const QModelIndex& index) con
     return Qt::ItemIsEnabled | Qt::ItemIsSelectable;
 }
 
+bool QtCalibrationResultTableModel::shouldSpanPair(int row) const
+{
+    if (row < 0 || row >= rows_.size()) {
+        return false;
+    }
+
+    return rows_[row].kind == Row::Kind::TotalAngle
+        || rows_[row].kind == Row::Kind::CurrentAngle;
+}
+
 void QtCalibrationResultTableModel::applyResult(
-    std::optional<domain::common::CalibrationResult> result)
+    std::optional<CalibrationResult> result)
 {
     beginResetModel();
 
@@ -251,7 +351,7 @@ void QtCalibrationResultTableModel::applyResult(
 }
 
 void QtCalibrationResultTableModel::applyValidation(
-    const std::optional<domain::common::CalibrationResultValidation>& validation)
+    const std::optional<CalibrationResultValidation>& validation)
 {
     current_validation_ = validation;
 
@@ -264,7 +364,18 @@ void QtCalibrationResultTableModel::applyValidation(
     endResetModel();
 }
 
-void QtCalibrationResultTableModel::rebuildRows(const domain::common::CalibrationResult& result)
+void QtCalibrationResultTableModel::notifySupplementalChanged()
+{
+    if (!current_result_) {
+        return;
+    }
+
+    beginResetModel();
+    rebuildRows(*current_result_);
+    endResetModel();
+}
+
+void QtCalibrationResultTableModel::rebuildRows(const CalibrationResult& result)
 {
     rows_.clear();
 
@@ -275,16 +386,16 @@ void QtCalibrationResultTableModel::rebuildRows(const domain::common::Calibratio
 
         for (int i = 0; i < 8; ++i) {
             for (int j = 0; j < 2; ++j) {
-                domain::common::CalibrationCellKey key;
+                CalibrationCellKey key;
                 key.point_id = point;
-                key.source_id = domain::common::SourceId{i + 1};
-                key.direction = static_cast<domain::common::MotorDirection>(j);
+                key.source_id = SourceId{i + 1};
+                key.direction = static_cast<MotorDirection>(j);
 
                 Cell uiCell;
                 const auto cell = result.cell(key);
                 const auto validation_issues = current_validation_
                     ? current_validation_->issuesFor(key)
-                    : domain::common::CalibrationResultValidation::Issues{};
+                    : CalibrationResultValidation::Issues{};
 
                 if (cell) {
                     if (cell->angle()) {
@@ -306,6 +417,44 @@ void QtCalibrationResultTableModel::rebuildRows(const domain::common::Calibratio
 
         rows_.push_back(std::move(row));
     }
+
+    Row totalRow;
+    totalRow.kind = Row::Kind::TotalAngle;
+    totalRow.label = QStringLiteral("общ.");
+    totalRow.cells.resize(16);
+    for (int source = 0; source < 8; ++source) {
+        totalRow.cells[source * 2].display = formatFloat(totalAngle(result, SourceId{source + 1}));
+    }
+    rows_.push_back(std::move(totalRow));
+
+    Row nonlinearityRow;
+    nonlinearityRow.kind = Row::Kind::Nonlinearity;
+    nonlinearityRow.label = QStringLiteral("нелин.");
+    nonlinearityRow.cells.resize(16);
+    for (int source = 0; source < 8; ++source) {
+        nonlinearityRow.cells[source * 2].display = formatFloat(nonlinearity(result, SourceId{source + 1}, MotorDirection::Forward), 2, QStringLiteral("%"));
+        nonlinearityRow.cells[source * 2 + 1].display = formatFloat(nonlinearity(result, SourceId{source + 1}, MotorDirection::Backward), 2, QStringLiteral("%"));
+    }
+    rows_.push_back(std::move(nonlinearityRow));
+
+    Row countRow;
+    countRow.kind = Row::Kind::Count;
+    countRow.label = QStringLiteral("кол-во");
+    countRow.cells.resize(16);
+    for (int source = 0; source < 8; ++source) {
+        countRow.cells[source * 2].display = vm_.angleMeasurementCount(SourceId{source + 1}, MotorDirection::Forward);
+        countRow.cells[source * 2 + 1].display = vm_.angleMeasurementCount(SourceId{source + 1}, MotorDirection::Backward);
+    }
+    rows_.push_back(std::move(countRow));
+
+    Row currentAngleRow;
+    currentAngleRow.kind = Row::Kind::CurrentAngle;
+    currentAngleRow.label = QStringLiteral("тек. уг.");
+    currentAngleRow.cells.resize(16);
+    for (int source = 0; source < 8; ++source) {
+        currentAngleRow.cells[source * 2].display = formatFloat(vm_.currentAngle(SourceId{source + 1}));
+    }
+    rows_.push_back(std::move(currentAngleRow));
 }
 
 } // namespace ui
