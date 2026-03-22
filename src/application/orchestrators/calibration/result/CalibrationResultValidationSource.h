@@ -44,7 +44,7 @@ namespace application::orchestrators {
         CalibrationResultValidationSourceDeps deps_;
         std::optional<domain::common::CalibrationResult> current_result_;
         std::optional<domain::common::CalibrationResultValidation> current_validation_;
-        ThreadSafeObserverList<domain::ports::ICalibrationResultValidationObserver> observers_;
+        mutable ThreadSafeObserverList<domain::ports::ICalibrationResultValidationObserver> observers_;
     };
 }
 
