@@ -59,6 +59,7 @@ namespace mvvm {
         void resetInfo();
         void updateInfoFromResult(const domain::common::CalibrationResult& result);
         void updateCurrentInfo();
+        void refreshMeasurementCountsFromRecorder();
         static std::optional<float> calculateNonlinearity(
             const domain::common::CalibrationResult& result,
             domain::common::SourceId source_id,
@@ -69,7 +70,6 @@ namespace mvvm {
         domain::ports::ICalibrationResultValidationSource& validation_source_;
         domain::ports::ICalibrationRecorder& recorder_;
         CalibrationResultInfo info_;
-        std::optional<domain::common::MotorDirection> active_direction_;
     };
 }
 

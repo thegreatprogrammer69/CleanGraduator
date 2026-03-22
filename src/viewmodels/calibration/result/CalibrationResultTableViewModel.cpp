@@ -49,6 +49,7 @@ CalibrationResultTableViewModel::CalibrationResultTableViewModel(CalibrationResu
     current_validation.set(validation_source_.currentValidation());
 
     resetInfo();
+    refreshMeasurementCountsFromRecorder();
     if (const auto& result = result_source_.currentResult(); result) {
         updateInfoFromResult(*result);
     }
@@ -77,22 +78,16 @@ void CalibrationResultTableViewModel::onCalibrationRecorderEvent(const Calibrati
 
         if constexpr (std::is_same_v<T, CalibrationRecorderEvent::RecordingStarted>) {
             resetInfo();
-            active_direction_.reset();
-            updateCurrentInfo();
-        } else if constexpr (std::is_same_v<T, CalibrationRecorderEvent::SessionStarted>) {
-            active_direction_ = e.id.direction;
-            for (auto& [source_id, counts] : info_.measurement_counts) {
-                counts[e.id.direction] = 0;
-            }
+            refreshMeasurementCountsFromRecorder();
             updateCurrentInfo();
         } else if constexpr (std::is_same_v<T, CalibrationRecorderEvent::AngleSampleRecorded>) {
             info_.current_angles[e.sample.id] = e.sample.angle;
-            if (active_direction_) {
-                ++info_.measurement_counts[e.sample.id][*active_direction_];
-            }
+            refreshMeasurementCountsFromRecorder();
             updateCurrentInfo();
-        } else if constexpr (std::is_same_v<T, CalibrationRecorderEvent::SessionEnded>) {
-            active_direction_.reset();
+        } else if constexpr (std::is_same_v<T, CalibrationRecorderEvent::SessionStarted>
+            || std::is_same_v<T, CalibrationRecorderEvent::SessionEnded>
+            || std::is_same_v<T, CalibrationRecorderEvent::RecordingStopped>) {
+            refreshMeasurementCountsFromRecorder();
             updateCurrentInfo();
         }
     }, ev.data);
@@ -130,6 +125,23 @@ void CalibrationResultTableViewModel::updateInfoFromResult(const CalibrationResu
 void CalibrationResultTableViewModel::updateCurrentInfo()
 {
     current_info.set(info_, true);
+}
+
+void CalibrationResultTableViewModel::refreshMeasurementCountsFromRecorder()
+{
+    info_.measurement_counts.clear();
+
+    for (const auto& session_id : recorder_.sessions()) {
+        const auto session = recorder_.session(session_id);
+        if (!session) {
+            continue;
+        }
+
+        for (const auto& [source_id, series] : session->angle_series) {
+            info_.measurement_counts[source_id][session_id.direction] +=
+                static_cast<int>(series.size());
+        }
+    }
 }
 
 std::optional<float> CalibrationResultTableViewModel::calculateNonlinearity(
