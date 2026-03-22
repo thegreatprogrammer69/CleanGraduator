@@ -29,6 +29,8 @@ namespace ui {
         QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const override;
         Qt::ItemFlags flags(const QModelIndex& index) const override;
 
+        bool shouldSpanPairColumns(int row) const;
+
     private:
         struct Cell final {
             QVariant display{};
@@ -39,19 +41,29 @@ namespace ui {
         struct Row final {
             QVariant label{};
             QVector<Cell> cells{};
+            bool span_pair_columns = false;
         };
 
         void applyResult(std::optional<domain::common::CalibrationResult> result);
         void rebuildRows(const domain::common::CalibrationResult& result);
         void applyValidation(const std::optional<domain::common::CalibrationResultValidation>& validation);
 
+        Row buildOverallAngleRow(const domain::common::CalibrationResult& result) const;
+        Row buildNonlinearityRow(const domain::common::CalibrationResult& result) const;
+        Row buildMeasurementCountRow() const;
+        Row buildCurrentAngleRow() const;
+        Cell makePairCell(const QVariant& display) const;
+        static int columnForSourceDirection(int source_index, domain::common::MotorDirection direction);
+
     private:
         mvvm::CalibrationResultTableViewModel& vm_;
         mvvm::Observable<std::optional<domain::common::CalibrationResult>>::Subscription current_result_sub_;
         mvvm::Observable<std::optional<domain::common::CalibrationResultValidation>>::Subscription current_validation_sub_;
+        mvvm::Observable<mvvm::CalibrationResultTableViewModel::InfoSnapshot>::Subscription info_snapshot_sub_;
 
         std::optional<domain::common::CalibrationResult> current_result_;
         std::optional<domain::common::CalibrationResultValidation> current_validation_;
+        mvvm::CalibrationResultTableViewModel::InfoSnapshot info_snapshot_{};
         QVector<Row> rows_;
     };
 

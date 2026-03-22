@@ -21,6 +21,7 @@ QtCalibrationResultTableWidget::QtCalibrationResultTableWidget(
     QMetaObject::invokeMethod(this, [this] {
         updateGeometry();
         updateSectionSizes();
+        updateSpans();
     }, Qt::QueuedConnection);
 }
 
@@ -60,6 +61,7 @@ void QtCalibrationResultTableWidget::connectModelSignals()
         QMetaObject::invokeMethod(this, [this] {
             updateGeometry();
             updateSectionSizes();
+            updateSpans();
             viewport()->update();
         }, Qt::QueuedConnection);
     };
@@ -77,6 +79,7 @@ void QtCalibrationResultTableWidget::resizeEvent(QResizeEvent* event)
 {
     QTableView::resizeEvent(event);
     updateSectionSizes();
+    updateSpans();
 }
 
 void QtCalibrationResultTableWidget::showEvent(QShowEvent* event)
@@ -84,6 +87,7 @@ void QtCalibrationResultTableWidget::showEvent(QShowEvent* event)
     QTableView::showEvent(event);
     updateGeometry();
     updateSectionSizes();
+    updateSpans();
 }
 
 QSize QtCalibrationResultTableWidget::sizeHint() const
@@ -188,6 +192,21 @@ void QtCalibrationResultTableWidget::updateSectionSizes()
     }
 
     updateGeometry();
+}
+
+void QtCalibrationResultTableWidget::updateSpans()
+{
+    clearSpans();
+
+    for (int row = 0; row < model_.rowCount(); ++row) {
+        if (!model_.shouldSpanPairColumns(row)) {
+            continue;
+        }
+
+        for (int col = 0; col < model_.columnCount(); col += 2) {
+            setSpan(row, col, 1, 2);
+        }
+    }
 }
 
 } // namespace ui
