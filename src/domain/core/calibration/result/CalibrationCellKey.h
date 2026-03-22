@@ -9,6 +9,10 @@ namespace domain::common {
         PointId point_id;
         SourceId source_id;
         MotorDirection direction;
+
+        bool operator==(const CalibrationCellKey& rhs) const {
+            return point_id == rhs.point_id && source_id == rhs.source_id && direction == rhs.direction;
+        }
     };
 }
 

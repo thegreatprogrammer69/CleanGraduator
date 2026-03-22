@@ -22,6 +22,13 @@ const std::vector<std::string>& InfoSettingsViewModel::gauges() const { return g
 const std::vector<std::string>& InfoSettingsViewModel::precisions() const { return precisions_; }
 const std::vector<std::string>& InfoSettingsViewModel::pressureUnits() const { return pressure_units_; }
 const std::vector<std::string>& InfoSettingsViewModel::printers() const { return printers_; }
+double InfoSettingsViewModel::selectedPrecisionValue() const {
+    const auto idx = selectedPrecision.get_copy();
+    if (idx < 0 || idx >= static_cast<int>(precision_values_.size())) {
+        return 0.0;
+    }
+    return precision_values_[idx];
+}
 
 void InfoSettingsViewModel::save() {
     InfoSettingsData data;
@@ -45,6 +52,7 @@ void InfoSettingsViewModel::loadCatalogs() {
 
     for (const auto& item : deps_.precision_catalog.list()) {
         precisions_.emplace_back(fmt::format("{:.1f}%", item.precision.value));
+        precision_values_.push_back(item.precision.value);
     }
 
     for (const auto& item : deps_.pressure_unit_catalog.list()) {

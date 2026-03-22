@@ -1,6 +1,7 @@
 #ifndef CLEANGRADUATOR_QTCALIBRATIONSESSIONCONTROLWIDGET_H
 #define CLEANGRADUATOR_QTCALIBRATIONSESSIONCONTROLWIDGET_H
 
+#include <QCheckBox>
 #include <QComboBox>
 #include <QLabel>
 #include <QPushButton>
@@ -30,6 +31,7 @@ private:
 
     QLabel* errorLabel_{nullptr};
     QComboBox* modeBox_{nullptr};
+    QCheckBox* kuCheckBox_{nullptr};
     QPushButton* startButton_{nullptr};
     QPushButton* stopButton_{nullptr};
     QPushButton* emergencyStopButton_{nullptr};

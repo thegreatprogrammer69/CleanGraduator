@@ -4,6 +4,7 @@
 #include <vector>
 
 namespace mvvm {
+    class ClibrationResultValidationSource;
     class CalibrationResultTableViewModel;
     class CalibrationResultSaveViewModel;
     class CalibrationSeriesViewModel;
@@ -49,6 +50,7 @@ public:
     std::unique_ptr<mvvm::CalibrationSessionControlViewModel> calibration_session_control;
     std::unique_ptr<mvvm::ControlViewModel> control;
 
+    std::unique_ptr<mvvm::ClibrationResultValidationSource> calibration_result_validation_source;
     std::unique_ptr<mvvm::CalibrationResultTableViewModel> calibration_result_table;
     std::unique_ptr<mvvm::CalibrationResultSaveViewModel> calibration_result_save;
 

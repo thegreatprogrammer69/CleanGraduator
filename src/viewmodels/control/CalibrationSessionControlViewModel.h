@@ -34,6 +34,9 @@ public:
     Observable<bool> can_start{true};
     Observable<bool> can_stop{false};
     Observable<bool> can_abort{false};
+    Observable<bool> is_ku_enabled{false};
+
+    void setKuEnabled(bool enabled) { is_ku_enabled.set(enabled); }
 
 private:
     void applyState(application::orchestrators::CalibrationOrchestratorState state, const std::string& last_error);
