@@ -32,6 +32,7 @@ void QtCalibrationSessionControlWidget::setupUi() {
     modeBox_->addItem(tr("Только прямой ход"));
     modeBox_->addItem(tr("Только последняя точка"));
 
+    kuCheckBox_ = new QCheckBox(tr("к. у."), this);
     startButton_ = new QPushButton(tr("Старт"), this);
     stopButton_ = new QPushButton(tr("Стоп"), this);
     emergencyStopButton_ = new QPushButton(tr("Экстренный стоп"), this);
@@ -48,6 +49,7 @@ void QtCalibrationSessionControlWidget::setupUi() {
     mainLayout->addWidget(errorLabel_);
     mainLayout->addWidget(modeLabel);
     mainLayout->addWidget(modeBox_);
+    mainLayout->addWidget(kuCheckBox_);
     mainLayout->addLayout(buttonLayout);
 }
 
@@ -64,6 +66,10 @@ void QtCalibrationSessionControlWidget::bind() {
             vm_.setCalibrationMode(domain::common::CalibrationMode::Full);
             break;
         }
+    });
+
+    connect(kuCheckBox_, &QCheckBox::toggled, this, [this](bool checked) {
+        vm_.setKuModeEnabled(checked);
     });
 
     connect(startButton_, &QPushButton::clicked, this, [this] {
@@ -83,6 +89,15 @@ void QtCalibrationSessionControlWidget::bind() {
             this,
             [this, text = QString::fromStdString(change.new_value)]() {
                 errorLabel_->setText(text);
+            },
+            Qt::QueuedConnection);
+    }, false);
+
+    kuModeSub_ = vm_.ku_mode_enabled.subscribe([this](const auto& change) {
+        QMetaObject::invokeMethod(
+            this,
+            [this, value = change.new_value]() {
+                kuCheckBox_->setChecked(value);
             },
             Qt::QueuedConnection);
     }, false);
@@ -115,6 +130,7 @@ void QtCalibrationSessionControlWidget::bind() {
     }, false);
 
     errorLabel_->setText(QString::fromStdString(vm_.error_text.get_copy()));
+    kuCheckBox_->setChecked(vm_.ku_mode_enabled.get_copy());
     startButton_->setEnabled(vm_.can_start.get_copy());
     stopButton_->setEnabled(vm_.can_stop.get_copy());
     emergencyStopButton_->setEnabled(vm_.can_abort.get_copy());

@@ -11,6 +11,8 @@ using namespace application::orchestrators;
 CalibrationSessionControlViewModel::CalibrationSessionControlViewModel(
     CalibrationSessionControlViewModelDeps deps)
     : control_(deps.control)
+    , settings_storage_(deps.settings_storage)
+    , validation_source_(deps.validation_source)
 {
     control_.addObserver(*this);
 
@@ -18,6 +20,7 @@ CalibrationSessionControlViewModel::CalibrationSessionControlViewModel(
         ? CalibrationOrchestratorState::Started
         : CalibrationOrchestratorState::Stopped;
 
+    ku_mode_enabled.set(settings_storage_.loadInfoSettings().ku_enabled);
     applyState(initial_state, "");
 }
 
@@ -29,6 +32,16 @@ void CalibrationSessionControlViewModel::setCalibrationMode(
     domain::common::CalibrationMode mode)
 {
     selected_mode.set(mode);
+}
+
+
+void CalibrationSessionControlViewModel::setKuModeEnabled(bool enabled)
+{
+    ku_mode_enabled.set(enabled);
+    auto data = settings_storage_.loadInfoSettings();
+    data.ku_enabled = enabled;
+    settings_storage_.saveInfoSettings(data);
+    validation_source_.requestRefresh();
 }
 
 void CalibrationSessionControlViewModel::startCalibration() {

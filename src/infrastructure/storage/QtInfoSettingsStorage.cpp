@@ -9,6 +9,7 @@ namespace {
     constexpr const char* KEY_PRECISION = "precision_idx";
     constexpr const char* KEY_PRESSURE_UNIT = "pressure_unit_idx";
     constexpr const char* KEY_PRINTER = "printer_idx";
+    constexpr const char* KEY_KU_ENABLED = "ku_enabled";
 }
 
 using namespace infra::storage;
@@ -36,6 +37,7 @@ InfoSettingsData QtInfoSettingsStorage::loadInfoSettings() {
     data.precision_idx = settings_.value(KEY_PRECISION, 0).toInt();
     data.pressure_unit_idx = settings_.value(KEY_PRESSURE_UNIT, 0).toInt();
     data.printer_idx = settings_.value(KEY_PRINTER, 0).toInt();
+    data.ku_enabled = settings_.value(KEY_KU_ENABLED, false).toBool();
 
     settings_.endGroup();
 
@@ -57,6 +59,7 @@ void QtInfoSettingsStorage::saveInfoSettings(const InfoSettingsData& data) {
     settings_.setValue(KEY_PRECISION, data.precision_idx);
     settings_.setValue(KEY_PRESSURE_UNIT, data.pressure_unit_idx);
     settings_.setValue(KEY_PRINTER, data.printer_idx);
+    settings_.setValue(KEY_KU_ENABLED, data.ku_enabled);
 
     settings_.endGroup();
     settings_.sync();

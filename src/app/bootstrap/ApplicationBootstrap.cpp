@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "application/orchestrators/calibration/result/CalibrationResultBuilder.h"
+#include "application/orchestrators/calibration/result/CalibrationResultValidationSource.h"
 #include "application/orchestrators/video/VideoSourceManager.h"
 #include "application/ports/logging/ILoggerFactory.h"
 #include "infrastructure/calculation/angle/CastAnglemeter.h"
@@ -105,8 +106,8 @@ void ApplicationBootstrap::initialize() {
     createCalibrationCalculator();
     createCalibrationResultSource();
 
-
     createInfoSettingsStorage();
+    createCalibrationResultValidationSource();
 }
 
 ILogger & ApplicationBootstrap::createLogger(const std::string &logger_name) {
@@ -267,6 +268,17 @@ void ApplicationBootstrap::createCalibrationResultSource() {
         *calibration_recorder
     };
     calibration_result_source = std::make_unique<CalibrationResultBuilder>(ports);
+}
+
+
+void ApplicationBootstrap::createCalibrationResultValidationSource() {
+    CalibrationResultValidationSourceDeps deps{
+        createLogger("CalibrationResultValidationSource"),
+        *calibration_result_source,
+        *info_settings_storage,
+        *precision_catalog
+    };
+    calibration_result_validation_source = std::make_unique<CalibrationResultValidationSource>(deps);
 }
 
 void ApplicationBootstrap::createDisplacementCatalog() {

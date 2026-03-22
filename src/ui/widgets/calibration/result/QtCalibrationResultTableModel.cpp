@@ -1,26 +1,38 @@
 #include "QtCalibrationResultTableModel.h"
 
+#include <QApplication>
 #include <QMetaObject>
 #include <QDebug>
 #include <QStringList>
 #include <QBrush>
 #include <QColor>
+#include <QIcon>
+#include <QStyle>
 
 namespace ui {
 
 namespace {
 
-QString buildIssuesTooltip(const std::vector<domain::common::CalibrationCellIssue>& issues)
+QString buildIssuesTooltip(const std::vector<domain::common::CalibrationCellIssue>& issues,
+                          const domain::common::CalibrationResultValidation::Issues& validation_issues)
 {
-    if (issues.empty()) {
-        return {};
+    QStringList lines;
+
+    if (!issues.empty()) {
+        lines.push_back(QStringLiteral("Проблемы расчёта:"));
+        for (const auto& issue : issues) {
+            lines.push_back(QStringLiteral("• %1").arg(QString::fromStdString(issue.message)));
+        }
     }
 
-    QStringList lines;
-    lines.push_back(QStringLiteral("Проблемы в ячейке:"));
-
-    for (const auto& issue : issues) {
-        lines.push_back(QStringLiteral("• %1").arg(QString::fromStdString(issue.message)));
+    if (!validation_issues.empty()) {
+        if (!lines.isEmpty()) {
+            lines.push_back(QString());
+        }
+        lines.push_back(QStringLiteral("Проблемы валидации:"));
+        for (const auto& issue : validation_issues) {
+            lines.push_back(QStringLiteral("• %1").arg(QString::fromStdString(issue.message)));
+        }
     }
 
     return lines.join('\n');
@@ -43,17 +55,51 @@ std::optional<domain::common::CalibrationIssueSeverity> maxSeverityOf(
     return maxSeverity;
 }
 
+std::optional<domain::common::CalibrationIssueSeverity> maxValidationSeverityOf(
+    const domain::common::CalibrationResultValidation::Issues& issues)
+{
+    if (issues.empty()) {
+        return std::nullopt;
+    }
+
+    auto maxSeverity = issues.front().severity;
+    for (const auto& issue : issues) {
+        if (static_cast<int>(issue.severity) > static_cast<int>(maxSeverity)) {
+            maxSeverity = issue.severity;
+        }
+    }
+
+    return maxSeverity;
+}
+
 QVariant backgroundForSeverity(domain::common::CalibrationIssueSeverity severity)
 {
     using Severity = domain::common::CalibrationIssueSeverity;
 
     switch (severity) {
         case Severity::Info:
-            return QBrush(QColor(220, 235, 255));   // светло-голубой
+            return QBrush(QColor(210, 240, 255));
         case Severity::Warning:
-            return QBrush(QColor(255, 243, 205));   // светло-жёлтый
+            return QBrush(QColor(255, 236, 179));
         case Severity::Error:
-            return QBrush(QColor(248, 215, 218));   // светло-красный
+            return QBrush(QColor(255, 205, 210));
+    }
+
+    return {};
+}
+
+QIcon iconForSeverity(domain::common::CalibrationIssueSeverity severity)
+{
+    auto* style = QApplication::style();
+    using Severity = domain::common::CalibrationIssueSeverity;
+
+    switch (severity) {
+        case Severity::Info:
+            return style->standardIcon(QStyle::SP_MessageBoxInformation);
+        case Severity::Warning:
+            return style->standardIcon(QStyle::SP_MessageBoxWarning);
+        case Severity::Error:
+            return style->standardIcon(QStyle::SP_MessageBoxCritical);
     }
 
     return {};
@@ -75,6 +121,17 @@ QtCalibrationResultTableModel::QtCalibrationResultTableModel(
                 applyResult(copy);
             } catch (...) {
                 qCritical() << "Unknown exception in QtCalibrationResultTableModel::applyResult";
+            }
+        }, Qt::QueuedConnection);
+    });
+
+    current_validation_sub_ = vm_.current_validation.subscribe([this](const auto& e) {
+        const auto copy = e.new_value;
+        QMetaObject::invokeMethod(this, [this, copy] {
+            try {
+                applyValidation(copy);
+            } catch (...) {
+                qCritical() << "Unknown exception in QtCalibrationResultTableModel::applyValidation";
             }
         }, Qt::QueuedConnection);
     });
@@ -124,20 +181,20 @@ QVariant QtCalibrationResultTableModel::data(const QModelIndex& index, int role)
         return cell.tooltip;
     }
 
+    if (role == Qt::DecorationRole && cell.max_severity.has_value()) {
+        return iconForSeverity(*cell.max_severity);
+    }
+
     if (role == Qt::TextAlignmentRole) {
         return QVariant::fromValue(Qt::AlignHCenter | Qt::AlignVCenter);
     }
 
-    if (role == Qt::BackgroundRole) {
-        if (cell.max_severity.has_value()) {
-            return backgroundForSeverity(*cell.max_severity);
-        }
+    if (role == Qt::BackgroundRole && cell.validation_severity.has_value()) {
+        return backgroundForSeverity(*cell.validation_severity);
     }
 
-    if (role == Qt::ForegroundRole) {
-        if (cell.max_severity.has_value()) {
-            return QBrush(Qt::black);
-        }
+    if (role == Qt::ForegroundRole && cell.validation_severity.has_value()) {
+        return QBrush(Qt::black);
     }
 
     return {};
@@ -193,6 +250,20 @@ void QtCalibrationResultTableModel::applyResult(
     endResetModel();
 }
 
+void QtCalibrationResultTableModel::applyValidation(
+    const std::optional<domain::common::CalibrationResultValidation>& validation)
+{
+    current_validation_ = validation;
+
+    if (!current_result_) {
+        return;
+    }
+
+    beginResetModel();
+    rebuildRows(*current_result_);
+    endResetModel();
+}
+
 void QtCalibrationResultTableModel::rebuildRows(const domain::common::CalibrationResult& result)
 {
     rows_.clear();
@@ -211,6 +282,9 @@ void QtCalibrationResultTableModel::rebuildRows(const domain::common::Calibratio
 
                 Cell uiCell;
                 const auto cell = result.cell(key);
+                const auto validation_issues = current_validation_
+                    ? current_validation_->issuesFor(key)
+                    : domain::common::CalibrationResultValidation::Issues{};
 
                 if (cell) {
                     if (cell->angle()) {
@@ -218,8 +292,12 @@ void QtCalibrationResultTableModel::rebuildRows(const domain::common::Calibratio
                     }
 
                     const auto& issues = cell->issues();
-                    uiCell.tooltip = buildIssuesTooltip(issues);
+                    uiCell.tooltip = buildIssuesTooltip(issues, validation_issues);
                     uiCell.max_severity = maxSeverityOf(issues);
+                    uiCell.validation_severity = maxValidationSeverityOf(validation_issues);
+                } else {
+                    uiCell.tooltip = buildIssuesTooltip({}, validation_issues);
+                    uiCell.validation_severity = maxValidationSeverityOf(validation_issues);
                 }
 
                 row.cells.push_back(std::move(uiCell));

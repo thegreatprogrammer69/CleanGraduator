@@ -9,6 +9,7 @@ namespace domain::ports {
     struct ICalibrationRecorder;
     class ICalibrationStrategy;
     class ICalibrationResultSource;
+    class ICalibrationResultValidationSource;
     struct IValveDriver;
     struct IResultStore;
     struct IPressureSource;
@@ -94,6 +95,7 @@ public:
     std::unique_ptr<domain::ports::ICalibrationStrategy> calibration_strategy;
     std::unique_ptr<domain::ports::ICalibrationRecorder> calibration_recorder;
     std::unique_ptr<domain::ports::ICalibrationResultSource> calibration_result_source;
+    std::unique_ptr<domain::ports::ICalibrationResultValidationSource> calibration_result_validation_source;
 
     ////////////////////////////////////////////////////////////////////////////////////////
     // Каталоги
@@ -142,6 +144,7 @@ private:
     void createCalibrationRecorder();
     void createCalibrationCalculator();
     void createCalibrationResultSource();
+    void createCalibrationResultValidationSource();
 
     ////////////////////////////////////////////////////////////////////////////////////////
     void createDisplacementCatalog();

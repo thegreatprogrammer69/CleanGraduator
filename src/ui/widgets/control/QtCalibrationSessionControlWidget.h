@@ -4,6 +4,7 @@
 #include <QComboBox>
 #include <QLabel>
 #include <QPushButton>
+#include <QCheckBox>
 #include <QWidget>
 
 #include "viewmodels/Observable.h"
@@ -30,11 +31,13 @@ private:
 
     QLabel* errorLabel_{nullptr};
     QComboBox* modeBox_{nullptr};
+    QCheckBox* kuCheckBox_{nullptr};
     QPushButton* startButton_{nullptr};
     QPushButton* stopButton_{nullptr};
     QPushButton* emergencyStopButton_{nullptr};
 
     mvvm::Observable<std::string>::Subscription errorSub_;
+    mvvm::Observable<bool>::Subscription kuModeSub_;
     mvvm::Observable<bool>::Subscription canStartSub_;
     mvvm::Observable<bool>::Subscription canStopSub_;
     mvvm::Observable<bool>::Subscription canAbortSub_;

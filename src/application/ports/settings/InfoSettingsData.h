@@ -8,6 +8,7 @@ namespace application::ports {
         int precision_idx{0};
         int pressure_unit_idx{0};
         int printer_idx{0};
+        bool ku_enabled{false};
     };
 }
 

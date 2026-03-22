@@ -10,6 +10,7 @@
 #include "application/ports/catalogs/IPressureUnitCatalog.h"
 #include "application/ports/catalogs/IPrinterCatalog.h"
 #include "application/ports/settings/IInfoSettingsStorage.h"
+#include "domain/ports/calibration/result/ICalibrationResultValidationSource.h"
 #include "viewmodels/Observable.h"
 
 namespace mvvm {
@@ -20,6 +21,7 @@ namespace mvvm {
         application::ports::IGaugePrecisionCatalog& precision_catalog;
         application::ports::IPressureUnitCatalog& pressure_unit_catalog;
         application::ports::IPrinterCatalog& printer_catalog;
+        domain::ports::ICalibrationResultValidationSource& validation_source;
     };
 
     class InfoSettingsViewModel {

@@ -34,6 +34,7 @@ namespace ui {
             QVariant display{};
             QString tooltip{};
             std::optional<domain::common::CalibrationIssueSeverity> max_severity{};
+            std::optional<domain::common::CalibrationIssueSeverity> validation_severity{};
         };
         struct Row final {
             QVariant label{};
@@ -42,12 +43,15 @@ namespace ui {
 
         void applyResult(std::optional<domain::common::CalibrationResult> result);
         void rebuildRows(const domain::common::CalibrationResult& result);
+        void applyValidation(const std::optional<domain::common::CalibrationResultValidation>& validation);
 
     private:
         mvvm::CalibrationResultTableViewModel& vm_;
         mvvm::Observable<std::optional<domain::common::CalibrationResult>>::Subscription current_result_sub_;
+        mvvm::Observable<std::optional<domain::common::CalibrationResultValidation>>::Subscription current_validation_sub_;
 
         std::optional<domain::common::CalibrationResult> current_result_;
+        std::optional<domain::common::CalibrationResultValidation> current_validation_;
         QVector<Row> rows_;
     };
 

@@ -24,7 +24,7 @@ const std::vector<std::string>& InfoSettingsViewModel::pressureUnits() const { r
 const std::vector<std::string>& InfoSettingsViewModel::printers() const { return printers_; }
 
 void InfoSettingsViewModel::save() {
-    InfoSettingsData data;
+    InfoSettingsData data = deps_.storage.loadInfoSettings();
     data.displacement_idx = selectedDisplacement.get_copy();
     data.gauge_idx = selectedGauge.get_copy();
     data.precision_idx = selectedPrecision.get_copy();
@@ -32,6 +32,7 @@ void InfoSettingsViewModel::save() {
     data.printer_idx = selectedPrinter.get_copy();
 
     deps_.storage.saveInfoSettings(data);
+    deps_.validation_source.requestRefresh();
 }
 
 void InfoSettingsViewModel::loadCatalogs() {
