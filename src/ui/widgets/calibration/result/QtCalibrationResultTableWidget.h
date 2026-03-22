@@ -29,6 +29,7 @@ namespace ui {
         void connectModelSignals();
 
         void updateSectionSizes();
+        void updateSpans();
 
     private:
         QtCalibrationResultTableModel model_;

@@ -8,6 +8,7 @@
 #include <QColor>
 #include <QIcon>
 #include <QStyle>
+#include <cmath>
 
 namespace ui {
 
@@ -105,6 +106,11 @@ QIcon iconForSeverity(domain::common::CalibrationIssueSeverity severity)
     return {};
 }
 
+QString formatFloat(float value)
+{
+    return QString::number(value, 'f', 2);
+}
+
 } // namespace
 
 QtCalibrationResultTableModel::QtCalibrationResultTableModel(
@@ -113,6 +119,13 @@ QtCalibrationResultTableModel::QtCalibrationResultTableModel(
     : QAbstractTableModel(parent)
     , vm_(deps.vm)
 {
+    info_sub_ = vm_.info.subscribe([this](const auto& e) {
+        const auto copy = e.new_value;
+        QMetaObject::invokeMethod(this, [this, copy] {
+            applyInfo(copy);
+        }, Qt::QueuedConnection);
+    });
+
     current_result_sub_ = vm_.current_result.subscribe([this](const auto& e) {
         const auto copy = e.new_value;
 
@@ -152,7 +165,7 @@ int QtCalibrationResultTableModel::columnCount(const QModelIndex& parent) const
         return 0;
     }
 
-    return 16;
+    return kColumnCount;
 }
 
 QVariant QtCalibrationResultTableModel::data(const QModelIndex& index, int role) const
@@ -271,7 +284,7 @@ void QtCalibrationResultTableModel::rebuildRows(const domain::common::Calibratio
     for (const auto& point : result.points()) {
         Row row;
         row.label = QString::number(point.pressure, 'f', 2);
-        row.cells.reserve(16);
+        row.cells.reserve(kColumnCount);
 
         for (int i = 0; i < 8; ++i) {
             for (int j = 0; j < 2; ++j) {
@@ -306,6 +319,149 @@ void QtCalibrationResultTableModel::rebuildRows(const domain::common::Calibratio
 
         rows_.push_back(std::move(row));
     }
+
+    std::unordered_map<domain::common::SourceId, QString> total_angles;
+    std::unordered_map<domain::common::SourceId, QString> nonlinearities;
+    std::unordered_map<domain::common::SourceId, QString> current_angles;
+
+    for (int i = 0; i < kCameraCount; ++i) {
+        const auto source_id = domain::common::SourceId{i + 1};
+
+        if (const auto span = computeScaleSpan(result, source_id)) {
+            total_angles.emplace(source_id, formatFloat(*span));
+        }
+
+        if (const auto nl = computeScaleNonlinearity(result, source_id)) {
+            nonlinearities.emplace(source_id, formatFloat(*nl) + QStringLiteral(" %"));
+        }
+
+        const auto current_it = current_info_.current_angles.find(source_id);
+        if (current_it != current_info_.current_angles.end()) {
+            current_angles.emplace(source_id, formatFloat(current_it->second));
+        }
+    }
+
+    rows_.push_back(buildSpanRow(QStringLiteral("общ."), total_angles));
+    rows_.push_back(buildSpanRow(QStringLiteral("нелин."), nonlinearities));
+
+    Row count_row;
+    count_row.label = QStringLiteral("кол-во");
+    count_row.cells.reserve(kColumnCount);
+    for (int i = 0; i < kCameraCount; ++i) {
+        const auto source_id = domain::common::SourceId{i + 1};
+
+        Cell forward_cell;
+        forward_cell.display = formatMeasurementCount(current_info_.forward_measurement_counts, source_id);
+        count_row.cells.push_back(std::move(forward_cell));
+
+        Cell backward_cell;
+        backward_cell.display = formatMeasurementCount(current_info_.backward_measurement_counts, source_id);
+        count_row.cells.push_back(std::move(backward_cell));
+    }
+    rows_.push_back(std::move(count_row));
+
+    rows_.push_back(buildSpanRow(QStringLiteral("тек. уг."), current_angles));
+}
+
+void QtCalibrationResultTableModel::applyInfo(const mvvm::CalibrationResultInfo& info)
+{
+    current_info_ = info;
+
+    if (!current_result_) {
+        return;
+    }
+
+    beginResetModel();
+    rebuildRows(*current_result_);
+    endResetModel();
+}
+
+QtCalibrationResultTableModel::Row QtCalibrationResultTableModel::buildSpanRow(
+    const QString& label,
+    const std::unordered_map<domain::common::SourceId, QString>& values) const
+{
+    Row row;
+    row.label = label;
+    row.cells.reserve(kColumnCount);
+
+    for (int i = 0; i < kCameraCount; ++i) {
+        const auto source_id = domain::common::SourceId{i + 1};
+
+        Cell left_cell;
+        const auto it = values.find(source_id);
+        if (it != values.end()) {
+            left_cell.display = it->second;
+        }
+        row.cells.push_back(std::move(left_cell));
+        row.cells.push_back(Cell{});
+    }
+
+    return row;
+}
+
+QString QtCalibrationResultTableModel::formatMeasurementCount(
+    const std::unordered_map<domain::common::SourceId, int>& counts,
+    domain::common::SourceId source_id)
+{
+    const auto it = counts.find(source_id);
+    if (it == counts.end()) {
+        return {};
+    }
+
+    return QString::number(it->second);
+}
+
+std::optional<float> QtCalibrationResultTableModel::computeScaleSpan(
+    const domain::common::CalibrationResult& result,
+    domain::common::SourceId source_id)
+{
+    if (result.points().size() < 2) {
+        return std::nullopt;
+    }
+
+    domain::common::CalibrationCellKey first_key{domain::common::MotorDirection::Forward, result.points().front(), source_id};
+    domain::common::CalibrationCellKey last_key{domain::common::MotorDirection::Forward, result.points().back(), source_id};
+    const auto first = result.cell(first_key);
+    const auto last = result.cell(last_key);
+
+    if (!first || !last || !first->angle() || !last->angle()) {
+        return std::nullopt;
+    }
+
+    return *last->angle() - *first->angle();
+}
+
+std::optional<float> QtCalibrationResultTableModel::computeScaleNonlinearity(
+    const domain::common::CalibrationResult& result,
+    domain::common::SourceId source_id)
+{
+    if (result.points().size() < 2) {
+        return std::nullopt;
+    }
+
+    std::vector<float> angles;
+    angles.reserve(result.points().size());
+
+    for (const auto& point : result.points()) {
+        domain::common::CalibrationCellKey key{domain::common::MotorDirection::Forward, point, source_id};
+        const auto cell = result.cell(key);
+        if (!cell || !cell->angle()) {
+            return std::nullopt;
+        }
+        angles.push_back(*cell->angle());
+    }
+
+    const auto avr_delta = (angles.back() - angles.front()) / static_cast<float>(angles.size() - 1);
+    if (std::abs(avr_delta) < 1e-6f) {
+        return std::nullopt;
+    }
+
+    float max_delta = 0.0f;
+    for (std::size_t i = 0; i + 1 < angles.size(); ++i) {
+        max_delta = std::max(max_delta, std::abs((angles[i + 1] - angles[i]) - avr_delta));
+    }
+
+    return (max_delta / std::abs(avr_delta)) * 100.0f;
 }
 
 } // namespace ui

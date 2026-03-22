@@ -60,6 +60,7 @@ void QtCalibrationResultTableWidget::connectModelSignals()
         QMetaObject::invokeMethod(this, [this] {
             updateGeometry();
             updateSectionSizes();
+            updateSpans();
             viewport()->update();
         }, Qt::QueuedConnection);
     };
@@ -84,6 +85,7 @@ void QtCalibrationResultTableWidget::showEvent(QShowEvent* event)
     QTableView::showEvent(event);
     updateGeometry();
     updateSectionSizes();
+    updateSpans();
 }
 
 QSize QtCalibrationResultTableWidget::sizeHint() const
@@ -188,6 +190,31 @@ void QtCalibrationResultTableWidget::updateSectionSizes()
     }
 
     updateGeometry();
+    updateSpans();
+}
+
+void QtCalibrationResultTableWidget::updateSpans()
+{
+    clearSpans();
+
+    const auto* current_model = model();
+    if (current_model == nullptr) {
+        return;
+    }
+
+    const int row_count = current_model->rowCount();
+    const int column_count = current_model->columnCount();
+    if (row_count < 4 || column_count <= 0) {
+        return;
+    }
+
+    const int total_angle_row = row_count - 4;
+    const int current_angle_row = row_count - 1;
+
+    for (int col = 0; col + 1 < column_count; col += 2) {
+        setSpan(total_angle_row, col, 1, 2);
+        setSpan(current_angle_row, col, 1, 2);
+    }
 }
 
 } // namespace ui
