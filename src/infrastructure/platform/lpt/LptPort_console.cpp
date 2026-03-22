@@ -51,7 +51,7 @@ namespace infra::platform {
         if (offset >= impl_->registers.size())
             return 0;
 
-        auto value = impl_->registers[offset];
+        auto value = 0;
 
         // std::cout << "[LPT] READ  reg[" << offset << "] = " << static_cast<int>(value) << "\n";
 

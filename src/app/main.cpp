@@ -1,7 +1,11 @@
 #include <iostream>
+#include <stdexcept>
+
 #include <QApplication>
 #include <QTextStream>
 #include <QFile>
+#include <QCoreApplication>
+#include <QString>
 
 #include "bootstrap/ApplicationBootstrap.h"
 #include "bootstrap/UiBootstrap.h"
@@ -13,33 +17,46 @@
 #include "ui/widgets/QtMainWindow.h"
 
 namespace {
-    QString appStyle()
+    QString loadStyleSheet(const QString& path)
     {
-        QFile file("styles/style.qss");
-        if (!file.open(QFile::ReadOnly | QFile::Text)) {
-            return QString(); // или логирование ошибки
+        QFile file(path);
+        if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+            throw std::runtime_error(
+                std::string("Cannot open style file: ") + path.toStdString()
+            );
         }
 
         QTextStream in(&file);
         return in.readAll();
     }
-} // namespace
+}
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
     QCoreApplication::setAttribute(Qt::AA_UseDesktopOpenGL);
-
     QApplication app(argc, argv);
 
     Q_INIT_RESOURCE(resources);
 
-    app.setStyleSheet(appStyle());
-    app.setStyle("Windows");
+    if (argc < 5) {
+        std::cerr
+            << "Usage: " << argv[0]
+            << " <setup_dir> <catalog_dir> <log_dir> <style_qss_path>\n"
+            << "Example:\n"
+            << "  " << argv[0]
+            << " ./setup ./catalogs ./logs ./styles/style.qss\n";
+        return 1;
+    }
 
-    const std::string setup_dir = (argc > 1) ? argv[1] : "setup";
-    const std::string catalog_dir = (argc > 1) ? argv[1] : "catalogs";
-    const std::string log_dir = (argc > 1) ? argv[1] : "logs";
+    const std::string setup_dir   = argv[1];
+    const std::string catalog_dir = argv[2];
+    const std::string log_dir     = argv[3];
+    const QString style_path      = QString::fromLocal8Bit(argv[4]);
 
     try {
+        app.setStyle("Windows");
+        app.setStyleSheet(loadStyleSheet(style_path));
+
         ApplicationBootstrap application_bootstrap(setup_dir, catalog_dir, log_dir);
         application_bootstrap.initialize();
 
@@ -55,15 +72,10 @@ int main(int argc, char *argv[]) {
         ui_bootstrap.main_window->setMinimumSize(1280, 960);
         ui_bootstrap.main_window->show();
 
-        // application_bootstrap.motor_driver->initialize();
-
-        // application_bootstrap.angle_sources[0]->start();
-        // application_bootstrap.angle_sources[1]->start();
-
-
         return app.exec();
     }
     catch (const std::exception& e) {
-        std::cerr << e.what() << std::endl;
+        std::cerr << "Startup error: " << e.what() << std::endl;
+        return 1;
     }
 }

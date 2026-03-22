@@ -28,10 +28,10 @@ target_link_libraries(CleanGraduator
 target_link_libraries(CleanGraduator PRIVATE Qt5::Widgets)
 
 
-add_custom_command(
-        TARGET CleanGraduator POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy
-        $<TARGET_FILE:CleanGraduator>
-        "A:/"
-        COMMENT "Copying executable to A:/CleanGraduator"
-)
+#add_custom_command(
+#        TARGET CleanGraduator POST_BUILD
+#        COMMAND ${CMAKE_COMMAND} -E copy
+#        $<TARGET_FILE:CleanGraduator>
+#        "A:/"
+#        COMMENT "Copying executable to A:/CleanGraduator"
+#)
