@@ -139,6 +139,8 @@ void QtCalibrationResultTableWidget::updateSectionSizes()
         return;
     }
 
+    clearSpans();
+
     const int row_count = model()->rowCount();
     const int column_count = model()->columnCount();
 
@@ -175,6 +177,16 @@ void QtCalibrationResultTableWidget::updateSectionSizes()
             if (remainder > 0) {
                 --remainder;
             }
+        }
+    }
+
+    for (int row = 0; row < row_count; ++row) {
+        if (!model_.isPairMergedRow(row)) {
+            continue;
+        }
+
+        for (int col = 0; col < column_count; col += 2) {
+            setSpan(row, col, 1, 2);
         }
     }
 

@@ -180,7 +180,8 @@ void ViewModelsBootstrap::createControl() {
 void ViewModelsBootstrap::createCalibrationResultTable() {
     CalibrationResultTableViewModelDeps deps {
         *app_.calibration_result_source,
-        *app_.calibration_result_validation_source
+        *app_.calibration_result_validation_source,
+        *app_.calibration_recorder
     };
     calibration_result_table = std::make_unique<CalibrationResultTableViewModel>(deps);
 }

@@ -105,6 +105,12 @@ QIcon iconForSeverity(domain::common::CalibrationIssueSeverity severity)
     return {};
 }
 
+QString displayFloat(float value, int precision = 2, const QString& suffix = {})
+{
+    return QStringLiteral("%1%2")
+        .arg(QString::number(value, 'f', precision), suffix);
+}
+
 } // namespace
 
 QtCalibrationResultTableModel::QtCalibrationResultTableModel(
@@ -117,22 +123,21 @@ QtCalibrationResultTableModel::QtCalibrationResultTableModel(
         const auto copy = e.new_value;
 
         QMetaObject::invokeMethod(this, [this, copy] {
-            try {
-                applyResult(copy);
-            } catch (...) {
-                qCritical() << "Unknown exception in QtCalibrationResultTableModel::applyResult";
-            }
+            applyResult(copy);
         }, Qt::QueuedConnection);
     });
 
     current_validation_sub_ = vm_.current_validation.subscribe([this](const auto& e) {
         const auto copy = e.new_value;
         QMetaObject::invokeMethod(this, [this, copy] {
-            try {
-                applyValidation(copy);
-            } catch (...) {
-                qCritical() << "Unknown exception in QtCalibrationResultTableModel::applyValidation";
-            }
+            applyValidation(copy);
+        }, Qt::QueuedConnection);
+    });
+
+    current_info_sub_ = vm_.current_info.subscribe([this](const auto& e) {
+        const auto copy = e.new_value;
+        QMetaObject::invokeMethod(this, [this, copy] {
+            applyInfo(copy);
         }, Qt::QueuedConnection);
     });
 }
@@ -235,6 +240,15 @@ Qt::ItemFlags QtCalibrationResultTableModel::flags(const QModelIndex& index) con
     return Qt::ItemIsEnabled | Qt::ItemIsSelectable;
 }
 
+bool QtCalibrationResultTableModel::isPairMergedRow(int row) const
+{
+    if (row < 0 || row >= rows_.size()) {
+        return false;
+    }
+
+    return rows_[row].kind == RowKind::TotalAngle || rows_[row].kind == RowKind::CurrentAngle;
+}
+
 void QtCalibrationResultTableModel::applyResult(
     std::optional<domain::common::CalibrationResult> result)
 {
@@ -264,6 +278,19 @@ void QtCalibrationResultTableModel::applyValidation(
     endResetModel();
 }
 
+void QtCalibrationResultTableModel::applyInfo(const mvvm::CalibrationResultInfo& info)
+{
+    current_info_ = info;
+
+    if (!current_result_) {
+        return;
+    }
+
+    beginResetModel();
+    rebuildRows(*current_result_);
+    endResetModel();
+}
+
 void QtCalibrationResultTableModel::rebuildRows(const domain::common::CalibrationResult& result)
 {
     rows_.clear();
@@ -271,6 +298,7 @@ void QtCalibrationResultTableModel::rebuildRows(const domain::common::Calibratio
     for (const auto& point : result.points()) {
         Row row;
         row.label = QString::number(point.pressure, 'f', 2);
+        row.kind = RowKind::Measurement;
         row.cells.reserve(16);
 
         for (int i = 0; i < 8; ++i) {
@@ -306,6 +334,61 @@ void QtCalibrationResultTableModel::rebuildRows(const domain::common::Calibratio
 
         rows_.push_back(std::move(row));
     }
+
+    appendInfoRows(result);
+}
+
+void QtCalibrationResultTableModel::appendInfoRows(const domain::common::CalibrationResult& result)
+{
+    auto makeRow = [](const QString& label, RowKind kind) {
+        Row row;
+        row.label = label;
+        row.kind = kind;
+        row.cells.resize(16);
+        return row;
+    };
+
+    Row total_row = makeRow(QStringLiteral("общ."), RowKind::TotalAngle);
+    Row nonlinearity_row = makeRow(QStringLiteral("нелин."), RowKind::Nonlinearity);
+    Row count_row = makeRow(QStringLiteral("кол-во"), RowKind::MeasurementCount);
+    Row current_angle_row = makeRow(QStringLiteral("тек. уг."), RowKind::CurrentAngle);
+
+    for (int i = 0; i < 8; ++i) {
+        const auto source_id = domain::common::SourceId{i + 1};
+        const int forward_col = i * 2;
+        const int backward_col = forward_col + 1;
+
+        if (const auto it = current_info_.total_angles.find(source_id); it != current_info_.total_angles.end()) {
+            total_row.cells[forward_col].display = displayFloat(it->second);
+        }
+
+        if (const auto source_it = current_info_.nonlinearities.find(source_id); source_it != current_info_.nonlinearities.end()) {
+            if (const auto dir_it = source_it->second.find(domain::common::MotorDirection::Forward); dir_it != source_it->second.end()) {
+                nonlinearity_row.cells[forward_col].display = displayFloat(dir_it->second, 2, QStringLiteral("%"));
+            }
+            if (const auto dir_it = source_it->second.find(domain::common::MotorDirection::Backward); dir_it != source_it->second.end()) {
+                nonlinearity_row.cells[backward_col].display = displayFloat(dir_it->second, 2, QStringLiteral("%"));
+            }
+        }
+
+        if (const auto source_it = current_info_.measurement_counts.find(source_id); source_it != current_info_.measurement_counts.end()) {
+            if (const auto dir_it = source_it->second.find(domain::common::MotorDirection::Forward); dir_it != source_it->second.end()) {
+                count_row.cells[forward_col].display = dir_it->second;
+            }
+            if (const auto dir_it = source_it->second.find(domain::common::MotorDirection::Backward); dir_it != source_it->second.end()) {
+                count_row.cells[backward_col].display = dir_it->second;
+            }
+        }
+
+        if (const auto it = current_info_.current_angles.find(source_id); it != current_info_.current_angles.end()) {
+            current_angle_row.cells[forward_col].display = displayFloat(it->second);
+        }
+    }
+
+    rows_.push_back(std::move(total_row));
+    rows_.push_back(std::move(nonlinearity_row));
+    rows_.push_back(std::move(count_row));
+    rows_.push_back(std::move(current_angle_row));
 }
 
 } // namespace ui
