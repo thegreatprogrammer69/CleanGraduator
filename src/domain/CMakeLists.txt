@@ -18,9 +18,12 @@ add_library(domain STATIC
         core/calibration/calculation/CalibrationCellComputation.h
         core/calibration/common/CalibrationLayout.h
         core/calibration/result/CalibrationResult.cpp
+        core/calibration/result/ClibrationResultValidation.cpp
         core/calibration/result/CalibrationResultIssue.h
         core/calibration/result/CalibrationResultIssueType.h
         core/calibration/recording/CalibrationRecordingContext.h
+        ports/calibration/result/IClibrationResultObserver.h
+        ports/calibration/result/IClibrationResultValidationSource.h
 )
 
 

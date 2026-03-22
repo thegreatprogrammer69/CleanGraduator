@@ -32,6 +32,7 @@ void InfoSettingsViewModel::save() {
     data.printer_idx = selectedPrinter.get_copy();
 
     deps_.storage.saveInfoSettings(data);
+    deps_.validation_source.revalidate();
 }
 
 void InfoSettingsViewModel::loadCatalogs() {

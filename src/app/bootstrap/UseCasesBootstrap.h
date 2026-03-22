@@ -2,6 +2,7 @@
 #define CLEANGRADUATOR_USECASESBOOTSTRAP_H
 #include <memory>
 #include "domain/ports/calibration/result/ICalibrationResultSource.h"
+#include "domain/ports/calibration/result/IClibrationResultValidationSource.h"
 
 namespace application::ports {
     struct IBatchContextProvider;
@@ -41,6 +42,7 @@ public:
     std::unique_ptr<application::usecase::OpenAllCameras> open_all_cameras;
     std::unique_ptr<application::usecase::CloseAllCameras> close_all_cameras;
     std::unique_ptr<application::usecase::CalibrationSessionControl> calibration_session_control;
+    std::unique_ptr<domain::ports::IClibrationResultValidationSource> clibration_result_validation_source;
     std::unique_ptr<application::ports::IBatchContextProvider> batch_context_provider;
     std::unique_ptr<application::ports::ICalibrationResultSaver> calibration_result_saver;
     std::unique_ptr<application::usecase::SaveCalibrationResult> save_calibration_result;
@@ -63,6 +65,7 @@ private:
     void createCalibrationContextProvider();
     void createCalibrationProcessOrchestrator();
     void createCalibrationSessionControl();
+    void createClibrationResultValidationSource();
     void createBatchContextProvider();
     void createCalibrationResultSaver();
     void createSaveCalibrationResult();

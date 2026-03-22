@@ -3,6 +3,7 @@ add_library(application STATIC
 
         orchestrators/calibration/process/CalibrationOrchestrator.cpp
         orchestrators/calibration/result/CalibrationResultBuilder.cpp
+        orchestrators/calibration/result/ClibrationResultValidationSource.cpp
         orchestrators/video/VideoSourceManager.cpp
         orchestrators/settings/CalibrationContextProvider.cpp
         orchestrators/motor/MotorControlInteractor.cpp

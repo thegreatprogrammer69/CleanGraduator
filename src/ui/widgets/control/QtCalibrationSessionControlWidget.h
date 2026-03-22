@@ -2,6 +2,7 @@
 #define CLEANGRADUATOR_QTCALIBRATIONSESSIONCONTROLWIDGET_H
 
 #include <QComboBox>
+#include <QCheckBox>
 #include <QLabel>
 #include <QPushButton>
 #include <QWidget>
@@ -30,6 +31,7 @@ private:
 
     QLabel* errorLabel_{nullptr};
     QComboBox* modeBox_{nullptr};
+    QCheckBox* kuModeCheck_{nullptr};
     QPushButton* startButton_{nullptr};
     QPushButton* stopButton_{nullptr};
     QPushButton* emergencyStopButton_{nullptr};
@@ -38,6 +40,7 @@ private:
     mvvm::Observable<bool>::Subscription canStartSub_;
     mvvm::Observable<bool>::Subscription canStopSub_;
     mvvm::Observable<bool>::Subscription canAbortSub_;
+    mvvm::Observable<bool>::Subscription kuModeSub_;
 };
 
 } // namespace ui
