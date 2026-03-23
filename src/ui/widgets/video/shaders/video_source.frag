@@ -8,6 +8,10 @@ uniform int  uWidth;
 uniform int  uHeight;
 uniform int  uPackedWidth;
 uniform int  uNoVideo;
+uniform vec2 uViewportSize;
+uniform float uCircleDiameterPx;
+uniform vec4 uCircleColor1;
+uniform vec4 uCircleColor2;
 
 vec3 yuvToRgb601Limited(float y, float u, float v)
 {
@@ -42,36 +46,74 @@ vec3 sampleYuyv(float xPix, float yPix)
     return yuvToRgb601Limited(Y, yuyv.g, yuyv.a);
 }
 
+vec4 circleOverlayColor(vec2 fragCoord)
+{
+    if (uCircleDiameterPx <= 0.0 || uViewportSize.y <= 0.0)
+    {
+        return vec4(0.0);
+    }
+
+    vec2 center = 0.5 * uViewportSize;
+    vec2 delta = fragCoord - center;
+    float radius = 0.5 * uCircleDiameterPx;
+    float dist = length(delta);
+    float ringDelta = abs(dist - radius);
+    float thickness = 1.0;
+
+    if (ringDelta > thickness)
+    {
+        return vec4(0.0);
+    }
+
+    float angle = atan(delta.y, delta.x);
+    if (angle < 0.0)
+    {
+        angle += 6.28318530718;
+    }
+
+    float arc = angle * max(radius, 1.0);
+    float pattern = mod(floor(arc), 11.0);
+
+    vec4 color = (pattern < 4.0 || pattern >= 7.0) ? uCircleColor1 : uCircleColor2;
+    float alpha = color.a * smoothstep(thickness, 0.0, ringDelta);
+
+    return vec4(color.rgb, alpha);
+}
+
 void main()
 {
+    vec4 baseColor;
+
     if (uNoVideo == 1)
     {
-        gl_FragColor = vec4(1.0);
-        return;
+        baseColor = vec4(1.0);
     }
-
-    if (uFormat == 0)
+    else if (uFormat == 0)
     {
-        gl_FragColor = vec4(texture2D(uTex, vTex).bgr, 1.0);
-        return;
+        baseColor = vec4(texture2D(uTex, vTex).bgr, 1.0);
+    }
+    else
+    {
+        float sx = vTex.x * float(uWidth)  - 0.5;
+        float sy = vTex.y * float(uHeight) - 0.5;
+
+        float x0 = floor(sx);
+        float y0 = floor(sy);
+
+        float fx = fract(sx);
+        float fy = fract(sy);
+
+        vec3 c00 = sampleYuyv(x0,     y0);
+        vec3 c10 = sampleYuyv(x0 + 1, y0);
+        vec3 c01 = sampleYuyv(x0,     y0 + 1);
+        vec3 c11 = sampleYuyv(x0 + 1, y0 + 1);
+
+        vec3 c0 = mix(c00, c10, fx);
+        vec3 c1 = mix(c01, c11, fx);
+
+        baseColor = vec4(mix(c0, c1, fy), 1.0);
     }
 
-    float sx = vTex.x * float(uWidth)  - 0.5;
-    float sy = vTex.y * float(uHeight) - 0.5;
-
-    float x0 = floor(sx);
-    float y0 = floor(sy);
-
-    float fx = fract(sx);
-    float fy = fract(sy);
-
-    vec3 c00 = sampleYuyv(x0,     y0);
-    vec3 c10 = sampleYuyv(x0 + 1, y0);
-    vec3 c01 = sampleYuyv(x0,     y0 + 1);
-    vec3 c11 = sampleYuyv(x0 + 1, y0 + 1);
-
-    vec3 c0 = mix(c00, c10, fx);
-    vec3 c1 = mix(c01, c11, fx);
-
-    gl_FragColor = vec4(mix(c0, c1, fy), 1.0);
+    vec4 overlay = circleOverlayColor(gl_FragCoord.xy);
+    gl_FragColor = vec4(mix(baseColor.rgb, overlay.rgb, overlay.a), 1.0);
 }

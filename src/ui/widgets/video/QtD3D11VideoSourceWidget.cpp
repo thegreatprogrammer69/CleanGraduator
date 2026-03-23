@@ -70,6 +70,12 @@ cbuffer Params : register(b0)
     uint uWidth;
     uint uHeight;
     uint uTextureWidthBytes;
+    float uViewportWidth;
+    float uViewportHeight;
+    float uCircleDiameterPx;
+    float uPadding0;
+    float4 uCircleColor1;
+    float4 uCircleColor2;
 };
 
 struct VSOut
@@ -78,7 +84,7 @@ struct VSOut
     float2 uv  : TEXCOORD0;
 };
 
-float4 main(VSOut i) : SV_TARGET
+float4 sampleBaseColor(VSOut i)
 {
     if (uNoVideo != 0)
     {
@@ -101,7 +107,55 @@ float4 main(VSOut i) : SV_TARGET
 
     return float4(r, g, b, 1.0);
 }
+
+float4 circleOverlay(float2 fragCoord)
+{
+    if (uCircleDiameterPx <= 0.0 || uViewportHeight <= 0.0)
+    {
+        return float4(0.0, 0.0, 0.0, 0.0);
+    }
+
+    const float pi = 3.14159265358979323846;
+    float2 center = float2(uViewportWidth * 0.5, uViewportHeight * 0.5);
+    float2 delta = fragCoord - center;
+    float radius = uCircleDiameterPx * 0.5;
+    float dist = length(delta);
+    float ringDelta = abs(dist - radius);
+    float thickness = 1.0;
+
+    if (ringDelta > thickness)
+    {
+        return float4(0.0, 0.0, 0.0, 0.0);
+    }
+
+    float angle = atan2(delta.y, delta.x);
+    if (angle < 0.0)
+    {
+        angle += 2.0 * pi;
+    }
+
+    float arc = angle * max(radius, 1.0);
+    float pattern = fmod(floor(arc), 11.0);
+    float4 color = (pattern < 4.0 || pattern >= 7.0) ? uCircleColor1 : uCircleColor2;
+    color.a *= saturate(1.0 - ringDelta / max(thickness, 0.0001));
+    return color;
+}
+
+float4 main(VSOut i) : SV_TARGET
+{
+    float4 baseColor = sampleBaseColor(i);
+    float4 overlay = circleOverlay(i.pos.xy);
+    return float4(lerp(baseColor.rgb, overlay.rgb, overlay.a), 1.0);
+}
 )";
+
+void unpackColor(std::uint32_t rgba, float (&out)[4])
+{
+    out[0] = static_cast<float>((rgba >> 24) & 0xFFu) / 255.0f;
+    out[1] = static_cast<float>((rgba >> 16) & 0xFFu) / 255.0f;
+    out[2] = static_cast<float>((rgba >> 8) & 0xFFu) / 255.0f;
+    out[3] = static_cast<float>(rgba & 0xFFu) / 255.0f;
+}
 
 } // namespace
 
@@ -135,6 +189,46 @@ QtD3D11VideoSourceWidget::QtD3D11VideoSourceWidget(mvvm::VideoSourceViewModel& m
             },
             Qt::QueuedConnection);
     });
+
+    circle_diameter_sub_ = model.circleDiameterPercent().subscribe([this](const auto& a) {
+        const float diameter = a.new_value;
+        QMetaObject::invokeMethod(
+            this,
+            [this, diameter]() {
+                std::lock_guard lock(mutex_);
+                circleDiameterPercent_ = diameter;
+                update();
+            },
+            Qt::QueuedConnection);
+    });
+
+    circle_color1_sub_ = model.circleColor1().subscribe([this](const auto& a) {
+        const std::uint32_t color = a.new_value;
+        QMetaObject::invokeMethod(
+            this,
+            [this, color]() {
+                std::lock_guard lock(mutex_);
+                circleColor1_ = color;
+                update();
+            },
+            Qt::QueuedConnection);
+    });
+
+    circle_color2_sub_ = model.circleColor2().subscribe([this](const auto& a) {
+        const std::uint32_t color = a.new_value;
+        QMetaObject::invokeMethod(
+            this,
+            [this, color]() {
+                std::lock_guard lock(mutex_);
+                circleColor2_ = color;
+                update();
+            },
+            Qt::QueuedConnection);
+    });
+
+    circleDiameterPercent_ = model.circleDiameterPercent().get_copy();
+    circleColor1_ = model.circleColor1().get_copy();
+    circleColor2_ = model.circleColor2().get_copy();
 }
 
 QtD3D11VideoSourceWidget::~QtD3D11VideoSourceWidget()
@@ -559,11 +653,14 @@ void QtD3D11VideoSourceWidget::render(bool noVideo)
     context_->ClearRenderTargetView(rtv_.Get(), clearColor);
 
     const float dpr = devicePixelRatioF();
+    const float viewportWidth = static_cast<float>(std::max(1, static_cast<int>(width() * dpr)));
+    const float viewportHeight = static_cast<float>(std::max(1, static_cast<int>(height() * dpr)));
+
     D3D11_VIEWPORT vp = {};
     vp.TopLeftX = 0.0f;
     vp.TopLeftY = 0.0f;
-    vp.Width = static_cast<float>(std::max(1, static_cast<int>(width() * dpr)));
-    vp.Height = static_cast<float>(std::max(1, static_cast<int>(height() * dpr)));
+    vp.Width = viewportWidth;
+    vp.Height = viewportHeight;
     vp.MinDepth = 0.0f;
     vp.MaxDepth = 1.0f;
     context_->RSSetViewports(1, &vp);
@@ -573,6 +670,11 @@ void QtD3D11VideoSourceWidget::render(bool noVideo)
     params.width = static_cast<unsigned int>(std::max(1, frameWidth_));
     params.height = static_cast<unsigned int>(std::max(1, frameHeight_));
     params.textureWidthBytes = static_cast<unsigned int>(std::max(1, textureWidthBytes_));
+    params.viewportWidth = viewportWidth;
+    params.viewportHeight = viewportHeight;
+    params.circleDiameterPx = std::max(0.0f, viewportHeight * (circleDiameterPercent_ / 100.0f));
+    unpackColor(circleColor1_, params.circleColor1);
+    unpackColor(circleColor2_, params.circleColor2);
 
     context_->UpdateSubresource(constant_buffer_.Get(), 0, nullptr, &params, 0, 0);
 

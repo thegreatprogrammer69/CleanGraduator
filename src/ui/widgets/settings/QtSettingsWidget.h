@@ -11,6 +11,7 @@ namespace mvvm {
 
 class QtCameraGridSettingsWidget;
 class QtInfoSettingsWidget;
+class QtCircleOverlaySettingsWidget;
 class QGroupBox;
 
 class QtSettingsWidget final : public QWidget {
@@ -22,9 +23,6 @@ public:
         QWidget* parent = nullptr
     );
 
-signals:
-    void crosshairAppearanceRequested();
-
 private:
     void buildUi();
     void connectUi();
@@ -34,6 +32,7 @@ private:
 
     QtCameraGridSettingsWidget* cameraGridWidget_{nullptr};
     QtInfoSettingsWidget* infoSettingsWidget_{nullptr};
+    QtCircleOverlaySettingsWidget* circleOverlayWidget_{nullptr};
 };
 
 

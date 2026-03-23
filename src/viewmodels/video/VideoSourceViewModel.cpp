@@ -21,6 +21,21 @@ VideoSourceViewModel::~VideoSourceViewModel() {
     video_source_.removeObserver(*this);
 }
 
+Observable<float>& VideoSourceViewModel::circleDiameterPercent()
+{
+    return circle_diameter_percent;
+}
+
+Observable<std::uint32_t>& VideoSourceViewModel::circleColor1()
+{
+    return circle_color1;
+}
+
+Observable<std::uint32_t>& VideoSourceViewModel::circleColor2()
+{
+    return circle_color2;
+}
+
 void VideoSourceViewModel::onVideoSourceEvent(const domain::common::VideoSourceEvent &event) {
     std::visit([this](const auto& ev) {
         using T = std::decay_t<decltype(ev)>;

@@ -74,8 +74,14 @@ private:
     domain::common::VideoFramePtr current_frame_;
     mvvm::Observable<domain::common::VideoFramePtr>::Subscription frame_sub_;
     mvvm::Observable<bool>::Subscription is_opened_sub_;
+    mvvm::Observable<float>::Subscription circle_diameter_sub_;
+    mvvm::Observable<std::uint32_t>::Subscription circle_color1_sub_;
+    mvvm::Observable<std::uint32_t>::Subscription circle_color2_sub_;
 
     bool is_source_opened_{false};
+    float circleDiameterPercent_{0.0f};
+    std::uint32_t circleColor1_{0xFFFFFFFFu};
+    std::uint32_t circleColor2_{0x000000FFu};
 
 #ifdef _WIN32
     HWND hwnd_{nullptr};
@@ -90,7 +96,6 @@ private:
     Microsoft::WRL::ComPtr<ID3D11Buffer> constant_buffer_;
     Microsoft::WRL::ComPtr<ID3D11SamplerState> sampler_;
 
-    // Сырая RGB24 текстура: width = frame.width * 3, format = R8_UNORM
     Microsoft::WRL::ComPtr<ID3D11Texture2D> video_texture_;
     Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> video_srv_;
 
@@ -107,6 +112,12 @@ private:
         unsigned int width;
         unsigned int height;
         unsigned int textureWidthBytes;
+        float viewportWidth;
+        float viewportHeight;
+        float circleDiameterPx;
+        float padding0;
+        float circleColor1[4];
+        float circleColor2[4];
     };
 };
 

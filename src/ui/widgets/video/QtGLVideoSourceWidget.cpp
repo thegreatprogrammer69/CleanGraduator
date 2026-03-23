@@ -20,6 +20,16 @@ QString loadTextResource(const char* path) {
 
     return QString::fromUtf8(file.readAll());
 }
+
+QVector4D unpackColor(std::uint32_t rgba)
+{
+    return {
+        static_cast<float>((rgba >> 24) & 0xFFu) / 255.0f,
+        static_cast<float>((rgba >> 16) & 0xFFu) / 255.0f,
+        static_cast<float>((rgba >> 8) & 0xFFu) / 255.0f,
+        static_cast<float>(rgba & 0xFFu) / 255.0f
+    };
+}
 }
 
 QtGLVideoSourceWidget::QtGLVideoSourceWidget(mvvm::VideoSourceViewModel& model, QWidget* parent)
@@ -37,6 +47,28 @@ QtGLVideoSourceWidget::QtGLVideoSourceWidget(mvvm::VideoSourceViewModel& model, 
         }
         update();
     });
+
+    circle_diameter_sub_ = model.circleDiameterPercent().subscribe([this](const auto& a) {
+        std::lock_guard lock(mutex_);
+        circleDiameterPercent_ = a.new_value;
+        update();
+    });
+
+    circle_color1_sub_ = model.circleColor1().subscribe([this](const auto& a) {
+        std::lock_guard lock(mutex_);
+        circleColor1_ = a.new_value;
+        update();
+    });
+
+    circle_color2_sub_ = model.circleColor2().subscribe([this](const auto& a) {
+        std::lock_guard lock(mutex_);
+        circleColor2_ = a.new_value;
+        update();
+    });
+
+    circleDiameterPercent_ = model.circleDiameterPercent().get_copy();
+    circleColor1_ = model.circleColor1().get_copy();
+    circleColor2_ = model.circleColor2().get_copy();
 
     update();
 }
@@ -164,11 +196,15 @@ void QtGLVideoSourceWidget::drawQuad(bool noVideo) {
 
     program_.bind();
 
-    program_.setUniformValue("uNoVideo", noVideo ? 1 : 0);
-
     const float dpr = devicePixelRatioF();
-    program_.setUniformValue("uSize", QVector2D(width() * dpr, height() * dpr));
-    program_.setUniformValue("uRadius", 12.0f * dpr);
+    const QVector2D viewportSize(width() * dpr, height() * dpr);
+    const float circleDiameterPx = std::max(0.0f, viewportSize.y() * (circleDiameterPercent_ / 100.0f));
+
+    program_.setUniformValue("uNoVideo", noVideo ? 1 : 0);
+    program_.setUniformValue("uViewportSize", viewportSize);
+    program_.setUniformValue("uCircleDiameterPx", circleDiameterPx);
+    program_.setUniformValue("uCircleColor1", unpackColor(circleColor1_));
+    program_.setUniformValue("uCircleColor2", unpackColor(circleColor2_));
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, texture_);
@@ -194,17 +230,9 @@ void QtGLVideoSourceWidget::drawQuad(bool noVideo) {
     program_.release();
 }
 
-#include <QDir>
 void QtGLVideoSourceWidget::initShader() {
     if (shaderInited_) {
         return;
-    }
-
-    QDir dir(":/");
-
-    QStringList list = dir.entryList(QDir::Files);
-    for (const QString &file : list) {
-        qDebug() << file;
     }
 
     const auto vs = loadTextResource(":/ui/widgets/video/shaders/video_source.vert");
