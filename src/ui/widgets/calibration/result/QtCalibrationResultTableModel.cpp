@@ -1,5 +1,6 @@
 #include "QtCalibrationResultTableModel.h"
 
+#include <algorithm>
 #include <QApplication>
 #include <QMetaObject>
 #include <QDebug>
@@ -8,6 +9,7 @@
 #include <QColor>
 #include <QIcon>
 #include <QStyle>
+#include <QFont>
 
 namespace ui {
 
@@ -86,6 +88,16 @@ QVariant backgroundForSeverity(domain::common::CalibrationIssueSeverity severity
     }
 
     return {};
+}
+
+QColor blendColors(const QColor& base, const QColor& tint, qreal tint_alpha)
+{
+    const qreal alpha = std::clamp(tint_alpha, 0.0, 1.0);
+
+    return QColor(
+        static_cast<int>(base.red() * (1.0 - alpha) + tint.red() * alpha),
+        static_cast<int>(base.green() * (1.0 - alpha) + tint.green() * alpha),
+        static_cast<int>(base.blue() * (1.0 - alpha) + tint.blue() * alpha));
 }
 
 QIcon iconForSeverity(domain::common::CalibrationIssueSeverity severity)
@@ -198,8 +210,18 @@ QVariant QtCalibrationResultTableModel::data(const QModelIndex& index, int role)
         return backgroundForSeverity(*cell.validation_severity);
     }
 
+    if (role == Qt::BackgroundRole) {
+        return backgroundForRow(row);
+    }
+
     if (role == Qt::ForegroundRole && cell.validation_severity.has_value()) {
         return QBrush(Qt::black);
+    }
+
+    if (role == Qt::FontRole && row.kind != RowKind::Measurement) {
+        QFont font;
+        font.setBold(true);
+        return font;
     }
 
     return {};
@@ -249,6 +271,26 @@ bool QtCalibrationResultTableModel::isPairMergedRow(int row) const
     return rows_[row].kind == RowKind::TotalAngle || rows_[row].kind == RowKind::CurrentAngle;
 }
 
+QBrush QtCalibrationResultTableModel::backgroundForRow(const Row& row) const
+{
+    const QColor base = qApp->palette().base().color();
+
+    switch (row.kind) {
+        case RowKind::Measurement:
+            return QBrush(base);
+        case RowKind::TotalAngle:
+            return QBrush(blendColors(base, QColor(205, 231, 255), 0.55));
+        case RowKind::Nonlinearity:
+            return QBrush(blendColors(base, QColor(235, 241, 248), 0.75));
+        case RowKind::MeasurementCount:
+            return QBrush(blendColors(base, QColor(243, 247, 251), 0.85));
+        case RowKind::CurrentAngle:
+            return QBrush(blendColors(base, QColor(222, 244, 230), 0.6));
+    }
+
+    return QBrush(base);
+}
+
 void QtCalibrationResultTableModel::applyResult(
     std::optional<domain::common::CalibrationResult> result)
 {
@@ -294,6 +336,7 @@ void QtCalibrationResultTableModel::applyInfo(const mvvm::CalibrationResultInfo&
 void QtCalibrationResultTableModel::rebuildRows(const domain::common::CalibrationResult& result)
 {
     rows_.clear();
+    rows_.reserve(static_cast<qsizetype>(result.points().size()) + 4);
 
     for (const auto& point : result.points()) {
         Row row;

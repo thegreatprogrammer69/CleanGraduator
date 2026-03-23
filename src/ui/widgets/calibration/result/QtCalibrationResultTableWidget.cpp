@@ -56,13 +56,7 @@ void QtCalibrationResultTableWidget::setupUi()
 
 void QtCalibrationResultTableWidget::connectModelSignals()
 {
-    auto refresh = [this] {
-        QMetaObject::invokeMethod(this, [this] {
-            updateGeometry();
-            updateSectionSizes();
-            viewport()->update();
-        }, Qt::QueuedConnection);
-    };
+    auto refresh = [this] { scheduleRefresh(); };
 
     connect(&model_, &QAbstractItemModel::modelReset, this, refresh);
     connect(&model_, &QAbstractItemModel::layoutChanged, this, refresh);
@@ -71,6 +65,21 @@ void QtCalibrationResultTableWidget::connectModelSignals()
     connect(&model_, &QAbstractItemModel::rowsRemoved, this, refresh);
     connect(&model_, &QAbstractItemModel::columnsInserted, this, refresh);
     connect(&model_, &QAbstractItemModel::columnsRemoved, this, refresh);
+}
+
+void QtCalibrationResultTableWidget::scheduleRefresh()
+{
+    if (refresh_pending_) {
+        return;
+    }
+
+    refresh_pending_ = true;
+    QMetaObject::invokeMethod(this, [this] {
+        refresh_pending_ = false;
+        updateGeometry();
+        updateSectionSizes();
+        viewport()->update();
+    }, Qt::QueuedConnection);
 }
 
 void QtCalibrationResultTableWidget::resizeEvent(QResizeEvent* event)
@@ -165,11 +174,13 @@ void QtCalibrationResultTableWidget::updateSectionSizes()
         horizontalHeader()->setFixedHeight(std::max(horizontalHeader()->minimumHeight(), 28));
     }
 
-    // Колонки растягиваем по доступной ширине.
-    const int viewport_width = viewport()->width();
-    if (viewport_width > 0) {
-        const int base_width = viewport_width / column_count;
-        int remainder = viewport_width % column_count;
+    // Колонки растягиваем по доступной ширине, учитывая ширину линий сетки,
+    // чтобы они не "заезжали" под вертикальный заголовок.
+    const int grid_width = showGrid() ? column_count + 1 : 0;
+    const int available_width = std::max(0, viewport()->width() - grid_width);
+    if (available_width > 0) {
+        const int base_width = available_width / column_count;
+        int remainder = available_width % column_count;
 
         for (int col = 0; col < column_count; ++col) {
             const int width = base_width + (remainder > 0 ? 1 : 0);
