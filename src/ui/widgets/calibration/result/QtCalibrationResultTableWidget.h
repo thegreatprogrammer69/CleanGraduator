@@ -28,10 +28,13 @@ namespace ui {
         void setupUi();
         void connectModelSignals();
 
+        void scheduleSectionSizeUpdate();
         void updateSectionSizes();
+        int availableViewportWidth() const;
 
     private:
         QtCalibrationResultTableModel model_;
+        bool section_update_queued_ = false;
     };
 
 } // namespace ui
