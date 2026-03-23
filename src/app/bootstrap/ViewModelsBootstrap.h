@@ -19,6 +19,7 @@ namespace mvvm {
     class SettingsViewModel;
     class InfoSettingsViewModel;
     class CameraGridSettingsViewModel;
+    class CircleOverlaySettingsViewModel;
     class VideoSourceGridViewModel;
     class VideoSourceViewModel;
 }
@@ -37,6 +38,7 @@ public:
     std::unique_ptr<mvvm::VideoSourceGridViewModel> video_source_grid;
 
     std::unique_ptr<mvvm::CameraGridSettingsViewModel> camera_grid_settings;
+    std::unique_ptr<mvvm::CircleOverlaySettingsViewModel> circle_overlay_settings;
     std::unique_ptr<mvvm::InfoSettingsViewModel> info_settings;
     std::unique_ptr<mvvm::SettingsViewModel> settings;
 
@@ -65,6 +67,7 @@ private:
     void createVideoSourceGrid();
 
     void createCameraGridSettings();
+    void createCircleOverlaySettings();
     void createInfoSettings();
     void createSettings();
 

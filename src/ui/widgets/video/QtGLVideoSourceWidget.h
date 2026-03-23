@@ -5,6 +5,7 @@
 #include <QOpenGLFunctions_2_1>
 #include <QOpenGLShaderProgram>
 
+#include <cstdint>
 #include <memory>
 #include <mutex>
 
@@ -12,7 +13,7 @@
 #include "viewmodels/Observable.h"
 
 namespace mvvm {
-    class VideoSourceViewModel;
+    class IVideoSourceWidgetViewModel;
 }
 
 namespace domain::common {
@@ -28,7 +29,7 @@ namespace ui {
     {
         Q_OBJECT
     public:
-        explicit QtGLVideoSourceWidget(mvvm::VideoSourceViewModel& model, QWidget* parent = nullptr);
+        explicit QtGLVideoSourceWidget(mvvm::IVideoSourceWidgetViewModel& model, QWidget* parent = nullptr);
 
     private slots:
         void setVideoFrame(domain::common::VideoFramePtr frame);
@@ -49,6 +50,9 @@ namespace ui {
         domain::common::VideoFramePtr current_frame_;
         mvvm::Observable<domain::common::VideoFramePtr>::Subscription frame_sub_;
         mvvm::Observable<bool>::Subscription is_opened_sub_;
+        mvvm::Observable<int>::Subscription circle_diameter_sub_;
+        mvvm::Observable<std::uint32_t>::Subscription circle_color1_sub_;
+        mvvm::Observable<std::uint32_t>::Subscription circle_color2_sub_;
 
         bool is_source_opened_{false};
 
@@ -68,6 +72,10 @@ namespace ui {
         int frameHeight_{0};
 
         GLenum glUploadFormat_{GL_RGB};
+
+        int circleDiameterPercent_{15};
+        std::uint32_t circleColor1_{0xFFFFFFFFu};
+        std::uint32_t circleColor2_{0x000000FFu};
 
     };
 

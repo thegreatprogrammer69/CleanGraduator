@@ -15,6 +15,7 @@
 #endif
 
 #include <QWidget>
+#include <cstdint>
 #include <QPaintEngine>
 
 #include <memory>
@@ -24,7 +25,7 @@
 #include "viewmodels/Observable.h"
 
 namespace mvvm {
-class VideoSourceViewModel;
+class IVideoSourceWidgetViewModel;
 }
 
 namespace domain::common {
@@ -37,7 +38,7 @@ namespace ui {
 class QtD3D11VideoSourceWidget final : public QWidget
 {
 public:
-    explicit QtD3D11VideoSourceWidget(mvvm::VideoSourceViewModel& model, QWidget* parent = nullptr);
+    explicit QtD3D11VideoSourceWidget(mvvm::IVideoSourceWidgetViewModel& model, QWidget* parent = nullptr);
     ~QtD3D11VideoSourceWidget() override;
 
     QPaintEngine* paintEngine() const override { return nullptr; }
@@ -74,6 +75,9 @@ private:
     domain::common::VideoFramePtr current_frame_;
     mvvm::Observable<domain::common::VideoFramePtr>::Subscription frame_sub_;
     mvvm::Observable<bool>::Subscription is_opened_sub_;
+    mvvm::Observable<int>::Subscription circle_diameter_sub_;
+    mvvm::Observable<std::uint32_t>::Subscription circle_color1_sub_;
+    mvvm::Observable<std::uint32_t>::Subscription circle_color2_sub_;
 
     bool is_source_opened_{false};
 
@@ -107,7 +111,15 @@ private:
         unsigned int width;
         unsigned int height;
         unsigned int textureWidthBytes;
+        float circleDiameterPercent;
+        float padding0[3];
+        float circleColor1[4];
+        float circleColor2[4];
     };
+
+    int circleDiameterPercent_{15};
+    std::uint32_t circleColor1_{0xFFFFFFFFu};
+    std::uint32_t circleColor2_{0x000000FFu};
 };
 
 } // namespace ui
