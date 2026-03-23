@@ -6,6 +6,7 @@
 #include <QVector>
 #include <QString>
 #include <QVariant>
+#include <QBrush>
 
 #include "viewmodels/calibration/result/CalibrationResultTableViewModel.h"
 
@@ -51,6 +52,8 @@ namespace ui {
             QVector<Cell> cells{};
             RowKind kind{RowKind::Measurement};
         };
+
+        QBrush backgroundForRow(const Row& row) const;
 
         void applyResult(std::optional<domain::common::CalibrationResult> result);
         void rebuildRows(const domain::common::CalibrationResult& result);

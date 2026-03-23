@@ -27,11 +27,13 @@ namespace ui {
     private:
         void setupUi();
         void connectModelSignals();
+        void scheduleRefresh();
 
         void updateSectionSizes();
 
     private:
         QtCalibrationResultTableModel model_;
+        bool refresh_pending_{ false };
     };
 
 } // namespace ui
