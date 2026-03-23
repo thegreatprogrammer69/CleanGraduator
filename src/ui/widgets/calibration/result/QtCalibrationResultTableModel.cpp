@@ -2,12 +2,12 @@
 
 #include <QApplication>
 #include <QMetaObject>
-#include <QDebug>
 #include <QStringList>
 #include <QBrush>
 #include <QColor>
 #include <QIcon>
 #include <QStyle>
+#include <QFont>
 
 namespace ui {
 
@@ -111,6 +111,50 @@ QString displayFloat(float value, int precision = 2, const QString& suffix = {})
         .arg(QString::number(value, 'f', precision), suffix);
 }
 
+QBrush backgroundForRowKind(QtCalibrationResultTableModel::RowKind kind)
+{
+    switch (kind) {
+        case QtCalibrationResultTableModel::RowKind::Measurement:
+            return QBrush(QColor(255, 255, 255));
+        case QtCalibrationResultTableModel::RowKind::TotalAngle:
+            return QBrush(QColor(225, 244, 255));
+        case QtCalibrationResultTableModel::RowKind::Nonlinearity:
+            return QBrush(QColor(240, 249, 255));
+        case QtCalibrationResultTableModel::RowKind::MeasurementCount:
+            return QBrush(QColor(244, 247, 250));
+        case QtCalibrationResultTableModel::RowKind::CurrentAngle:
+            return QBrush(QColor(232, 242, 255));
+    }
+
+    return QBrush(QColor(255, 255, 255));
+}
+
+QBrush foregroundForRowKind(QtCalibrationResultTableModel::RowKind kind)
+{
+    switch (kind) {
+        case QtCalibrationResultTableModel::RowKind::Measurement:
+            return QBrush(QColor(15, 23, 42));
+        case QtCalibrationResultTableModel::RowKind::TotalAngle:
+        case QtCalibrationResultTableModel::RowKind::CurrentAngle:
+            return QBrush(QColor(15, 89, 149));
+        case QtCalibrationResultTableModel::RowKind::Nonlinearity:
+            return QBrush(QColor(3, 105, 161));
+        case QtCalibrationResultTableModel::RowKind::MeasurementCount:
+            return QBrush(QColor(71, 85, 105));
+    }
+
+    return QBrush(QColor(15, 23, 42));
+}
+
+QFont fontForRowKind(QtCalibrationResultTableModel::RowKind kind)
+{
+    QFont font = QApplication::font();
+    if (kind != QtCalibrationResultTableModel::RowKind::Measurement) {
+        font.setBold(true);
+    }
+    return font;
+}
+
 } // namespace
 
 QtCalibrationResultTableModel::QtCalibrationResultTableModel(
@@ -191,15 +235,25 @@ QVariant QtCalibrationResultTableModel::data(const QModelIndex& index, int role)
     }
 
     if (role == Qt::TextAlignmentRole) {
-        return QVariant::fromValue(Qt::AlignHCenter | Qt::AlignVCenter);
+        return QVariant::fromValue(Qt::AlignCenter);
     }
 
-    if (role == Qt::BackgroundRole && cell.validation_severity.has_value()) {
-        return backgroundForSeverity(*cell.validation_severity);
+    if (role == Qt::FontRole) {
+        return fontForRowKind(row.kind);
     }
 
-    if (role == Qt::ForegroundRole && cell.validation_severity.has_value()) {
-        return QBrush(Qt::black);
+    if (role == Qt::BackgroundRole) {
+        if (cell.validation_severity.has_value()) {
+            return backgroundForSeverity(*cell.validation_severity);
+        }
+        return backgroundForRowKind(row.kind);
+    }
+
+    if (role == Qt::ForegroundRole) {
+        if (cell.validation_severity.has_value()) {
+            return QBrush(Qt::black);
+        }
+        return foregroundForRowKind(row.kind);
     }
 
     return {};
