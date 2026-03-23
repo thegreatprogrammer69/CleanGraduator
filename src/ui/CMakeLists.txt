@@ -27,6 +27,8 @@ add_library(ui STATIC
 
         widgets/settings/QtCameraGridSettingsWidget.cpp
         widgets/settings/QtCameraGridSettingsWidget.h
+        widgets/settings/QtCircleOverlaySettingsWidget.cpp
+        widgets/settings/QtCircleOverlaySettingsWidget.h
         widgets/settings/QtInfoSettingsWidget.cpp
         widgets/settings/QtInfoSettingsWidget.h
         widgets/settings/QtSettingsWidget.cpp

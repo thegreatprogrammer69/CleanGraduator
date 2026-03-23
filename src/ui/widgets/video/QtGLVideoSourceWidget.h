@@ -10,8 +10,10 @@
 
 #include "domain/core/video/PixelFormat.h"
 #include "viewmodels/Observable.h"
+#include "viewmodels/video/CircleOverlaySettings.h"
 
 namespace mvvm {
+    struct CircleOverlaySettings;
     class VideoSourceViewModel;
 }
 
@@ -49,6 +51,7 @@ namespace ui {
         domain::common::VideoFramePtr current_frame_;
         mvvm::Observable<domain::common::VideoFramePtr>::Subscription frame_sub_;
         mvvm::Observable<bool>::Subscription is_opened_sub_;
+        mvvm::Observable<mvvm::CircleOverlaySettings>::Subscription circle_overlay_sub_;
 
         bool is_source_opened_{false};
 
@@ -69,6 +72,7 @@ namespace ui {
 
         GLenum glUploadFormat_{GL_RGB};
 
+        mvvm::CircleOverlaySettings current_circle_overlay_settings_{};
     };
 
 }

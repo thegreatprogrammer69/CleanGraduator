@@ -156,15 +156,6 @@ ui::QtMainWindow::QtMainWindow(
     auto* settingsWidget =
         new QtSettingsWidget(model_.settingsViewModel(), settingsCard);
 
-    connect(
-        settingsWidget,
-        &QtSettingsWidget::crosshairAppearanceRequested,
-        this,
-        [] {
-            // TODO: открыть диалог внешнего вида перекрестия
-        }
-    );
-
     settingsCardLayout->addWidget(settingsWidget);
     settingsLayout->addWidget(settingsCard);
     settingsLayout->addStretch(1);

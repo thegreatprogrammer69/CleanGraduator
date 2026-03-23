@@ -22,6 +22,7 @@
 
 #include "domain/core/video/PixelFormat.h"
 #include "viewmodels/Observable.h"
+#include "viewmodels/video/CircleOverlaySettings.h"
 
 namespace mvvm {
 class VideoSourceViewModel;
@@ -74,8 +75,10 @@ private:
     domain::common::VideoFramePtr current_frame_;
     mvvm::Observable<domain::common::VideoFramePtr>::Subscription frame_sub_;
     mvvm::Observable<bool>::Subscription is_opened_sub_;
+    mvvm::Observable<mvvm::CircleOverlaySettings>::Subscription circle_overlay_sub_;
 
     bool is_source_opened_{false};
+    mvvm::CircleOverlaySettings current_circle_overlay_settings_{};
 
 #ifdef _WIN32
     HWND hwnd_{nullptr};
@@ -107,6 +110,12 @@ private:
         unsigned int width;
         unsigned int height;
         unsigned int textureWidthBytes;
+        float viewportWidth;
+        float viewportHeight;
+        float circleDiameterPercent;
+        float circleVisible;
+        float circleColor1[4];
+        float circleColor2[4];
     };
 };
 
