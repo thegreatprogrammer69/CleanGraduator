@@ -6,6 +6,8 @@
 #include <QVector>
 #include <QString>
 #include <QVariant>
+#include <QBrush>
+#include <QFont>
 
 #include "viewmodels/calibration/result/CalibrationResultTableViewModel.h"
 
@@ -19,6 +21,14 @@ namespace ui {
         Q_OBJECT
 
     public:
+        enum class RowKind {
+            Measurement,
+            TotalAngle,
+            Nonlinearity,
+            MeasurementCount,
+            CurrentAngle,
+        };
+
         explicit QtCalibrationResultTableModel(
             QtCalibrationResultTableModelDeps deps,
             QObject* parent = nullptr);
@@ -32,19 +42,14 @@ namespace ui {
         bool isPairMergedRow(int row) const;
 
     private:
-        enum class RowKind {
-            Measurement,
-            TotalAngle,
-            Nonlinearity,
-            MeasurementCount,
-            CurrentAngle,
-        };
-
         struct Cell final {
             QVariant display{};
             QString tooltip{};
             std::optional<domain::common::CalibrationIssueSeverity> max_severity{};
             std::optional<domain::common::CalibrationIssueSeverity> validation_severity{};
+            QBrush background{};
+            QBrush foreground{};
+            QFont font{};
         };
         struct Row final {
             QVariant label{};
@@ -54,6 +59,7 @@ namespace ui {
 
         void applyResult(std::optional<domain::common::CalibrationResult> result);
         void rebuildRows(const domain::common::CalibrationResult& result);
+        void updateCellStyles();
         void applyValidation(const std::optional<domain::common::CalibrationResultValidation>& validation);
         void applyInfo(const mvvm::CalibrationResultInfo& info);
         void appendInfoRows(const domain::common::CalibrationResult& result);
