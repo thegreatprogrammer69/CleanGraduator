@@ -25,6 +25,8 @@ QString loadTextResource(const char* path) {
 QtGLVideoSourceWidget::QtGLVideoSourceWidget(mvvm::VideoSourceViewModel& model, QWidget* parent)
     : QOpenGLWidget(parent)
 {
+    current_circle_overlay_settings_ = model.circleOverlaySettings().get_copy();
+
     frame_sub_ = model.frame.subscribe([this](const auto& a) {
         setVideoFrame(a.new_value);
     });
@@ -37,6 +39,12 @@ QtGLVideoSourceWidget::QtGLVideoSourceWidget(mvvm::VideoSourceViewModel& model, 
         }
         update();
     });
+
+    circle_overlay_sub_ = model.circleOverlaySettings().subscribe([this](const auto& a) {
+        std::lock_guard lock(mutex_);
+        current_circle_overlay_settings_ = a.new_value;
+        update();
+    }, false);
 
     update();
 }
@@ -167,8 +175,21 @@ void QtGLVideoSourceWidget::drawQuad(bool noVideo) {
     program_.setUniformValue("uNoVideo", noVideo ? 1 : 0);
 
     const float dpr = devicePixelRatioF();
-    program_.setUniformValue("uSize", QVector2D(width() * dpr, height() * dpr));
-    program_.setUniformValue("uRadius", 12.0f * dpr);
+    program_.setUniformValue("uViewportSize", QVector2D(width() * dpr, height() * dpr));
+    program_.setUniformValue("uCircleVisible", (!noVideo && current_circle_overlay_settings_.diameter_percent > 0) ? 1 : 0);
+    program_.setUniformValue("uCircleDiameterPercent", static_cast<float>(current_circle_overlay_settings_.diameter_percent));
+
+    const auto colorToVector = [](std::uint32_t rgba) {
+        return QVector4D(
+            static_cast<float>((rgba >> 24) & 0xFF) / 255.0f,
+            static_cast<float>((rgba >> 16) & 0xFF) / 255.0f,
+            static_cast<float>((rgba >> 8) & 0xFF) / 255.0f,
+            static_cast<float>(rgba & 0xFF) / 255.0f
+        );
+    };
+
+    program_.setUniformValue("uCircleColor1", colorToVector(current_circle_overlay_settings_.color1));
+    program_.setUniformValue("uCircleColor2", colorToVector(current_circle_overlay_settings_.color2));
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, texture_);

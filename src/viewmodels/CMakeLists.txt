@@ -11,6 +11,8 @@ add_library(viewmodels STATIC
         video/VideoSourceViewModel.cpp
         video/VideoSourceGridViewModel.cpp
 
+        settings/CircleOverlaySettingsViewModel.cpp
+
         settings/CameraGridSettingsViewModel.cpp
         settings/InfoSettingsViewModel.cpp
         settings/SettingsViewModel.cpp

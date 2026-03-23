@@ -8,6 +8,11 @@ uniform int  uWidth;
 uniform int  uHeight;
 uniform int  uPackedWidth;
 uniform int  uNoVideo;
+uniform vec2 uViewportSize;
+uniform int  uCircleVisible;
+uniform float uCircleDiameterPercent;
+uniform vec4 uCircleColor1;
+uniform vec4 uCircleColor2;
 
 vec3 yuvToRgb601Limited(float y, float u, float v)
 {
@@ -20,6 +25,46 @@ vec3 yuvToRgb601Limited(float y, float u, float v)
         y - 0.39176229 * u - 0.81296765 * v,
         y + 2.01723214 * u
     ), 0.0, 1.0);
+}
+
+vec3 blendOverlay(vec3 baseColor, vec4 overlayColor)
+{
+    return mix(baseColor, overlayColor.rgb, overlayColor.a);
+}
+
+vec3 applyCircleOverlay(vec3 baseColor)
+{
+    if (uCircleVisible == 0)
+    {
+        return baseColor;
+    }
+
+    float radius = clamp(uCircleDiameterPercent, 0.0, 100.0) * 0.005 * uViewportSize.y;
+    if (radius <= 0.0)
+    {
+        return baseColor;
+    }
+
+    vec2 center = uViewportSize * 0.5;
+    vec2 delta = gl_FragCoord.xy - center;
+    float distanceToCenter = length(delta);
+
+    if (abs(distanceToCenter - radius) > 0.75)
+    {
+        return baseColor;
+    }
+
+    float angle = atan(delta.y, delta.x);
+    if (angle < 0.0)
+    {
+        angle += 6.28318530718;
+    }
+
+    float arcPosition = floor(angle * radius + 0.5);
+    float patternIndex = mod(arcPosition, 11.0);
+    vec4 overlayColor = (patternIndex < 4.0 || patternIndex >= 7.0) ? uCircleColor1 : uCircleColor2;
+
+    return blendOverlay(baseColor, overlayColor);
 }
 
 vec3 sampleYuyv(float xPix, float yPix)
@@ -52,7 +97,8 @@ void main()
 
     if (uFormat == 0)
     {
-        gl_FragColor = vec4(texture2D(uTex, vTex).bgr, 1.0);
+        vec3 baseColor = texture2D(uTex, vTex).bgr;
+        gl_FragColor = vec4(applyCircleOverlay(baseColor), 1.0);
         return;
     }
 
@@ -73,5 +119,6 @@ void main()
     vec3 c0 = mix(c00, c10, fx);
     vec3 c1 = mix(c01, c11, fx);
 
-    gl_FragColor = vec4(mix(c0, c1, fy), 1.0);
+    vec3 baseColor = mix(c0, c1, fy);
+    gl_FragColor = vec4(applyCircleOverlay(baseColor), 1.0);
 }

@@ -4,6 +4,7 @@
 #include <QGroupBox>
 
 #include "QtCameraGridSettingsWidget.h"
+#include "QtCircleOverlaySettingsWidget.h"
 #include "QtInfoSettingsWidget.h"
 #include "viewmodels/settings/SettingsViewModel.h"
 
@@ -15,7 +16,6 @@ QtSettingsWidget::QtSettingsWidget(
     , model_(model)
 {
     buildUi();
-    connectUi();
 }
 
 void QtSettingsWidget::buildUi() {
@@ -23,6 +23,14 @@ void QtSettingsWidget::buildUi() {
     mainLayout->setContentsMargins(8, 8, 8, 8);
     mainLayout->setSpacing(12);
 
+
+    auto* circleOverlayGroup = new QGroupBox(tr("Круг поверх видео"), this);
+    auto* circleOverlayLayout = new QVBoxLayout(circleOverlayGroup);
+    circleOverlayLayout->setContentsMargins(8, 8, 8, 8);
+    circleOverlayLayout->setSpacing(8);
+
+    circleOverlaySettingsWidget_ = new QtCircleOverlaySettingsWidget(model_.circleOverlaySettingsViewModel(), circleOverlayGroup);
+    circleOverlayLayout->addWidget(circleOverlaySettingsWidget_);
 
     auto* infoSettingsGroup = new QGroupBox(tr("Параметры"), this);
     auto* infoSettingsLayout = new QVBoxLayout(infoSettingsGroup);
@@ -45,16 +53,9 @@ void QtSettingsWidget::buildUi() {
 
 
     mainLayout->addWidget(cameraGridGroup);
+    mainLayout->addWidget(circleOverlayGroup);
     mainLayout->addWidget(infoSettingsGroup);
 
     mainLayout->addStretch();
 }
 
-void QtSettingsWidget::connectUi() {
-    connect(
-        cameraGridWidget_,
-        &QtCameraGridSettingsWidget::crosshairAppearanceRequested,
-        this,
-        &QtSettingsWidget::crosshairAppearanceRequested
-    );
-}

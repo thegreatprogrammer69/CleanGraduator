@@ -25,8 +25,6 @@ public:
 
     ~QtCameraGridSettingsWidget() override;
 
-    signals:
-        void crosshairAppearanceRequested();
 
 private:
     void buildUi();

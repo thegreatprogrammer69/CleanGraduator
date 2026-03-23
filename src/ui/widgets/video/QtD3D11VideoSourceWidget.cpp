@@ -70,6 +70,12 @@ cbuffer Params : register(b0)
     uint uWidth;
     uint uHeight;
     uint uTextureWidthBytes;
+    float uViewportWidth;
+    float uViewportHeight;
+    float uCircleDiameterPercent;
+    float uCircleVisible;
+    float4 uCircleColor1;
+    float4 uCircleColor2;
 };
 
 struct VSOut
@@ -77,6 +83,40 @@ struct VSOut
     float4 pos : SV_POSITION;
     float2 uv  : TEXCOORD0;
 };
+
+float3 BlendOverlay(float3 baseColor, float4 overlayColor)
+{
+    return lerp(baseColor, overlayColor.rgb, overlayColor.a);
+}
+
+float3 ApplyCircleOverlay(float3 baseColor, float4 position)
+{
+    if (uCircleVisible < 0.5 || uCircleDiameterPercent <= 0.0)
+    {
+        return baseColor;
+    }
+
+    float radius = clamp(uCircleDiameterPercent, 0.0, 100.0) * 0.005 * uViewportHeight;
+    float2 center = float2(uViewportWidth * 0.5, uViewportHeight * 0.5);
+    float2 delta = position.xy - center;
+    float distanceToCenter = length(delta);
+
+    if (abs(distanceToCenter - radius) > 0.75)
+    {
+        return baseColor;
+    }
+
+    float angle = atan2(delta.y, delta.x);
+    if (angle < 0.0)
+    {
+        angle += 6.28318530718;
+    }
+
+    float arcPosition = floor(angle * radius + 0.5);
+    float patternIndex = fmod(arcPosition, 11.0);
+    float4 overlayColor = (patternIndex < 4.0 || patternIndex >= 7.0) ? uCircleColor1 : uCircleColor2;
+    return BlendOverlay(baseColor, overlayColor);
+}
 
 float4 main(VSOut i) : SV_TARGET
 {
@@ -99,7 +139,8 @@ float4 main(VSOut i) : SV_TARGET
     float g = gVideoTex.Load(int3((int)(baseX + 1u), (int)y, 0));
     float r = gVideoTex.Load(int3((int)(baseX + 2u), (int)y, 0));
 
-    return float4(r, g, b, 1.0);
+    float3 baseColor = float3(r, g, b);
+    return float4(ApplyCircleOverlay(baseColor, i.pos), 1.0);
 }
 )";
 
@@ -108,6 +149,8 @@ float4 main(VSOut i) : SV_TARGET
 QtD3D11VideoSourceWidget::QtD3D11VideoSourceWidget(mvvm::VideoSourceViewModel& model, QWidget* parent)
     : QWidget(parent)
 {
+    current_circle_overlay_settings_ = model.circleOverlaySettings().get_copy();
+
     setAttribute(Qt::WA_NativeWindow, true);
     setAttribute(Qt::WA_PaintOnScreen, true);
     setAttribute(Qt::WA_NoSystemBackground, true);
@@ -135,6 +178,18 @@ QtD3D11VideoSourceWidget::QtD3D11VideoSourceWidget(mvvm::VideoSourceViewModel& m
             },
             Qt::QueuedConnection);
     });
+
+    circle_overlay_sub_ = model.circleOverlaySettings().subscribe([this](const auto& a) {
+        const auto settings = a.new_value;
+        QMetaObject::invokeMethod(
+            this,
+            [this, settings]() {
+                std::lock_guard lock(mutex_);
+                current_circle_overlay_settings_ = settings;
+                update();
+            },
+            Qt::QueuedConnection);
+    }, false);
 }
 
 QtD3D11VideoSourceWidget::~QtD3D11VideoSourceWidget()
@@ -573,6 +628,20 @@ void QtD3D11VideoSourceWidget::render(bool noVideo)
     params.width = static_cast<unsigned int>(std::max(1, frameWidth_));
     params.height = static_cast<unsigned int>(std::max(1, frameHeight_));
     params.textureWidthBytes = static_cast<unsigned int>(std::max(1, textureWidthBytes_));
+    params.viewportWidth = vp.Width;
+    params.viewportHeight = vp.Height;
+    params.circleDiameterPercent = static_cast<float>(current_circle_overlay_settings_.diameter_percent);
+    params.circleVisible = (!noVideo && current_circle_overlay_settings_.diameter_percent > 0) ? 1.0f : 0.0f;
+
+    const auto fillColor = [](std::uint32_t rgba, float (&out)[4]) {
+        out[0] = static_cast<float>((rgba >> 24) & 0xFF) / 255.0f;
+        out[1] = static_cast<float>((rgba >> 16) & 0xFF) / 255.0f;
+        out[2] = static_cast<float>((rgba >> 8) & 0xFF) / 255.0f;
+        out[3] = static_cast<float>(rgba & 0xFF) / 255.0f;
+    };
+
+    fillColor(current_circle_overlay_settings_.color1, params.circleColor1);
+    fillColor(current_circle_overlay_settings_.color2, params.circleColor2);
 
     context_->UpdateSubresource(constant_buffer_.Get(), 0, nullptr, &params, 0, 0);
 
