@@ -250,7 +250,7 @@ QVariant QtCalibrationResultTableModel::data(const QModelIndex& index, int role)
     }
 
     if (role == Qt::TextAlignmentRole) {
-        return QVariant::fromValue(Qt::AlignCenter);
+        return static_cast<int>(Qt::AlignCenter);
     }
 
     if (role == Qt::BackgroundRole) {
@@ -280,7 +280,7 @@ QVariant QtCalibrationResultTableModel::headerData(
     int role) const
 {
     if (role == Qt::TextAlignmentRole) {
-        return QVariant::fromValue(Qt::AlignCenter);
+        return static_cast<int>(Qt::AlignCenter);
     }
 
     if (role == Qt::FontRole && orientation == Qt::Vertical) {
