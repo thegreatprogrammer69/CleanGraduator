@@ -31,7 +31,7 @@ namespace ui {
 
         bool isPairMergedRow(int row) const;
 
-    private:
+    public:
         enum class RowKind {
             Measurement,
             TotalAngle,
@@ -40,6 +40,7 @@ namespace ui {
             CurrentAngle,
         };
 
+    private:
         struct Cell final {
             QVariant display{};
             QString tooltip{};

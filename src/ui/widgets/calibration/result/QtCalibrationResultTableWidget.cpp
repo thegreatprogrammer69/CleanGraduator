@@ -1,12 +1,17 @@
 #include "QtCalibrationResultTableWidget.h"
 
 #include <QHeaderView>
+#include <QMetaObject>
 #include <QResizeEvent>
 #include <QShowEvent>
-#include <QMetaObject>
 #include <algorithm>
 
 namespace ui {
+
+namespace {
+constexpr int kHeaderPadding = 16;
+constexpr int kHorizontalHeaderHeight = 30;
+} // namespace
 
 QtCalibrationResultTableWidget::QtCalibrationResultTableWidget(
     mvvm::CalibrationResultTableViewModel& vm,
@@ -40,6 +45,7 @@ void QtCalibrationResultTableWidget::setupUi()
     setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
     setShowGrid(true);
+    setAlternatingRowColors(false);
 
     horizontalHeader()->setSectionResizeMode(QHeaderView::Fixed);
     verticalHeader()->setSectionResizeMode(QHeaderView::Fixed);
@@ -150,30 +156,33 @@ void QtCalibrationResultTableWidget::updateSectionSizes()
 
     if (verticalHeader()->isVisible()) {
         int max_width = verticalHeader()->minimumSectionSize();
-
         const QFontMetrics fm(verticalHeader()->font());
+
         for (int row = 0; row < row_count; ++row) {
-            const QString text =
-                model()->headerData(row, Qt::Vertical, Qt::DisplayRole).toString();
-            max_width = std::max(max_width, fm.horizontalAdvance(text) + 12);
+            const QString text = model()->headerData(row, Qt::Vertical, Qt::DisplayRole).toString();
+            max_width = std::max(max_width, fm.horizontalAdvance(text) + kHeaderPadding);
         }
 
-        verticalHeader()->setFixedWidth(max_width);
+        if (verticalHeader()->width() != max_width) {
+            verticalHeader()->setFixedWidth(max_width);
+            updateGeometries();
+        }
     }
 
     if (horizontalHeader()->isVisible()) {
-        horizontalHeader()->setFixedHeight(std::max(horizontalHeader()->minimumHeight(), 28));
+        horizontalHeader()->setFixedHeight(std::max(horizontalHeader()->minimumHeight(), kHorizontalHeaderHeight));
     }
 
-    // Колонки растягиваем по доступной ширине.
-    const int viewport_width = viewport()->width();
+    const int viewport_width = viewport()->contentsRect().width();
     if (viewport_width > 0) {
         const int base_width = viewport_width / column_count;
         int remainder = viewport_width % column_count;
 
         for (int col = 0; col < column_count; ++col) {
             const int width = base_width + (remainder > 0 ? 1 : 0);
-            setColumnWidth(col, width);
+            if (columnWidth(col) != width) {
+                setColumnWidth(col, width);
+            }
             if (remainder > 0) {
                 --remainder;
             }
@@ -190,13 +199,14 @@ void QtCalibrationResultTableWidget::updateSectionSizes()
         }
     }
 
-    // Строкам задаём нормальную "естественную" высоту.
     for (int row = 0; row < row_count; ++row) {
         int h = sizeHintForRow(row);
         if (h <= 0) {
             h = verticalHeader()->defaultSectionSize();
         }
-        setRowHeight(row, h);
+        if (rowHeight(row) != h) {
+            setRowHeight(row, h);
+        }
     }
 
     updateGeometry();
