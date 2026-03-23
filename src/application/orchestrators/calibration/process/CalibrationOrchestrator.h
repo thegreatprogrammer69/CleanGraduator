@@ -2,10 +2,12 @@
 #define CLEANGRADUATOR_CALIBRATIONPROCESSORCHESTRATOR_H
 
 #include <atomic>
+#include <functional>
 #include <mutex>
 #include <optional>
 #include <set>
 #include <string>
+#include <vector>
 
 #include "CalibrationOrchestratorInput.h"
 #include "CalibrationOrchestratorPorts.h"
@@ -54,6 +56,7 @@ public:
 
 private:
     using StrategyVerdict = domain::common::CalibrationStrategyVerdict;
+    using Compensation = std::function<void()>;
 
     struct StrategyExecutionResult
     {
@@ -62,11 +65,20 @@ private:
     };
 
 private:
+    void startMotor(std::vector<Compensation>& rollback);
+    void startAngleSources(std::vector<Compensation>& rollback);
+    void attachRuntimeObservers(std::vector<Compensation>& rollback);
+    void startPressureSource(std::vector<Compensation>& rollback);
+    void beginCalibrationStrategy();
+    void startRecording(std::vector<Compensation>& rollback);
+    void finishStartup();
+
     void attachObservers();
     void detachObservers();
 
     void notifyObservers(const CalibrationOrchestratorEvent& ev);
 
+    void rollback(std::vector<Compensation>& rollback) noexcept;
     void teardown();
     void stopWithError(const std::string& error);
 
