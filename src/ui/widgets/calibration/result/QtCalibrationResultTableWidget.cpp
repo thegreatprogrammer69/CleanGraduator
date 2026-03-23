@@ -1,6 +1,7 @@
 #include "QtCalibrationResultTableWidget.h"
 
 #include <QHeaderView>
+#include <QAbstractItemDelegate>
 #include <QResizeEvent>
 #include <QShowEvent>
 #include <QMetaObject>
@@ -49,9 +50,15 @@ void QtCalibrationResultTableWidget::setupUi()
 
     horizontalHeader()->setDefaultAlignment(Qt::AlignCenter);
     verticalHeader()->setDefaultAlignment(Qt::AlignCenter);
+    horizontalHeader()->setHighlightSections(false);
+    verticalHeader()->setHighlightSections(false);
 
     verticalHeader()->setVisible(true);
     horizontalHeader()->setVisible(true);
+
+    if (itemDelegate() != nullptr) {
+        itemDelegate()->setProperty("alignment", QVariant::fromValue(Qt::AlignCenter));
+    }
 }
 
 void QtCalibrationResultTableWidget::connectModelSignals()
@@ -168,8 +175,10 @@ void QtCalibrationResultTableWidget::updateSectionSizes()
     // Колонки растягиваем по доступной ширине.
     const int viewport_width = viewport()->width();
     if (viewport_width > 0) {
-        const int base_width = viewport_width / column_count;
-        int remainder = viewport_width % column_count;
+        const int grid_width = showGrid() ? std::max(0, column_count - 1) : 0;
+        const int available_width = std::max(0, viewport_width - grid_width);
+        const int base_width = available_width / column_count;
+        int remainder = available_width % column_count;
 
         for (int col = 0; col < column_count; ++col) {
             const int width = base_width + (remainder > 0 ? 1 : 0);
