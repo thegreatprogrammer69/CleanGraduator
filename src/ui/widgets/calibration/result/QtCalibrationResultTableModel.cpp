@@ -2,10 +2,10 @@
 
 #include <QApplication>
 #include <QMetaObject>
-#include <QDebug>
 #include <QStringList>
 #include <QBrush>
 #include <QColor>
+#include <QFont>
 #include <QIcon>
 #include <QStyle>
 
@@ -105,6 +105,7 @@ QIcon iconForSeverity(domain::common::CalibrationIssueSeverity severity)
     return {};
 }
 
+
 QString displayFloat(float value, int precision = 2, const QString& suffix = {})
 {
     return QStringLiteral("%1%2")
@@ -191,11 +192,23 @@ QVariant QtCalibrationResultTableModel::data(const QModelIndex& index, int role)
     }
 
     if (role == Qt::TextAlignmentRole) {
-        return QVariant::fromValue(Qt::AlignHCenter | Qt::AlignVCenter);
+        return QVariant::fromValue(Qt::AlignCenter);
     }
 
-    if (role == Qt::BackgroundRole && cell.validation_severity.has_value()) {
-        return backgroundForSeverity(*cell.validation_severity);
+    if (role == Qt::FontRole) {
+        QFont font;
+        font.setWeight(row.kind == RowKind::Measurement ? QFont::DemiBold : QFont::Normal);
+        return font;
+    }
+
+    if (role == Qt::BackgroundRole) {
+        if (cell.validation_severity.has_value()) {
+            return backgroundForSeverity(*cell.validation_severity);
+        }
+
+        return row.kind == RowKind::Measurement
+            ? QBrush(QColor(255, 255, 255))
+            : QBrush(QColor(242, 244, 247));
     }
 
     if (role == Qt::ForegroundRole && cell.validation_severity.has_value()) {
