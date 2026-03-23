@@ -1,6 +1,7 @@
 add_library(application STATIC
         fmt/fmt_application.cpp
 
+        orchestrators/calibration/process/CalibrationLayoutBuilder.cpp
         orchestrators/calibration/process/CalibrationOrchestrator.cpp
         orchestrators/calibration/result/CalibrationResultBuilder.cpp
         orchestrators/calibration/result/CalibrationResultValidationSource.cpp

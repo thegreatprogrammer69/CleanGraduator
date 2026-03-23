@@ -1,5 +1,6 @@
 #include "CalibrationOrchestrator.h"
 
+#include <chrono>
 #include <stdexcept>
 #include <type_traits>
 #include <utility>
@@ -41,6 +42,8 @@ CalibrationOrchestrator::~CalibrationOrchestrator()
 
 bool CalibrationOrchestrator::start(CalibrationOrchestratorInput input)
 {
+    std::lock_guard<std::mutex> lock(lifecycle_mutex_);
+
     logger_.info("CalibrationOrchestrator start requested");
 
     CalibrationOrchestratorState expected = CalibrationOrchestratorState::Stopped;
@@ -55,98 +58,30 @@ bool CalibrationOrchestrator::start(CalibrationOrchestratorInput input)
     inp_ = std::move(input);
     opened_angle_sources_.clear();
 
+    CompensationStack rollback;
+
     try
     {
-        // ---------- Motor ----------
-        if (ports_.motor_driver.state() == MotorDriverState::Uninitialized)
-        {
-            if (!ports_.motor_driver.initialize())
-                throw std::runtime_error(logger_.lastError());
-        }
-        else if (ports_.motor_driver.state() == MotorDriverState::Running)
-        {
-            ports_.motor_driver.stop();
-        }
+        if (auto r = prepareMotor(rollback); !r)
+            throw std::runtime_error(r.error().message);
 
-        // ---------- Cameras ----------
-        const auto opened = ports_.source_manager.opened();
-        if (opened.empty())
-            throw std::runtime_error("No opened angle sources");
+        if (auto r = prepareSources(rollback); !r)
+            throw std::runtime_error(r.error().message);
 
-        for (const auto& id : opened)
-        {
-            auto src = ports_.source_storage.at(id);
-            if (!src)
-                throw std::runtime_error(
-                    fmt::format("Opened angle source is missing in storage: {}", id.value));
+        if (auto r = attachObserversPhase(rollback); !r)
+            throw std::runtime_error(r.error().message);
 
-            src->angle_source.start();
-            opened_angle_sources_.insert(id);
-        }
+        if (auto r = startPressureSource(rollback); !r)
+            throw std::runtime_error(r.error().message);
 
-        // ---------- Observers ----------
-        attachObservers();
+        if (auto r = beginStrategy(rollback); !r)
+            throw std::runtime_error(r.error().message);
 
-        // ---------- Motor watchdog ----------
-        ports_.motor_driver.watchdog().start(kMotorWatchdogTimeout);
+        if (auto r = startRecording(rollback); !r)
+            throw std::runtime_error(r.error().message);
 
-        // ---------- Pressure ----------
-        if (!ports_.pressure_source.isRunning())
-        {
-            if (!ports_.pressure_source.start())
-                throw std::runtime_error(logger_.lastError());
-        }
-
-        // ---------- Strategy ----------
-        CalibrationStrategyBeginContext ctx;
-        ctx.pressure_unit    = inp_.pressure_unit;
-        ctx.calibration_mode = inp_.calibration_mode;
-        ctx.pressure_points  = PressurePoints::from(inp_.gauge.points.value, inp_.pressure_unit);
-
-        const auto verdict = ports_.strategy.begin(ctx);
-        const auto exec = applyVerdict(verdict);
-
-        if (exec.fault)
-            throw std::runtime_error(*exec.fault);
-
-        if (exec.complete)
-            throw std::runtime_error(
-                "Calibration strategy protocol error: begin() returned Complete");
-
-        // НАЧАТЬ ЗАПИСЬ
-        {
-            CalibrationLayout calibration_layout;
-
-            calibration_layout.sources = std::vector(opened_angle_sources_.begin(), opened_angle_sources_.end());
-            calibration_layout.directions.push_back(MotorDirection::Forward);
-
-            if (inp_.calibration_mode == CalibrationMode::Full) {
-                calibration_layout.directions.push_back(MotorDirection::Backward);
-            }
-
-            int i = 0;
-            for (const auto& pp : inp_.gauge.points.value) {
-                calibration_layout.points.push_back(PointId(i, pp));
-                i++;
-            }
-
-            CalibrationRecordingContext recording_context {
-                calibration_layout,
-                inp_.gauge,
-            };
-
-            ports_.recorder.startRecording(recording_context);
-        }
-
-        state_.store(
-            CalibrationOrchestratorState::Started,
-            std::memory_order_release);
-
-        ports_.session_clock.start();
-
-        notifyObservers(
-            CalibrationOrchestratorEvent(
-                CalibrationOrchestratorEvent::Started{}));
+        if (auto r = publishStarted(); !r)
+            throw std::runtime_error(r.error().message);
 
         return true;
     }
@@ -154,7 +89,7 @@ bool CalibrationOrchestrator::start(CalibrationOrchestratorInput input)
     {
         logger_.error("Calibration start failed: {}", e.what());
 
-        teardown();
+        rollbackStart(rollback);
 
         state_.store(
             CalibrationOrchestratorState::Stopped,
@@ -166,12 +101,12 @@ bool CalibrationOrchestrator::start(CalibrationOrchestratorInput input)
 
         return false;
     }
-
-    logger_.info("CalibrationOrchestrator starting");
 }
 
 void CalibrationOrchestrator::stop()
 {
+    std::lock_guard<std::mutex> lock(lifecycle_mutex_);
+
     auto current = state_.load(std::memory_order_acquire);
 
     if (current == CalibrationOrchestratorState::Stopped ||
@@ -250,7 +185,7 @@ void CalibrationOrchestrator::onPressurePacket(const PressurePacket& p)
 
     CalibrationStrategyFeedContext ctx;
     ctx.timestamp = p.timestamp.asSeconds();
-    ctx.pressure  = p.pressure.to(inp_.pressure_unit);
+    ctx.pressure = p.pressure.to(inp_.pressure_unit);
     ctx.limits_state = ports_.motor_driver.limits();
 
     ports_.motor_driver.watchdog().feed();
@@ -393,7 +328,6 @@ void CalibrationOrchestrator::teardown()
     ports_.motor_driver.stop();
     detachObservers();
 
-    // Сначала даём стратегии корректно завершиться и вернуть shutdown-команды.
     if (ports_.strategy.isRunning())
     {
         const auto end_verdict = ports_.strategy.end();
@@ -404,7 +338,6 @@ void CalibrationOrchestrator::teardown()
     }
     else
     {
-        // defensive stop на случай частично поднятой системы
         ports_.motor_driver.stop();
     }
 
@@ -419,13 +352,13 @@ void CalibrationOrchestrator::teardown()
 
     opened_angle_sources_.clear();
     ports_.session_clock.stop();
-
-    // ОСТАНОВИТЬ ЗАПИСЬ
     ports_.recorder.stopRecording();
 }
 
 void CalibrationOrchestrator::stopWithError(const std::string& error)
 {
+    std::lock_guard<std::mutex> lock(lifecycle_mutex_);
+
     auto current = state_.load(std::memory_order_acquire);
     if (current != CalibrationOrchestratorState::Starting &&
         current != CalibrationOrchestratorState::Started)
@@ -520,4 +453,234 @@ void CalibrationOrchestrator::applyCommand(const StrategyVerdict::MotorStart&)
 void CalibrationOrchestrator::applyCommand(const StrategyVerdict::MotorStop&)
 {
     ports_.motor_driver.stop();
+}
+
+CalibrationOrchestrator::StartResult
+CalibrationOrchestrator::prepareMotor(CompensationStack& rollback)
+{
+    if (ports_.motor_driver.state() == MotorDriverState::Uninitialized)
+    {
+        if (!ports_.motor_driver.initialize())
+        {
+            return makeStartFailure("Motor driver initialization failed");
+        }
+    }
+    else if (ports_.motor_driver.state() == MotorDriverState::Running)
+    {
+        ports_.motor_driver.stop();
+    }
+
+    pushRollback(
+        rollback,
+        [this]()
+        {
+            ports_.motor_driver.stop();
+        });
+
+    return StartResult::success();
+}
+
+CalibrationOrchestrator::StartResult
+CalibrationOrchestrator::prepareSources(CompensationStack& rollback)
+{
+    const auto opened = ports_.source_manager.opened();
+    if (opened.empty())
+    {
+        return makeStartFailure("No opened angle sources");
+    }
+
+    for (const auto& id : opened)
+    {
+        auto src = ports_.source_storage.at(id);
+        if (!src)
+        {
+            return makeStartFailure(
+                fmt::format("Opened angle source is missing in storage: {}", id.value));
+        }
+
+        src->angle_source.start();
+        opened_angle_sources_.insert(id);
+
+        pushRollback(
+            rollback,
+            [this, id]()
+            {
+                auto src = ports_.source_storage.at(id);
+                if (src)
+                    src->angle_source.stop();
+            });
+    }
+
+    pushRollback(
+        rollback,
+        [this]()
+        {
+            opened_angle_sources_.clear();
+        });
+
+    return StartResult::success();
+}
+
+CalibrationOrchestrator::StartResult
+CalibrationOrchestrator::attachObserversPhase(CompensationStack& rollback)
+{
+    attachObservers();
+
+    pushRollback(
+        rollback,
+        [this]()
+        {
+            detachObservers();
+        });
+
+    return StartResult::success();
+}
+
+CalibrationOrchestrator::StartResult
+CalibrationOrchestrator::startPressureSource(CompensationStack& rollback)
+{
+    if (!ports_.pressure_source.isRunning())
+    {
+        if (!ports_.pressure_source.start())
+        {
+            return makeStartFailure("Pressure source start failed");
+        }
+
+        pushRollback(
+            rollback,
+            [this]()
+            {
+                ports_.pressure_source.stop();
+            });
+    }
+
+    return StartResult::success();
+}
+
+CalibrationOrchestrator::StartResult
+CalibrationOrchestrator::beginStrategy(CompensationStack& rollback)
+{
+    CalibrationStrategyBeginContext ctx;
+    ctx.pressure_unit = inp_.pressure_unit;
+    ctx.calibration_mode = inp_.calibration_mode;
+    ctx.pressure_points = PressurePoints::from(inp_.gauge.points.value, inp_.pressure_unit);
+
+    const auto verdict = ports_.strategy.begin(ctx);
+    const auto exec = applyVerdict(verdict);
+
+    if (exec.fault)
+    {
+        return makeStartFailure(*exec.fault);
+    }
+
+    if (exec.complete)
+    {
+        return makeStartFailure(
+            "Calibration strategy protocol error: begin() returned Complete");
+    }
+
+    pushRollback(
+        rollback,
+        [this]()
+        {
+            if (!ports_.strategy.isRunning())
+                return;
+
+            const auto end_verdict = ports_.strategy.end();
+            const auto exec = applyVerdict(end_verdict);
+
+            if (exec.fault)
+                logger_.warn("Strategy end() reported fault during rollback: {}", *exec.fault);
+        });
+
+    return StartResult::success();
+}
+
+CalibrationOrchestrator::StartResult
+CalibrationOrchestrator::startRecording(CompensationStack& rollback)
+{
+    const auto calibration_layout = layout_builder_.build(inp_, opened_angle_sources_);
+
+    CalibrationRecordingContext recording_context {
+        calibration_layout,
+        inp_.gauge,
+    };
+
+    ports_.recorder.startRecording(recording_context);
+
+    pushRollback(
+        rollback,
+        [this]()
+        {
+            ports_.recorder.stopRecording();
+        });
+
+    return StartResult::success();
+}
+
+CalibrationOrchestrator::StartResult
+CalibrationOrchestrator::publishStarted()
+{
+    ports_.motor_driver.watchdog().start(kMotorWatchdogTimeout);
+    ports_.session_clock.start();
+
+    state_.store(
+        CalibrationOrchestratorState::Started,
+        std::memory_order_release);
+
+    try
+    {
+        notifyObservers(
+            CalibrationOrchestratorEvent(
+                CalibrationOrchestratorEvent::Started{}));
+    }
+    catch (const std::exception& e)
+    {
+        logger_.error("Failed to notify observers about start: {}", e.what());
+    }
+    catch (...)
+    {
+        logger_.error("Failed to notify observers about start: unknown error");
+    }
+
+    logger_.info("CalibrationOrchestrator started");
+
+    return StartResult::success();
+}
+
+void CalibrationOrchestrator::rollbackStart(CompensationStack& rollback) noexcept
+{
+    for (auto it = rollback.rbegin(); it != rollback.rend(); ++it)
+    {
+        try
+        {
+            (*it)();
+        }
+        catch (const std::exception& e)
+        {
+            logger_.warn("Rollback action failed: {}", e.what());
+        }
+        catch (...)
+        {
+            logger_.warn("Rollback action failed: unknown error");
+        }
+    }
+
+    rollback.clear();
+    opened_angle_sources_.clear();
+    ports_.session_clock.stop();
+    ports_.recorder.stopRecording();
+}
+
+void CalibrationOrchestrator::pushRollback(
+    CompensationStack& rollback,
+    CompensationAction action)
+{
+    rollback.push_back(std::move(action));
+}
+
+CalibrationOrchestrator::StartResult
+CalibrationOrchestrator::makeStartFailure(std::string message)
+{
+    return StartResult::failure(CalibrationStartError{std::move(message)});
 }
