@@ -111,6 +111,7 @@ QString displayFloat(float value, int precision = 2, const QString& suffix = {})
         .arg(QString::number(value, 'f', precision), suffix);
 }
 
+
 } // namespace
 
 QtCalibrationResultTableModel::QtCalibrationResultTableModel(
@@ -194,8 +195,24 @@ QVariant QtCalibrationResultTableModel::data(const QModelIndex& index, int role)
         return QVariant::fromValue(Qt::AlignHCenter | Qt::AlignVCenter);
     }
 
+    if (role == Qt::FontRole) {
+        return fontForRow(index.row());
+    }
+
     if (role == Qt::BackgroundRole && cell.validation_severity.has_value()) {
         return backgroundForSeverity(*cell.validation_severity);
+    }
+
+    if (role == Qt::BackgroundRole) {
+        switch (row.kind) {
+            case RowKind::Measurement:
+                return QBrush(QColor(245, 246, 248));
+            case RowKind::TotalAngle:
+            case RowKind::Nonlinearity:
+            case RowKind::MeasurementCount:
+            case RowKind::CurrentAngle:
+                return QBrush(QColor(233, 236, 239));
+        }
     }
 
     if (role == Qt::ForegroundRole && cell.validation_severity.has_value()) {
@@ -210,6 +227,28 @@ QVariant QtCalibrationResultTableModel::headerData(
     Qt::Orientation orientation,
     int role) const
 {
+    if (role == Qt::TextAlignmentRole) {
+        return QVariant::fromValue(Qt::AlignHCenter | Qt::AlignVCenter);
+    }
+
+    if (orientation == Qt::Vertical && section >= 0 && section < rows_.size()) {
+        if (role == Qt::FontRole) {
+            return fontForRow(section);
+        }
+
+        if (role == Qt::BackgroundRole) {
+            switch (rows_[section].kind) {
+                case RowKind::Measurement:
+                    return QBrush(QColor(245, 246, 248));
+                case RowKind::TotalAngle:
+                case RowKind::Nonlinearity:
+                case RowKind::MeasurementCount:
+                case RowKind::CurrentAngle:
+                    return QBrush(QColor(233, 236, 239));
+            }
+        }
+    }
+
     if (role != Qt::DisplayRole) {
         return {};
     }
@@ -247,6 +286,22 @@ bool QtCalibrationResultTableModel::isPairMergedRow(int row) const
     }
 
     return rows_[row].kind == RowKind::TotalAngle || rows_[row].kind == RowKind::CurrentAngle;
+}
+
+bool QtCalibrationResultTableModel::isInfoRow(int row) const
+{
+    if (row < 0 || row >= rows_.size()) {
+        return false;
+    }
+
+    return rows_[row].kind != RowKind::Measurement;
+}
+
+QFont QtCalibrationResultTableModel::fontForRow(int row) const
+{
+    QFont font = QApplication::font();
+    font.setBold(isInfoRow(row));
+    return font;
 }
 
 void QtCalibrationResultTableModel::applyResult(

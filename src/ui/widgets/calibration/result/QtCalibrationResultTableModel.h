@@ -2,6 +2,7 @@
 #define CLEANGRADUATOR_QTCALIBRATIONRESULTTABLEMODEL_H
 
 #include <optional>
+#include <QFont>
 #include <QAbstractTableModel>
 #include <QVector>
 #include <QString>
@@ -32,6 +33,9 @@ namespace ui {
         bool isPairMergedRow(int row) const;
 
     private:
+        bool isInfoRow(int row) const;
+        QFont fontForRow(int row) const;
+
         enum class RowKind {
             Measurement,
             TotalAngle,
