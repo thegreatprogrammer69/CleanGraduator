@@ -208,12 +208,6 @@ QVariant QtCalibrationResultTableModel::data(const QModelIndex& index, int role)
         return QVariant::fromValue(Qt::AlignCenter);
     }
 
-    if (role == Qt::FontRole) {
-        QFont font;
-        font.setBold(isInfoRow(index.row()));
-        return font;
-    }
-
     if (role == Qt::BackgroundRole) {
         QColor background = isInfoRow(index.row()) ? kInfoRowBackground : kResultRowBackground;
         if (cell.validation_severity.has_value()) {
@@ -234,11 +228,11 @@ QVariant QtCalibrationResultTableModel::headerData(
     Qt::Orientation orientation,
     int role) const
 {
-    if (role != Qt::DisplayRole) {
-        return {};
-    }
-
     if (orientation == Qt::Horizontal) {
+        if (role != Qt::DisplayRole) {
+            return {};
+        }
+
         return tr("у.%1.%2")
             .arg(section % 2 == 0 ? tr("п") : tr("о"))
             .arg(section / 2 + 1);
@@ -249,7 +243,15 @@ QVariant QtCalibrationResultTableModel::headerData(
             return {};
         }
 
-        return rows_[section].label;
+        if (role == Qt::DisplayRole) {
+            return rows_[section].label;
+        }
+
+        if (role == Qt::FontRole && isInfoRow(section)) {
+            QFont font;
+            font.setBold(true);
+            return font;
+        }
     }
 
     return {};
