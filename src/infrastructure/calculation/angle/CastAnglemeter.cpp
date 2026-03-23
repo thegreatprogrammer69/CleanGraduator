@@ -36,7 +36,8 @@ domain::common::Angle CastAnglemeter::calculate(const domain::common::AngleCalcu
     if (input.frame->format == domain::common::PixelFormat::RGB24) {
         float angle;
         anglemeterSetImageSize(impl_->am, input.frame->width, input.frame->height);
-        anglemeterGetArrowAngle(impl_->am, input.frame->buffer.data, &angle);
+        if (!anglemeterGetArrowAngle(impl_->am, input.frame->buffer.data, &angle))
+            return domain::common::Angle::fromDegrees(-1000);
         angle = 180 - angle;
         if (angle <= 0.0f) angle += 360.0f;
         return domain::common::Angle::fromDegrees(angle);

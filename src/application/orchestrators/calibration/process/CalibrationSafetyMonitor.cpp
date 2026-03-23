@@ -2,6 +2,7 @@
 
 #include <chrono>
 #include <cmath>
+#include <deque>
 #include <optional>
 #include <sstream>
 #include <unordered_map>
@@ -43,7 +44,7 @@ using Incident = CalibrationSafetyMonitor::Incident;
 
 constexpr auto kAnglePacketTimeout = std::chrono::milliseconds(1500);
 constexpr double kCriticalAngleDeg = 340.0;
-constexpr double kProjectionHorizonSec = 1.5;
+constexpr double kProjectionHorizonSec = 0.5;
 
 std::string toString(const double value)
 {
@@ -143,38 +144,59 @@ class AngleGrowthHazardRule final : public CalibrationSafetyMonitor::Rule {
 public:
     std::optional<Incident> onAnglePacket(const AngleSourcePacket& packet) override
     {
-        auto& state = states_[packet.source_id.value];
-        const double timestamp_sec = packet.timestamp.asSeconds();
-        const double angle_deg = packet.angle.degrees();
+        const int sourceId = packet.source_id.value;
+        auto& state = states_[sourceId];
 
-        if (state.has_last)
+        const double nowSec = packet.timestamp.asSeconds();
+        const double nowAngleDeg = packet.angle.degrees();
+
+        // Добавляем текущую точку
+        state.points.push_back(Point{nowSec, nowAngleDeg});
+
+        // Удаляем всё, что старее 1 секунды относительно текущей точки,
+        // но оставляем хотя бы одну точку до границы окна, чтобы можно было
+        // взять точку "примерно 1 секунду назад".
+        while (state.points.size() >= 2 &&
+               state.points[1].timestampSec <= nowSec - kReferenceDeltaSec)
         {
-            const double dt = timestamp_sec - state.last_timestamp_sec;
-            if (dt > 0.0)
-            {
-                const double speed_deg_per_sec = (angle_deg - state.last_angle_deg) / dt;
-                if (speed_deg_per_sec > 0.0)
-                {
-                    const double projected_angle = angle_deg + speed_deg_per_sec * kProjectionHorizonSec;
-                    if (projected_angle >= kCriticalAngleDeg)
-                    {
+            state.points.pop_front();
+        }
+
+        // Нужна точка, которая находится не позже чем на 1 секунду назад.
+        // После цикла это state.points.front():
+        // - либо ближайшая точка <= nowSec - 1.0
+        // - либо, если поток слишком редкий, просто самая старая доступная точка
+        if (state.points.size() >= 2) {
+            const Point& refPoint = state.points.front();
+
+            const double dt = nowSec - refPoint.timestampSec;
+            if (dt >= kMinDtSec) {
+                const double speedDegPerSec = (nowAngleDeg - refPoint.angleDeg) / dt;
+
+                if (speedDegPerSec > 0.0) {
+                    const double projectedAngleDeg =
+                        nowAngleDeg + speedDegPerSec * kProjectionHorizonSec;
+
+                    if (projectedAngleDeg >= kCriticalAngleDeg) {
                         Incident incident;
                         incident.code = "angle_growth_hazard";
-                        incident.message = "Angle grows too fast and may soon exceed 340 degrees; likely wrong gauge range selected";
-                        incident.details.emplace_back("source_id", std::to_string(packet.source_id.value));
-                        incident.details.emplace_back("angle_deg", toString(angle_deg));
-                        incident.details.emplace_back("speed_deg_per_sec", toString(speed_deg_per_sec));
-                        incident.details.emplace_back("projected_angle_deg", toString(projected_angle));
+                        incident.message =
+                            "Angle grows too fast and may soon exceed 340 degrees; "
+                            "likely wrong gauge range selected";
+
+                        incident.details.emplace_back("source_id", std::to_string(sourceId));
+                        incident.details.emplace_back("angle_deg", toString(nowAngleDeg));
+                        incident.details.emplace_back("reference_angle_deg", toString(refPoint.angleDeg));
+                        incident.details.emplace_back("dt_sec", toString(dt));
+                        incident.details.emplace_back("speed_deg_per_sec", toString(speedDegPerSec));
+                        incident.details.emplace_back("projected_angle_deg", toString(projectedAngleDeg));
                         incident.details.emplace_back("projection_horizon_sec", toString(kProjectionHorizonSec));
+
                         return incident;
                     }
                 }
             }
         }
-
-        state.last_timestamp_sec = timestamp_sec;
-        state.last_angle_deg = angle_deg;
-        state.has_last = true;
 
         return std::nullopt;
     }
@@ -185,11 +207,19 @@ public:
     }
 
 private:
-    struct SourceState {
-        double last_timestamp_sec{0.0};
-        double last_angle_deg{0.0};
-        bool has_last{false};
+    struct Point {
+        double timestampSec{0.0};
+        double angleDeg{0.0};
     };
+
+    struct SourceState {
+        std::deque<Point> points;
+    };
+
+    static constexpr double kReferenceDeltaSec = 1.0;   // хотим брать точку ~1 секунду назад
+    static constexpr double kMinDtSec = 0.95;           // защита от слишком малого dt
+    static constexpr double kProjectionHorizonSec = 1.0;
+    static constexpr double kCriticalAngleDeg = 340.0;
 
     std::unordered_map<int, SourceState> states_;
 };

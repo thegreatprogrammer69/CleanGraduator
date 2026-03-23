@@ -393,10 +393,10 @@ void QtCalibrationResultTableModel::appendInfoRows(const domain::common::Calibra
         return row;
     };
 
-    Row total_row = makeRow(QStringLiteral("общ."), RowKind::TotalAngle);
-    Row nonlinearity_row = makeRow(QStringLiteral("нелин."), RowKind::Nonlinearity);
-    Row count_row = makeRow(QStringLiteral("кол-во"), RowKind::MeasurementCount);
-    Row current_angle_row = makeRow(QStringLiteral("тек. уг."), RowKind::CurrentAngle);
+    Row total_row = makeRow(tr("общ."), RowKind::TotalAngle);
+    Row nonlinearity_row = makeRow(tr("нелин."), RowKind::Nonlinearity);
+    Row count_row = makeRow(tr("кол-во"), RowKind::MeasurementCount);
+    Row current_angle_row = makeRow(tr("тек. уг."), RowKind::CurrentAngle);
 
     for (int i = 0; i < 8; ++i) {
         const auto source_id = domain::common::SourceId{i + 1};

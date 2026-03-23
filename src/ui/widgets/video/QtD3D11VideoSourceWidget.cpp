@@ -73,7 +73,7 @@ cbuffer Params : register(b0)
     float uViewportWidth;
     float uViewportHeight;
     float uCircleDiameterPx;
-    float uPadding0;
+    float uBandWidthPx;      // ширина одной полосы; всего полос 3
     float4 uCircleColor1;
     float4 uCircleColor2;
 };
@@ -110,34 +110,49 @@ float4 sampleBaseColor(VSOut i)
 
 float4 circleOverlay(float2 fragCoord)
 {
-    if (uCircleDiameterPx <= 0.0 || uViewportHeight <= 0.0)
+    if (uCircleDiameterPx <= 0.0 || uViewportWidth <= 0.0 || uViewportHeight <= 0.0)
     {
         return float4(0.0, 0.0, 0.0, 0.0);
     }
 
-    const float pi = 3.14159265358979323846;
+    const float bandWidth = max(uBandWidthPx, 1.0);
+    const float totalWidth = bandWidth * 3.0;
+
     float2 center = float2(uViewportWidth * 0.5, uViewportHeight * 0.5);
     float2 delta = fragCoord - center;
+
     float radius = uCircleDiameterPx * 0.5;
     float dist = length(delta);
-    float ringDelta = abs(dist - radius);
-    float thickness = 1.0;
 
-    if (ringDelta > thickness)
+    float outerR = radius + totalWidth * 0.5;
+    float innerR = radius - totalWidth * 0.5;
+
+    if (dist < innerR || dist > outerR)
     {
         return float4(0.0, 0.0, 0.0, 0.0);
     }
 
-    float angle = atan2(delta.y, delta.x);
-    if (angle < 0.0)
+    // 0 -> внешняя граница, 1 -> внутренняя граница
+    float t = (outerR - dist) / totalWidth;
+
+    float4 color;
+    if (t < (1.0 / 3.0))
     {
-        angle += 2.0 * pi;
+        color = uCircleColor1;
+    }
+    else if (t < (2.0 / 3.0))
+    {
+        color = uCircleColor2;
+    }
+    else
+    {
+        color = uCircleColor1;
     }
 
-    float arc = angle * max(radius, 1.0);
-    float pattern = fmod(floor(arc), 11.0);
-    float4 color = (pattern < 4.0 || pattern >= 7.0) ? uCircleColor1 : uCircleColor2;
-    color.a *= saturate(1.0 - ringDelta / max(thickness, 0.0001));
+    // мягкие края только по внешней и внутренней границе всего кольца
+    float edgeFade = min(dist - innerR, outerR - dist);
+    color.a *= saturate(edgeFade);
+
     return color;
 }
 
@@ -673,6 +688,7 @@ void QtD3D11VideoSourceWidget::render(bool noVideo)
     params.viewportWidth = viewportWidth;
     params.viewportHeight = viewportHeight;
     params.circleDiameterPx = std::max(0.0f, viewportHeight * (circleDiameterPercent_ / 100.0f));
+    params.padding0 = 2.0f; // ширина одной полосы в px; итоговая толщина = 3 * padding0
     unpackColor(circleColor1_, params.circleColor1);
     unpackColor(circleColor2_, params.circleColor2);
 

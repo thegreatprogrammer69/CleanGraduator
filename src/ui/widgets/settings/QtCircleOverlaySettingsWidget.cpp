@@ -31,11 +31,12 @@ QString buttonStyle(const QColor& color)
 {
     const QColor border = color.lightness() > 128 ? QColor("#4b5563") : QColor("#d1d5db");
     return QString(
-        "background-color: rgba(%1, %2, %3, %4); border: 1px solid %5; border-radius: 6px; min-height: 28px;")
+        "background-color: rgba(%1, %2, %3, %4); border: 1px solid %5; border-radius: 6px; min-height: 28px; color: %6;")
         .arg(color.red())
         .arg(color.green())
         .arg(color.blue())
         .arg(color.alpha())
+        .arg(border.name())
         .arg(border.name());
 }
 }

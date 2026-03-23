@@ -14,8 +14,10 @@
 #include <atlbase.h>
 #include <atlcom.h>
 
+#include <atomic>
 #include <chrono>
 #include <cstring>
+#include <thread>
 #include <utility>
 
 #pragma comment(lib, "strmiids.lib")
@@ -74,6 +76,19 @@ inline long long nowSteadyMs() {
     ).count();
 }
 
+inline void FreeMediaType(AM_MEDIA_TYPE& mt) {
+    if (mt.cbFormat != 0 && mt.pbFormat != nullptr) {
+        CoTaskMemFree(mt.pbFormat);
+        mt.cbFormat = 0;
+        mt.pbFormat = nullptr;
+    }
+
+    if (mt.pUnk != nullptr) {
+        mt.pUnk->Release();
+        mt.pUnk = nullptr;
+    }
+}
+
 } // namespace
 
 struct DShowCamera::DShowCameraImpl {
@@ -92,14 +107,27 @@ struct DShowCamera::DShowCameraImpl {
     int height = 0;
 
     bool com_initialized = false;
-    bool running = false;
+    std::atomic<bool> running{false};
+    std::atomic<bool> closing{false};
 
     long long last_frame_tick_ms = 0;
 
     std::chrono::milliseconds check_period{500};
     std::chrono::milliseconds timeout{1500};
 
-    ~DShowCameraImpl() {
+    void shutdown() noexcept {
+        closing.store(true, std::memory_order_release);
+        running.store(false, std::memory_order_release);
+
+        // Критично: сначала отключаем callback, чтобы во время Stop()
+        // больше не было входов в onFrame().
+        if (grabber) {
+            grabber->SetCallback(nullptr, 0);
+        }
+
+        // Даем текущему callback чуть-чуть выйти, если он уже начался.
+        std::this_thread::sleep_for(std::chrono::milliseconds(30));
+
         if (control) {
             control->Stop();
         }
@@ -118,9 +146,16 @@ struct DShowCamera::DShowCameraImpl {
         null_renderer.Release();
 
         if (com_initialized) {
-            // Разкомментируй, если open()/close() гарантированно на одном и том же thread.
+            // Включай только если open()/close() гарантированно вызываются
+            // на одном и том же потоке.
             // CoUninitialize();
+            com_initialized = false;
         }
+    }
+
+    ~DShowCameraImpl() {
+        // Здесь больше ничего тяжелого не делаем.
+        // shutdown() вызывается явно и ВНЕ state_mutex_.
     }
 };
 
@@ -141,7 +176,7 @@ DShowCamera::~DShowCamera() {
 bool DShowCamera::open() {
     std::lock_guard<std::mutex> lock(state_mutex_);
 
-    if (impl_ && impl_->running) {
+    if (impl_ && impl_->running.load(std::memory_order_acquire)) {
         logger_.warn("DShowCamera::open() ignored: already running");
         return false;
     }
@@ -150,18 +185,19 @@ bool DShowCamera::open() {
 
     impl_ = std::make_unique<DShowCameraImpl>();
 
-    if (!initializeCom())       return false;
-    if (!createGraph())         return false;
-    if (!createSourceFilter())  return false;
-    if (!createSampleGrabber()) return false;
-    if (!createNullRenderer())  return false;
-    if (!connectGraph())        return false;
-    if (!readConnectedFormat()) return false;
-    if (!configureSampleGrabber()) return false;
-    if (!runGraph())            return false;
+    if (!initializeCom())             return false;
+    if (!createGraph())               return false;
+    if (!createSourceFilter())        return false;
+    if (!createSampleGrabber())       return false;
+    if (!createNullRenderer())        return false;
+    if (!connectGraph())              return false;
+    if (!readConnectedFormat())       return false;
+    if (!configureSampleGrabber())    return false;
+    if (!runGraph())                  return false;
 
     impl_->last_frame_tick_ms = nowSteadyMs();
-    impl_->running = true;
+    impl_->closing.store(false, std::memory_order_release);
+    impl_->running.store(true, std::memory_order_release);
 
     startWatchdog();
 
@@ -174,16 +210,30 @@ bool DShowCamera::open() {
 void DShowCamera::close() {
     stopWatchdog();
 
-    std::lock_guard<std::mutex> lock(state_mutex_);
+    std::unique_ptr<DShowCameraImpl> impl_to_destroy;
 
-    if (!impl_) {
-        return;
+    {
+        std::lock_guard<std::mutex> lock(state_mutex_);
+
+        if (!impl_) {
+            return;
+        }
+
+        logger_.info("DShowCamera::close()");
+
+        impl_->closing.store(true, std::memory_order_release);
+        impl_->running.store(false, std::memory_order_release);
+
+        // Очень важно: выносим impl_ наружу, чтобы shutdown()/Stop()/Release()
+        // случились уже БЕЗ state_mutex_. Иначе легко получить deadlock:
+        // Stop() ждёт callback, callback ждёт state_mutex_.
+        impl_to_destroy = std::move(impl_);
     }
 
-    logger_.info("DShowCamera::close()");
-
-    impl_->running = false;
-    impl_.reset();
+    if (impl_to_destroy) {
+        impl_to_destroy->shutdown();
+        impl_to_destroy.reset();
+    }
 
     notifier_.notifyEvent(VideoSourceEvent(VideoSourceEvent::Closed{}));
     logger_.info("DShowCamera closed");
@@ -191,7 +241,7 @@ void DShowCamera::close() {
 
 bool DShowCamera::isRunning() const noexcept {
     std::lock_guard<std::mutex> lock(state_mutex_);
-    return impl_ != nullptr && impl_->running;
+    return impl_ != nullptr && impl_->running.load(std::memory_order_acquire);
 }
 
 void DShowCamera::addObserver(domain::ports::IVideoSourceObserver& o) {
@@ -221,7 +271,12 @@ void DShowCamera::onFrame(double /*time*/, unsigned char* data, long size) {
     {
         std::lock_guard<std::mutex> lock(state_mutex_);
 
-        if (!impl_ || !impl_->running) {
+        if (!impl_) {
+            return;
+        }
+
+        if (impl_->closing.load(std::memory_order_acquire) ||
+            !impl_->running.load(std::memory_order_acquire)) {
             return;
         }
 
@@ -251,13 +306,14 @@ bool DShowCamera::initializeCom() {
         COINIT_APARTMENTTHREADED | COINIT_SPEED_OVER_MEMORY
     );
 
-    if (FAILED(hr)) {
+    if (FAILED(hr) && hr != RPC_E_CHANGED_MODE) {
         failOpen(fmt::format("CoInitializeEx failed: hr=0x{:08X}", static_cast<unsigned>(hr)));
         return false;
     }
 
-    impl_->com_initialized = true;
-    logger_.info("COM initialized");
+    // RPC_E_CHANGED_MODE считаем нефатальным: COM уже поднят в другом режиме.
+    impl_->com_initialized = (hr == S_OK || hr == S_FALSE);
+    logger_.info("COM initialized, hr=0x{:08X}", static_cast<unsigned>(hr));
     return true;
 }
 
@@ -389,13 +445,7 @@ bool DShowCamera::readConnectedFormat() {
         mt_out.pbFormat == nullptr ||
         mt_out.cbFormat < sizeof(VIDEOINFOHEADER)) {
 
-        if (mt_out.pbFormat) {
-            CoTaskMemFree(mt_out.pbFormat);
-        }
-        if (mt_out.pUnk) {
-            mt_out.pUnk->Release();
-        }
-
+        FreeMediaType(mt_out);
         failOpen("Unexpected media type from SampleGrabber");
         return false;
     }
@@ -404,10 +454,7 @@ bool DShowCamera::readConnectedFormat() {
     impl_->width = vih->bmiHeader.biWidth;
     impl_->height = vih->bmiHeader.biHeight;
 
-    CoTaskMemFree(mt_out.pbFormat);
-    if (mt_out.pUnk) {
-        mt_out.pUnk->Release();
-    }
+    FreeMediaType(mt_out);
 
     logger_.info("Video format: {}x{}", impl_->width, impl_->height);
     return true;
@@ -430,6 +477,9 @@ bool DShowCamera::configureSampleGrabber() {
 
     hr = impl_->grabber->SetCallback(impl_->grabber_cb, 1);
     if (FAILED(hr)) {
+        impl_->grabber_cb->Release();
+        impl_->grabber_cb = nullptr;
+
         failOpen(fmt::format("SetCallback failed: hr=0x{:08X}", static_cast<unsigned>(hr)));
         return false;
     }
@@ -474,13 +524,18 @@ void DShowCamera::watchdogTick() {
     {
         std::lock_guard<std::mutex> lock(state_mutex_);
 
-        if (!impl_ || !impl_->running) {
+        if (!impl_) {
+            return;
+        }
+
+        if (impl_->closing.load(std::memory_order_acquire) ||
+            !impl_->running.load(std::memory_order_acquire)) {
             return;
         }
 
         const long long elapsed_ms = nowSteadyMs() - impl_->last_frame_tick_ms;
         if (elapsed_ms > impl_->timeout.count()) {
-            impl_->running = false;
+            impl_->running.store(false, std::memory_order_release);
             timeout_detected = true;
         }
     }
@@ -496,6 +551,15 @@ void DShowCamera::failOpen(const std::string& reason) {
 
     VideoSourceEvent::OpenFailed ev;
     ev.error = VideoSourceError{reason};
+
+    // При ошибке открытия тоже не надо делать тяжелый Stop() под mutex.
+    // Здесь граф обычно еще не успел полноценно разогнаться, поэтому просто
+    // выкидываем impl_. Если хочешь совсем железобетонно — можно вынести
+    // shutdown() наружу по той же схеме, что и в close().
+    if (impl_) {
+        impl_->closing.store(true, std::memory_order_release);
+        impl_->running.store(false, std::memory_order_release);
+    }
 
     impl_.reset();
     notifier_.notifyEvent(VideoSourceEvent(ev));
