@@ -2,7 +2,6 @@
 
 #include <QApplication>
 #include <QMetaObject>
-#include <QDebug>
 #include <QStringList>
 #include <QBrush>
 #include <QColor>
@@ -72,20 +71,63 @@ std::optional<domain::common::CalibrationIssueSeverity> maxValidationSeverityOf(
     return maxSeverity;
 }
 
-QVariant backgroundForSeverity(domain::common::CalibrationIssueSeverity severity)
+QBrush backgroundForSeverity(domain::common::CalibrationIssueSeverity severity)
 {
     using Severity = domain::common::CalibrationIssueSeverity;
 
     switch (severity) {
         case Severity::Info:
-            return QBrush(QColor(210, 240, 255));
+            return QBrush(QColor(220, 238, 255));
         case Severity::Warning:
-            return QBrush(QColor(255, 236, 179));
+            return QBrush(QColor(255, 243, 205));
         case Severity::Error:
-            return QBrush(QColor(255, 205, 210));
+            return QBrush(QColor(255, 221, 225));
     }
 
     return {};
+}
+
+QBrush foregroundForRowKind(QtCalibrationResultTableModel::RowKind kind)
+{
+    switch (kind) {
+        case QtCalibrationResultTableModel::RowKind::Measurement:
+            return QBrush(QColor(28, 37, 54));
+        case QtCalibrationResultTableModel::RowKind::TotalAngle:
+        case QtCalibrationResultTableModel::RowKind::CurrentAngle:
+            return QBrush(QColor(16, 64, 118));
+        case QtCalibrationResultTableModel::RowKind::Nonlinearity:
+            return QBrush(QColor(92, 63, 8));
+        case QtCalibrationResultTableModel::RowKind::MeasurementCount:
+            return QBrush(QColor(63, 74, 86));
+    }
+
+    return QBrush(Qt::black);
+}
+
+QBrush backgroundForRowKind(QtCalibrationResultTableModel::RowKind kind)
+{
+    switch (kind) {
+        case QtCalibrationResultTableModel::RowKind::Measurement:
+            return QBrush(QColor(247, 250, 252));
+        case QtCalibrationResultTableModel::RowKind::TotalAngle:
+        case QtCalibrationResultTableModel::RowKind::CurrentAngle:
+            return QBrush(QColor(232, 243, 255));
+        case QtCalibrationResultTableModel::RowKind::Nonlinearity:
+            return QBrush(QColor(255, 248, 225));
+        case QtCalibrationResultTableModel::RowKind::MeasurementCount:
+            return QBrush(QColor(240, 244, 248));
+    }
+
+    return QBrush(Qt::white);
+}
+
+QFont fontForRowKind(QtCalibrationResultTableModel::RowKind kind)
+{
+    QFont font;
+    if (kind != QtCalibrationResultTableModel::RowKind::Measurement) {
+        font.setBold(true);
+    }
+    return font;
 }
 
 QIcon iconForSeverity(domain::common::CalibrationIssueSeverity severity)
@@ -191,15 +233,25 @@ QVariant QtCalibrationResultTableModel::data(const QModelIndex& index, int role)
     }
 
     if (role == Qt::TextAlignmentRole) {
-        return QVariant::fromValue(Qt::AlignHCenter | Qt::AlignVCenter);
+        return QVariant::fromValue(Qt::AlignCenter);
     }
 
-    if (role == Qt::BackgroundRole && cell.validation_severity.has_value()) {
-        return backgroundForSeverity(*cell.validation_severity);
+    if (role == Qt::BackgroundRole) {
+        if (cell.validation_severity.has_value()) {
+            return backgroundForSeverity(*cell.validation_severity);
+        }
+        return cell.background;
     }
 
-    if (role == Qt::ForegroundRole && cell.validation_severity.has_value()) {
-        return QBrush(Qt::black);
+    if (role == Qt::ForegroundRole) {
+        if (cell.validation_severity.has_value()) {
+            return QBrush(Qt::black);
+        }
+        return cell.foreground;
+    }
+
+    if (role == Qt::FontRole) {
+        return cell.font;
     }
 
     return {};
@@ -336,6 +388,22 @@ void QtCalibrationResultTableModel::rebuildRows(const domain::common::Calibratio
     }
 
     appendInfoRows(result);
+    updateCellStyles();
+}
+
+void QtCalibrationResultTableModel::updateCellStyles()
+{
+    for (auto& row : rows_) {
+        const auto background = backgroundForRowKind(row.kind);
+        const auto foreground = foregroundForRowKind(row.kind);
+        const auto font = fontForRowKind(row.kind);
+
+        for (auto& cell : row.cells) {
+            cell.background = background;
+            cell.foreground = foreground;
+            cell.font = font;
+        }
+    }
 }
 
 void QtCalibrationResultTableModel::appendInfoRows(const domain::common::CalibrationResult& result)
