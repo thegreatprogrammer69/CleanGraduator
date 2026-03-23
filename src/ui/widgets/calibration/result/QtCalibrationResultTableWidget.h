@@ -2,7 +2,6 @@
 #define CLEANGRADUATOR_QTCALIBRATIONRESULTTABLEWIDGET_H
 
 #include <QTableView>
-#include <memory>
 
 #include "QtCalibrationResultTableModel.h"
 
@@ -27,11 +26,14 @@ namespace ui {
     private:
         void setupUi();
         void connectModelSignals();
-
+        void scheduleRefreshLayout();
+        void refreshLayout();
         void updateSectionSizes();
+        int availableColumnWidth() const;
 
     private:
         QtCalibrationResultTableModel model_;
+        bool refresh_scheduled_{ false };
     };
 
 } // namespace ui

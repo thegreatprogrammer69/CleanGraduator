@@ -19,6 +19,14 @@ namespace ui {
         Q_OBJECT
 
     public:
+        enum class RowKind {
+            Measurement,
+            TotalAngle,
+            Nonlinearity,
+            MeasurementCount,
+            CurrentAngle,
+        };
+
         explicit QtCalibrationResultTableModel(
             QtCalibrationResultTableModelDeps deps,
             QObject* parent = nullptr);
@@ -32,14 +40,6 @@ namespace ui {
         bool isPairMergedRow(int row) const;
 
     private:
-        enum class RowKind {
-            Measurement,
-            TotalAngle,
-            Nonlinearity,
-            MeasurementCount,
-            CurrentAngle,
-        };
-
         struct Cell final {
             QVariant display{};
             QString tooltip{};
@@ -50,6 +50,11 @@ namespace ui {
             QVariant label{};
             QVector<Cell> cells{};
             RowKind kind{RowKind::Measurement};
+
+            [[nodiscard]] bool isInfoRow() const
+            {
+                return kind != RowKind::Measurement;
+            }
         };
 
         void applyResult(std::optional<domain::common::CalibrationResult> result);

@@ -4,6 +4,7 @@
 #include <QResizeEvent>
 #include <QShowEvent>
 #include <QMetaObject>
+#include <QScrollBar>
 #include <algorithm>
 
 namespace ui {
@@ -19,8 +20,7 @@ QtCalibrationResultTableWidget::QtCalibrationResultTableWidget(
     connectModelSignals();
 
     QMetaObject::invokeMethod(this, [this] {
-        updateGeometry();
-        updateSectionSizes();
+        refreshLayout();
     }, Qt::QueuedConnection);
 }
 
@@ -30,6 +30,8 @@ void QtCalibrationResultTableWidget::setupUi()
 
     setWordWrap(false);
     setTextElideMode(Qt::ElideNone);
+    setAlternatingRowColors(false);
+    setIconSize(QSize(16, 16));
 
     setCornerButtonEnabled(false);
     setSelectionBehavior(QAbstractItemView::SelectItems);
@@ -40,6 +42,7 @@ void QtCalibrationResultTableWidget::setupUi()
     setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
     setShowGrid(true);
+    setGridStyle(Qt::SolidLine);
 
     horizontalHeader()->setSectionResizeMode(QHeaderView::Fixed);
     verticalHeader()->setSectionResizeMode(QHeaderView::Fixed);
@@ -49,19 +52,37 @@ void QtCalibrationResultTableWidget::setupUi()
 
     horizontalHeader()->setDefaultAlignment(Qt::AlignCenter);
     verticalHeader()->setDefaultAlignment(Qt::AlignCenter);
+    horizontalHeader()->setHighlightSections(false);
+    verticalHeader()->setHighlightSections(false);
+    horizontalHeader()->setMinimumSectionSize(56);
+    verticalHeader()->setMinimumSectionSize(26);
 
     verticalHeader()->setVisible(true);
     horizontalHeader()->setVisible(true);
+
+    setStyleSheet(QStringLiteral(
+        "QTableView {"
+        "  background: #f8fafc;"
+        "  alternate-background-color: #f8fafc;"
+        "  gridline-color: #d6dee8;"
+        "  border: 1px solid #c8d3df;"
+        "  selection-background-color: #dbeafe;"
+        "  selection-color: #0f172a;"
+        "}"
+        "QHeaderView::section {"
+        "  background: #e8eef5;"
+        "  color: #334155;"
+        "  border: 1px solid #d6dee8;"
+        "  font-weight: 600;"
+        "  padding: 4px 6px;"
+        "}"
+    ));
 }
 
 void QtCalibrationResultTableWidget::connectModelSignals()
 {
     auto refresh = [this] {
-        QMetaObject::invokeMethod(this, [this] {
-            updateGeometry();
-            updateSectionSizes();
-            viewport()->update();
-        }, Qt::QueuedConnection);
+        scheduleRefreshLayout();
     };
 
     connect(&model_, &QAbstractItemModel::modelReset, this, refresh);
@@ -71,19 +92,21 @@ void QtCalibrationResultTableWidget::connectModelSignals()
     connect(&model_, &QAbstractItemModel::rowsRemoved, this, refresh);
     connect(&model_, &QAbstractItemModel::columnsInserted, this, refresh);
     connect(&model_, &QAbstractItemModel::columnsRemoved, this, refresh);
+    connect(verticalHeader(), &QHeaderView::sectionResized, this, [this] {
+        scheduleRefreshLayout();
+    });
 }
 
 void QtCalibrationResultTableWidget::resizeEvent(QResizeEvent* event)
 {
     QTableView::resizeEvent(event);
-    updateSectionSizes();
+    refreshLayout();
 }
 
 void QtCalibrationResultTableWidget::showEvent(QShowEvent* event)
 {
     QTableView::showEvent(event);
-    updateGeometry();
-    updateSectionSizes();
+    refreshLayout();
 }
 
 QSize QtCalibrationResultTableWidget::sizeHint() const
@@ -133,6 +156,41 @@ QSize QtCalibrationResultTableWidget::minimumSizeHint() const
     return QTableView::minimumSizeHint();
 }
 
+void QtCalibrationResultTableWidget::scheduleRefreshLayout()
+{
+    if (refresh_scheduled_) {
+        return;
+    }
+
+    refresh_scheduled_ = true;
+    QMetaObject::invokeMethod(this, [this] {
+        refresh_scheduled_ = false;
+        refreshLayout();
+    }, Qt::QueuedConnection);
+}
+
+void QtCalibrationResultTableWidget::refreshLayout()
+{
+    updateGeometry();
+    updateSectionSizes();
+    viewport()->update();
+}
+
+int QtCalibrationResultTableWidget::availableColumnWidth() const
+{
+    int availableWidth = width() - frameWidth() * 2;
+
+    if (verticalHeader()->isVisible()) {
+        availableWidth -= verticalHeader()->width();
+    }
+
+    if (verticalScrollBar()->isVisible()) {
+        availableWidth -= verticalScrollBar()->width();
+    }
+
+    return std::max(0, availableWidth);
+}
+
 void QtCalibrationResultTableWidget::updateSectionSizes()
 {
     if (model() == nullptr) {
@@ -155,21 +213,20 @@ void QtCalibrationResultTableWidget::updateSectionSizes()
         for (int row = 0; row < row_count; ++row) {
             const QString text =
                 model()->headerData(row, Qt::Vertical, Qt::DisplayRole).toString();
-            max_width = std::max(max_width, fm.horizontalAdvance(text) + 12);
+            max_width = std::max(max_width, fm.horizontalAdvance(text) + 18);
         }
 
         verticalHeader()->setFixedWidth(max_width);
     }
 
     if (horizontalHeader()->isVisible()) {
-        horizontalHeader()->setFixedHeight(std::max(horizontalHeader()->minimumHeight(), 28));
+        horizontalHeader()->setFixedHeight(std::max(horizontalHeader()->minimumHeight(), 30));
     }
 
-    // Колонки растягиваем по доступной ширине.
-    const int viewport_width = viewport()->width();
-    if (viewport_width > 0) {
-        const int base_width = viewport_width / column_count;
-        int remainder = viewport_width % column_count;
+    const int table_width = availableColumnWidth();
+    if (table_width > 0) {
+        const int base_width = table_width / column_count;
+        int remainder = table_width % column_count;
 
         for (int col = 0; col < column_count; ++col) {
             const int width = base_width + (remainder > 0 ? 1 : 0);
@@ -190,13 +247,12 @@ void QtCalibrationResultTableWidget::updateSectionSizes()
         }
     }
 
-    // Строкам задаём нормальную "естественную" высоту.
     for (int row = 0; row < row_count; ++row) {
         int h = sizeHintForRow(row);
         if (h <= 0) {
             h = verticalHeader()->defaultSectionSize();
         }
-        setRowHeight(row, h);
+        setRowHeight(row, std::max(h, verticalHeader()->minimumSectionSize()));
     }
 
     updateGeometry();
