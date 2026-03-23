@@ -6,6 +6,7 @@
 #include <QStringList>
 #include <QBrush>
 #include <QColor>
+#include <QFont>
 #include <QIcon>
 #include <QStyle>
 
@@ -191,11 +192,19 @@ QVariant QtCalibrationResultTableModel::data(const QModelIndex& index, int role)
     }
 
     if (role == Qt::TextAlignmentRole) {
-        return QVariant::fromValue(Qt::AlignHCenter | Qt::AlignVCenter);
+        return QVariant::fromValue(Qt::AlignCenter);
     }
 
-    if (role == Qt::BackgroundRole && cell.validation_severity.has_value()) {
-        return backgroundForSeverity(*cell.validation_severity);
+    if (role == Qt::FontRole) {
+        return QtCalibrationResultTableModel::fontForRowKind(QApplication::font(), row.kind);
+    }
+
+    if (role == Qt::BackgroundRole) {
+        if (cell.validation_severity.has_value()) {
+            return backgroundForSeverity(*cell.validation_severity);
+        }
+
+        return QtCalibrationResultTableModel::baseBackgroundForRowKind(row.kind);
     }
 
     if (role == Qt::ForegroundRole && cell.validation_severity.has_value()) {
@@ -210,14 +219,18 @@ QVariant QtCalibrationResultTableModel::headerData(
     Qt::Orientation orientation,
     int role) const
 {
-    if (role != Qt::DisplayRole) {
-        return {};
-    }
-
     if (orientation == Qt::Horizontal) {
-        return tr("у.%1.%2")
-            .arg(section % 2 == 0 ? tr("п") : tr("о"))
-            .arg(section / 2 + 1);
+        if (role == Qt::DisplayRole) {
+            return tr("у.%1.%2")
+                .arg(section % 2 == 0 ? tr("п") : tr("о"))
+                .arg(section / 2 + 1);
+        }
+
+        if (role == Qt::TextAlignmentRole) {
+            return QVariant::fromValue(Qt::AlignCenter);
+        }
+
+        return {};
     }
 
     if (orientation == Qt::Vertical) {
@@ -225,7 +238,21 @@ QVariant QtCalibrationResultTableModel::headerData(
             return {};
         }
 
-        return rows_[section].label;
+        if (role == Qt::DisplayRole) {
+            return rows_[section].label;
+        }
+
+        if (role == Qt::TextAlignmentRole) {
+            return QVariant::fromValue(Qt::AlignCenter);
+        }
+
+        if (role == Qt::FontRole) {
+            return QtCalibrationResultTableModel::fontForRowKind(QApplication::font(), rows_[section].kind);
+        }
+
+        if (role == Qt::BackgroundRole) {
+            return QtCalibrationResultTableModel::baseBackgroundForRowKind(rows_[section].kind);
+        }
     }
 
     return {};
@@ -247,6 +274,22 @@ bool QtCalibrationResultTableModel::isPairMergedRow(int row) const
     }
 
     return rows_[row].kind == RowKind::TotalAngle || rows_[row].kind == RowKind::CurrentAngle;
+}
+
+QBrush QtCalibrationResultTableModel::baseBackgroundForRowKind(RowKind kind)
+{
+    if (kind == RowKind::Measurement) {
+        return QBrush(QColor(245, 246, 248));
+    }
+
+    return QBrush(QColor(233, 236, 239));
+}
+
+QFont QtCalibrationResultTableModel::fontForRowKind(const QFont& baseFont, RowKind kind)
+{
+    QFont font(baseFont);
+    font.setWeight(kind == RowKind::Measurement ? QFont::Medium : QFont::DemiBold);
+    return font;
 }
 
 void QtCalibrationResultTableModel::applyResult(
