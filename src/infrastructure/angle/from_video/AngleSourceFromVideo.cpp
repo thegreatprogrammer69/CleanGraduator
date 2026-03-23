@@ -1,6 +1,7 @@
 #include "AngleSourceFromVideo.h"
 
 #include <algorithm>
+#include <cmath>
 #include <exception>
 
 #include "domain/ports/video/IVideoSource.h"
@@ -11,6 +12,15 @@
 #include "domain/ports/angle/IAngleSink.h"
 
 namespace infra::angle {
+
+namespace {
+bool isValidAngle(const domain::common::Angle& angle)
+{
+    const auto degrees = angle.degrees();
+    return std::isfinite(degrees) && degrees >= 0.0 && degrees <= 360.0;
+}
+} // namespace
+
 
 AngleSourceFromVideo::AngleSourceFromVideo(
     domain::common::SourceId id,
@@ -77,6 +87,11 @@ void AngleSourceFromVideo::onVideoFrame(const domain::common::VideoFramePacket& 
         return;
     } catch (...) {
         logger_.error("angle calc failed (ts={}): unknown exception", packet.timestamp);
+        return;
+    }
+
+    if (!isValidAngle(angle)) {
+        logger_.warn("filtered invalid angle value: {}", angle);
         return;
     }
 

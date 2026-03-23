@@ -11,6 +11,7 @@
 #include "CalibrationOrchestratorPorts.h"
 #include "CalibrationOrchestratorState.h"
 #include "application/orchestrators/calibration/process/CalibrationOrchestratorEvent.h"
+#include "application/orchestrators/calibration/process/CalibrationSafetyMonitor.h"
 #include "application/ports/calibration/orchestration/CalibrationOrchestratorObserver.h"
 #include "domain/core/angle/SourceId.h"
 #include "domain/core/calibration/strategy/CalibrationStrategyVerdict.h"
@@ -67,6 +68,7 @@ private:
 
     void notifyObservers(const CalibrationOrchestratorEvent& ev);
 
+    void checkSafetyIncidents();
     void teardown();
     void stopWithError(const std::string& error);
 
@@ -94,6 +96,7 @@ private:
 
     CalibrationOrchestratorPorts ports_;
     CalibrationOrchestratorInput inp_;
+    CalibrationSafetyMonitor safety_monitor_{};
 };
 
 } // namespace application::orchestrators
