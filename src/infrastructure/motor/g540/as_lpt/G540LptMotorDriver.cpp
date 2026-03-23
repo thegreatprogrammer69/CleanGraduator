@@ -38,6 +38,7 @@ namespace infra::motor {
     }
 
     G540LptMotorDriver::~G540LptMotorDriver() {
+        disableWatchdog();
         stop();
     }
 
@@ -92,6 +93,8 @@ namespace infra::motor {
             thread_worker_.resume();
         }
 
+        startWatchdogIfEnabled();
+
         // 7. Обновление состояния
         state_ = MotorDriverState::Running;
 
@@ -113,6 +116,7 @@ namespace infra::motor {
 
         // 2. Пауза worker thread
         thread_worker_.pause();
+        stopWatchdog();
 
         setFrequency(MotorFrequency(0));
 
@@ -129,6 +133,7 @@ namespace infra::motor {
     {
         // 1. Немедленная остановка worker-потока
         thread_worker_.stop();
+        stopWatchdog();
 
         setFrequency(MotorFrequency(0));
 
@@ -169,11 +174,14 @@ namespace infra::motor {
     }
 
     void G540LptMotorDriver::enableWatchdog(std::chrono::milliseconds timeout) {
-        software_watchdog_.start(timeout);
+        watchdog_timeout_ = timeout;
+        watchdog_enabled_.store(timeout.count() > 0, std::memory_order_release);
+        startWatchdogIfEnabled();
     }
 
     void G540LptMotorDriver::disableWatchdog() {
-        software_watchdog_.stop();
+        watchdog_enabled_.store(false, std::memory_order_release);
+        stopWatchdog();
     }
 
     void G540LptMotorDriver::setFrequency(const MotorFrequency& frequency) {
@@ -296,6 +304,7 @@ namespace infra::motor {
 
         // 4. Генерация одного шага
         stepOnce();
+        software_watchdog_.kick();
     }
 
     bool G540LptMotorDriver::pollSafety(const MotorLimitsState &current_limits) {
@@ -364,6 +373,19 @@ namespace infra::motor {
     std::uint8_t G540LptMotorDriver::readState() const {
         constexpr std::uint8_t invert_mask = 1 << 7;
         return lpt_port_.read(1) ^ invert_mask;
+    }
+
+
+    void G540LptMotorDriver::startWatchdogIfEnabled() {
+        if (!watchdog_enabled_.load(std::memory_order_acquire) || watchdog_timeout_.count() <= 0) {
+            return;
+        }
+
+        software_watchdog_.start(watchdog_timeout_);
+    }
+
+    void G540LptMotorDriver::stopWatchdog() {
+        software_watchdog_.stop();
     }
 
     void G540LptMotorDriver::handleLimitEvents(const MotorLimitsState& current)

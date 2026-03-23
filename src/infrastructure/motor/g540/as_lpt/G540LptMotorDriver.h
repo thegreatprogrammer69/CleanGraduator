@@ -53,6 +53,8 @@ namespace infra::motor {
         void handleLimitEvents(const domain::common::MotorLimitsState &current);
 
         void resetError();
+        void startWatchdogIfEnabled();
+        void stopWatchdog();
 
     private:
         fmt::Logger logger_;
@@ -60,6 +62,8 @@ namespace infra::motor {
 
         utils::thread::ThreadWorker thread_worker_;
         utils::watchdog::SoftwareWatchdog software_watchdog_;
+        std::atomic<bool> watchdog_enabled_{false};
+        std::chrono::milliseconds watchdog_timeout_{0};
         MotorDriverNotifier notifier_;
 
         std::atomic<domain::common::MotorDriverState> state_{domain::common::MotorDriverState::Uninitialized};

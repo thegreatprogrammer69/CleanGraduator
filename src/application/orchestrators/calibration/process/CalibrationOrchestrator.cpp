@@ -23,6 +23,10 @@ using namespace application;
 using namespace application::orchestrators;
 using namespace domain::common;
 
+namespace {
+constexpr auto kMotorWatchdogTimeout = std::chrono::milliseconds(200);
+}
+
 CalibrationOrchestrator::CalibrationOrchestrator(CalibrationOrchestratorPorts ports)
     : logger_(ports.logger)
     , ports_(std::move(ports))
@@ -82,6 +86,9 @@ bool CalibrationOrchestrator::start(CalibrationOrchestratorInput input)
 
         // ---------- Observers ----------
         attachObservers();
+
+        // ---------- Motor watchdog ----------
+        ports_.motor_driver.enableWatchdog(kMotorWatchdogTimeout);
 
         // ---------- Pressure ----------
         if (!ports_.pressure_source.isRunning())
@@ -382,6 +389,7 @@ void CalibrationOrchestrator::notifyObservers(const CalibrationOrchestratorEvent
 
 void CalibrationOrchestrator::teardown()
 {
+    ports_.motor_driver.disableWatchdog();
     detachObservers();
 
     // Сначала даём стратегии корректно завершиться и вернуть shutdown-команды.
