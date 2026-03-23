@@ -28,6 +28,7 @@ namespace ui {
         void setupUi();
         void connectModelSignals();
 
+        [[nodiscard]] int availableWidthForColumns(int columnCount) const;
         void updateSectionSizes();
 
     private:

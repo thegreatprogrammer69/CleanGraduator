@@ -6,6 +6,8 @@
 #include <QVector>
 #include <QString>
 #include <QVariant>
+#include <QBrush>
+#include <QFont>
 
 #include "viewmodels/calibration/result/CalibrationResultTableViewModel.h"
 
@@ -46,6 +48,9 @@ namespace ui {
             std::optional<domain::common::CalibrationIssueSeverity> max_severity{};
             std::optional<domain::common::CalibrationIssueSeverity> validation_severity{};
         };
+
+        [[nodiscard]] static QBrush baseBackgroundForRowKind(RowKind kind);
+        [[nodiscard]] static QFont fontForRowKind(const QFont& baseFont, RowKind kind);
         struct Row final {
             QVariant label{};
             QVector<Cell> cells{};

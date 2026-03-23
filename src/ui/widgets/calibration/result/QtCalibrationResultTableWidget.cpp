@@ -40,6 +40,7 @@ void QtCalibrationResultTableWidget::setupUi()
     setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
     setShowGrid(true);
+    setAlternatingRowColors(false);
 
     horizontalHeader()->setSectionResizeMode(QHeaderView::Fixed);
     verticalHeader()->setSectionResizeMode(QHeaderView::Fixed);
@@ -133,6 +134,24 @@ QSize QtCalibrationResultTableWidget::minimumSizeHint() const
     return QTableView::minimumSizeHint();
 }
 
+int QtCalibrationResultTableWidget::availableWidthForColumns(int columnCount) const
+{
+    if (columnCount <= 0) {
+        return 0;
+    }
+
+    int availableWidth = viewport()->width();
+    if (availableWidth <= 0) {
+        return 0;
+    }
+
+    if (showGrid()) {
+        availableWidth -= std::max(0, columnCount - 1);
+    }
+
+    return std::max(0, availableWidth);
+}
+
 void QtCalibrationResultTableWidget::updateSectionSizes()
 {
     if (model() == nullptr) {
@@ -159,17 +178,17 @@ void QtCalibrationResultTableWidget::updateSectionSizes()
         }
 
         verticalHeader()->setFixedWidth(max_width);
+        updateGeometries();
     }
 
     if (horizontalHeader()->isVisible()) {
         horizontalHeader()->setFixedHeight(std::max(horizontalHeader()->minimumHeight(), 28));
     }
 
-    // Колонки растягиваем по доступной ширине.
-    const int viewport_width = viewport()->width();
-    if (viewport_width > 0) {
-        const int base_width = viewport_width / column_count;
-        int remainder = viewport_width % column_count;
+    const int available_width = availableWidthForColumns(column_count);
+    if (available_width > 0) {
+        const int base_width = available_width / column_count;
+        int remainder = available_width % column_count;
 
         for (int col = 0; col < column_count; ++col) {
             const int width = base_width + (remainder > 0 ? 1 : 0);
@@ -190,7 +209,6 @@ void QtCalibrationResultTableWidget::updateSectionSizes()
         }
     }
 
-    // Строкам задаём нормальную "естественную" высоту.
     for (int row = 0; row < row_count; ++row) {
         int h = sizeHintForRow(row);
         if (h <= 0) {
