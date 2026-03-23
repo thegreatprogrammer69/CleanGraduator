@@ -11,6 +11,8 @@
 #include "domain/core/video/PixelFormat.h"
 #include "viewmodels/Observable.h"
 
+#include <cstdint>
+
 namespace mvvm {
     class VideoSourceViewModel;
 }
@@ -49,6 +51,9 @@ namespace ui {
         domain::common::VideoFramePtr current_frame_;
         mvvm::Observable<domain::common::VideoFramePtr>::Subscription frame_sub_;
         mvvm::Observable<bool>::Subscription is_opened_sub_;
+        mvvm::Observable<int>::Subscription circle_diameter_sub_;
+        mvvm::Observable<std::uint32_t>::Subscription circle_color1_sub_;
+        mvvm::Observable<std::uint32_t>::Subscription circle_color2_sub_;
 
         bool is_source_opened_{false};
 
@@ -68,6 +73,10 @@ namespace ui {
         int frameHeight_{0};
 
         GLenum glUploadFormat_{GL_RGB};
+
+        int circleDiameterPercent_{30};
+        std::uint32_t circleColor1_{0xFFFFFFFFu};
+        std::uint32_t circleColor2_{0x000000FFu};
 
     };
 

@@ -8,6 +8,9 @@ uniform int  uWidth;
 uniform int  uHeight;
 uniform int  uPackedWidth;
 uniform int  uNoVideo;
+uniform int  uCircleDiameterPercent;
+uniform vec3 uCircleColor1;
+uniform vec3 uCircleColor2;
 
 vec3 yuvToRgb601Limited(float y, float u, float v)
 {
@@ -42,18 +45,11 @@ vec3 sampleYuyv(float xPix, float yPix)
     return yuvToRgb601Limited(Y, yuyv.g, yuyv.a);
 }
 
-void main()
+vec3 sampleVideoColor()
 {
-    if (uNoVideo == 1)
-    {
-        gl_FragColor = vec4(1.0);
-        return;
-    }
-
     if (uFormat == 0)
     {
-        gl_FragColor = vec4(texture2D(uTex, vTex).bgr, 1.0);
-        return;
+        return texture2D(uTex, vTex).bgr;
     }
 
     float sx = vTex.x * float(uWidth)  - 0.5;
@@ -73,5 +69,59 @@ void main()
     vec3 c0 = mix(c00, c10, fx);
     vec3 c1 = mix(c01, c11, fx);
 
-    gl_FragColor = vec4(mix(c0, c1, fy), 1.0);
+    return mix(c0, c1, fy);
+}
+
+bool isCirclePixel(vec2 pixel, float radius, out vec3 color)
+{
+    if (uCircleDiameterPercent <= 0)
+    {
+        return false;
+    }
+
+    vec2 center = vec2(float(uWidth), float(uHeight)) * 0.5;
+    vec2 delta = pixel - center;
+    float distanceToCenter = length(delta);
+
+    if (abs(distanceToCenter - radius) > 0.5)
+    {
+        return false;
+    }
+
+    float angle = atan(delta.y, delta.x);
+    if (angle < 0.0)
+    {
+        angle += 6.28318530718;
+    }
+
+    float arcLength = angle * radius;
+    float pattern = mod(floor(arcLength), 11.0);
+
+    color = (pattern < 4.0 || pattern >= 7.0)
+        ? uCircleColor1
+        : uCircleColor2;
+
+    return true;
+}
+
+void main()
+{
+    if (uNoVideo == 1)
+    {
+        gl_FragColor = vec4(1.0);
+        return;
+    }
+
+    vec3 color = sampleVideoColor();
+
+    float radius = float(uHeight) * (float(uCircleDiameterPercent) / 100.0) * 0.5;
+    vec2 pixel = vec2(vTex.x * float(uWidth), vTex.y * float(uHeight));
+
+    vec3 circleColor;
+    if (isCirclePixel(pixel, radius, circleColor))
+    {
+        color = circleColor;
+    }
+
+    gl_FragColor = vec4(color, 1.0);
 }

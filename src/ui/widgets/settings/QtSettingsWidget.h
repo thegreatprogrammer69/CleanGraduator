@@ -10,6 +10,7 @@ namespace mvvm {
 }
 
 class QtCameraGridSettingsWidget;
+class QtCircleOverlaySettingsWidget;
 class QtInfoSettingsWidget;
 class QGroupBox;
 
@@ -33,6 +34,7 @@ private:
     mvvm::SettingsViewModel& model_;
 
     QtCameraGridSettingsWidget* cameraGridWidget_{nullptr};
+    QtCircleOverlaySettingsWidget* circleOverlaySettingsWidget_{nullptr};
     QtInfoSettingsWidget* infoSettingsWidget_{nullptr};
 };
 

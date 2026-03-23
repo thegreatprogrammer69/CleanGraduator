@@ -3,10 +3,12 @@
 
 namespace mvvm {
     class CameraGridSettingsViewModel;
+    class CircleOverlaySettingsViewModel;
     class InfoSettingsViewModel;
 
     struct SettingsViewModelDeps {
         CameraGridSettingsViewModel& camera_grid;
+        CircleOverlaySettingsViewModel& circle_overlay_settings;
         InfoSettingsViewModel& info_settings;
     };
 
@@ -17,10 +19,12 @@ namespace mvvm {
         ~SettingsViewModel();
 
         CameraGridSettingsViewModel& cameraGridViewModel();
+        CircleOverlaySettingsViewModel& circleOverlaySettingsViewModel();
         InfoSettingsViewModel& infoSettingsViewModel();
 
     private:
         CameraGridSettingsViewModel& camera_grid_;
+        CircleOverlaySettingsViewModel& circle_overlay_settings_;
         InfoSettingsViewModel& info_settings_;
     };
 }

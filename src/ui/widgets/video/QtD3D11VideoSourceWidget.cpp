@@ -29,6 +29,13 @@ using Microsoft::WRL::ComPtr;
 
 namespace {
 
+void colorToFloat3(std::uint32_t color, float (&out)[3])
+{
+    out[0] = static_cast<float>((color >> 24) & 0xFFu) / 255.0f;
+    out[1] = static_cast<float>((color >> 16) & 0xFFu) / 255.0f;
+    out[2] = static_cast<float>((color >> 8) & 0xFFu) / 255.0f;
+}
+
 static constexpr const char* kVertexShaderHlsl = R"(
 struct VSOut
 {
@@ -70,6 +77,11 @@ cbuffer Params : register(b0)
     uint uWidth;
     uint uHeight;
     uint uTextureWidthBytes;
+    uint uCircleDiameterPercent;
+    float3 uCircleColor1;
+    float _padding0;
+    float3 uCircleColor2;
+    float _padding1;
 };
 
 struct VSOut
@@ -78,17 +90,12 @@ struct VSOut
     float2 uv  : TEXCOORD0;
 };
 
-float4 main(VSOut i) : SV_TARGET
+float3 sampleVideoColor(float2 uv)
 {
-    if (uNoVideo != 0)
-    {
-        return float4(0.05, 0.05, 0.05, 1.0);
-    }
-
     uint width  = max(uWidth,  1u);
     uint height = max(uHeight, 1u);
 
-    float2 uv = saturate(i.uv);
+    uv = saturate(uv);
 
     uint x = min((uint)(uv.x * (float)width),  width  - 1u);
     uint y = min((uint)(uv.y * (float)height), height - 1u);
@@ -99,7 +106,62 @@ float4 main(VSOut i) : SV_TARGET
     float g = gVideoTex.Load(int3((int)(baseX + 1u), (int)y, 0));
     float r = gVideoTex.Load(int3((int)(baseX + 2u), (int)y, 0));
 
-    return float4(r, g, b, 1.0);
+    return float3(r, g, b);
+}
+
+bool isCirclePixel(float2 pixel, float radius, out float3 color)
+{
+    if (uCircleDiameterPercent == 0u)
+    {
+        color = float3(0.0, 0.0, 0.0);
+        return false;
+    }
+
+    float2 center = float2((float)uWidth, (float)uHeight) * 0.5;
+    float2 delta = pixel - center;
+    float distanceToCenter = length(delta);
+
+    if (abs(distanceToCenter - radius) > 0.5)
+    {
+        color = float3(0.0, 0.0, 0.0);
+        return false;
+    }
+
+    float angle = atan2(delta.y, delta.x);
+    if (angle < 0.0)
+    {
+        angle += 6.28318530718;
+    }
+
+    float arcLength = angle * radius;
+    float pattern = fmod(floor(arcLength), 11.0);
+
+    color = (pattern < 4.0 || pattern >= 7.0)
+        ? uCircleColor1
+        : uCircleColor2;
+
+    return true;
+}
+
+float4 main(VSOut i) : SV_TARGET
+{
+    if (uNoVideo != 0)
+    {
+        return float4(0.05, 0.05, 0.05, 1.0);
+    }
+
+    float3 color = sampleVideoColor(i.uv);
+
+    float radius = ((float)uHeight * ((float)uCircleDiameterPercent / 100.0)) * 0.5;
+    float2 pixel = float2(i.uv.x * (float)uWidth, i.uv.y * (float)uHeight);
+
+    float3 circleColor;
+    if (isCirclePixel(pixel, radius, circleColor))
+    {
+        color = circleColor;
+    }
+
+    return float4(color, 1.0);
 }
 )";
 
@@ -135,6 +197,46 @@ QtD3D11VideoSourceWidget::QtD3D11VideoSourceWidget(mvvm::VideoSourceViewModel& m
             },
             Qt::QueuedConnection);
     });
+
+    circle_diameter_sub_ = model.circleDiameterPercent().subscribe([this](const auto& a) {
+        const int diameter = std::clamp(a.new_value, 0, 100);
+        QMetaObject::invokeMethod(
+            this,
+            [this, diameter]() {
+                std::lock_guard lock(mutex_);
+                circleDiameterPercent_ = diameter;
+                update();
+            },
+            Qt::QueuedConnection);
+    }, false);
+
+    circle_color1_sub_ = model.circleColor1().subscribe([this](const auto& a) {
+        const std::uint32_t color = a.new_value;
+        QMetaObject::invokeMethod(
+            this,
+            [this, color]() {
+                std::lock_guard lock(mutex_);
+                circleColor1_ = color;
+                update();
+            },
+            Qt::QueuedConnection);
+    }, false);
+
+    circle_color2_sub_ = model.circleColor2().subscribe([this](const auto& a) {
+        const std::uint32_t color = a.new_value;
+        QMetaObject::invokeMethod(
+            this,
+            [this, color]() {
+                std::lock_guard lock(mutex_);
+                circleColor2_ = color;
+                update();
+            },
+            Qt::QueuedConnection);
+    }, false);
+
+    circleDiameterPercent_ = std::clamp(model.circleDiameterPercent().get_copy(), 0, 100);
+    circleColor1_ = model.circleColor1().get_copy();
+    circleColor2_ = model.circleColor2().get_copy();
 }
 
 QtD3D11VideoSourceWidget::~QtD3D11VideoSourceWidget()
@@ -573,6 +675,9 @@ void QtD3D11VideoSourceWidget::render(bool noVideo)
     params.width = static_cast<unsigned int>(std::max(1, frameWidth_));
     params.height = static_cast<unsigned int>(std::max(1, frameHeight_));
     params.textureWidthBytes = static_cast<unsigned int>(std::max(1, textureWidthBytes_));
+    params.circleDiameterPercent = static_cast<unsigned int>(std::clamp(circleDiameterPercent_, 0, 100));
+    colorToFloat3(circleColor1_, params.circleColor1);
+    colorToFloat3(circleColor2_, params.circleColor2);
 
     context_->UpdateSubresource(constant_buffer_.Get(), 0, nullptr, &params, 0, 0);
 
