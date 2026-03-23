@@ -31,6 +31,8 @@ namespace ui {
 
         bool isPairMergedRow(int row) const;
 
+        bool isInfoRow(int row) const;
+
     private:
         enum class RowKind {
             Measurement,
