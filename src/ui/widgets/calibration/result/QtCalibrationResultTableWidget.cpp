@@ -148,6 +148,7 @@ void QtCalibrationResultTableWidget::updateSectionSizes()
         return;
     }
 
+    int vertical_header_width = 0;
     if (verticalHeader()->isVisible()) {
         int max_width = verticalHeader()->minimumSectionSize();
 
@@ -159,17 +160,18 @@ void QtCalibrationResultTableWidget::updateSectionSizes()
         }
 
         verticalHeader()->setFixedWidth(max_width);
+        vertical_header_width = max_width;
     }
 
     if (horizontalHeader()->isVisible()) {
         horizontalHeader()->setFixedHeight(std::max(horizontalHeader()->minimumHeight(), 28));
     }
 
-    // Колонки растягиваем по доступной ширине.
-    const int viewport_width = viewport()->width();
-    if (viewport_width > 0) {
-        const int base_width = viewport_width / column_count;
-        int remainder = viewport_width % column_count;
+    // Колонки растягиваем по фактически доступной ширине без захода под вертикальный заголовок.
+    const int available_width = std::max(0, contentsRect().width() - vertical_header_width - frameWidth() * 2);
+    if (available_width > 0) {
+        const int base_width = available_width / column_count;
+        int remainder = available_width % column_count;
 
         for (int col = 0; col < column_count; ++col) {
             const int width = base_width + (remainder > 0 ? 1 : 0);
