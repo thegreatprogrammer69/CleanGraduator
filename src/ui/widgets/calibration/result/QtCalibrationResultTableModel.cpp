@@ -1,12 +1,12 @@
 #include "QtCalibrationResultTableModel.h"
 
 #include <QApplication>
-#include <QMetaObject>
-#include <QDebug>
-#include <QStringList>
 #include <QBrush>
 #include <QColor>
+#include <QFont>
 #include <QIcon>
+#include <QMetaObject>
+#include <QStringList>
 #include <QStyle>
 
 namespace ui {
@@ -86,6 +86,65 @@ QVariant backgroundForSeverity(domain::common::CalibrationIssueSeverity severity
     }
 
     return {};
+}
+
+QBrush defaultBackgroundForRowKind(int row_kind)
+{
+    using RowKind = QtCalibrationResultTableModel::RowKind;
+
+    switch (static_cast<RowKind>(row_kind)) {
+        case RowKind::Measurement:
+            return QBrush(QColor(252, 253, 255));
+        case RowKind::TotalAngle:
+        case RowKind::CurrentAngle:
+            return QBrush(QColor(225, 236, 255));
+        case RowKind::Nonlinearity:
+            return QBrush(QColor(243, 247, 255));
+        case RowKind::MeasurementCount:
+            return QBrush(QColor(246, 249, 252));
+    }
+
+    return QBrush(Qt::white);
+}
+
+QBrush foregroundForRowKind(int row_kind)
+{
+    using RowKind = QtCalibrationResultTableModel::RowKind;
+
+    switch (static_cast<RowKind>(row_kind)) {
+        case RowKind::Measurement:
+            return QBrush(QColor(28, 37, 54));
+        case RowKind::TotalAngle:
+        case RowKind::CurrentAngle:
+            return QBrush(QColor(19, 54, 109));
+        case RowKind::Nonlinearity:
+            return QBrush(QColor(58, 72, 92));
+        case RowKind::MeasurementCount:
+            return QBrush(QColor(74, 85, 104));
+    }
+
+    return QBrush(Qt::black);
+}
+
+QFont fontForRowKind(int row_kind)
+{
+    using RowKind = QtCalibrationResultTableModel::RowKind;
+
+    QFont font;
+    switch (static_cast<RowKind>(row_kind)) {
+        case RowKind::Measurement:
+            return font;
+        case RowKind::TotalAngle:
+        case RowKind::CurrentAngle:
+            font.setBold(true);
+            return font;
+        case RowKind::Nonlinearity:
+        case RowKind::MeasurementCount:
+            font.setWeight(QFont::DemiBold);
+            return font;
+    }
+
+    return font;
 }
 
 QIcon iconForSeverity(domain::common::CalibrationIssueSeverity severity)
@@ -191,15 +250,25 @@ QVariant QtCalibrationResultTableModel::data(const QModelIndex& index, int role)
     }
 
     if (role == Qt::TextAlignmentRole) {
-        return QVariant::fromValue(Qt::AlignHCenter | Qt::AlignVCenter);
+        return QVariant::fromValue(Qt::AlignCenter);
     }
 
-    if (role == Qt::BackgroundRole && cell.validation_severity.has_value()) {
-        return backgroundForSeverity(*cell.validation_severity);
+    if (role == Qt::BackgroundRole) {
+        if (cell.validation_severity.has_value()) {
+            return backgroundForSeverity(*cell.validation_severity);
+        }
+        return defaultBackgroundForRowKind(static_cast<int>(row.kind));
     }
 
-    if (role == Qt::ForegroundRole && cell.validation_severity.has_value()) {
-        return QBrush(Qt::black);
+    if (role == Qt::ForegroundRole) {
+        if (cell.validation_severity.has_value()) {
+            return QBrush(Qt::black);
+        }
+        return foregroundForRowKind(static_cast<int>(row.kind));
+    }
+
+    if (role == Qt::FontRole) {
+        return fontForRowKind(static_cast<int>(row.kind));
     }
 
     return {};
@@ -210,6 +279,18 @@ QVariant QtCalibrationResultTableModel::headerData(
     Qt::Orientation orientation,
     int role) const
 {
+    if (role == Qt::TextAlignmentRole) {
+        return QVariant::fromValue(Qt::AlignCenter);
+    }
+
+    if (role == Qt::FontRole && orientation == Qt::Vertical) {
+        QFont font;
+        if (section >= 0 && section < rows_.size() && rows_[section].kind != RowKind::Measurement) {
+            font.setWeight(QFont::DemiBold);
+        }
+        return font;
+    }
+
     if (role != Qt::DisplayRole) {
         return {};
     }
@@ -294,6 +375,7 @@ void QtCalibrationResultTableModel::applyInfo(const mvvm::CalibrationResultInfo&
 void QtCalibrationResultTableModel::rebuildRows(const domain::common::CalibrationResult& result)
 {
     rows_.clear();
+    rows_.reserve(static_cast<int>(result.points().size()) + 4);
 
     for (const auto& point : result.points()) {
         Row row;
@@ -340,6 +422,8 @@ void QtCalibrationResultTableModel::rebuildRows(const domain::common::Calibratio
 
 void QtCalibrationResultTableModel::appendInfoRows(const domain::common::CalibrationResult& result)
 {
+    Q_UNUSED(result);
+
     auto makeRow = [](const QString& label, RowKind kind) {
         Row row;
         row.label = label;
