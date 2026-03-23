@@ -10,6 +10,15 @@
 
 namespace infra::angle {
 
+namespace {
+bool isValidAngle(const domain::common::Angle& angle)
+{
+    const auto degrees = angle.degrees();
+    return std::isfinite(degrees) && degrees >= 0.0 && degrees <= 360.0;
+}
+} // namespace
+
+
 FakeAngleSourceFromVideo::FakeAngleSourceFromVideo(
     domain::common::SourceId id,
     AngleSourcePorts ports,
@@ -91,6 +100,11 @@ void FakeAngleSourceFromVideo::onVideoFrame(
     angle = domain::common::Angle::fromDegrees(deg);   // предполагается, что у вас поле deg
 
     logger_.info("Angle: {}", angle);
+
+    if (!isValidAngle(angle)) {
+        logger_.warn("filtered invalid angle value: {}", angle);
+        return;
+    }
 
     domain::common::AngleSourcePacket out{};
     out.source_id = id_;

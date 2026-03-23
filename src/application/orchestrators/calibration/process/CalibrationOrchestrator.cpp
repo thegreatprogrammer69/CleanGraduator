@@ -53,6 +53,8 @@ bool CalibrationOrchestrator::start(CalibrationOrchestratorInput input)
     }
 
     inp_ = std::move(input);
+    safety_monitor_.stop();
+
     opened_angle_sources_.clear();
 
     try
@@ -89,6 +91,8 @@ bool CalibrationOrchestrator::start(CalibrationOrchestratorInput input)
 
         // ---------- Motor watchdog ----------
         ports_.motor_driver.watchdog().start(kMotorWatchdogTimeout);
+
+        safety_monitor_.start(opened_angle_sources_);
 
         // ---------- Pressure ----------
         if (!ports_.pressure_source.isRunning())
@@ -248,6 +252,10 @@ void CalibrationOrchestrator::onPressurePacket(const PressurePacket& p)
     if (state_.load(std::memory_order_acquire) != CalibrationOrchestratorState::Started)
         return;
 
+    checkSafetyIncidents();
+    if (state_.load(std::memory_order_acquire) != CalibrationOrchestratorState::Started)
+        return;
+
     CalibrationStrategyFeedContext ctx;
     ctx.timestamp = p.timestamp.asSeconds();
     ctx.pressure  = p.pressure.to(inp_.pressure_unit);
@@ -281,6 +289,11 @@ void CalibrationOrchestrator::onPressurePacket(const PressurePacket& p)
 
 void CalibrationOrchestrator::onAnglePacket(const AngleSourcePacket& p)
 {
+    if (state_.load(std::memory_order_acquire) != CalibrationOrchestratorState::Started)
+        return;
+
+    safety_monitor_.onAnglePacket(p);
+    checkSafetyIncidents();
     if (state_.load(std::memory_order_acquire) != CalibrationOrchestratorState::Started)
         return;
 
@@ -388,6 +401,18 @@ void CalibrationOrchestrator::notifyObservers(const CalibrationOrchestratorEvent
         });
 }
 
+void CalibrationOrchestrator::checkSafetyIncidents()
+{
+    const auto incident = safety_monitor_.detectIncident();
+    if (!incident)
+    {
+        return;
+    }
+
+    logger_.error("Calibration safety incident: {}", incident->message);
+    stopWithError(incident->message);
+}
+
 void CalibrationOrchestrator::teardown()
 {
     ports_.motor_driver.stop();
@@ -415,6 +440,8 @@ void CalibrationOrchestrator::teardown()
         auto src = ports_.source_storage.at(id);
         if (src) src->angle_source.stop();
     }
+
+    safety_monitor_.stop();
 
     opened_angle_sources_.clear();
     ports_.session_clock.stop();
