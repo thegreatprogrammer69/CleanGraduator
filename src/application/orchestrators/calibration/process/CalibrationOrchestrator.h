@@ -2,14 +2,19 @@
 #define CLEANGRADUATOR_CALIBRATIONPROCESSORCHESTRATOR_H
 
 #include <atomic>
+#include <functional>
 #include <mutex>
 #include <optional>
 #include <set>
 #include <string>
+#include <vector>
 
+#include "CalibrationLayoutBuilder.h"
 #include "CalibrationOrchestratorInput.h"
 #include "CalibrationOrchestratorPorts.h"
 #include "CalibrationOrchestratorState.h"
+#include "CalibrationStartError.h"
+#include "application/common/OperationResult.h"
 #include "application/orchestrators/calibration/process/CalibrationOrchestratorEvent.h"
 #include "application/ports/calibration/orchestration/CalibrationOrchestratorObserver.h"
 #include "domain/core/angle/SourceId.h"
@@ -61,6 +66,10 @@ private:
         std::optional<std::string> fault;
     };
 
+    using StartResult = application::common::OperationResult<CalibrationStartError>;
+    using CompensationAction = std::function<void()>;
+    using CompensationStack = std::vector<CompensationAction>;
+
 private:
     void attachObservers();
     void detachObservers();
@@ -80,6 +89,19 @@ private:
     void applyCommand(const StrategyVerdict::MotorStart& cmd);
     void applyCommand(const StrategyVerdict::MotorStop& cmd);
 
+    StartResult prepareMotor(CompensationStack& rollback);
+    StartResult prepareSources(CompensationStack& rollback);
+    StartResult attachObserversPhase(CompensationStack& rollback);
+    StartResult startPressureSource(CompensationStack& rollback);
+    StartResult beginStrategy(CompensationStack& rollback);
+    StartResult startRecording(CompensationStack& rollback);
+    StartResult publishStarted();
+
+    void rollbackStart(CompensationStack& rollback) noexcept;
+
+    static void pushRollback(CompensationStack& rollback, CompensationAction action);
+    static StartResult makeStartFailure(std::string message);
+
 private:
     std::atomic<CalibrationOrchestratorState> state_{
         CalibrationOrchestratorState::Stopped
@@ -94,6 +116,7 @@ private:
 
     CalibrationOrchestratorPorts ports_;
     CalibrationOrchestratorInput inp_;
+    CalibrationLayoutBuilder layout_builder_;
 };
 
 } // namespace application::orchestrators
