@@ -14,8 +14,8 @@ namespace ui {
 
 namespace {
 
-const QColor kResultRowBackground{245, 245, 245};
-const QColor kInfoRowBackground{232, 236, 240};
+    const QColor kResultRowBackground{248, 248, 248};
+    const QColor kInfoRowBackground{236, 236, 236};
 
 QString buildIssuesTooltip(const std::vector<domain::common::CalibrationCellIssue>& issues,
                           const domain::common::CalibrationResultValidation::Issues& validation_issues)
@@ -88,6 +88,16 @@ QColor severityColor(domain::common::CalibrationIssueSeverity severity)
         case Severity::Error:
             return QColor(255, 205, 210);
     }
+
+    /*
+    case Severity::Info:    return QColor(225, 225, 225); // серый вместо голубого
+    case Severity::Warning: return QColor(245, 235, 200); // мягкий песочный
+    case Severity::Error:   return QColor(245, 210, 210); // приглушённый красный
+    или
+    case Severity::Info:    return QColor(230, 230, 230);
+    case Severity::Warning: return QColor(220, 220, 220);
+    case Severity::Error:   return QColor(200, 200, 200);
+     */
 
     return {};
 }
@@ -205,7 +215,7 @@ QVariant QtCalibrationResultTableModel::data(const QModelIndex& index, int role)
     }
 
     if (role == Qt::TextAlignmentRole) {
-        return QVariant::fromValue(Qt::AlignCenter);
+        return static_cast<int>(Qt::AlignCenter);
     }
 
     if (role == Qt::BackgroundRole) {
