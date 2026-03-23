@@ -11,6 +11,7 @@
 #include "CalibrationOrchestratorPorts.h"
 #include "CalibrationOrchestratorState.h"
 #include "application/orchestrators/calibration/process/CalibrationOrchestratorEvent.h"
+#include "application/orchestrators/calibration/process/CalibrationSafetyMonitor.h"
 #include "application/ports/calibration/orchestration/CalibrationOrchestratorObserver.h"
 #include "domain/core/angle/SourceId.h"
 #include "domain/core/calibration/strategy/CalibrationStrategyVerdict.h"
@@ -86,6 +87,7 @@ private:
     };
 
     std::set<domain::common::SourceId> opened_angle_sources_;
+    CalibrationSafetyMonitor safety_monitor_;
 
     mutable std::mutex lifecycle_mutex_;
     ThreadSafeObserverList<ports::CalibrationOrchestratorObserver> observers_;

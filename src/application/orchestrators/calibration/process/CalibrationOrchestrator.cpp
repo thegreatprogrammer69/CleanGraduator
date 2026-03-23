@@ -31,6 +31,7 @@ CalibrationOrchestrator::CalibrationOrchestrator(CalibrationOrchestratorPorts po
     : logger_(ports.logger)
     , ports_(std::move(ports))
     , inp_{}
+    , safety_monitor_(fmt::Logger(ports.logger))
 {
 }
 
@@ -89,6 +90,14 @@ bool CalibrationOrchestrator::start(CalibrationOrchestratorInput input)
 
         // ---------- Motor watchdog ----------
         ports_.motor_driver.watchdog().start(kMotorWatchdogTimeout);
+
+        // ---------- Calibration safety ----------
+        safety_monitor_.start(
+            std::vector<SourceId>(opened_angle_sources_.begin(), opened_angle_sources_.end()),
+            [this](const CalibrationSafetyMonitor::Failure& failure)
+            {
+                stopWithError(failure.message);
+            });
 
         // ---------- Pressure ----------
         if (!ports_.pressure_source.isRunning())
@@ -284,6 +293,11 @@ void CalibrationOrchestrator::onAnglePacket(const AngleSourcePacket& p)
     if (state_.load(std::memory_order_acquire) != CalibrationOrchestratorState::Started)
         return;
 
+    safety_monitor_.onAnglePacket(p);
+
+    if (state_.load(std::memory_order_acquire) != CalibrationOrchestratorState::Started)
+        return;
+
     AngleSample sample;
     sample.id = p.source_id;
     sample.time = p.timestamp.asSeconds();
@@ -390,6 +404,7 @@ void CalibrationOrchestrator::notifyObservers(const CalibrationOrchestratorEvent
 
 void CalibrationOrchestrator::teardown()
 {
+    safety_monitor_.stop();
     ports_.motor_driver.stop();
     detachObservers();
 
