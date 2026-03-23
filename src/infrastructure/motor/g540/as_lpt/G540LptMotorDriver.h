@@ -9,9 +9,9 @@
 #include "infrastructure/motor/MotorDriverPorts.h"
 #include "infrastructure/motor/notifier/MotorDriverNotifier.h"
 #include "infrastructure/platform/lpt/LptPort.h"
-#include "infrastructure/utils/thread/ThreadWorker.h"
-#include "infrastructure/utils/atomic/AtomicStruct.h"
-#include "infrastructure/utils/watchdog/SoftwareWatchdog.h"
+#include "shared/thread/ThreadWorker.h"
+#include "shared/atomic/AtomicStruct.h"
+#include "shared/watchdog/SoftwareWatchdog.h"
 
 namespace infra::motor {
     class G540LptMotorDriver final : public domain::ports::IMotorDriver {
@@ -26,8 +26,7 @@ namespace infra::motor {
 
         void emergencyStop() override;
         domain::common::MotorDriverError error() const override;
-        void enableWatchdog(std::chrono::milliseconds timeout) override;
-        void disableWatchdog() override;
+        shared::watchdog::SoftwareWatchdog& watchdog() override;
 
         void setFrequency(const domain::common::MotorFrequency& frequency) override;
         domain::common::MotorFrequency frequency() const override;
@@ -53,23 +52,19 @@ namespace infra::motor {
         void handleLimitEvents(const domain::common::MotorLimitsState &current);
 
         void resetError();
-        void startWatchdogIfEnabled();
-        void stopWatchdog();
 
     private:
         fmt::Logger logger_;
         motors::G540LptMotorDriverConfig config_;
 
-        utils::thread::ThreadWorker thread_worker_;
-        utils::watchdog::SoftwareWatchdog software_watchdog_;
-        std::atomic<bool> watchdog_enabled_{false};
-        std::chrono::milliseconds watchdog_timeout_{0};
+        shared::thread::ThreadWorker thread_worker_;
+        shared::watchdog::SoftwareWatchdog software_watchdog_;
         MotorDriverNotifier notifier_;
 
         std::atomic<domain::common::MotorDriverState> state_{domain::common::MotorDriverState::Uninitialized};
         mutable std::atomic<domain::common::MotorFlapsState> flaps_state_{domain::common::MotorFlapsState::Uninitialized};
         std::atomic<domain::common::MotorDirection> direction_{domain::common::MotorDirection::Forward};
-        utils::atomic::AtomicStruct<domain::common::MotorDriverError> error_{};
+        shared::atomic::AtomicStruct<domain::common::MotorDriverError> error_{};
         domain::common::MotorFrequency frequency_{};
 
         domain::common::MotorLimitsState last_limits_state_{};

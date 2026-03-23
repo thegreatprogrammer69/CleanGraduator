@@ -9,6 +9,7 @@
 #include "domain/core/drivers/motor/MotorDriverError.h"
 #include "domain/core/drivers/motor/MotorFlapsState.h"
 #include "domain/core/drivers/motor/MotorFrequency.h"
+#include "shared/watchdog/SoftwareWatchdog.h"
 
 namespace domain::ports {
     struct IMotorDriverObserver;
@@ -26,8 +27,7 @@ namespace domain::ports {
         // -- Safety API
         virtual void emergencyStop() = 0;
         virtual common::MotorDriverError error() const = 0;
-        virtual void enableWatchdog(std::chrono::milliseconds timeout) = 0;
-        virtual void disableWatchdog() = 0;
+        virtual shared::watchdog::SoftwareWatchdog& watchdog() = 0;
 
         // --- Motion config ---
         virtual void setFrequency(const common::MotorFrequency&) = 0;

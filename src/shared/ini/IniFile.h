@@ -5,7 +5,7 @@
 #include <unordered_map>
 #include <cstdint>
 
-namespace utils::ini {
+namespace shared::ini {
 
     class IniSection {
     public:

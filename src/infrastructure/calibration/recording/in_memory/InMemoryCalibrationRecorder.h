@@ -10,7 +10,7 @@
 #include "domain/fmt/Logger.h"
 #include "domain/ports/calibration/recording/ICalibrationRecorder.h"
 #include "domain/core/calibration/recording/CalibrationRecorderEvent.h"
-#include "shared/ThreadSafeObserverList.h"
+#include "../../../../shared/list/ThreadSafeObserverList.h"
 
 namespace infra::calib {
 

@@ -1,12 +1,12 @@
 #include "SoftwareWatchdog.h"
 
-utils::watchdog::SoftwareWatchdog::SoftwareWatchdog() = default;
+shared::watchdog::SoftwareWatchdog::SoftwareWatchdog() = default;
 
-utils::watchdog::SoftwareWatchdog::~SoftwareWatchdog() {
+shared::watchdog::SoftwareWatchdog::~SoftwareWatchdog() {
     stop();
 }
 
-void utils::watchdog::SoftwareWatchdog::start(std::chrono::milliseconds timeout) {
+void shared::watchdog::SoftwareWatchdog::start(std::chrono::milliseconds timeout) {
     stop(); // перезапуск безопасен
 
     {
@@ -20,7 +20,7 @@ void utils::watchdog::SoftwareWatchdog::start(std::chrono::milliseconds timeout)
     worker_ = std::thread([this] { run(); });
 }
 
-void utils::watchdog::SoftwareWatchdog::stop() {
+void shared::watchdog::SoftwareWatchdog::stop() {
     {
         std::lock_guard<std::mutex> lock(mutex_);
         if (!running_)
@@ -34,7 +34,7 @@ void utils::watchdog::SoftwareWatchdog::stop() {
         worker_.join();
 }
 
-void utils::watchdog::SoftwareWatchdog::kick() {
+void shared::watchdog::SoftwareWatchdog::feed() {
     std::lock_guard<std::mutex> lock(mutex_);
     if (!running_)
         return;
@@ -44,11 +44,11 @@ void utils::watchdog::SoftwareWatchdog::kick() {
     cv_.notify_all();
 }
 
-bool utils::watchdog::SoftwareWatchdog::expired() const noexcept {
+bool shared::watchdog::SoftwareWatchdog::expired() const noexcept {
     return expired_.load(std::memory_order_acquire);
 }
 
-void utils::watchdog::SoftwareWatchdog::run() {
+void shared::watchdog::SoftwareWatchdog::run() {
     std::unique_lock<std::mutex> lock(mutex_);
 
     while (running_) {

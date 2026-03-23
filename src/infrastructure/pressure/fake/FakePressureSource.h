@@ -9,7 +9,7 @@
 #include "../PressureSourcePorts.h"
 #include "infrastructure/pressure/PressureSourceNotifier.h"
 #include "domain/fmt/Logger.h"
-#include "infrastructure/utils/thread/ThreadWorker.h"
+#include "shared/thread/ThreadWorker.h"
 
 namespace domain::ports { class IClock; }
 
@@ -41,7 +41,7 @@ namespace infra::pressure {
         domain::ports::IClock& clock_;
         detail::PressureSourceNotifier notifier_;
 
-        std::unique_ptr<utils::thread::ThreadWorker> worker_;
+        std::unique_ptr<shared::thread::ThreadWorker> worker_;
         bool running_{false};
     };
 

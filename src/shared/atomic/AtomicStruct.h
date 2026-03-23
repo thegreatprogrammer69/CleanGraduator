@@ -5,7 +5,7 @@
 #include <memory>
 #include <functional>
 
-namespace utils::atomic {
+namespace shared::atomic {
 
     template<typename T>
     class AtomicStruct

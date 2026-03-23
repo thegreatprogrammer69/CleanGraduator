@@ -4,7 +4,7 @@
 #include "domain/fmt/Logger.h"
 #include "domain/ports/calibration/recording/ICalibrationRecorderObserver.h"
 #include "domain/ports/calibration/result/ICalibrationResultSource.h"
-#include "shared/ThreadSafeObserverList.h"
+#include "../../../../shared/list/ThreadSafeObserverList.h"
 
 namespace application::orchestrators {
     class CalibrationResultBuilder final :

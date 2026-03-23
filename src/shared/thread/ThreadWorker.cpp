@@ -1,6 +1,6 @@
 #include "ThreadWorker.h"
 
-namespace utils::thread {
+namespace shared::thread {
 
     ThreadWorker::ThreadWorker(Task task)
         : m_task(std::move(task))

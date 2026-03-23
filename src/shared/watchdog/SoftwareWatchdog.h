@@ -6,7 +6,7 @@
 #include <condition_variable>
 #include <mutex>
 
-namespace utils::watchdog {
+namespace shared::watchdog {
     class SoftwareWatchdog {
     public:
         SoftwareWatchdog();
@@ -14,7 +14,7 @@ namespace utils::watchdog {
 
         void start(std::chrono::milliseconds timeout);
         void stop();
-        void kick();
+        void feed();
         bool expired() const noexcept;
 
     private:

@@ -49,9 +49,9 @@ set(SOURCES
         motor/g540/as_lpt/G540LptMotorDriver.cpp
         motor/notifier/MotorDriverNotifier.cpp
 
-        utils/thread/ThreadWorker.cpp
-        utils/ini/IniFile.cpp
-        utils/watchdog/SoftwareWatchdog.cpp
+        ../shared/thread/ThreadWorker.cpp
+        ../shared/ini/IniFile.cpp
+        ../shared/watchdog/SoftwareWatchdog.cpp
 
 )
 
@@ -66,8 +66,8 @@ if(WIN32)
     add_definitions(-DPLATFORM_WINDOWS)
     set(PLATFORM_SOURCES
             platform/com/ComPort_windows.cpp
-            platform/lpt/LptPort_windows.cpp
-#            platform/lpt/LptPort_console.cpp
+#            platform/lpt/LptPort_windows.cpp
+            platform/lpt/LptPort_console.cpp
             platform/sleep/sleep_windows.cpp
             video/windows/dshow/DShowCamera.cpp
             video/windows/dshow/SampleGrabberCB.cpp

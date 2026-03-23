@@ -9,7 +9,7 @@
 #include "domain/ports/calibration/result/ICalibrationResultObserver.h"
 #include "domain/ports/calibration/result/ICalibrationResultSource.h"
 #include "domain/ports/calibration/result/ICalibrationResultValidationSource.h"
-#include "shared/ThreadSafeObserverList.h"
+#include "../../../../shared/list/ThreadSafeObserverList.h"
 
 namespace application::orchestrators {
     struct CalibrationResultValidationSourceDeps {

@@ -3,12 +3,12 @@
 #include "infrastructure/angle/fake/FakeAngleSourceFromVideo.h"
 #include "infrastructure/angle/from_video/AngleSourceFromVideo.h"
 #include "infrastructure/angle/from_video/AngleSourceFromVideoConfig.h"
-#include "infrastructure/utils/ini/IniFile.h"
+#include "shared/ini/IniFile.h"
 
 namespace {
 
-    utils::ini::IniFile loadIniOrThrow(const std::string& path) {
-        utils::ini::IniFile ini;
+    shared::ini::IniFile loadIniOrThrow(const std::string& path) {
+        shared::ini::IniFile ini;
         if (!ini.load(path)) {
             throw std::runtime_error(
                 "AngleSourceFactory: failed to load setup: " + path);

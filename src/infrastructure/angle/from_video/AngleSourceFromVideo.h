@@ -9,7 +9,7 @@
 #include "domain/ports/angle/IAngleSource.h"
 #include "domain/ports/video/IVideoSink.h"
 #include "infrastructure/angle/AngleSourcePorts.h"
-#include "shared/ThreadSafeObserverList.h"
+#include "../../../shared/list/ThreadSafeObserverList.h"
 
 namespace domain::ports {
     struct IVideoSource;

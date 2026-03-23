@@ -3,15 +3,15 @@
 
 #include "infrastructure/motor/g540/as_lpt/G540LptMotorDriver.h"
 #include "infrastructure/motor/g540/as_lpt/G540LptMotorDriverConfig.h"
-#include "infrastructure/utils/ini/IniFile.h"
+#include "shared/ini/IniFile.h"
 
 using namespace infra::repo;
 using namespace infra::motor;
 
 namespace {
 
-    utils::ini::IniFile loadIniOrThrow(const std::string& path) {
-        utils::ini::IniFile ini;
+    shared::ini::IniFile loadIniOrThrow(const std::string& path) {
+        shared::ini::IniFile ini;
         if (!ini.load(path)) {
             throw std::runtime_error("CalibrationCalculatorFactory: failed to load setup: " + path);
         }

@@ -7,7 +7,7 @@
 #include <mutex>
 #include <atomic>
 
-namespace utils::thread {
+namespace shared::thread {
 
     class ThreadWorker
     {

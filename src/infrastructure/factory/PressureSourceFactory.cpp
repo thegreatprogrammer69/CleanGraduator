@@ -3,12 +3,12 @@
 #include "infrastructure/pressure/dm5002/DM5002PressureSensor.h"
 #include "infrastructure/pressure/dm5002/DM5002PressureSensorConfig.h"
 #include "infrastructure/pressure/fake/FakePressureSource.h"
-#include "infrastructure/utils/ini/IniFile.h"
+#include "shared/ini/IniFile.h"
 
 namespace {
 
-    utils::ini::IniFile loadIniOrThrow(const std::string& path) {
-        utils::ini::IniFile ini;
+    shared::ini::IniFile loadIniOrThrow(const std::string& path) {
+        shared::ini::IniFile ini;
         if (!ini.load(path)) {
             throw std::runtime_error("PressureSourceFactory: failed to load setup: " + path);
         }

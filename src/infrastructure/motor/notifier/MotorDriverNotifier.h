@@ -1,6 +1,6 @@
 #ifndef CLEANGRADUATOR_MOTORDRIVERNOTIFIER_H
 #define CLEANGRADUATOR_MOTORDRIVERNOTIFIER_H
-#include "shared/ThreadSafeObserverList.h"
+#include "../../../shared/list/ThreadSafeObserverList.h"
 
 
 namespace domain::common {

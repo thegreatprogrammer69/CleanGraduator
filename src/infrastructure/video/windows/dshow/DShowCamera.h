@@ -6,7 +6,7 @@
 #include "DShowCameraConfig.h"
 #include "infrastructure/video/VideoSourceNotifier.h"
 #include "infrastructure/video/VideoSourcePorts.h"
-#include "infrastructure/utils/thread/ThreadWorker.h"
+#include "shared/thread/ThreadWorker.h"
 
 #include <memory>
 #include <mutex>
@@ -62,7 +62,7 @@ namespace infra::camera {
         detail::VideoSourceNotifier notifier_;
         DShowCameraConfig config_;
 
-        utils::thread::ThreadWorker watchdog_worker_;
+        shared::thread::ThreadWorker watchdog_worker_;
         std::atomic<bool> watchdog_enabled_{false};
     };
 

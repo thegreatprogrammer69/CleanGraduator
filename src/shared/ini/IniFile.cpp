@@ -5,7 +5,7 @@
 #include <algorithm>
 #include <cctype>
 
-namespace utils::ini {
+namespace shared::ini {
 
 namespace {
 

@@ -28,7 +28,7 @@ FakePressureSource::FakePressureSource(
 
     logger_.info("FakePressureSource constructed");
 
-    worker_ = std::make_unique<utils::thread::ThreadWorker>(
+    worker_ = std::make_unique<shared::thread::ThreadWorker>(
         [this]() { loop(); }
     );
 }

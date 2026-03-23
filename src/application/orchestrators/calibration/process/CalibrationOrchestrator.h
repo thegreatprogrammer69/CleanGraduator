@@ -20,7 +20,7 @@
 #include "domain/ports/drivers/motor/IMotorDriverObserver.h"
 #include "domain/ports/pressure/IPressureSink.h"
 #include "domain/ports/pressure/IPressureSourceObserver.h"
-#include "shared/ThreadSafeObserverList.h"
+#include "../../../../shared/list/ThreadSafeObserverList.h"
 
 namespace application::ports {
     struct CalibrationOrchestratorObserver;

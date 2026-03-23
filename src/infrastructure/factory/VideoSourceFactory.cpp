@@ -10,11 +10,11 @@
 #include "infrastructure/video/linux/gstreamer/GStreamerCameraConfig.h"
 #include "infrastructure/video/windows/dshow/DShowCameraConfig.h"
 #include "infrastructure/video/windows/dshow/DShowCamera.h"
-#include "infrastructure/utils/ini/IniFile.h"
+#include "shared/ini/IniFile.h"
 
 namespace {
-    utils::ini::IniFile loadIniOrThrow(const std::string& path) {
-        utils::ini::IniFile ini;
+    shared::ini::IniFile loadIniOrThrow(const std::string& path) {
+        shared::ini::IniFile ini;
         if (!ini.load(path)) {
             throw std::runtime_error("VideoSourceFactory: failed to load setup: " + path);
         }

@@ -88,7 +88,7 @@ bool CalibrationOrchestrator::start(CalibrationOrchestratorInput input)
         attachObservers();
 
         // ---------- Motor watchdog ----------
-        ports_.motor_driver.enableWatchdog(kMotorWatchdogTimeout);
+        ports_.motor_driver.watchdog().start(kMotorWatchdogTimeout);
 
         // ---------- Pressure ----------
         if (!ports_.pressure_source.isRunning())
@@ -253,6 +253,7 @@ void CalibrationOrchestrator::onPressurePacket(const PressurePacket& p)
     ctx.pressure  = p.pressure.to(inp_.pressure_unit);
     ctx.limits_state = ports_.motor_driver.limits();
 
+    ports_.motor_driver.watchdog().feed();
     const auto verdict = ports_.strategy.feed(ctx);
     const auto exec = applyVerdict(verdict);
 
@@ -389,7 +390,7 @@ void CalibrationOrchestrator::notifyObservers(const CalibrationOrchestratorEvent
 
 void CalibrationOrchestrator::teardown()
 {
-    ports_.motor_driver.disableWatchdog();
+    ports_.motor_driver.stop();
     detachObservers();
 
     // Сначала даём стратегии корректно завершиться и вернуть shutdown-команды.

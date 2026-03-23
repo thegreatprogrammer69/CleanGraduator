@@ -1,6 +1,6 @@
 #ifndef CLEANGRADUATOR_VIDEOSOURCENOTIFIER_H
 #define CLEANGRADUATOR_VIDEOSOURCENOTIFIER_H
-#include "shared/ThreadSafeObserverList.h"
+#include "../../shared/list/ThreadSafeObserverList.h"
 
 namespace domain::ports {
     class IVideoSourceObserver;
