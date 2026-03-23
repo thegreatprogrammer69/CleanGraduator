@@ -2,16 +2,20 @@
 
 #include <QApplication>
 #include <QMetaObject>
-#include <QDebug>
+#include <algorithm>
 #include <QStringList>
 #include <QBrush>
 #include <QColor>
+#include <QFont>
 #include <QIcon>
 #include <QStyle>
 
 namespace ui {
 
 namespace {
+
+const QColor kResultRowBackground{245, 245, 245};
+const QColor kInfoRowBackground{232, 236, 240};
 
 QString buildIssuesTooltip(const std::vector<domain::common::CalibrationCellIssue>& issues,
                           const domain::common::CalibrationResultValidation::Issues& validation_issues)
@@ -72,20 +76,30 @@ std::optional<domain::common::CalibrationIssueSeverity> maxValidationSeverityOf(
     return maxSeverity;
 }
 
-QVariant backgroundForSeverity(domain::common::CalibrationIssueSeverity severity)
+QColor severityColor(domain::common::CalibrationIssueSeverity severity)
 {
     using Severity = domain::common::CalibrationIssueSeverity;
 
     switch (severity) {
         case Severity::Info:
-            return QBrush(QColor(210, 240, 255));
+            return QColor(210, 240, 255);
         case Severity::Warning:
-            return QBrush(QColor(255, 236, 179));
+            return QColor(255, 236, 179);
         case Severity::Error:
-            return QBrush(QColor(255, 205, 210));
+            return QColor(255, 205, 210);
     }
 
     return {};
+}
+
+QColor blendColors(const QColor& base, const QColor& overlay, qreal overlay_alpha = 0.35)
+{
+    const qreal clamped_alpha = std::clamp(overlay_alpha, 0.0, 1.0);
+    const qreal base_alpha = 1.0 - clamped_alpha;
+    return QColor(
+        static_cast<int>(base.red() * base_alpha + overlay.red() * clamped_alpha),
+        static_cast<int>(base.green() * base_alpha + overlay.green() * clamped_alpha),
+        static_cast<int>(base.blue() * base_alpha + overlay.blue() * clamped_alpha));
 }
 
 QIcon iconForSeverity(domain::common::CalibrationIssueSeverity severity)
@@ -191,11 +205,21 @@ QVariant QtCalibrationResultTableModel::data(const QModelIndex& index, int role)
     }
 
     if (role == Qt::TextAlignmentRole) {
-        return QVariant::fromValue(Qt::AlignHCenter | Qt::AlignVCenter);
+        return QVariant::fromValue(Qt::AlignCenter);
     }
 
-    if (role == Qt::BackgroundRole && cell.validation_severity.has_value()) {
-        return backgroundForSeverity(*cell.validation_severity);
+    if (role == Qt::FontRole) {
+        QFont font;
+        font.setBold(isInfoRow(index.row()));
+        return font;
+    }
+
+    if (role == Qt::BackgroundRole) {
+        QColor background = isInfoRow(index.row()) ? kInfoRowBackground : kResultRowBackground;
+        if (cell.validation_severity.has_value()) {
+            background = blendColors(background, severityColor(*cell.validation_severity));
+        }
+        return QBrush(background);
     }
 
     if (role == Qt::ForegroundRole && cell.validation_severity.has_value()) {
@@ -247,6 +271,15 @@ bool QtCalibrationResultTableModel::isPairMergedRow(int row) const
     }
 
     return rows_[row].kind == RowKind::TotalAngle || rows_[row].kind == RowKind::CurrentAngle;
+}
+
+bool QtCalibrationResultTableModel::isInfoRow(int row) const
+{
+    if (row < 0 || row >= rows_.size()) {
+        return false;
+    }
+
+    return rows_[row].kind != RowKind::Measurement;
 }
 
 void QtCalibrationResultTableModel::applyResult(
