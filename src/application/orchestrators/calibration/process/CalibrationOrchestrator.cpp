@@ -25,12 +25,19 @@ using namespace domain::common;
 
 namespace {
 constexpr auto kMotorWatchdogTimeout = std::chrono::milliseconds(200);
+constexpr auto kAngleSourceWatchdogTimeout = std::chrono::milliseconds(1500);
 }
 
 CalibrationOrchestrator::CalibrationOrchestrator(CalibrationOrchestratorPorts ports)
     : logger_(ports.logger)
     , ports_(std::move(ports))
     , inp_{}
+    , safety_monitor_([]
+      {
+          CalibrationSafetyMonitor::Config config;
+          config.angle_watchdog_timeout = kAngleSourceWatchdogTimeout;
+          return config;
+      }())
 {
 }
 
@@ -89,6 +96,15 @@ bool CalibrationOrchestrator::start(CalibrationOrchestratorInput input)
 
         // ---------- Motor watchdog ----------
         ports_.motor_driver.watchdog().start(kMotorWatchdogTimeout);
+
+        // ---------- Calibration safety ----------
+        safety_monitor_.start(
+            opened_angle_sources_,
+            [this](const CalibrationSafetyIncident& incident)
+            {
+                logger_.error("Calibration safety incident: {}", incident.message);
+                stopWithError(incident.message);
+            });
 
         // ---------- Pressure ----------
         if (!ports_.pressure_source.isRunning())
@@ -223,6 +239,7 @@ void CalibrationOrchestrator::onPressureSourceEvent(const PressureSourceEvent& e
     if (state_.load(std::memory_order_acquire) != CalibrationOrchestratorState::Started)
         return;
 
+
     std::visit(
         [&error_to_report](const auto& e)
         {
@@ -284,6 +301,11 @@ void CalibrationOrchestrator::onAnglePacket(const AngleSourcePacket& p)
     if (state_.load(std::memory_order_acquire) != CalibrationOrchestratorState::Started)
         return;
 
+    safety_monitor_.onAnglePacket(p);
+
+    if (state_.load(std::memory_order_acquire) != CalibrationOrchestratorState::Started)
+        return;
+
     AngleSample sample;
     sample.id = p.source_id;
     sample.time = p.timestamp.asSeconds();
@@ -295,6 +317,11 @@ void CalibrationOrchestrator::onAnglePacket(const AngleSourcePacket& p)
 void CalibrationOrchestrator::onAngleSourceEvent(const AngleSourceEvent& ev)
 {
     std::string error_to_report;
+
+    if (state_.load(std::memory_order_acquire) != CalibrationOrchestratorState::Started)
+        return;
+
+    safety_monitor_.onAngleSourceEvent(ev);
 
     if (state_.load(std::memory_order_acquire) != CalibrationOrchestratorState::Started)
         return;
@@ -390,6 +417,7 @@ void CalibrationOrchestrator::notifyObservers(const CalibrationOrchestratorEvent
 
 void CalibrationOrchestrator::teardown()
 {
+    safety_monitor_.stop();
     ports_.motor_driver.stop();
     detachObservers();
 
