@@ -8,6 +8,9 @@ uniform int  uWidth;
 uniform int  uHeight;
 uniform int  uPackedWidth;
 uniform int  uNoVideo;
+uniform float uCircleDiameterPercent;
+uniform vec3 uCircleColor1;
+uniform vec3 uCircleColor2;
 
 vec3 yuvToRgb601Limited(float y, float u, float v)
 {
@@ -42,6 +45,35 @@ vec3 sampleYuyv(float xPix, float yPix)
     return yuvToRgb601Limited(Y, yuyv.g, yuyv.a);
 }
 
+vec3 applyCircleOverlay(vec3 baseColor, float xPix, float yPix)
+{
+    if (uCircleDiameterPercent <= 0.0)
+    {
+        return baseColor;
+    }
+
+    float radius = uCircleDiameterPercent * 0.005 * float(uHeight);
+    vec2 center = vec2((float(uWidth) - 1.0) * 0.5, (float(uHeight) - 1.0) * 0.5);
+    vec2 pos = vec2(xPix, yPix);
+    float dist = distance(pos, center);
+
+    if (abs(dist - radius) > 0.75)
+    {
+        return baseColor;
+    }
+
+    float angle = atan(pos.y - center.y, pos.x - center.x);
+    if (angle < 0.0)
+    {
+        angle += 6.28318530718;
+    }
+
+    float arc = angle * radius;
+    float pattern = mod(floor(arc + 0.5), 11.0);
+
+    return (pattern >= 4.0 && pattern < 7.0) ? uCircleColor2 : uCircleColor1;
+}
+
 void main()
 {
     if (uNoVideo == 1)
@@ -50,14 +82,15 @@ void main()
         return;
     }
 
-    if (uFormat == 0)
-    {
-        gl_FragColor = vec4(texture2D(uTex, vTex).bgr, 1.0);
-        return;
-    }
-
     float sx = vTex.x * float(uWidth)  - 0.5;
     float sy = vTex.y * float(uHeight) - 0.5;
+
+    if (uFormat == 0)
+    {
+        vec3 color = texture2D(uTex, vTex).bgr;
+        gl_FragColor = vec4(applyCircleOverlay(color, sx, sy), 1.0);
+        return;
+    }
 
     float x0 = floor(sx);
     float y0 = floor(sy);
@@ -73,5 +106,6 @@ void main()
     vec3 c0 = mix(c00, c10, fx);
     vec3 c1 = mix(c01, c11, fx);
 
-    gl_FragColor = vec4(mix(c0, c1, fy), 1.0);
+    vec3 color = mix(c0, c1, fy);
+    gl_FragColor = vec4(applyCircleOverlay(color, sx, sy), 1.0);
 }

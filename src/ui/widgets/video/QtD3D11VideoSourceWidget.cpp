@@ -11,7 +11,7 @@
 
 #include "domain/core/video/PixelFormat.h"
 #include "domain/core/video/VideoFrame.h"
-#include "viewmodels/video/VideoSourceViewModel.h"
+#include "viewmodels/video/IVideoSourceWidgetViewModel.h"
 
 #ifdef PLATFORM_WINDOWS
 
@@ -70,6 +70,10 @@ cbuffer Params : register(b0)
     uint uWidth;
     uint uHeight;
     uint uTextureWidthBytes;
+    float uCircleDiameterPercent;
+    float3 uCirclePadding;
+    float4 uCircleColor1;
+    float4 uCircleColor2;
 };
 
 struct VSOut
@@ -99,13 +103,36 @@ float4 main(VSOut i) : SV_TARGET
     float g = gVideoTex.Load(int3((int)(baseX + 1u), (int)y, 0));
     float r = gVideoTex.Load(int3((int)(baseX + 2u), (int)y, 0));
 
-    return float4(r, g, b, 1.0);
+    float3 color = float3(r, g, b);
+
+    if (uCircleDiameterPercent > 0.0)
+    {
+        float radius = uCircleDiameterPercent * 0.005 * (float)height;
+        float2 center = float2(((float)width - 1.0) * 0.5, ((float)height - 1.0) * 0.5);
+        float2 pos = float2((float)x, (float)y);
+        float dist = distance(pos, center);
+
+        if (abs(dist - radius) <= 0.75)
+        {
+            float angle = atan2(pos.y - center.y, pos.x - center.x);
+            if (angle < 0.0)
+            {
+                angle += 6.28318530718;
+            }
+
+            float arc = angle * radius;
+            float pattern = fmod(floor(arc + 0.5), 11.0);
+            color = (pattern >= 4.0 && pattern < 7.0) ? uCircleColor2.rgb : uCircleColor1.rgb;
+        }
+    }
+
+    return float4(color, 1.0);
 }
 )";
 
 } // namespace
 
-QtD3D11VideoSourceWidget::QtD3D11VideoSourceWidget(mvvm::VideoSourceViewModel& model, QWidget* parent)
+QtD3D11VideoSourceWidget::QtD3D11VideoSourceWidget(mvvm::IVideoSourceWidgetViewModel& model, QWidget* parent)
     : QWidget(parent)
 {
     setAttribute(Qt::WA_NativeWindow, true);
@@ -113,7 +140,7 @@ QtD3D11VideoSourceWidget::QtD3D11VideoSourceWidget(mvvm::VideoSourceViewModel& m
     setAttribute(Qt::WA_NoSystemBackground, true);
     setAutoFillBackground(false);
 
-    frame_sub_ = model.frame.subscribe([this](const auto& a) {
+    frame_sub_ = model.frameStream().subscribe([this](const auto& a) {
         const auto frame = a.new_value;
         QMetaObject::invokeMethod(
             this,
@@ -121,7 +148,7 @@ QtD3D11VideoSourceWidget::QtD3D11VideoSourceWidget(mvvm::VideoSourceViewModel& m
             Qt::QueuedConnection);
     });
 
-    is_opened_sub_ = model.is_opened.subscribe([this](const auto& a) {
+    is_opened_sub_ = model.openedState().subscribe([this](const auto& a) {
         const bool opened = a.new_value;
         QMetaObject::invokeMethod(
             this,
@@ -135,6 +162,46 @@ QtD3D11VideoSourceWidget::QtD3D11VideoSourceWidget(mvvm::VideoSourceViewModel& m
             },
             Qt::QueuedConnection);
     });
+
+    circle_diameter_sub_ = model.circleDiameterPercent().subscribe([this](const auto& a) {
+        const int diameter = a.new_value;
+        QMetaObject::invokeMethod(
+            this,
+            [this, diameter]() {
+                std::lock_guard lock(mutex_);
+                circleDiameterPercent_ = diameter;
+                update();
+            },
+            Qt::QueuedConnection);
+    }, false);
+
+    circle_color1_sub_ = model.circleColor1().subscribe([this](const auto& a) {
+        const std::uint32_t color = a.new_value;
+        QMetaObject::invokeMethod(
+            this,
+            [this, color]() {
+                std::lock_guard lock(mutex_);
+                circleColor1_ = color;
+                update();
+            },
+            Qt::QueuedConnection);
+    }, false);
+
+    circle_color2_sub_ = model.circleColor2().subscribe([this](const auto& a) {
+        const std::uint32_t color = a.new_value;
+        QMetaObject::invokeMethod(
+            this,
+            [this, color]() {
+                std::lock_guard lock(mutex_);
+                circleColor2_ = color;
+                update();
+            },
+            Qt::QueuedConnection);
+    }, false);
+
+    circleDiameterPercent_ = model.circleDiameterPercent().get_copy();
+    circleColor1_ = model.circleColor1().get_copy();
+    circleColor2_ = model.circleColor2().get_copy();
 }
 
 QtD3D11VideoSourceWidget::~QtD3D11VideoSourceWidget()
@@ -568,11 +635,21 @@ void QtD3D11VideoSourceWidget::render(bool noVideo)
     vp.MaxDepth = 1.0f;
     context_->RSSetViewports(1, &vp);
 
+    auto unpackColor = [](std::uint32_t color, float (&out)[4]) {
+        out[0] = static_cast<float>((color >> 24) & 0xFFu) / 255.0f;
+        out[1] = static_cast<float>((color >> 16) & 0xFFu) / 255.0f;
+        out[2] = static_cast<float>((color >> 8) & 0xFFu) / 255.0f;
+        out[3] = 1.0f;
+    };
+
     ShaderParams params = {};
     params.noVideo = noVideo ? 1u : 0u;
     params.width = static_cast<unsigned int>(std::max(1, frameWidth_));
     params.height = static_cast<unsigned int>(std::max(1, frameHeight_));
     params.textureWidthBytes = static_cast<unsigned int>(std::max(1, textureWidthBytes_));
+    params.circleDiameterPercent = static_cast<float>(circleDiameterPercent_);
+    unpackColor(circleColor1_, params.circleColor1);
+    unpackColor(circleColor2_, params.circleColor2);
 
     context_->UpdateSubresource(constant_buffer_.Get(), 0, nullptr, &params, 0, 0);
 

@@ -1,12 +1,13 @@
 #include "QtGLVideoSourceWidget.h"
 
 #include <QFile>
+#include <QVector3D>
 
 #include <algorithm>
 #include <cstring>
 
 #include "domain/core/video/VideoFrame.h"
-#include "viewmodels/video/VideoSourceViewModel.h"
+#include "viewmodels/video/IVideoSourceWidgetViewModel.h"
 
 using namespace ui;
 using namespace domain::common;
@@ -22,14 +23,14 @@ QString loadTextResource(const char* path) {
 }
 }
 
-QtGLVideoSourceWidget::QtGLVideoSourceWidget(mvvm::VideoSourceViewModel& model, QWidget* parent)
+QtGLVideoSourceWidget::QtGLVideoSourceWidget(mvvm::IVideoSourceWidgetViewModel& model, QWidget* parent)
     : QOpenGLWidget(parent)
 {
-    frame_sub_ = model.frame.subscribe([this](const auto& a) {
+    frame_sub_ = model.frameStream().subscribe([this](const auto& a) {
         setVideoFrame(a.new_value);
     });
 
-    is_opened_sub_ = model.is_opened.subscribe([this](const auto& a) {
+    is_opened_sub_ = model.openedState().subscribe([this](const auto& a) {
         std::lock_guard lock(mutex_);
         is_source_opened_ = a.new_value;
         if (!is_source_opened_) {
@@ -37,6 +38,29 @@ QtGLVideoSourceWidget::QtGLVideoSourceWidget(mvvm::VideoSourceViewModel& model, 
         }
         update();
     });
+
+
+    circle_diameter_sub_ = model.circleDiameterPercent().subscribe([this](const auto& a) {
+        std::lock_guard lock(mutex_);
+        circleDiameterPercent_ = a.new_value;
+        update();
+    }, false);
+
+    circle_color1_sub_ = model.circleColor1().subscribe([this](const auto& a) {
+        std::lock_guard lock(mutex_);
+        circleColor1_ = a.new_value;
+        update();
+    }, false);
+
+    circle_color2_sub_ = model.circleColor2().subscribe([this](const auto& a) {
+        std::lock_guard lock(mutex_);
+        circleColor2_ = a.new_value;
+        update();
+    }, false);
+
+    circleDiameterPercent_ = model.circleDiameterPercent().get_copy();
+    circleColor1_ = model.circleColor1().get_copy();
+    circleColor2_ = model.circleColor2().get_copy();
 
     update();
 }
@@ -166,9 +190,6 @@ void QtGLVideoSourceWidget::drawQuad(bool noVideo) {
 
     program_.setUniformValue("uNoVideo", noVideo ? 1 : 0);
 
-    const float dpr = devicePixelRatioF();
-    program_.setUniformValue("uSize", QVector2D(width() * dpr, height() * dpr));
-    program_.setUniformValue("uRadius", 12.0f * dpr);
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, texture_);
@@ -179,6 +200,17 @@ void QtGLVideoSourceWidget::drawQuad(bool noVideo) {
     program_.setUniformValue("uWidth", std::max(1, frameWidth_));
     program_.setUniformValue("uHeight", std::max(1, frameHeight_));
     program_.setUniformValue("uPackedWidth", std::max(1, texWidth_));
+    program_.setUniformValue("uCircleDiameterPercent", static_cast<float>(circleDiameterPercent_));
+
+    auto unpack = [](std::uint32_t color) {
+        return QVector3D(
+            static_cast<float>((color >> 24) & 0xFFu) / 255.0f,
+            static_cast<float>((color >> 16) & 0xFFu) / 255.0f,
+            static_cast<float>((color >> 8) & 0xFFu) / 255.0f);
+    };
+
+    program_.setUniformValue("uCircleColor1", unpack(circleColor1_));
+    program_.setUniformValue("uCircleColor2", unpack(circleColor2_));
 
     glBegin(GL_QUADS);
     glTexCoord2f(0.f, 1.f);
@@ -194,17 +226,9 @@ void QtGLVideoSourceWidget::drawQuad(bool noVideo) {
     program_.release();
 }
 
-#include <QDir>
 void QtGLVideoSourceWidget::initShader() {
     if (shaderInited_) {
         return;
-    }
-
-    QDir dir(":/");
-
-    QStringList list = dir.entryList(QDir::Files);
-    for (const QString &file : list) {
-        qDebug() << file;
     }
 
     const auto vs = loadTextResource(":/ui/widgets/video/shaders/video_source.vert");
