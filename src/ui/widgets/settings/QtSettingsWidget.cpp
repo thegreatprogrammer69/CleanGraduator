@@ -4,6 +4,7 @@
 #include <QGroupBox>
 
 #include "QtCameraGridSettingsWidget.h"
+#include "QtCircleOverlaySettingsWidget.h"
 #include "QtInfoSettingsWidget.h"
 #include "viewmodels/settings/SettingsViewModel.h"
 
@@ -44,7 +45,18 @@ void QtSettingsWidget::buildUi() {
     cameraGridLayout->addWidget(cameraGridWidget_);
 
 
+    auto* circleOverlayGroup = new QGroupBox(tr("Круг по центру"), this);
+    auto* circleOverlayLayout = new QVBoxLayout(circleOverlayGroup);
+    circleOverlayLayout->setContentsMargins(8, 8, 8, 8);
+    circleOverlayLayout->setSpacing(8);
+
+    circleOverlaySettingsWidget_ =
+        new QtCircleOverlaySettingsWidget(model_.circleOverlaySettingsViewModel(), circleOverlayGroup);
+
+    circleOverlayLayout->addWidget(circleOverlaySettingsWidget_);
+
     mainLayout->addWidget(cameraGridGroup);
+    mainLayout->addWidget(circleOverlayGroup);
     mainLayout->addWidget(infoSettingsGroup);
 
     mainLayout->addStretch();

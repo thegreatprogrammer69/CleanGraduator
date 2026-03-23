@@ -9,8 +9,11 @@
 
 using namespace mvvm;
 
-VideoSourceViewModel::VideoSourceViewModel(domain::ports::IVideoSource& video_source)
+VideoSourceViewModel::VideoSourceViewModel(
+    domain::ports::IVideoSource& video_source,
+    ICircleOverlaySettingsViewModel& circle_overlay_settings)
     : video_source_(video_source)
+    , circle_overlay_settings_(circle_overlay_settings)
 {
     video_source_.addObserver(*this);
     video_source_.addSink(*this);
@@ -41,4 +44,35 @@ void VideoSourceViewModel::onVideoSourceEvent(const domain::common::VideoSourceE
 void VideoSourceViewModel::onVideoFrame(const domain::common::VideoFramePacket& frame_packet) {
     frame.set(frame_packet.frame);
     error.set({});
+}
+
+
+Observable<int>& VideoSourceViewModel::circleDiameterPercent()
+{
+    return circle_overlay_settings_.circleDiameterPercent();
+}
+
+const Observable<int>& VideoSourceViewModel::circleDiameterPercent() const
+{
+    return circle_overlay_settings_.circleDiameterPercent();
+}
+
+Observable<std::uint32_t>& VideoSourceViewModel::circleColor1()
+{
+    return circle_overlay_settings_.circleColor1();
+}
+
+const Observable<std::uint32_t>& VideoSourceViewModel::circleColor1() const
+{
+    return circle_overlay_settings_.circleColor1();
+}
+
+Observable<std::uint32_t>& VideoSourceViewModel::circleColor2()
+{
+    return circle_overlay_settings_.circleColor2();
+}
+
+const Observable<std::uint32_t>& VideoSourceViewModel::circleColor2() const
+{
+    return circle_overlay_settings_.circleColor2();
 }

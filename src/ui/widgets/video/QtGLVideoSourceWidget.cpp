@@ -3,7 +3,10 @@
 #include <QFile>
 
 #include <algorithm>
+#include <cstdint>
 #include <cstring>
+
+#include <QVector3D>
 
 #include "domain/core/video/VideoFrame.h"
 #include "viewmodels/video/VideoSourceViewModel.h"
@@ -12,6 +15,13 @@ using namespace ui;
 using namespace domain::common;
 
 namespace {
+QVector3D colorToVec3(std::uint32_t color) {
+    return QVector3D(
+        static_cast<float>((color >> 24) & 0xFFu) / 255.0f,
+        static_cast<float>((color >> 16) & 0xFFu) / 255.0f,
+        static_cast<float>((color >> 8) & 0xFFu) / 255.0f);
+}
+
 QString loadTextResource(const char* path) {
     QFile file(path);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
@@ -37,6 +47,28 @@ QtGLVideoSourceWidget::QtGLVideoSourceWidget(mvvm::VideoSourceViewModel& model, 
         }
         update();
     });
+
+    circle_diameter_sub_ = model.circleDiameterPercent().subscribe([this](const auto& a) {
+        std::lock_guard lock(mutex_);
+        circleDiameterPercent_ = std::clamp(a.new_value, 0, 100);
+        update();
+    }, false);
+
+    circle_color1_sub_ = model.circleColor1().subscribe([this](const auto& a) {
+        std::lock_guard lock(mutex_);
+        circleColor1_ = a.new_value;
+        update();
+    }, false);
+
+    circle_color2_sub_ = model.circleColor2().subscribe([this](const auto& a) {
+        std::lock_guard lock(mutex_);
+        circleColor2_ = a.new_value;
+        update();
+    }, false);
+
+    circleDiameterPercent_ = std::clamp(model.circleDiameterPercent().get_copy(), 0, 100);
+    circleColor1_ = model.circleColor1().get_copy();
+    circleColor2_ = model.circleColor2().get_copy();
 
     update();
 }
@@ -166,10 +198,6 @@ void QtGLVideoSourceWidget::drawQuad(bool noVideo) {
 
     program_.setUniformValue("uNoVideo", noVideo ? 1 : 0);
 
-    const float dpr = devicePixelRatioF();
-    program_.setUniformValue("uSize", QVector2D(width() * dpr, height() * dpr));
-    program_.setUniformValue("uRadius", 12.0f * dpr);
-
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, texture_);
     program_.setUniformValue("uTex", 0);
@@ -179,6 +207,9 @@ void QtGLVideoSourceWidget::drawQuad(bool noVideo) {
     program_.setUniformValue("uWidth", std::max(1, frameWidth_));
     program_.setUniformValue("uHeight", std::max(1, frameHeight_));
     program_.setUniformValue("uPackedWidth", std::max(1, texWidth_));
+    program_.setUniformValue("uCircleDiameterPercent", std::clamp(circleDiameterPercent_, 0, 100));
+    program_.setUniformValue("uCircleColor1", colorToVec3(circleColor1_));
+    program_.setUniformValue("uCircleColor2", colorToVec3(circleColor2_));
 
     glBegin(GL_QUADS);
     glTexCoord2f(0.f, 1.f);

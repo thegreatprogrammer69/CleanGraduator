@@ -12,6 +12,7 @@
 #include "viewmodels/control/DualValveControlViewModel.h"
 #include "viewmodels/control/MotorControlViewModel.h"
 #include "viewmodels/settings/CameraGridSettingsViewModel.h"
+#include "viewmodels/settings/CircleOverlaySettingsViewModel.h"
 #include "viewmodels/settings/InfoSettingsViewModel.h"
 #include "viewmodels/settings/SettingsViewModel.h"
 #include "viewmodels/status_bar/AppStatusBarViewModel.h"
@@ -31,6 +32,7 @@ ViewModelsBootstrap::~ViewModelsBootstrap() {
 }
 
 void ViewModelsBootstrap::initialize() {
+    createCircleOverlaySettings();
     createVideoSourceViewModels();
     createVideoSourceGrid();
 
@@ -58,7 +60,8 @@ void ViewModelsBootstrap::initialize() {
 
 void ViewModelsBootstrap::createVideoSourceViewModels() {
     for (const auto& vs : app_.video_sources) {
-        video_source_view_models.emplace_back(std::make_unique<VideoSourceViewModel>(*vs));
+        video_source_view_models.emplace_back(
+            std::make_unique<VideoSourceViewModel>(*vs, *circle_overlay_settings));
     }
 }
 
@@ -91,6 +94,10 @@ void ViewModelsBootstrap::createCameraGridSettings() {
     camera_grid_settings = std::make_unique<CameraGridSettingsViewModel>(deps);
 }
 
+void ViewModelsBootstrap::createCircleOverlaySettings() {
+    circle_overlay_settings = std::make_unique<CircleOverlaySettingsViewModel>();
+}
+
 void ViewModelsBootstrap::createInfoSettings() {
     InfoSettingsViewModelDeps deps{
         *app_.info_settings_storage,
@@ -110,6 +117,7 @@ void ViewModelsBootstrap::createInfoSettings() {
 void ViewModelsBootstrap::createSettings() {
     SettingsViewModelDeps deps{
         *camera_grid_settings,
+        *circle_overlay_settings,
         *info_settings,
     };
 
