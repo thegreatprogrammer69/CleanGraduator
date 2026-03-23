@@ -6,7 +6,7 @@
 #include "domain/core/measurement/PressureUnit.h"
 #include <vector>
 
-#include "application/models/info/Gauge.h"
+#include "application/common/info/Gauge.h"
 
 namespace application::orchestrators {
     struct CalibrationOrchestratorInput {

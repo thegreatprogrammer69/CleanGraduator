@@ -3,7 +3,7 @@
 #include <optional>
 #include <vector>
 
-#include "application/models/video/VideoSource.h"
+#include "application/common/video/VideoSource.h"
 #include "domain/core/angle/SourceId.h"
 
 namespace application::ports {

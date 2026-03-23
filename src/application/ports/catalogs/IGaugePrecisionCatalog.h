@@ -4,7 +4,7 @@
 #include <optional>
 #include <vector>
 
-#include "application/models/info/GaugePrecision.h"
+#include "application/common/info/GaugePrecision.h"
 
 namespace application::ports {
     struct IGaugePrecisionCatalog {

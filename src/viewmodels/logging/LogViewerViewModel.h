@@ -5,8 +5,8 @@
 #include <string>
 #include <vector>
 
-#include "application/models/logging/LogSource.h"
-#include "application/models/logging/LogEntry.h"
+#include "application/common/logging/LogSource.h"
+#include "application/common/logging/LogEntry.h"
 #include "application/ports/logging/ILogSink.h"
 #include "viewmodels/Observable.h"
 

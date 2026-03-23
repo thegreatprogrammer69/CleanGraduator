@@ -4,8 +4,8 @@
 #include <QWidget>
 #include <QString>
 
-#include "application/models/logging/LogEntry.h"
-#include "application/models/logging/LogSource.h"
+#include "application/common/logging/LogEntry.h"
+#include "application/common/logging/LogSource.h"
 #include "viewmodels/Observable.h"
 
 

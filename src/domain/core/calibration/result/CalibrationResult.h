@@ -7,7 +7,7 @@
 #include <stdexcept> // Для исключений
 #include "CalibrationCell.h"
 #include "CalibrationCellKey.h"
-#include "application/models/info/Gauge.h"
+#include "application/common/info/Gauge.h"
 #include "domain/core/calibration/common/CalibrationLayout.h"
 
 namespace domain::common {

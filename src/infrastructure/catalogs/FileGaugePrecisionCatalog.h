@@ -6,7 +6,7 @@
 #include <optional>
 
 #include "CatalogPorts.h"
-#include "application/models/info/GaugePrecision.h"
+#include "application/common/info/GaugePrecision.h"
 #include "application/ports/catalogs/IGaugePrecisionCatalog.h"
 #include "domain/fmt/Logger.h"
 

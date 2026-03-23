@@ -1,6 +1,6 @@
 #ifndef CLEANGRADUATOR_CALIBRATIONRECORDINGCONTEXT_H
 #define CLEANGRADUATOR_CALIBRATIONRECORDINGCONTEXT_H
-#include "application/models/info/Gauge.h"
+#include "application/common/info/Gauge.h"
 #include "domain/core/calibration/common/CalibrationLayout.h"
 
 namespace domain::common {

@@ -37,4 +37,4 @@ std::ostream& operator<<(std::ostream& os, const Printer& f) {
     return os << "Printer{name='" << f.name << "', path='" << f.path << "'}";
 }
 
-} // namespace application::models
+} // namespace application::common

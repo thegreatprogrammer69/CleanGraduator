@@ -3,11 +3,11 @@
 
 #include <iosfwd>
 
-#include "application/models/info/Displacement.h"
-#include "application/models/info/Gauge.h"
-#include "application/models/info/GaugePrecision.h"
-#include "application/models/info/PressureUnit.h"
-#include "application/models/info/Printer.h"
+#include "application/common/info/Displacement.h"
+#include "application/common/info/Gauge.h"
+#include "application/common/info/GaugePrecision.h"
+#include "application/common/info/PressureUnit.h"
+#include "application/common/info/Printer.h"
 
 namespace application::models {
     std::ostream& operator<<(std::ostream& os, const Displacement& f);

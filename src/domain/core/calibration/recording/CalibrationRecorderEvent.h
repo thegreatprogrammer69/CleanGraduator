@@ -3,7 +3,7 @@
 #include <variant>
 
 #include "domain/core/calibration/common/CalibrationLayout.h"
-#include "application/models/info/Gauge.h"
+#include "application/common/info/Gauge.h"
 #include "AngleSample.h"
 #include "CalibrationSessionId.h"
 #include "CalibrationSession.h"

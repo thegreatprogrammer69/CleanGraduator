@@ -3,7 +3,7 @@
 #include <optional>
 #include <string>
 #include <vector>
-#include "application/models/logging/LogSource.h"
+#include "application/common/logging/LogSource.h"
 
 namespace application::ports {
     struct ILogSourcesStorage {

@@ -4,7 +4,7 @@
 #include <optional>
 #include <vector>
 
-#include "application/models/info/Printer.h"
+#include "application/common/info/Printer.h"
 
 namespace application::ports {
     struct IPrinterCatalog {

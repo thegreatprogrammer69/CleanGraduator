@@ -413,8 +413,7 @@ void CalibrationOrchestrator::teardown()
     for (const auto& id : opened_angle_sources_)
     {
         auto src = ports_.source_storage.at(id);
-        if (src)
-            src->angle_source.stop();
+        if (src) src->angle_source.stop();
     }
 
     opened_angle_sources_.clear();

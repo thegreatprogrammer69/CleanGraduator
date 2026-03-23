@@ -4,7 +4,7 @@
 #include <optional>
 #include <string>
 
-#include "application/models/info/CalibrationContext.h"
+#include "application/common/info/CalibrationContext.h"
 #include "application/orchestrators/calibration/process/CalibrationOrchestrator.h"
 #include "application/orchestrators/settings/CalibrationContextProvider.h"
 #include "domain/core/calibration/common/CalibrationMode.h"

@@ -4,7 +4,7 @@
 #include <optional>
 #include <vector>
 
-#include "application/models/info/PressureUnit.h"
+#include "application/common/info/PressureUnit.h"
 
 namespace application::ports {
     struct IPressureUnitCatalog {

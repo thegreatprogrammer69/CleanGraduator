@@ -5,7 +5,7 @@
 
 #include "fmt.h"
 
-#include "application/models/calibration/GaugePressurePoints.h"
+#include "application/common/calibration/GaugePressurePoints.h"
 #include "domain/core/calibration/common/PressurePoints.h"
 #include "domain/core/measurement/Angle.h"
 #include "domain/core/measurement/AngleUnit.h"

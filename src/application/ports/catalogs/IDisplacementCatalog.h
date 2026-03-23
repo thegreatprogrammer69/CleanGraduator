@@ -4,7 +4,7 @@
 #include <optional>
 #include <vector>
 
-#include "application/models/info/Displacement.h"
+#include "application/common/info/Displacement.h"
 
 namespace application::ports {
     struct IDisplacementCatalog {

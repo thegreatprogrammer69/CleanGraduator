@@ -4,7 +4,7 @@
 #include <optional>
 #include <vector>
 
-#include "application/models/info/Gauge.h"
+#include "application/common/info/Gauge.h"
 
 namespace application::ports {
     struct IGaugeCatalog {

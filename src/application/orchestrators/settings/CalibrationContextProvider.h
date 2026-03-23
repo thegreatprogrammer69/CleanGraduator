@@ -3,7 +3,7 @@
 
 #include <optional>
 
-#include "application/models/info/CalibrationContext.h"
+#include "application/common/info/CalibrationContext.h"
 #include "application/ports/settings/IInfoSettingsStorage.h"
 #include "domain/core/calibration/common/PressurePoints.h"
 

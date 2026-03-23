@@ -3,7 +3,7 @@
 #include <vector>
 #include <string>
 
-#include "application/models/logging/LogEntry.h"
+#include "application/common/logging/LogEntry.h"
 
 namespace application::ports {
     struct ILogSink;

@@ -3,7 +3,7 @@
 #include <filesystem>
 #include <optional>
 
-#include "application/models/info/BatchContext.h"
+#include "application/common/info/BatchContext.h"
 
 namespace application::ports {
     struct IBatchContextProvider {
