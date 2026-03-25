@@ -11,6 +11,7 @@ mvvm::DualValveControlViewModel::DualValveControlViewModel(DualValveControlViewM
     : motor_driver_(deps.motor_driver)
 {
     motor_driver_.addObserver(*this);
+    flaps_state.set(motor_driver_.flapsState());
 }
 
 mvvm::DualValveControlViewModel::~DualValveControlViewModel() {
@@ -19,14 +20,17 @@ mvvm::DualValveControlViewModel::~DualValveControlViewModel() {
 
 void mvvm::DualValveControlViewModel::openInputFlap() {
     motor_driver_.setFlapsState(domain::common::MotorFlapsState::IntakeOpened);
+    flaps_state.set(motor_driver_.flapsState());
 }
 
 void mvvm::DualValveControlViewModel::openOutputFlap() {
     motor_driver_.setFlapsState(domain::common::MotorFlapsState::ExhaustOpened);
+    flaps_state.set(motor_driver_.flapsState());
 }
 
 void mvvm::DualValveControlViewModel::closeFlaps() {
     motor_driver_.setFlapsState(domain::common::MotorFlapsState::FlapsClosed);
+    flaps_state.set(motor_driver_.flapsState());
 }
 
 void mvvm::DualValveControlViewModel::onMotorEvent(const domain::common::MotorDriverEvent &ev) {
