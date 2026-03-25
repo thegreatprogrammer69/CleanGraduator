@@ -8,10 +8,12 @@
 
 #include "domain/core/calibration/analysis/CalibrationIssueSeverity.h"
 #include "domain/core/calibration/result/CalibrationCellKey.h"
+#include "shared/color/Color.h"
 
 namespace domain::common {
     struct CalibrationResultValidationIssue {
         CalibrationIssueSeverity severity;
+        Color color;
         std::string message;
 
         bool operator==(const CalibrationResultValidationIssue& other) const {
