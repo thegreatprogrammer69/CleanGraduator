@@ -11,6 +11,7 @@ mvvm::DualValveControlViewModel::DualValveControlViewModel(DualValveControlViewM
     : motor_driver_(deps.motor_driver)
 {
     motor_driver_.addObserver(*this);
+    flaps_state.set(motor_driver_.flapsState());
 }
 
 mvvm::DualValveControlViewModel::~DualValveControlViewModel() {
@@ -19,10 +20,12 @@ mvvm::DualValveControlViewModel::~DualValveControlViewModel() {
 
 void mvvm::DualValveControlViewModel::openInputFlap() {
     motor_driver_.setFlapsState(domain::common::MotorFlapsState::IntakeOpened);
+    flaps_state.set(motor_driver_.flapsState());
 }
 
 void mvvm::DualValveControlViewModel::openOutputFlap() {
     motor_driver_.setFlapsState(domain::common::MotorFlapsState::ExhaustOpened);
+    flaps_state.set(motor_driver_.flapsState());
 }
 
 void mvvm::DualValveControlViewModel::closeFlaps() {
@@ -37,7 +40,12 @@ void mvvm::DualValveControlViewModel::onMotorEvent(const domain::common::MotorDr
 
         if constexpr (std::is_same_v<T, domain::common::MotorDriverEvent::FlapsStateChanged>) {
             flaps_state.set(e.state);
+        } else {
+            // На случай, если состояние клапанов изменилось вне явного FlapsStateChanged,
+            // синхронизируем VM снимком из драйвера.
+            flaps_state.set(motor_driver_.flapsState());
         }
+
 
     }, data);
 }
