@@ -76,6 +76,7 @@ AngleSourceFactory::load(domain::common::SourceId id)
         config.duration_ms =
             static_cast<std::uint64_t>(
                 section.getInt("duration_ms", 10000));
+        config.nonlinearity_ratio = section.getFloat("nolin", 0.0f);
 
         if (config.duration_ms == 0) {
             throw std::runtime_error(
@@ -85,6 +86,10 @@ AngleSourceFactory::load(domain::common::SourceId id)
         if (config.from_deg == config.to_deg) {
             throw std::runtime_error(
                 "FakeAngleSource: from_deg == to_deg");
+        }
+        if (config.nonlinearity_ratio < 0.0 || config.nonlinearity_ratio >= 1.0) {
+            throw std::runtime_error(
+                "FakeAngleSource: nolin must be in [0.0, 1.0)");
         }
 
         return std::make_unique<angle::FakeAngleSourceFromVideo>(

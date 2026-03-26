@@ -7,6 +7,7 @@ namespace infra::angle {
         double from_deg{0.0};
         double to_deg{360.0};
         std::uint64_t duration_ms{10000}; // время на ход в одну сторону
+        double nonlinearity_ratio{0.0};   // 0.15 => целевая нелинейность 15%
     };
 }
 
