@@ -9,6 +9,7 @@
 #include "domain/ports/angle/IAngleSource.h"
 #include "domain/ports/video/IVideoSink.h"
 #include "infrastructure/angle/AngleSourcePorts.h"
+#include "infrastructure/angle/fake/FakeAngleSourceFromVideoConfig.h"
 #include "../../../shared/list/ThreadSafeObserverList.h"
 
 namespace domain::ports {
@@ -16,12 +17,6 @@ namespace domain::ports {
 }
 
 namespace infra::angle {
-
-    struct FakeAngleSourceFromVideoConfig {
-        double from_deg{0.0};
-        double to_deg{360.0};
-        std::uint64_t duration_ms{10000};
-    };
 
     class FakeAngleSourceFromVideo final
         : public domain::ports::IVideoSink

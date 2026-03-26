@@ -16,6 +16,8 @@ namespace {
 
     const QColor kResultRowBackground{248, 248, 248};
     const QColor kInfoRowBackground{236, 236, 236};
+    const QColor kHighNonlinearityBackground{255, 236, 179};
+    constexpr float kHighNonlinearityThresholdPercent = 10.0F;
 
 QString buildIssuesTooltip(const std::vector<domain::common::CalibrationCellIssue>& issues,
                           const domain::common::CalibrationResultValidation::Issues& validation_issues)
@@ -224,6 +226,11 @@ QVariant QtCalibrationResultTableModel::data(const QModelIndex& index, int role)
 
     if (role == Qt::BackgroundRole) {
         QColor background = isInfoRow(index.row()) ? kInfoRowBackground : kResultRowBackground;
+        if (row.kind == RowKind::Nonlinearity
+            && cell.nonlinearity_percent.has_value()
+            && *cell.nonlinearity_percent > kHighNonlinearityThresholdPercent) {
+            background = blendColors(background, kHighNonlinearityBackground, 0.65);
+        }
         if (cell.validation_kind.has_value()) {
             background = blendColors(background, validationColor(*cell.validation_kind));
         }
@@ -304,11 +311,7 @@ void QtCalibrationResultTableModel::applyResult(
     beginResetModel();
 
     current_result_ = std::move(result);
-    rows_.clear();
-
-    if (current_result_.has_value()) {
-        rebuildRows(*current_result_);
-    }
+    refreshRows();
 
     endResetModel();
 }
@@ -323,7 +326,7 @@ void QtCalibrationResultTableModel::applyValidation(
     }
 
     beginResetModel();
-    rebuildRows(*current_result_);
+    refreshRows();
     endResetModel();
 }
 
@@ -336,7 +339,7 @@ void QtCalibrationResultTableModel::applyInfo(const mvvm::CalibrationResultInfo&
     }
 
     beginResetModel();
-    rebuildRows(*current_result_);
+    refreshRows();
     endResetModel();
 }
 
@@ -384,10 +387,10 @@ void QtCalibrationResultTableModel::rebuildRows(const domain::common::Calibratio
         rows_.push_back(std::move(row));
     }
 
-    appendInfoRows(result);
+    appendInfoRows();
 }
 
-void QtCalibrationResultTableModel::appendInfoRows(const domain::common::CalibrationResult& result)
+void QtCalibrationResultTableModel::appendInfoRows()
 {
     auto makeRow = [](const QString& label, RowKind kind) {
         Row row;
@@ -414,9 +417,11 @@ void QtCalibrationResultTableModel::appendInfoRows(const domain::common::Calibra
         if (const auto source_it = current_info_.nonlinearities.find(source_id); source_it != current_info_.nonlinearities.end()) {
             if (const auto dir_it = source_it->second.find(domain::common::MotorDirection::Forward); dir_it != source_it->second.end()) {
                 nonlinearity_row.cells[forward_col].display = displayFloat(dir_it->second, 2, QStringLiteral("%"));
+                nonlinearity_row.cells[forward_col].nonlinearity_percent = dir_it->second;
             }
             if (const auto dir_it = source_it->second.find(domain::common::MotorDirection::Backward); dir_it != source_it->second.end()) {
                 nonlinearity_row.cells[backward_col].display = displayFloat(dir_it->second, 2, QStringLiteral("%"));
+                nonlinearity_row.cells[backward_col].nonlinearity_percent = dir_it->second;
             }
         }
 
@@ -438,6 +443,14 @@ void QtCalibrationResultTableModel::appendInfoRows(const domain::common::Calibra
     rows_.push_back(std::move(nonlinearity_row));
     rows_.push_back(std::move(count_row));
     rows_.push_back(std::move(current_angle_row));
+}
+
+void QtCalibrationResultTableModel::refreshRows()
+{
+    rows_.clear();
+    if (current_result_) {
+        rebuildRows(*current_result_);
+    }
 }
 
 } // namespace ui

@@ -47,6 +47,7 @@ namespace ui {
             QString tooltip{};
             std::optional<domain::common::CalibrationIssueSeverity> max_severity{};
             std::optional<domain::common::CalibrationValidationIssueKind> validation_kind{};
+            std::optional<float> nonlinearity_percent{};
         };
         struct Row final {
             QVariant label{};
@@ -58,7 +59,8 @@ namespace ui {
         void rebuildRows(const domain::common::CalibrationResult& result);
         void applyValidation(const std::optional<domain::common::CalibrationResultValidation>& validation);
         void applyInfo(const mvvm::CalibrationResultInfo& info);
-        void appendInfoRows(const domain::common::CalibrationResult& result);
+        void appendInfoRows();
+        void refreshRows();
 
     private:
         mvvm::CalibrationResultTableViewModel& vm_;

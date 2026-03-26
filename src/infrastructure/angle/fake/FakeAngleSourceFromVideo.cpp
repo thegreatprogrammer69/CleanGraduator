@@ -17,6 +17,14 @@ bool isValidAngleMeasurement(const domain::common::Angle& angle)
     return std::isfinite(degrees) && degrees >= 0.0 && degrees <= 360.0;
 }
 
+double applyProgressNonlinearity(double progress, double nonlinearity_ratio)
+{
+    // f(u) = u + k * (u - u²),  u∈[0..1]
+    // Для этого профиля средний наклон = 1, а отклонение наклона от среднего = |k|.
+    // Значит k=0.15 даёт целевую нелинейность около 15%.
+    return progress + nonlinearity_ratio * (progress - progress * progress);
+}
+
 } // namespace
 
 
@@ -71,6 +79,7 @@ double FakeAngleSourceFromVideo::computeAngle(std::uint64_t timestamp_ms) const 
     const double from = config_.from_deg;
     const double to   = config_.to_deg;
     const double span = to - from;
+    const double nonlinearity_ratio = config_.nonlinearity_ratio;
 
     const std::uint64_t leg = std::max<std::uint64_t>(1, config_.duration_ms);
     const std::uint64_t period = 2 * leg;
@@ -79,11 +88,13 @@ double FakeAngleSourceFromVideo::computeAngle(std::uint64_t timestamp_ms) const 
 
     if (t < leg) {
         // from → to
-        const double alpha = static_cast<double>(t) / static_cast<double>(leg);
+        const double progress = static_cast<double>(t) / static_cast<double>(leg);
+        const double alpha = applyProgressNonlinearity(progress, nonlinearity_ratio);
         return from + alpha * span;
     } else {
         // to → from
-        const double alpha = static_cast<double>(t - leg) / static_cast<double>(leg);
+        const double progress = static_cast<double>(t - leg) / static_cast<double>(leg);
+        const double alpha = applyProgressNonlinearity(progress, nonlinearity_ratio);
         return to - alpha * span;
     }
 }
