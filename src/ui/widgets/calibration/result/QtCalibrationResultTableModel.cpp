@@ -75,6 +75,25 @@ int issueKindPriority(domain::common::CalibrationValidationIssueKind kind)
     return 0;
 }
 
+bool isAngleSpanIssueKind(domain::common::CalibrationValidationIssueKind kind)
+{
+    using Kind = domain::common::CalibrationValidationIssueKind;
+    return kind == Kind::AngleSpanTooHigh || kind == Kind::AngleSpanTooLow;
+}
+
+domain::common::CalibrationResultValidation::Issues filterMeasurementValidationIssues(
+    const domain::common::CalibrationResultValidation::Issues& issues)
+{
+    domain::common::CalibrationResultValidation::Issues filtered;
+    filtered.reserve(issues.size());
+    for (const auto& issue : issues) {
+        if (!isAngleSpanIssueKind(issue.kind)) {
+            filtered.push_back(issue);
+        }
+    }
+    return filtered;
+}
+
 std::optional<domain::common::CalibrationValidationIssueKind> maxValidationKindOf(
     const domain::common::CalibrationResultValidation::Issues& issues)
 {
@@ -362,9 +381,10 @@ void QtCalibrationResultTableModel::rebuildRows(const domain::common::Calibratio
 
                 Cell uiCell;
                 const auto cell = result.cell(key);
-                const auto validation_issues = current_validation_
+                const auto raw_validation_issues = current_validation_
                     ? current_validation_->issuesFor(key)
                     : domain::common::CalibrationResultValidation::Issues{};
+                const auto validation_issues = filterMeasurementValidationIssues(raw_validation_issues);
 
                 if (cell) {
                     if (cell->angle()) {
@@ -412,6 +432,26 @@ void QtCalibrationResultTableModel::appendInfoRows()
 
         if (const auto it = current_info_.total_angles.find(source_id); it != current_info_.total_angles.end()) {
             total_row.cells[forward_col].display = displayFloat(it->second);
+        }
+
+        if (current_result_ && current_validation_) {
+            for (const auto& point : current_result_->points()) {
+                const domain::common::CalibrationCellKey key{
+                    point,
+                    source_id,
+                    domain::common::MotorDirection::Forward
+                };
+                const auto& issues = current_validation_->issuesFor(key);
+                auto it = std::find_if(issues.begin(), issues.end(), [](const auto& issue) {
+                    return isAngleSpanIssueKind(issue.kind);
+                });
+                if (it != issues.end()) {
+                    total_row.cells[forward_col].validation_kind = it->kind;
+                    total_row.cells[forward_col].max_severity = it->severity;
+                    total_row.cells[forward_col].tooltip = buildIssuesTooltip({}, {*it});
+                    break;
+                }
+            }
         }
 
         if (const auto source_it = current_info_.nonlinearities.find(source_id); source_it != current_info_.nonlinearities.end()) {
