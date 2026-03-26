@@ -30,6 +30,7 @@ void mvvm::DualValveControlViewModel::openOutputFlap() {
 
 void mvvm::DualValveControlViewModel::closeFlaps() {
     motor_driver_.setFlapsState(domain::common::MotorFlapsState::FlapsClosed);
+    flaps_state.set(motor_driver_.flapsState());
 }
 
 void mvvm::DualValveControlViewModel::onMotorEvent(const domain::common::MotorDriverEvent &ev) {

@@ -75,8 +75,9 @@ void QtDualValveControlWidget::bindViewModel()
     // реакция на изменения (предполагаю, что Observable вызывает колбэк из любого потока —
     // тогда через invokeMethod в UI-поток)
     state_sub_ = vm_.flaps_state.subscribe([this](const auto& state) {
-        QMetaObject::invokeMethod(this, [this, state] {
-            updateUiFromState(state.new_value);
+        const auto new_state = state.new_value;
+        QMetaObject::invokeMethod(this, [this, new_state] {
+            updateUiFromState(new_state);
         }, Qt::QueuedConnection);
     });
 }
