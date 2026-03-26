@@ -37,6 +37,7 @@ namespace application::orchestrators {
         void rebuild();
         void notifyObservers() const;
         float resolvePrecisionPercent() const;
+        bool isKuEnabled() const;
 
     private:
         fmt::Logger logger_;

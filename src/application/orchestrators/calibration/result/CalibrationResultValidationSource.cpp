@@ -3,6 +3,7 @@
 #include <cmath>
 #include <limits>
 #include <optional>
+#include <string>
 
 using namespace application::orchestrators;
 using namespace domain::common;
@@ -74,7 +75,7 @@ void CalibrationResultValidationSource::rebuild()
 
     CalibrationResultValidation validation;
     const auto& result = *current_result_;
-    constexpr float min_span = 260.0F;
+    const float min_span = isKuEnabled() ? 245.0F : 260.0F;
     constexpr float max_span = 280.0F;
     const float precision_percent = resolvePrecisionPercent();
 
@@ -101,13 +102,16 @@ void CalibrationResultValidationSource::rebuild()
                             });
                     }
                 } else if (span < min_span) {
+                    const std::string message = min_span < 260.0F
+                        ? "Угол шкалы прямого хода меньше 245°"
+                        : "Угол шкалы прямого хода меньше 260°";
                     for (const auto& point : result.points()) {
                         validation.addIssue(
                             CalibrationCellKey{point, source, MotorDirection::Forward},
                             CalibrationResultValidationIssue{
                                 CalibrationIssueSeverity::Info,
                                 CalibrationValidationIssueKind::AngleSpanTooLow,
-                                "Угол шкалы прямого хода меньше 260°"
+                                message
                             });
                     }
                 }
@@ -157,4 +161,9 @@ float CalibrationResultValidationSource::resolvePrecisionPercent() const
     const auto settings = deps_.settings_storage.loadInfoSettings();
     const auto precision = deps_.precision_catalog.at(settings.precision_idx);
     return precision ? precision->precision.value : 1.0F;
+}
+
+bool CalibrationResultValidationSource::isKuEnabled() const
+{
+    return deps_.settings_storage.loadInfoSettings().ku_enabled;
 }
