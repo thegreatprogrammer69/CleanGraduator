@@ -8,6 +8,10 @@ using namespace application::orchestrators;
 using namespace domain::common;
 
 namespace {
+Color kWarningYellow{255, 236, 179};
+Color kCriticalRed{255, 205, 210};
+Color kLowBlue{210, 240, 255};
+
 float angleFor(const CalibrationResult& result, const CalibrationCellKey& key)
 {
     const auto cell = result.cell(key);
@@ -74,9 +78,8 @@ void CalibrationResultValidationSource::rebuild()
 
     CalibrationResultValidation validation;
     const auto& result = *current_result_;
-    const bool ku_enabled = isKuEnabled();
-    const float min_span = ku_enabled ? 245.0F : 260.0F;
-    const float max_span = 290.0F;
+    const float min_span = 260.0F;
+    const float max_span = 280.0F;
     const float precision_percent = resolvePrecisionPercent();
 
     if (!result.points().empty()) {
@@ -92,13 +95,13 @@ void CalibrationResultValidationSource::rebuild()
             if (isValid(first_angle) && isValid(last_angle)) {
                 const float span = last_angle - first_angle;
                 if (span > max_span || span < min_span) {
+                    const auto issue = CalibrationResultValidationIssue{
+                        CalibrationIssueSeverity::Warning,
+                        span > max_span ? kCriticalRed : kLowBlue,
+                        "Выход диапазона прямого хода за допустимый угол"
+                    };
                     for (const auto& point : result.points()) {
-                        validation.addIssue(
-                            CalibrationCellKey{point, source, MotorDirection::Forward},
-                            CalibrationResultValidationIssue{
-                                CalibrationIssueSeverity::Warning,
-                                "Выход диапазона прямого хода за допустимый угол"
-                            });
+                        validation.addIssue(CalibrationCellKey{point, source, MotorDirection::Forward}, issue);
                     }
                 }
 
@@ -115,7 +118,8 @@ void CalibrationResultValidationSource::rebuild()
 
                     if (std::abs(forward_angle - backward_angle) > hysteresis_limit) {
                         const auto issue = CalibrationResultValidationIssue{
-                            CalibrationIssueSeverity::Error,
+                            CalibrationIssueSeverity::Warning,
+                            kWarningYellow,
                             "Превышение гистерезиса для выбранного класса точности"
                         };
                         validation.addIssue(forward_key, issue);
@@ -146,9 +150,4 @@ float CalibrationResultValidationSource::resolvePrecisionPercent() const
     const auto settings = deps_.settings_storage.loadInfoSettings();
     const auto precision = deps_.precision_catalog.at(settings.precision_idx);
     return precision ? precision->precision.value : 1.0F;
-}
-
-bool CalibrationResultValidationSource::isKuEnabled() const
-{
-    return deps_.settings_storage.loadInfoSettings().ku_enabled;
 }

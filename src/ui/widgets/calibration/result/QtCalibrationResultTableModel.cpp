@@ -102,6 +102,32 @@ QColor severityColor(domain::common::CalibrationIssueSeverity severity)
     return {};
 }
 
+QColor toQColor(const Color& color)
+{
+    return QColor(color.R(), color.G(), color.B());
+}
+
+std::optional<QColor> maxValidationColorOf(
+    const domain::common::CalibrationResultValidation::Issues& issues)
+{
+    if (issues.empty()) {
+        return std::nullopt;
+    }
+
+    const auto max_severity = maxValidationSeverityOf(issues);
+    if (!max_severity) {
+        return std::nullopt;
+    }
+
+    for (const auto& issue : issues) {
+        if (issue.severity == *max_severity) {
+            return toQColor(issue.color);
+        }
+    }
+
+    return severityColor(*max_severity);
+}
+
 QColor blendColors(const QColor& base, const QColor& overlay, qreal overlay_alpha = 0.35)
 {
     const qreal clamped_alpha = std::clamp(overlay_alpha, 0.0, 1.0);
@@ -220,7 +246,9 @@ QVariant QtCalibrationResultTableModel::data(const QModelIndex& index, int role)
 
     if (role == Qt::BackgroundRole) {
         QColor background = isInfoRow(index.row()) ? kInfoRowBackground : kResultRowBackground;
-        if (cell.validation_severity.has_value()) {
+        if (cell.validation_color.has_value()) {
+            background = blendColors(background, *cell.validation_color);
+        } else if (cell.validation_severity.has_value()) {
             background = blendColors(background, severityColor(*cell.validation_severity));
         }
         return QBrush(background);
@@ -368,9 +396,11 @@ void QtCalibrationResultTableModel::rebuildRows(const domain::common::Calibratio
                     uiCell.tooltip = buildIssuesTooltip(issues, validation_issues);
                     uiCell.max_severity = maxSeverityOf(issues);
                     uiCell.validation_severity = maxValidationSeverityOf(validation_issues);
+                    uiCell.validation_color = maxValidationColorOf(validation_issues);
                 } else {
                     uiCell.tooltip = buildIssuesTooltip({}, validation_issues);
                     uiCell.validation_severity = maxValidationSeverityOf(validation_issues);
+                    uiCell.validation_color = maxValidationColorOf(validation_issues);
                 }
 
                 row.cells.push_back(std::move(uiCell));
@@ -410,9 +440,15 @@ void QtCalibrationResultTableModel::appendInfoRows(const domain::common::Calibra
         if (const auto source_it = current_info_.nonlinearities.find(source_id); source_it != current_info_.nonlinearities.end()) {
             if (const auto dir_it = source_it->second.find(domain::common::MotorDirection::Forward); dir_it != source_it->second.end()) {
                 nonlinearity_row.cells[forward_col].display = displayFloat(dir_it->second, 2, QStringLiteral("%"));
+                if (dir_it->second > 10.0F) {
+                    nonlinearity_row.cells[forward_col].validation_severity = domain::common::CalibrationIssueSeverity::Warning;
+                }
             }
             if (const auto dir_it = source_it->second.find(domain::common::MotorDirection::Backward); dir_it != source_it->second.end()) {
                 nonlinearity_row.cells[backward_col].display = displayFloat(dir_it->second, 2, QStringLiteral("%"));
+                if (dir_it->second > 10.0F) {
+                    nonlinearity_row.cells[backward_col].validation_severity = domain::common::CalibrationIssueSeverity::Warning;
+                }
             }
         }
 
