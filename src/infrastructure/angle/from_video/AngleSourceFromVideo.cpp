@@ -82,7 +82,7 @@ void AngleSourceFromVideo::onVideoFrame(const domain::common::VideoFramePacket& 
     domain::common::Angle angle{};
     try {
         angle = anglemeter_.calculate(input);
-        logger_.info("angle calculated: {}", angle);
+        // logger_.info("angle calculated: {}", angle);
     } catch (const std::exception& ex) {
         logger_.error("angle calc failed (ts={}): {}", packet.timestamp, ex.what());
         return;
@@ -92,7 +92,7 @@ void AngleSourceFromVideo::onVideoFrame(const domain::common::VideoFramePacket& 
     }
 
     if (!isValidAngleMeasurement(angle)) {
-        logger_.warn("filtered invalid angle value: {}", angle);
+        logger_.error("invalid angle value: {}", angle);
         return;
     }
 
