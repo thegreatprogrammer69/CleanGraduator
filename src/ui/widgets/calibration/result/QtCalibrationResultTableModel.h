@@ -47,6 +47,7 @@ namespace ui {
             QString tooltip{};
             std::optional<domain::common::CalibrationIssueSeverity> max_severity{};
             std::optional<domain::common::CalibrationIssueSeverity> validation_severity{};
+            std::optional<domain::common::CalibrationValidationIssueKind> validation_kind{};
         };
         struct Row final {
             QVariant label{};

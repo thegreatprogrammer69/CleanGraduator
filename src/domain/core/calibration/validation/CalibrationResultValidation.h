@@ -8,16 +8,21 @@
 
 #include "domain/core/calibration/analysis/CalibrationIssueSeverity.h"
 #include "domain/core/calibration/result/CalibrationCellKey.h"
-#include "shared/color/Color.h"
 
 namespace domain::common {
+    enum class CalibrationValidationIssueKind {
+        SpanTooLarge,
+        SpanTooSmall,
+        HysteresisTooLarge,
+    };
+
     struct CalibrationResultValidationIssue {
         CalibrationIssueSeverity severity;
-        Color color;
+        CalibrationValidationIssueKind kind;
         std::string message;
 
         bool operator==(const CalibrationResultValidationIssue& other) const {
-            return severity == other.severity && message == other.message;
+            return severity == other.severity && kind == other.kind && message == other.message;
         }
     };
 
