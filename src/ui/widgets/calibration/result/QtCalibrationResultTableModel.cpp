@@ -1,11 +1,14 @@
 #include "QtCalibrationResultTableModel.h"
 
+#include <QApplication>
 #include <QMetaObject>
 #include <algorithm>
 #include <QStringList>
 #include <QBrush>
 #include <QColor>
 #include <QFont>
+#include <QIcon>
+#include <QStyle>
 
 namespace ui {
 
@@ -134,6 +137,23 @@ QColor blendColors(const QColor& base, const QColor& overlay, qreal overlay_alph
         static_cast<int>(base.blue() * base_alpha + overlay.blue() * clamped_alpha));
 }
 
+QIcon iconForSeverity(domain::common::CalibrationIssueSeverity severity)
+{
+    auto* style = QApplication::style();
+    using Severity = domain::common::CalibrationIssueSeverity;
+
+    switch (severity) {
+        case Severity::Info:
+            return style->standardIcon(QStyle::SP_MessageBoxInformation);
+        case Severity::Warning:
+            return style->standardIcon(QStyle::SP_MessageBoxWarning);
+        case Severity::Error:
+            return style->standardIcon(QStyle::SP_MessageBoxCritical);
+    }
+
+    return {};
+}
+
 QString displayFloat(float value, int precision = 2, const QString& suffix = {})
 {
     return QStringLiteral("%1%2")
@@ -213,6 +233,10 @@ QVariant QtCalibrationResultTableModel::data(const QModelIndex& index, int role)
 
     if (role == Qt::ToolTipRole) {
         return cell.tooltip;
+    }
+
+    if (role == Qt::DecorationRole && cell.max_severity.has_value()) {
+        return iconForSeverity(*cell.max_severity);
     }
 
     if (role == Qt::TextAlignmentRole) {
@@ -423,6 +447,7 @@ void QtCalibrationResultTableModel::appendInfoRows()
                 });
                 if (it != issues.end()) {
                     total_row.cells[forward_col].validation_kind = it->kind;
+                    total_row.cells[forward_col].max_severity = it->severity;
                     total_row.cells[forward_col].tooltip = buildIssuesTooltip({}, {*it});
                     break;
                 }
@@ -434,6 +459,7 @@ void QtCalibrationResultTableModel::appendInfoRows()
                 nonlinearity_row.cells[forward_col].display = displayFloat(dir_it->second, 2, QStringLiteral("%"));
                 nonlinearity_row.cells[forward_col].nonlinearity_percent = dir_it->second;
                 if (dir_it->second > kHighNonlinearityThresholdPercent) {
+                    nonlinearity_row.cells[forward_col].max_severity = domain::common::CalibrationIssueSeverity::Error;
                     nonlinearity_row.cells[forward_col].tooltip = tr("Ошибка: нелинейность выше 10%%");
                 }
             }
@@ -441,6 +467,7 @@ void QtCalibrationResultTableModel::appendInfoRows()
                 nonlinearity_row.cells[backward_col].display = displayFloat(dir_it->second, 2, QStringLiteral("%"));
                 nonlinearity_row.cells[backward_col].nonlinearity_percent = dir_it->second;
                 if (dir_it->second > kHighNonlinearityThresholdPercent) {
+                    nonlinearity_row.cells[backward_col].max_severity = domain::common::CalibrationIssueSeverity::Error;
                     nonlinearity_row.cells[backward_col].tooltip = tr("Ошибка: нелинейность выше 10%%");
                 }
             }

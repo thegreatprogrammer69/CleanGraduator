@@ -81,19 +81,19 @@ AngleSourceFactory::load(domain::common::SourceId id)
 
         if (config.duration_ms == 0) {
             throw std::runtime_error(
-                "FakeAngleSource: duration_ms must be > 0");
+                "Фейковый датчик угла: duration_ms должен быть больше 0");
         }
 
         if (config.from_deg == config.to_deg) {
             throw std::runtime_error(
-                "FakeAngleSource: from_deg == to_deg");
+                "Фейковый датчик угла: from_deg не должен быть равен to_deg");
         }
 
         if (!std::isfinite(config.nonlinearity_ratio)
             || config.nonlinearity_ratio < 0.0
             || config.nonlinearity_ratio >= 1.0) {
             throw std::runtime_error(
-                "FakeAngleSource: nolin must be in [0.0, 1.0)");
+                "Фейковый датчик угла: nolin должен быть в диапазоне [0.0, 1.0)");
         }
 
         return std::make_unique<angle::FakeAngleSourceFromVideo>(
