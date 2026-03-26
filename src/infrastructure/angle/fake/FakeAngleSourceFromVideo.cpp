@@ -17,6 +17,12 @@ bool isValidAngleMeasurement(const domain::common::Angle& angle)
     return std::isfinite(degrees) && degrees >= 0.0 && degrees <= 360.0;
 }
 
+double applyNonlinearity(double alpha, double nonlinearity_ratio)
+{
+    constexpr double kTwoPi = 6.28318530717958647692;
+    return alpha - (nonlinearity_ratio / kTwoPi) * std::sin(kTwoPi * alpha);
+}
+
 } // namespace
 
 
@@ -77,15 +83,15 @@ double FakeAngleSourceFromVideo::computeAngle(std::uint64_t timestamp_ms) const 
 
     const std::uint64_t t = timestamp_ms % period;
 
-    if (t < leg) {
-        // from → to
-        const double alpha = static_cast<double>(t) / static_cast<double>(leg);
-        return from + alpha * span;
-    } else {
-        // to → from
-        const double alpha = static_cast<double>(t - leg) / static_cast<double>(leg);
-        return to - alpha * span;
-    }
+    const bool is_forward = t < leg;
+    const double alpha = is_forward
+        ? static_cast<double>(t) / static_cast<double>(leg)
+        : static_cast<double>(t - leg) / static_cast<double>(leg);
+
+    const double nonlinear_alpha = applyNonlinearity(alpha, config_.nonlinearity_ratio);
+    return is_forward
+        ? from + nonlinear_alpha * span
+        : to - nonlinear_alpha * span;
 }
 
 void FakeAngleSourceFromVideo::onVideoFrame(
