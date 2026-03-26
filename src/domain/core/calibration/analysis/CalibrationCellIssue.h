@@ -33,24 +33,24 @@ namespace domain::common {
     {
         switch (type) {
             case CalibrationCellIssue::Type::TooFewPressureValues:
-                return "Too few pressure values in series";
+                return "Слишком мало значений давления в съёме";
             case CalibrationCellIssue::Type::TooFewAngleValues:
-                return "Too few angle values in series";
+                return "Слишком мало значений углов в съёме";
             case CalibrationCellIssue::Type::FewPressureValues:
-                return "Few pressure values in series";
+                return "Недостаточно значений давления в съёме";
             case CalibrationCellIssue::Type::FewAngleValues:
-                return "Few angle values in series";
+                return "Недостаточно значений углов в съёме";
             case CalibrationCellIssue::Type::PressureSeriesSizeMismatch:
-                return "Pressure series time/value size mismatch";
+                return "Несоответствие размеров временного ряда давления (размеры время/значение не совпадают)";
             case CalibrationCellIssue::Type::AngleSeriesSizeMismatch:
-                return "Angle series time/value size mismatch";
+                return "Несоответствие размеров временного ряда угла (размеры время/значение не совпадают)";
             case CalibrationCellIssue::Type::PressurePointOutOfRange:
-                return "Pressure point is outside pressure series range";
+                return "Точка давления вне диапазона съёме";
             case CalibrationCellIssue::Type::InterpolatedTimeOutOfRange:
-                return "Interpolated time is outside angle series range";
+                return "Интерполированное время вне диапазона съёма углов";
         }
 
-        return "Unknown calibration issue";
+        return "Неизвестная ошибка по ходу калибровки";
     }
 
     inline CalibrationCellIssue make_calibration_issue(
