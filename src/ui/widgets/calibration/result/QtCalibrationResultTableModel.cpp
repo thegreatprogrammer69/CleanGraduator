@@ -61,6 +61,36 @@ std::optional<domain::common::CalibrationIssueSeverity> maxSeverityOf(
     return maxSeverity;
 }
 
+std::optional<domain::common::CalibrationIssueSeverity> maxSeverityOf(
+    const domain::common::CalibrationResultValidation::Issues& issues)
+{
+    if (issues.empty()) {
+        return std::nullopt;
+    }
+
+    auto maxSeverity = issues.front().severity;
+    for (const auto& issue : issues) {
+        if (static_cast<int>(issue.severity) > static_cast<int>(maxSeverity)) {
+            maxSeverity = issue.severity;
+        }
+    }
+
+    return maxSeverity;
+}
+
+std::optional<domain::common::CalibrationIssueSeverity> maxSeverityOf(
+    std::optional<domain::common::CalibrationIssueSeverity> lhs,
+    std::optional<domain::common::CalibrationIssueSeverity> rhs)
+{
+    if (!lhs.has_value()) {
+        return rhs;
+    }
+    if (!rhs.has_value()) {
+        return lhs;
+    }
+    return static_cast<int>(*lhs) >= static_cast<int>(*rhs) ? lhs : rhs;
+}
+
 int issueKindPriority(domain::common::CalibrationValidationIssueKind kind)
 {
     using Kind = domain::common::CalibrationValidationIssueKind;
@@ -393,10 +423,13 @@ void QtCalibrationResultTableModel::rebuildRows(const domain::common::Calibratio
 
                     const auto& issues = cell->issues();
                     uiCell.tooltip = buildIssuesTooltip(issues, validation_issues);
-                    uiCell.max_severity = maxSeverityOf(issues);
+                    uiCell.max_severity = maxSeverityOf(
+                        maxSeverityOf(issues),
+                        maxSeverityOf(validation_issues));
                     uiCell.validation_kind = maxValidationKindOf(validation_issues);
                 } else {
                     uiCell.tooltip = buildIssuesTooltip({}, validation_issues);
+                    uiCell.max_severity = maxSeverityOf(validation_issues);
                     uiCell.validation_kind = maxValidationKindOf(validation_issues);
                 }
 
