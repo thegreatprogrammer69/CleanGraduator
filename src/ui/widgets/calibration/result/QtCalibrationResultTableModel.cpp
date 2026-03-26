@@ -76,6 +76,23 @@ std::optional<domain::common::CalibrationIssueSeverity> maxValidationSeverityOf(
     return maxSeverity;
 }
 
+std::optional<domain::common::CalibrationValidationIssueKind> maxValidationKindOf(
+    const domain::common::CalibrationResultValidation::Issues& issues)
+{
+    if (issues.empty()) {
+        return std::nullopt;
+    }
+
+    auto maxIssue = issues.front();
+    for (const auto& issue : issues) {
+        if (static_cast<int>(issue.severity) > static_cast<int>(maxIssue.severity)) {
+            maxIssue = issue;
+        }
+    }
+
+    return maxIssue.kind;
+}
+
 QColor severityColor(domain::common::CalibrationIssueSeverity severity)
 {
     using Severity = domain::common::CalibrationIssueSeverity;
@@ -98,6 +115,22 @@ QColor severityColor(domain::common::CalibrationIssueSeverity severity)
     case Severity::Warning: return QColor(220, 220, 220);
     case Severity::Error:   return QColor(200, 200, 200);
      */
+
+    return {};
+}
+
+QColor validationKindColor(domain::common::CalibrationValidationIssueKind kind)
+{
+    using Kind = domain::common::CalibrationValidationIssueKind;
+
+    switch (kind) {
+        case Kind::HysteresisTooLarge:
+            return QColor(255, 236, 179);
+        case Kind::SpanTooLarge:
+            return QColor(255, 205, 210);
+        case Kind::SpanTooSmall:
+            return QColor(210, 240, 255);
+    }
 
     return {};
 }
@@ -220,7 +253,9 @@ QVariant QtCalibrationResultTableModel::data(const QModelIndex& index, int role)
 
     if (role == Qt::BackgroundRole) {
         QColor background = isInfoRow(index.row()) ? kInfoRowBackground : kResultRowBackground;
-        if (cell.validation_severity.has_value()) {
+        if (cell.validation_kind.has_value()) {
+            background = blendColors(background, validationKindColor(*cell.validation_kind));
+        } else if (cell.validation_severity.has_value()) {
             background = blendColors(background, severityColor(*cell.validation_severity));
         }
         return QBrush(background);
@@ -368,9 +403,11 @@ void QtCalibrationResultTableModel::rebuildRows(const domain::common::Calibratio
                     uiCell.tooltip = buildIssuesTooltip(issues, validation_issues);
                     uiCell.max_severity = maxSeverityOf(issues);
                     uiCell.validation_severity = maxValidationSeverityOf(validation_issues);
+                    uiCell.validation_kind = maxValidationKindOf(validation_issues);
                 } else {
                     uiCell.tooltip = buildIssuesTooltip({}, validation_issues);
                     uiCell.validation_severity = maxValidationSeverityOf(validation_issues);
+                    uiCell.validation_kind = maxValidationKindOf(validation_issues);
                 }
 
                 row.cells.push_back(std::move(uiCell));
