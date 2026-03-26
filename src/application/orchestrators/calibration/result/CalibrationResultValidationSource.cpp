@@ -109,7 +109,7 @@ void CalibrationResultValidationSource::rebuild()
                         validation.addIssue(
                             CalibrationCellKey{point, source, MotorDirection::Forward},
                             CalibrationResultValidationIssue{
-                                CalibrationIssueSeverity::Info,
+                                CalibrationIssueSeverity::Error,
                                 CalibrationValidationIssueKind::AngleSpanTooLow,
                                 message
                             });
