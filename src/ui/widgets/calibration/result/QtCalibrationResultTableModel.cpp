@@ -59,45 +59,49 @@ std::optional<domain::common::CalibrationIssueSeverity> maxSeverityOf(
     return maxSeverity;
 }
 
-std::optional<domain::common::CalibrationIssueSeverity> maxValidationSeverityOf(
+int issueKindPriority(domain::common::CalibrationValidationIssueKind kind)
+{
+    using Kind = domain::common::CalibrationValidationIssueKind;
+    switch (kind) {
+        case Kind::AngleSpanTooHigh:
+            return 3;
+        case Kind::HysteresisExceeded:
+            return 2;
+        case Kind::AngleSpanTooLow:
+            return 1;
+    }
+    return 0;
+}
+
+std::optional<domain::common::CalibrationValidationIssueKind> maxValidationKindOf(
     const domain::common::CalibrationResultValidation::Issues& issues)
 {
     if (issues.empty()) {
         return std::nullopt;
     }
 
-    auto maxSeverity = issues.front().severity;
+    auto selectedKind = issues.front().kind;
     for (const auto& issue : issues) {
-        if (static_cast<int>(issue.severity) > static_cast<int>(maxSeverity)) {
-            maxSeverity = issue.severity;
+        if (issueKindPriority(issue.kind) > issueKindPriority(selectedKind)) {
+            selectedKind = issue.kind;
         }
     }
 
-    return maxSeverity;
+    return selectedKind;
 }
 
-QColor severityColor(domain::common::CalibrationIssueSeverity severity)
+QColor validationColor(domain::common::CalibrationValidationIssueKind kind)
 {
-    using Severity = domain::common::CalibrationIssueSeverity;
+    using Kind = domain::common::CalibrationValidationIssueKind;
 
-    switch (severity) {
-        case Severity::Info:
-            return QColor(210, 240, 255);
-        case Severity::Warning:
+    switch (kind) {
+        case Kind::HysteresisExceeded:
             return QColor(255, 236, 179);
-        case Severity::Error:
+        case Kind::AngleSpanTooHigh:
             return QColor(255, 205, 210);
+        case Kind::AngleSpanTooLow:
+            return QColor(210, 240, 255);
     }
-
-    /*
-    case Severity::Info:    return QColor(225, 225, 225); // серый вместо голубого
-    case Severity::Warning: return QColor(245, 235, 200); // мягкий песочный
-    case Severity::Error:   return QColor(245, 210, 210); // приглушённый красный
-    или
-    case Severity::Info:    return QColor(230, 230, 230);
-    case Severity::Warning: return QColor(220, 220, 220);
-    case Severity::Error:   return QColor(200, 200, 200);
-     */
 
     return {};
 }
@@ -220,13 +224,13 @@ QVariant QtCalibrationResultTableModel::data(const QModelIndex& index, int role)
 
     if (role == Qt::BackgroundRole) {
         QColor background = isInfoRow(index.row()) ? kInfoRowBackground : kResultRowBackground;
-        if (cell.validation_severity.has_value()) {
-            background = blendColors(background, severityColor(*cell.validation_severity));
+        if (cell.validation_kind.has_value()) {
+            background = blendColors(background, validationColor(*cell.validation_kind));
         }
         return QBrush(background);
     }
 
-    if (role == Qt::ForegroundRole && cell.validation_severity.has_value()) {
+    if (role == Qt::ForegroundRole && cell.validation_kind.has_value()) {
         return QBrush(Qt::black);
     }
 
@@ -367,10 +371,10 @@ void QtCalibrationResultTableModel::rebuildRows(const domain::common::Calibratio
                     const auto& issues = cell->issues();
                     uiCell.tooltip = buildIssuesTooltip(issues, validation_issues);
                     uiCell.max_severity = maxSeverityOf(issues);
-                    uiCell.validation_severity = maxValidationSeverityOf(validation_issues);
+                    uiCell.validation_kind = maxValidationKindOf(validation_issues);
                 } else {
                     uiCell.tooltip = buildIssuesTooltip({}, validation_issues);
-                    uiCell.validation_severity = maxValidationSeverityOf(validation_issues);
+                    uiCell.validation_kind = maxValidationKindOf(validation_issues);
                 }
 
                 row.cells.push_back(std::move(uiCell));

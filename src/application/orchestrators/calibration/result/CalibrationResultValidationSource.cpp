@@ -74,9 +74,8 @@ void CalibrationResultValidationSource::rebuild()
 
     CalibrationResultValidation validation;
     const auto& result = *current_result_;
-    const bool ku_enabled = isKuEnabled();
-    const float min_span = ku_enabled ? 245.0F : 260.0F;
-    const float max_span = 290.0F;
+    constexpr float min_span = 260.0F;
+    constexpr float max_span = 280.0F;
     const float precision_percent = resolvePrecisionPercent();
 
     if (!result.points().empty()) {
@@ -91,13 +90,24 @@ void CalibrationResultValidationSource::rebuild()
 
             if (isValid(first_angle) && isValid(last_angle)) {
                 const float span = last_angle - first_angle;
-                if (span > max_span || span < min_span) {
+                if (span > max_span) {
                     for (const auto& point : result.points()) {
                         validation.addIssue(
                             CalibrationCellKey{point, source, MotorDirection::Forward},
                             CalibrationResultValidationIssue{
-                                CalibrationIssueSeverity::Warning,
-                                "Выход диапазона прямого хода за допустимый угол"
+                                CalibrationIssueSeverity::Error,
+                                CalibrationValidationIssueKind::AngleSpanTooHigh,
+                                "Угол шкалы прямого хода больше 280°"
+                            });
+                    }
+                } else if (span < min_span) {
+                    for (const auto& point : result.points()) {
+                        validation.addIssue(
+                            CalibrationCellKey{point, source, MotorDirection::Forward},
+                            CalibrationResultValidationIssue{
+                                CalibrationIssueSeverity::Info,
+                                CalibrationValidationIssueKind::AngleSpanTooLow,
+                                "Угол шкалы прямого хода меньше 260°"
                             });
                     }
                 }
@@ -115,7 +125,8 @@ void CalibrationResultValidationSource::rebuild()
 
                     if (std::abs(forward_angle - backward_angle) > hysteresis_limit) {
                         const auto issue = CalibrationResultValidationIssue{
-                            CalibrationIssueSeverity::Error,
+                            CalibrationIssueSeverity::Warning,
+                            CalibrationValidationIssueKind::HysteresisExceeded,
                             "Превышение гистерезиса для выбранного класса точности"
                         };
                         validation.addIssue(forward_key, issue);
@@ -146,9 +157,4 @@ float CalibrationResultValidationSource::resolvePrecisionPercent() const
     const auto settings = deps_.settings_storage.loadInfoSettings();
     const auto precision = deps_.precision_catalog.at(settings.precision_idx);
     return precision ? precision->precision.value : 1.0F;
-}
-
-bool CalibrationResultValidationSource::isKuEnabled() const
-{
-    return deps_.settings_storage.loadInfoSettings().ku_enabled;
 }
