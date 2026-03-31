@@ -32,7 +32,7 @@ void QtCalibrationSessionControlWidget::setupUi() {
     modeBox_->addItem(tr("Только прямой ход"));
     modeBox_->addItem(tr("Только последняя точка"));
 
-    kuCheckBox_ = new QCheckBox(tr("к. у."), this);
+    kuCheckBox_ = new QCheckBox(tr("центрированная метка"), this);
     startButton_ = new QPushButton(tr("Старт"), this);
     stopButton_ = new QPushButton(tr("Стоп"), this);
     emergencyStopButton_ = new QPushButton(tr("Экстренный стоп"), this);

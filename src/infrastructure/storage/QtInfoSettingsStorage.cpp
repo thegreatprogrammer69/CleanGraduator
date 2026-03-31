@@ -1,5 +1,6 @@
 #include "QtInfoSettingsStorage.h"
 #include <QDebug>
+#include <cmath>
 
 namespace {
     constexpr const char* GROUP = "InfoSettings";
@@ -10,6 +11,7 @@ namespace {
     constexpr const char* KEY_PRESSURE_UNIT = "pressure_unit_idx";
     constexpr const char* KEY_PRINTER = "printer_idx";
     constexpr const char* KEY_KU_ENABLED = "ku_enabled";
+    constexpr const char* KEY_MAX_CENTER_DEVIATION_DEG = "max_center_deviation_deg";
 }
 
 using namespace infra::storage;
@@ -38,8 +40,13 @@ InfoSettingsData QtInfoSettingsStorage::loadInfoSettings() {
     data.pressure_unit_idx = settings_.value(KEY_PRESSURE_UNIT, 0).toInt();
     data.printer_idx = settings_.value(KEY_PRINTER, 0).toInt();
     data.ku_enabled = settings_.value(KEY_KU_ENABLED, false).toBool();
+    data.max_center_deviation_deg = settings_.value(KEY_MAX_CENTER_DEVIATION_DEG, 0.9).toDouble();
 
     settings_.endGroup();
+
+    if (!std::isfinite(data.max_center_deviation_deg) || data.max_center_deviation_deg < 0.0) {
+        data.max_center_deviation_deg = 0.9;
+    }
 
     data.displacement_idx = clampToCatalog(data.displacement_idx, static_cast<int>(catalogs_.displacement_catalog.list().size()));
     data.gauge_idx = clampToCatalog(data.gauge_idx, static_cast<int>(catalogs_.gauge_catalog.list().size()));
@@ -60,6 +67,10 @@ void QtInfoSettingsStorage::saveInfoSettings(const InfoSettingsData& data) {
     settings_.setValue(KEY_PRESSURE_UNIT, data.pressure_unit_idx);
     settings_.setValue(KEY_PRINTER, data.printer_idx);
     settings_.setValue(KEY_KU_ENABLED, data.ku_enabled);
+    const auto safe_limit = std::isfinite(data.max_center_deviation_deg) && data.max_center_deviation_deg >= 0.0
+        ? data.max_center_deviation_deg
+        : 0.9;
+    settings_.setValue(KEY_MAX_CENTER_DEVIATION_DEG, safe_limit);
 
     settings_.endGroup();
     settings_.sync();
