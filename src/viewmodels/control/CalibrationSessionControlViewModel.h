@@ -28,6 +28,7 @@ public:
     void setCalibrationMode(domain::common::CalibrationMode mode);
     void startCalibration();
     void setKuModeEnabled(bool enabled);
+    void setCenteredMarkEnabled(bool enabled);
     void stopCalibration();
     void emergencyStop();
 
@@ -37,6 +38,7 @@ public:
     Observable<domain::common::CalibrationMode> selected_mode{domain::common::CalibrationMode::Full};
     Observable<std::string> error_text{std::string()};
     Observable<bool> ku_mode_enabled{false};
+    Observable<bool> centered_mark_enabled{false};
     Observable<bool> can_start{true};
     Observable<bool> can_stop{false};
     Observable<bool> can_abort{false};

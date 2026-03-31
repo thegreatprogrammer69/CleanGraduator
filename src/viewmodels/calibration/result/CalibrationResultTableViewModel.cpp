@@ -4,8 +4,8 @@
 #include <cmath>
 #include <limits>
 #include <optional>
-#include <vector>
 #include <type_traits>
+#include <vector>
 
 #include "domain/ports/calibration/recording/ICalibrationRecorder.h"
 #include "domain/ports/calibration/result/ICalibrationResultSource.h"
@@ -40,6 +40,7 @@ CalibrationResultTableViewModel::CalibrationResultTableViewModel(CalibrationResu
     : result_source_(deps.result_source)
     , validation_source_(deps.validation_source)
     , recorder_(deps.recorder)
+    , settings_storage_(deps.settings_storage)
 {
     result_source_.addObserver(*this);
     validation_source_.addObserver(*this);
@@ -49,6 +50,7 @@ CalibrationResultTableViewModel::CalibrationResultTableViewModel(CalibrationResu
     current_validation.set(validation_source_.currentValidation());
 
     resetInfo();
+    refreshSettings();
     refreshMeasurementCountsFromRecorder();
     if (const auto& result = result_source_.currentResult(); result) {
         updateInfoFromResult(*result);
@@ -69,6 +71,8 @@ void CalibrationResultTableViewModel::onCalibrationResultUpdated(const Calibrati
 
 void CalibrationResultTableViewModel::onCalibrationResultValidationUpdated(const CalibrationResultValidation& validation) {
     current_validation.set(validation, true);
+    refreshSettings();
+    updateCurrentInfo();
 }
 
 void CalibrationResultTableViewModel::onCalibrationRecorderEvent(const CalibrationRecorderEvent& ev)
@@ -115,6 +119,10 @@ void CalibrationResultTableViewModel::updateInfoFromResult(const CalibrationResu
             const auto nonlinearity = calculateNonlinearity(result, source_id, direction);
             if (nonlinearity) {
                 info_.nonlinearities[source_id][direction] = *nonlinearity;
+            }
+            const auto center_deviation = calculateCenterDeviationDeg(result, source_id, direction);
+            if (center_deviation) {
+                info_.center_deviations_deg[source_id][direction] = *center_deviation;
             }
         }
     }
@@ -164,4 +172,60 @@ std::optional<float> CalibrationResultTableViewModel::calculateNonlinearity(
     }
 
     return (maxD / std::abs(avrDelta)) * 100.0f;
+}
+
+std::optional<float> CalibrationResultTableViewModel::calculateCenterDeviationDeg(
+    const CalibrationResult& result,
+    SourceId source_id,
+    MotorDirection direction)
+{
+    const auto& points = result.points();
+    if (points.size() < 2) {
+        return std::nullopt;
+    }
+
+    const auto first_angle = angleFor(result, source_id, points.front(), direction);
+    const auto last_angle = angleFor(result, source_id, points.back(), direction);
+    if (!first_angle || !last_angle) {
+        return std::nullopt;
+    }
+
+    const float central_pressure = result.gauge().central_pressure;
+    if (central_pressure < points.front().pressure || central_pressure > points.back().pressure) {
+        return std::nullopt;
+    }
+
+    for (std::size_t i = 0; i + 1 < points.size(); ++i) {
+        const auto& left = points[i];
+        const auto& right = points[i + 1];
+        if (central_pressure < left.pressure || central_pressure > right.pressure) {
+            continue;
+        }
+
+        const auto left_angle = angleFor(result, source_id, left, direction);
+        const auto right_angle = angleFor(result, source_id, right, direction);
+        if (!left_angle || !right_angle) {
+            return std::nullopt;
+        }
+
+        const float pressure_span = right.pressure - left.pressure;
+        if (std::abs(pressure_span) <= std::numeric_limits<float>::epsilon()) {
+            return std::nullopt;
+        }
+
+        const float alpha = (central_pressure - left.pressure) / pressure_span;
+        const float central_angle = *left_angle + alpha * (*right_angle - *left_angle);
+        const float full_span = *last_angle - *first_angle;
+        const float expected_center_angle = *first_angle + full_span * 0.5F;
+        return std::abs(central_angle - expected_center_angle);
+    }
+
+    return std::nullopt;
+}
+
+void CalibrationResultTableViewModel::refreshSettings()
+{
+    const auto settings = settings_storage_.loadInfoSettings();
+    info_.centered_mark_enabled = settings.centered_mark_enabled;
+    info_.max_center_deviation_deg = settings.max_center_deviation_deg;
 }
