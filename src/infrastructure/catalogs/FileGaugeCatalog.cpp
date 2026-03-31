@@ -23,13 +23,18 @@ std::vector<std::string> split(const std::string& s, char delim) {
     std::vector<std::string> out;
     std::stringstream ss(s);
     std::string item;
-    while (std::getline(ss, item, delim)) out.push_back(item);
+    while (std::getline(ss, item, delim)) {
+        out.push_back(item);
+    }
     return out;
 }
 
 bool tryParseDouble(std::string token, float& out) {
+    // Заменяем запятую на точку для корректного парсинга дробных чисел
     std::replace(token.begin(), token.end(), ',', '.');
     trim(token);
+
+    if (token.empty()) return false;
 
     auto result = std::from_chars(
         token.data(),
@@ -40,7 +45,8 @@ bool tryParseDouble(std::string token, float& out) {
     return result.ec == std::errc() &&
            result.ptr == token.data() + token.size();
 }
-}
+
+} // namespace
 
 namespace infra::catalogs {
 
@@ -57,6 +63,7 @@ FileGaugeCatalog::FileGaugeCatalog(CatalogPorts ports, std::string filePath)
     bool first_line = true;
 
     while (std::getline(in, line)) {
+        // Удаление BOM-маркера UTF-8, если он есть
         if (first_line) {
             first_line = false;
             if (line.size() >= 3 &&
@@ -68,14 +75,20 @@ FileGaugeCatalog::FileGaugeCatalog(CatalogPorts ports, std::string filePath)
         }
 
         trim(line);
-        if (line.empty() || line[0] == '#') continue;
 
-        auto parts = split(line, ';');
-        if (parts.size() < 2) {
-            logger_.error("Failed to parse gauge line: {}", line);
+        // Пропускаем пустые строки, комментарии и декоративные элементы таблицы
+        if (line.empty() || line[0] == '#' || line[0] == '-') continue;
+        // Пропускаем строку с заголовками колонок
+        if (line.find("ИМЯ") != std::string::npos || line.find("NAME") != std::string::npos) continue;
+
+        // Разделяем строку по новому разделителю '|'
+        auto parts = split(line, '|');
+        if (parts.size() < 3) {
+            logger_.error("Failed to parse gauge line (expected at least 3 columns): {}", line);
             continue;
         }
 
+        // 1. Имя
         std::string name_utf8 = parts[0];
         trim(name_utf8);
         if (name_utf8.empty()) {
@@ -83,10 +96,19 @@ FileGaugeCatalog::FileGaugeCatalog(CatalogPorts ports, std::string filePath)
             continue;
         }
 
-        std::vector<float> values;
+        // 2. Central Pressure
+        float central_pressure{};
+        std::string cp_str = parts[1];
+        if (!tryParseDouble(cp_str, central_pressure)) {
+            logger_.error("Failed to parse central_pressure '{}' in line: {}", cp_str, line);
+            continue;
+        }
 
-        for (size_t i = 1; i < parts.size(); ++i) {
-            auto token = parts[i];
+        // 3. Pressure Points (разделены запятыми)
+        std::vector<float> values;
+        auto points_tokens = split(parts[2], ',');
+
+        for (auto& token : points_tokens) {
             trim(token);
             if (token.empty()) continue;
 
@@ -94,19 +116,24 @@ FileGaugeCatalog::FileGaugeCatalog(CatalogPorts ports, std::string filePath)
             if (tryParseDouble(token, v)) {
                 values.push_back(v);
             } else {
-                logger_.error("Failed to parse gauge value '{}' in line: {}", token, line);
+                logger_.error("Failed to parse gauge point value '{}' in line: {}", token, line);
             }
         }
 
         if (values.empty()) {
-            logger_.error("Gauge has no valid values in line: {}", line);
+            logger_.error("Gauge has no valid points in line: {}", line);
             continue;
         }
 
+        // Сборка финального объекта
         try {
             application::models::Gauge g;
             g.name = name_utf8;
+            g.central_pressure = central_pressure;
+            // Предполагается, что структура points имеет поле value типа std::vector<float>,
+            // как это было в вашей предыдущей реализации
             g.points.value = std::move(values);
+
             gauges_.push_back(g);
             logger_.info("Loaded gauge model: {}", gauges_.back());
         } catch (const std::range_error&) {

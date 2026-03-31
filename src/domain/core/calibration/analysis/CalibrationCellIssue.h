@@ -41,16 +41,16 @@ namespace domain::common {
             case CalibrationCellIssue::Type::FewAngleValues:
                 return "Недостаточно значений углов в съёме";
             case CalibrationCellIssue::Type::PressureSeriesSizeMismatch:
-                return "Несоответствие размеров временного ряда давления (размеры время/значение не совпадают)";
+                return "Несоответствие размеров временного ряда давления (размеры время/давление не совпадают)";
             case CalibrationCellIssue::Type::AngleSeriesSizeMismatch:
-                return "Несоответствие размеров временного ряда угла (размеры время/значение не совпадают)";
+                return "Несоответствие размеров временного ряда угла (размеры время/угол не совпадают)";
             case CalibrationCellIssue::Type::PressurePointOutOfRange:
                 return "Точка давления вне диапазона съёме";
             case CalibrationCellIssue::Type::InterpolatedTimeOutOfRange:
                 return "Интерполированное время вне диапазона съёма углов";
         }
 
-        return "Неизвестная ошибка по ходу калибровки";
+        return "Неизвестная ошибка";
     }
 
     inline CalibrationCellIssue make_calibration_issue(

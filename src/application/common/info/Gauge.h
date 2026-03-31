@@ -7,6 +7,7 @@
 namespace application::models {
     struct Gauge {
         std::string name;
+        float central_pressure;
         model::GaugePressurePoints points;
     };
 }
