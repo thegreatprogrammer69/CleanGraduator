@@ -1,5 +1,6 @@
 #include "CalibrationOrchestrator.h"
 
+#include <algorithm>
 #include <stdexcept>
 #include <type_traits>
 #include <utility>
@@ -93,6 +94,16 @@ bool CalibrationOrchestrator::start(CalibrationOrchestratorInput input)
 
         // ---------- Safety monitor ----------
         safety_monitor_.start(std::vector(opened_angle_sources_.begin(), opened_angle_sources_.end()));
+        safety_monitor_.setMotorDirection(MotorDirection::Forward);
+        if (!inp_.gauge.points.value.empty())
+        {
+            const auto max_pressure_it = std::max_element(
+                inp_.gauge.points.value.begin(),
+                inp_.gauge.points.value.end());
+
+            const double half_scale = static_cast<double>(*max_pressure_it) * 0.5;
+            safety_monitor_.setAngleTimeoutLowPressureThreshold(Pressure(half_scale, inp_.pressure_unit));
+        }
 
         // ---------- Pressure ----------
         if (!ports_.pressure_source.isRunning())
@@ -521,6 +532,7 @@ void CalibrationOrchestrator::applyCommand(const StrategyVerdict::MotorSetFreque
 void CalibrationOrchestrator::applyCommand(const StrategyVerdict::MotorSetDirection& cmd)
 {
     ports_.motor_driver.setDirection(cmd.direction);
+    safety_monitor_.setMotorDirection(cmd.direction);
 }
 
 void CalibrationOrchestrator::applyCommand(const StrategyVerdict::MotorSetFlaps& cmd)

@@ -9,6 +9,8 @@
 
 #include "domain/core/angle/AngleSourcePacket.h"
 #include "domain/core/angle/SourceId.h"
+#include "domain/core/drivers/motor/MotorDirection.h"
+#include "domain/core/measurement/Pressure.h"
 #include "domain/core/pressure/PressurePacket.h"
 #include "domain/fmt/Logger.h"
 
@@ -27,6 +29,9 @@ public:
 
     void start(const std::vector<domain::common::SourceId>& opened_angle_sources);
     void stop();
+
+    void setAngleTimeoutLowPressureThreshold(const domain::common::Pressure& threshold);
+    void setMotorDirection(domain::common::MotorDirection direction);
 
     std::optional<Incident> onPressurePacket(const domain::common::PressurePacket& packet);
     std::optional<Incident> onAnglePacket(const domain::common::AngleSourcePacket& packet);

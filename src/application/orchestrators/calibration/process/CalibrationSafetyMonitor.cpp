@@ -33,6 +33,9 @@ public:
     {
         return std::nullopt;
     }
+
+    virtual void setAngleTimeoutLowPressureThreshold(const domain::common::Pressure&) {}
+    virtual void onMotorDirectionChanged(domain::common::MotorDirection) {}
 };
 
 namespace {
@@ -106,13 +109,11 @@ public:
         return poll();
     }
 
-    std::optional<Incident> onPressurePacket(const PressurePacket&) override
-    {
-        return poll();
-    }
-
     std::optional<Incident> poll() override
     {
+        if (!monitoring_enabled_)
+            return std::nullopt;
+
         for (auto& [_, state] : watchdogs_)
         {
             if (!state.watchdog.expired())
@@ -131,13 +132,44 @@ public:
         return std::nullopt;
     }
 
+    void setAngleTimeoutLowPressureThreshold(const domain::common::Pressure& threshold) override
+    {
+        low_pressure_threshold_pa_ = threshold.pa();
+        updateMonitoringState();
+    }
+
+    void onMotorDirectionChanged(domain::common::MotorDirection direction) override
+    {
+        motor_direction_ = direction;
+        updateMonitoringState();
+    }
+
+    std::optional<Incident> onPressurePacket(const PressurePacket& packet) override
+    {
+        last_pressure_pa_ = packet.pressure.pa();
+        updateMonitoringState();
+        return poll();
+    }
+
 private:
+    void updateMonitoringState()
+    {
+        const bool backward = motor_direction_ == domain::common::MotorDirection::Backward;
+        const bool below_half_scale =
+            low_pressure_threshold_pa_ > 0.0 && last_pressure_pa_ < low_pressure_threshold_pa_;
+        monitoring_enabled_ = !backward && !below_half_scale;
+    }
+
     struct WatchdogState {
         SourceId source_id{};
         shared::watchdog::SoftwareWatchdog watchdog;
     };
 
     std::unordered_map<int, WatchdogState> watchdogs_;
+    domain::common::MotorDirection motor_direction_{domain::common::MotorDirection::Forward};
+    double low_pressure_threshold_pa_{0.0};
+    double last_pressure_pa_{0.0};
+    bool monitoring_enabled_{true};
 };
 
 class AngleGrowthHazardRule final : public CalibrationSafetyMonitor::Rule {
@@ -247,6 +279,18 @@ void CalibrationSafetyMonitor::start(const std::vector<SourceId>& opened_angle_s
         rule->start(opened_angle_sources);
 
     running_ = true;
+}
+
+void CalibrationSafetyMonitor::setAngleTimeoutLowPressureThreshold(const domain::common::Pressure& threshold)
+{
+    for (auto& rule : rules_)
+        rule->setAngleTimeoutLowPressureThreshold(threshold);
+}
+
+void CalibrationSafetyMonitor::setMotorDirection(domain::common::MotorDirection direction)
+{
+    for (auto& rule : rules_)
+        rule->onMotorDirectionChanged(direction);
 }
 
 void CalibrationSafetyMonitor::stop()
