@@ -2,6 +2,7 @@
 #define CLEANGRADUATOR_CALIBRATIONRESULT_H
 
 #include <vector>
+#include <map>
 #include <unordered_map>
 #include <optional>
 #include <stdexcept> // Для исключений
@@ -34,6 +35,13 @@ public:
     const std::vector<PointId>& points() const noexcept;
     const std::vector<SourceId>& sources() const noexcept;
     const application::models::Gauge& gauge() const noexcept;
+    void setCenterDeviation(
+        SourceId source_id,
+        MotorDirection direction,
+        float deviation_deg);
+    std::optional<float> centerDeviation(
+        SourceId source_id,
+        MotorDirection direction) const;
     size_t totalCells() const noexcept;
 
     bool isReady() const noexcept;
@@ -61,6 +69,7 @@ private:
     std::unordered_map<SourceId, size_t> source_index_;
 
     std::vector<std::optional<CalibrationCell>> cells_;
+    std::unordered_map<SourceId, std::map<MotorDirection, float>> center_deviations_;
 
     application::models::Gauge gauge_;
 };
