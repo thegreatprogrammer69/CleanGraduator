@@ -9,6 +9,7 @@ namespace application::ports {
         int pressure_unit_idx{0};
         int printer_idx{0};
         bool ku_enabled{false};
+        double max_center_deviation_deg{0.9};
     };
 }
 

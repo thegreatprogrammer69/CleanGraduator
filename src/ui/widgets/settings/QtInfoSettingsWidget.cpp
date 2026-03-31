@@ -1,6 +1,7 @@
 #include "QtInfoSettingsWidget.h"
 
 #include <QComboBox>
+#include <QDoubleSpinBox>
 #include <QFormLayout>
 #include <QLabel>
 
@@ -28,6 +29,11 @@ void QtInfoSettingsWidget::buildUi() {
     precisionCombo_ = new QComboBox(this);
     pressureUnitCombo_ = new QComboBox(this);
     printerCombo_ = new QComboBox(this);
+    maxCenterDeviationSpin_ = new QDoubleSpinBox(this);
+    maxCenterDeviationSpin_->setRange(0.0, 99.9);
+    maxCenterDeviationSpin_->setDecimals(2);
+    maxCenterDeviationSpin_->setSingleStep(0.1);
+    maxCenterDeviationSpin_->setSuffix(tr(" °"));
 
     for (const auto& value : model_.displacements()) {
         displacementCombo_->addItem(QString::fromUtf8(value.c_str()));
@@ -61,6 +67,7 @@ void QtInfoSettingsWidget::buildUi() {
     addRow(tr("Класс точности"), precisionCombo_);
     addRow(tr("Подставка"), displacementCombo_);
     addRow(tr("Принтер"), printerCombo_);
+    addRow(tr("Максимальное отклонение от центра"), maxCenterDeviationSpin_);
 }
 
 void QtInfoSettingsWidget::connectUi() {
@@ -86,6 +93,11 @@ void QtInfoSettingsWidget::connectUi() {
 
     connect(printerCombo_, qOverload<int>(&QComboBox::currentIndexChanged), this, [this](int idx) {
         model_.selectedPrinter.set(idx);
+        model_.save();
+    });
+
+    connect(maxCenterDeviationSpin_, qOverload<double>(&QDoubleSpinBox::valueChanged), this, [this](double value) {
+        model_.maxCenterDeviationDeg.set(value);
         model_.save();
     });
 }
@@ -121,9 +133,16 @@ void QtInfoSettingsWidget::connectViewModel() {
         }
     }, false);
 
+    maxCenterDeviationSub_ = model_.maxCenterDeviationDeg.subscribe([this](const auto& ev) {
+        if (!qFuzzyCompare(maxCenterDeviationSpin_->value() + 1.0, ev.new_value + 1.0)) {
+            maxCenterDeviationSpin_->setValue(ev.new_value);
+        }
+    }, false);
+
     displacementCombo_->setCurrentIndex(model_.selectedDisplacement.get_copy());
     gaugeCombo_->setCurrentIndex(model_.selectedGauge.get_copy());
     precisionCombo_->setCurrentIndex(model_.selectedPrecision.get_copy());
     pressureUnitCombo_->setCurrentIndex(model_.selectedPressureUnit.get_copy());
     printerCombo_->setCurrentIndex(model_.selectedPrinter.get_copy());
+    maxCenterDeviationSpin_->setValue(model_.maxCenterDeviationDeg.get_copy());
 }

@@ -17,6 +17,7 @@ namespace {
     const QColor kResultRowBackground{248, 248, 248};
     const QColor kInfoRowBackground{236, 236, 236};
     const QColor kHighNonlinearityBackground{255, 205, 210};
+    const QColor kHighCenterDeviationBackground{255, 245, 157};
     constexpr float kHighNonlinearityThresholdPercent = 10.0F;
 
 QString buildIssuesTooltip(const std::vector<domain::common::CalibrationCellIssue>& issues,
@@ -280,6 +281,11 @@ QVariant QtCalibrationResultTableModel::data(const QModelIndex& index, int role)
             && *cell.nonlinearity_percent > kHighNonlinearityThresholdPercent) {
             background = blendColors(background, kHighNonlinearityBackground, 0.65);
         }
+        if (row.kind == RowKind::CenterDeviation
+            && cell.center_deviation_deg.has_value()
+            && *cell.center_deviation_deg > current_info_.max_center_deviation_deg) {
+            background = blendColors(background, kHighCenterDeviationBackground, 0.75);
+        }
         if (cell.validation_kind.has_value()) {
             background = blendColors(background, validationColor(*cell.validation_kind));
         }
@@ -455,6 +461,7 @@ void QtCalibrationResultTableModel::appendInfoRows()
 
     Row total_row = makeRow(tr("общ."), RowKind::TotalAngle);
     Row nonlinearity_row = makeRow(tr("нелин."), RowKind::Nonlinearity);
+    Row center_deviation_row = makeRow(tr("откл. центра"), RowKind::CenterDeviation);
     Row count_row = makeRow(tr("кол-во"), RowKind::MeasurementCount);
     Row current_angle_row = makeRow(tr("тек. уг."), RowKind::CurrentAngle);
 
@@ -506,6 +513,27 @@ void QtCalibrationResultTableModel::appendInfoRows()
             }
         }
 
+        if (const auto source_it = current_info_.center_deviations.find(source_id); source_it != current_info_.center_deviations.end()) {
+            if (const auto dir_it = source_it->second.find(domain::common::MotorDirection::Forward); dir_it != source_it->second.end()) {
+                center_deviation_row.cells[forward_col].display = displayFloat(dir_it->second, 2, QStringLiteral("°"));
+                center_deviation_row.cells[forward_col].center_deviation_deg = dir_it->second;
+                if (dir_it->second > current_info_.max_center_deviation_deg) {
+                    center_deviation_row.cells[forward_col].max_severity = domain::common::CalibrationIssueSeverity::Warning;
+                    center_deviation_row.cells[forward_col].tooltip = tr("Отклонение центральной метки выше допустимого (%1°)")
+                        .arg(QString::number(current_info_.max_center_deviation_deg, 'f', 2));
+                }
+            }
+            if (const auto dir_it = source_it->second.find(domain::common::MotorDirection::Backward); dir_it != source_it->second.end()) {
+                center_deviation_row.cells[backward_col].display = displayFloat(dir_it->second, 2, QStringLiteral("°"));
+                center_deviation_row.cells[backward_col].center_deviation_deg = dir_it->second;
+                if (dir_it->second > current_info_.max_center_deviation_deg) {
+                    center_deviation_row.cells[backward_col].max_severity = domain::common::CalibrationIssueSeverity::Warning;
+                    center_deviation_row.cells[backward_col].tooltip = tr("Отклонение центральной метки выше допустимого (%1°)")
+                        .arg(QString::number(current_info_.max_center_deviation_deg, 'f', 2));
+                }
+            }
+        }
+
         if (const auto source_it = current_info_.measurement_counts.find(source_id); source_it != current_info_.measurement_counts.end()) {
             if (const auto dir_it = source_it->second.find(domain::common::MotorDirection::Forward); dir_it != source_it->second.end()) {
                 count_row.cells[forward_col].display = dir_it->second;
@@ -522,6 +550,7 @@ void QtCalibrationResultTableModel::appendInfoRows()
 
     rows_.push_back(std::move(total_row));
     rows_.push_back(std::move(nonlinearity_row));
+    rows_.push_back(std::move(center_deviation_row));
     rows_.push_back(std::move(count_row));
     rows_.push_back(std::move(current_angle_row));
 }

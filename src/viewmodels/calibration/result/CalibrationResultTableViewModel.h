@@ -8,6 +8,7 @@
 #include "domain/ports/calibration/recording/ICalibrationRecorderObserver.h"
 #include "domain/ports/calibration/result/ICalibrationResultObserver.h"
 #include "domain/ports/calibration/result/ICalibrationResultValidationObserver.h"
+#include "application/ports/settings/IInfoSettingsStorage.h"
 #include "viewmodels/Observable.h"
 
 namespace domain::ports {
@@ -22,14 +23,19 @@ namespace mvvm {
         std::unordered_map<domain::common::SourceId,
             std::map<domain::common::MotorDirection, float>> nonlinearities;
         std::unordered_map<domain::common::SourceId,
+            std::map<domain::common::MotorDirection, float>> center_deviations;
+        std::unordered_map<domain::common::SourceId,
             std::map<domain::common::MotorDirection, int>> measurement_counts;
         std::unordered_map<domain::common::SourceId, float> current_angles;
+        float max_center_deviation_deg{0.9F};
 
         bool operator==(const CalibrationResultInfo& other) const {
             return total_angles == other.total_angles
                 && nonlinearities == other.nonlinearities
+                && center_deviations == other.center_deviations
                 && measurement_counts == other.measurement_counts
-                && current_angles == other.current_angles;
+                && current_angles == other.current_angles
+                && max_center_deviation_deg == other.max_center_deviation_deg;
         }
     };
 
@@ -37,6 +43,7 @@ namespace mvvm {
         domain::ports::ICalibrationResultSource& result_source;
         domain::ports::ICalibrationResultValidationSource& validation_source;
         domain::ports::ICalibrationRecorder& recorder;
+        application::ports::IInfoSettingsStorage& settings_storage;
     };
 
     class CalibrationResultTableViewModel final
@@ -64,11 +71,16 @@ namespace mvvm {
             const domain::common::CalibrationResult& result,
             domain::common::SourceId source_id,
             domain::common::MotorDirection direction);
+        static std::optional<float> calculateCenterDeviation(
+            const domain::common::CalibrationResult& result,
+            domain::common::SourceId source_id,
+            domain::common::MotorDirection direction);
 
     private:
         domain::ports::ICalibrationResultSource& result_source_;
         domain::ports::ICalibrationResultValidationSource& validation_source_;
         domain::ports::ICalibrationRecorder& recorder_;
+        application::ports::IInfoSettingsStorage& settings_storage_;
         CalibrationResultInfo info_;
     };
 }

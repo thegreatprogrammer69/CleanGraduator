@@ -39,6 +39,7 @@ namespace mvvm {
         Observable<int> selectedPrecision;
         Observable<int> selectedPressureUnit;
         Observable<int> selectedPrinter;
+        Observable<double> maxCenterDeviationDeg{0.9};
 
         void save();
 
