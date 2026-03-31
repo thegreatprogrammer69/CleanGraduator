@@ -30,6 +30,7 @@ void InfoSettingsViewModel::save() {
     data.precision_idx = selectedPrecision.get_copy();
     data.pressure_unit_idx = selectedPressureUnit.get_copy();
     data.printer_idx = selectedPrinter.get_copy();
+    data.max_center_deviation_deg = maxCenterDeviationDeg.get_copy();
 
     deps_.storage.saveInfoSettings(data);
     deps_.validation_source.requestRefresh();
@@ -75,4 +76,5 @@ void InfoSettingsViewModel::loadSelection() {
     selectedPrecision.set(data.precision_idx);
     selectedPressureUnit.set(data.pressure_unit_idx);
     selectedPrinter.set(data.printer_idx);
+    maxCenterDeviationDeg.set(data.max_center_deviation_deg);
 }

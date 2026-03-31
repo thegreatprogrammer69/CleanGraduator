@@ -1,5 +1,6 @@
 #include "QtInfoSettingsStorage.h"
 #include <QDebug>
+#include <algorithm>
 
 namespace {
     constexpr const char* GROUP = "InfoSettings";
@@ -10,6 +11,8 @@ namespace {
     constexpr const char* KEY_PRESSURE_UNIT = "pressure_unit_idx";
     constexpr const char* KEY_PRINTER = "printer_idx";
     constexpr const char* KEY_KU_ENABLED = "ku_enabled";
+    constexpr const char* KEY_CENTERED_MARK_ENABLED = "centered_mark_enabled";
+    constexpr const char* KEY_MAX_CENTER_DEVIATION_DEG = "max_center_deviation_deg";
 }
 
 using namespace infra::storage;
@@ -38,6 +41,8 @@ InfoSettingsData QtInfoSettingsStorage::loadInfoSettings() {
     data.pressure_unit_idx = settings_.value(KEY_PRESSURE_UNIT, 0).toInt();
     data.printer_idx = settings_.value(KEY_PRINTER, 0).toInt();
     data.ku_enabled = settings_.value(KEY_KU_ENABLED, false).toBool();
+    data.centered_mark_enabled = settings_.value(KEY_CENTERED_MARK_ENABLED, false).toBool();
+    data.max_center_deviation_deg = settings_.value(KEY_MAX_CENTER_DEVIATION_DEG, 0.9).toFloat();
 
     settings_.endGroup();
 
@@ -46,6 +51,7 @@ InfoSettingsData QtInfoSettingsStorage::loadInfoSettings() {
     data.precision_idx = clampToCatalog(data.precision_idx, static_cast<int>(catalogs_.precision_catalog.list().size()));
     data.pressure_unit_idx = clampToCatalog(data.pressure_unit_idx, static_cast<int>(catalogs_.pressure_unit_catalog.list().size()));
     data.printer_idx = clampToCatalog(data.printer_idx, static_cast<int>(catalogs_.printer_catalog.list().size()));
+    data.max_center_deviation_deg = std::max(0.0F, data.max_center_deviation_deg);
 
     return data;
 }
@@ -60,6 +66,8 @@ void QtInfoSettingsStorage::saveInfoSettings(const InfoSettingsData& data) {
     settings_.setValue(KEY_PRESSURE_UNIT, data.pressure_unit_idx);
     settings_.setValue(KEY_PRINTER, data.printer_idx);
     settings_.setValue(KEY_KU_ENABLED, data.ku_enabled);
+    settings_.setValue(KEY_CENTERED_MARK_ENABLED, data.centered_mark_enabled);
+    settings_.setValue(KEY_MAX_CENTER_DEVIATION_DEG, data.max_center_deviation_deg);
 
     settings_.endGroup();
     settings_.sync();

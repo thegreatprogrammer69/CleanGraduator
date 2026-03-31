@@ -38,6 +38,7 @@ namespace ui {
             Measurement,
             TotalAngle,
             Nonlinearity,
+            CenteredMarkDeviation,
             MeasurementCount,
             CurrentAngle,
         };
@@ -48,6 +49,7 @@ namespace ui {
             std::optional<domain::common::CalibrationIssueSeverity> max_severity{};
             std::optional<domain::common::CalibrationValidationIssueKind> validation_kind{};
             std::optional<float> nonlinearity_percent{};
+            std::optional<float> centered_mark_deviation_deg{};
         };
         struct Row final {
             QVariant label{};

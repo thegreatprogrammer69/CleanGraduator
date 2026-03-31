@@ -21,6 +21,7 @@ CalibrationSessionControlViewModel::CalibrationSessionControlViewModel(
         : CalibrationOrchestratorState::Stopped;
 
     ku_mode_enabled.set(settings_storage_.loadInfoSettings().ku_enabled);
+    centered_mark_enabled.set(settings_storage_.loadInfoSettings().centered_mark_enabled);
     applyState(initial_state, "");
 }
 
@@ -42,6 +43,14 @@ void CalibrationSessionControlViewModel::setKuModeEnabled(bool enabled)
     data.ku_enabled = enabled;
     settings_storage_.saveInfoSettings(data);
     validation_source_.requestRefresh();
+}
+
+void CalibrationSessionControlViewModel::setCenteredMarkEnabled(bool enabled)
+{
+    centered_mark_enabled.set(enabled);
+    auto data = settings_storage_.loadInfoSettings();
+    data.centered_mark_enabled = enabled;
+    settings_storage_.saveInfoSettings(data);
 }
 
 void CalibrationSessionControlViewModel::startCalibration() {
