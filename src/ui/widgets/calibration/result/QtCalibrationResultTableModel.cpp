@@ -17,6 +17,7 @@ namespace {
     const QColor kResultRowBackground{248, 248, 248};
     const QColor kInfoRowBackground{236, 236, 236};
     const QColor kHighNonlinearityBackground{255, 205, 210};
+    const QColor kCenteredMarkWarningBackground{255, 236, 179};
     constexpr float kHighNonlinearityThresholdPercent = 10.0F;
 
 QString buildIssuesTooltip(const std::vector<domain::common::CalibrationCellIssue>& issues,
@@ -280,6 +281,11 @@ QVariant QtCalibrationResultTableModel::data(const QModelIndex& index, int role)
             && *cell.nonlinearity_percent > kHighNonlinearityThresholdPercent) {
             background = blendColors(background, kHighNonlinearityBackground, 0.65);
         }
+        if (row.kind == RowKind::CenteredMarkDeviation
+            && cell.centered_mark_deviation_deg.has_value()
+            && *cell.centered_mark_deviation_deg > current_info_.max_center_deviation_deg) {
+            background = blendColors(background, kCenteredMarkWarningBackground, 0.65);
+        }
         if (cell.validation_kind.has_value()) {
             background = blendColors(background, validationColor(*cell.validation_kind));
         }
@@ -455,6 +461,7 @@ void QtCalibrationResultTableModel::appendInfoRows()
 
     Row total_row = makeRow(tr("общ."), RowKind::TotalAngle);
     Row nonlinearity_row = makeRow(tr("нелин."), RowKind::Nonlinearity);
+    Row centered_mark_row = makeRow(tr("центр. метка"), RowKind::CenteredMarkDeviation);
     Row count_row = makeRow(tr("кол-во"), RowKind::MeasurementCount);
     Row current_angle_row = makeRow(tr("тек. уг."), RowKind::CurrentAngle);
 
@@ -506,6 +513,30 @@ void QtCalibrationResultTableModel::appendInfoRows()
             }
         }
 
+        if (current_info_.centered_mark_enabled) {
+            if (const auto source_it = current_info_.centered_mark_deviations_deg.find(source_id);
+                source_it != current_info_.centered_mark_deviations_deg.end()) {
+                if (const auto dir_it = source_it->second.find(domain::common::MotorDirection::Forward);
+                    dir_it != source_it->second.end()) {
+                    centered_mark_row.cells[forward_col].display = displayFloat(dir_it->second, 2, QStringLiteral("°"));
+                    centered_mark_row.cells[forward_col].centered_mark_deviation_deg = dir_it->second;
+                    if (dir_it->second > current_info_.max_center_deviation_deg) {
+                        centered_mark_row.cells[forward_col].max_severity = domain::common::CalibrationIssueSeverity::Warning;
+                        centered_mark_row.cells[forward_col].tooltip = tr("Предупреждение: отклонение центрированной метки выше предела");
+                    }
+                }
+                if (const auto dir_it = source_it->second.find(domain::common::MotorDirection::Backward);
+                    dir_it != source_it->second.end()) {
+                    centered_mark_row.cells[backward_col].display = displayFloat(dir_it->second, 2, QStringLiteral("°"));
+                    centered_mark_row.cells[backward_col].centered_mark_deviation_deg = dir_it->second;
+                    if (dir_it->second > current_info_.max_center_deviation_deg) {
+                        centered_mark_row.cells[backward_col].max_severity = domain::common::CalibrationIssueSeverity::Warning;
+                        centered_mark_row.cells[backward_col].tooltip = tr("Предупреждение: отклонение центрированной метки выше предела");
+                    }
+                }
+            }
+        }
+
         if (const auto source_it = current_info_.measurement_counts.find(source_id); source_it != current_info_.measurement_counts.end()) {
             if (const auto dir_it = source_it->second.find(domain::common::MotorDirection::Forward); dir_it != source_it->second.end()) {
                 count_row.cells[forward_col].display = dir_it->second;
@@ -522,6 +553,9 @@ void QtCalibrationResultTableModel::appendInfoRows()
 
     rows_.push_back(std::move(total_row));
     rows_.push_back(std::move(nonlinearity_row));
+    if (current_info_.centered_mark_enabled) {
+        rows_.push_back(std::move(centered_mark_row));
+    }
     rows_.push_back(std::move(count_row));
     rows_.push_back(std::move(current_angle_row));
 }
