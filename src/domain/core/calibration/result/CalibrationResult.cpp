@@ -56,6 +56,29 @@ const application::models::Gauge & domain::common::CalibrationResult::gauge() co
     return gauge_;
 }
 
+void domain::common::CalibrationResult::setCenterDeviation(
+    SourceId source_id,
+    MotorDirection direction,
+    float deviation_deg)
+{
+    center_deviations_[source_id][direction] = deviation_deg;
+}
+
+std::optional<float> domain::common::CalibrationResult::centerDeviation(
+    SourceId source_id,
+    MotorDirection direction) const
+{
+    const auto source_it = center_deviations_.find(source_id);
+    if (source_it == center_deviations_.end()) {
+        return std::nullopt;
+    }
+    const auto dir_it = source_it->second.find(direction);
+    if (dir_it == source_it->second.end()) {
+        return std::nullopt;
+    }
+    return dir_it->second;
+}
+
 size_t domain::common::CalibrationResult::totalCells() const noexcept {
     return cells_.size();
 }
@@ -65,7 +88,8 @@ bool domain::common::CalibrationResult::isReady() const noexcept { return ready_
 void domain::common::CalibrationResult::markReady() noexcept { ready_ = true; }
 
 bool domain::common::CalibrationResult::operator==(const CalibrationResult &other) const {
-    return cells_ == other.cells_;
+    return cells_ == other.cells_
+        && center_deviations_ == other.center_deviations_;
 }
 
 std::optional<size_t> domain::common::CalibrationResult::getFlatIndex(const CalibrationCellKey &key) const {

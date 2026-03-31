@@ -40,6 +40,7 @@ CalibrationResultTableViewModel::CalibrationResultTableViewModel(CalibrationResu
     : result_source_(deps.result_source)
     , validation_source_(deps.validation_source)
     , recorder_(deps.recorder)
+    , settings_storage_(deps.settings_storage)
 {
     result_source_.addObserver(*this);
     validation_source_.addObserver(*this);
@@ -69,6 +70,7 @@ void CalibrationResultTableViewModel::onCalibrationResultUpdated(const Calibrati
 
 void CalibrationResultTableViewModel::onCalibrationResultValidationUpdated(const CalibrationResultValidation& validation) {
     current_validation.set(validation, true);
+    updateCurrentInfo();
 }
 
 void CalibrationResultTableViewModel::onCalibrationRecorderEvent(const CalibrationRecorderEvent& ev)
@@ -100,6 +102,10 @@ void CalibrationResultTableViewModel::resetInfo()
 
 void CalibrationResultTableViewModel::updateInfoFromResult(const CalibrationResult& result)
 {
+    const auto settings = settings_storage_.loadInfoSettings();
+    info_.centered_label_enabled = settings.centered_label_enabled;
+    info_.max_center_deviation_deg = settings.max_center_deviation_deg;
+
     for (const auto& source_id : result.sources()) {
         if (!result.points().empty()) {
             const auto& first_point = result.points().front();
@@ -116,6 +122,10 @@ void CalibrationResultTableViewModel::updateInfoFromResult(const CalibrationResu
             if (nonlinearity) {
                 info_.nonlinearities[source_id][direction] = *nonlinearity;
             }
+            const auto center_deviation = result.centerDeviation(source_id, direction);
+            if (center_deviation) {
+                info_.center_deviations_deg[source_id][direction] = *center_deviation;
+            }
         }
     }
 
@@ -124,6 +134,9 @@ void CalibrationResultTableViewModel::updateInfoFromResult(const CalibrationResu
 
 void CalibrationResultTableViewModel::updateCurrentInfo()
 {
+    const auto settings = settings_storage_.loadInfoSettings();
+    info_.centered_label_enabled = settings.centered_label_enabled;
+    info_.max_center_deviation_deg = settings.max_center_deviation_deg;
     current_info.set(info_, true);
 }
 

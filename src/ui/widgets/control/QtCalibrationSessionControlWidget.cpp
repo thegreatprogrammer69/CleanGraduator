@@ -33,6 +33,7 @@ void QtCalibrationSessionControlWidget::setupUi() {
     modeBox_->addItem(tr("Только последняя точка"));
 
     kuCheckBox_ = new QCheckBox(tr("к. у."), this);
+    centeredLabelCheckBox_ = new QCheckBox(tr("центрированная метка"), this);
     startButton_ = new QPushButton(tr("Старт"), this);
     stopButton_ = new QPushButton(tr("Стоп"), this);
     emergencyStopButton_ = new QPushButton(tr("Экстренный стоп"), this);
@@ -50,6 +51,7 @@ void QtCalibrationSessionControlWidget::setupUi() {
     mainLayout->addWidget(modeLabel);
     mainLayout->addWidget(modeBox_);
     mainLayout->addWidget(kuCheckBox_);
+    mainLayout->addWidget(centeredLabelCheckBox_);
     mainLayout->addLayout(buttonLayout);
 }
 
@@ -70,6 +72,9 @@ void QtCalibrationSessionControlWidget::bind() {
 
     connect(kuCheckBox_, &QCheckBox::toggled, this, [this](bool checked) {
         vm_.setKuModeEnabled(checked);
+    });
+    connect(centeredLabelCheckBox_, &QCheckBox::toggled, this, [this](bool checked) {
+        vm_.setCenteredLabelEnabled(checked);
     });
 
     connect(startButton_, &QPushButton::clicked, this, [this] {
@@ -111,6 +116,15 @@ void QtCalibrationSessionControlWidget::bind() {
             Qt::QueuedConnection);
     }, false);
 
+    centeredLabelSub_ = vm_.centered_label_enabled.subscribe([this](const auto& change) {
+        QMetaObject::invokeMethod(
+            this,
+            [this, value = change.new_value]() {
+                centeredLabelCheckBox_->setChecked(value);
+            },
+            Qt::QueuedConnection);
+    }, false);
+
     canStopSub_ = vm_.can_stop.subscribe([this](const auto& change) {
         QMetaObject::invokeMethod(
             this,
@@ -131,6 +145,7 @@ void QtCalibrationSessionControlWidget::bind() {
 
     errorLabel_->setText(QString::fromStdString(vm_.error_text.get_copy()));
     kuCheckBox_->setChecked(vm_.ku_mode_enabled.get_copy());
+    centeredLabelCheckBox_->setChecked(vm_.centered_label_enabled.get_copy());
     startButton_->setEnabled(vm_.can_start.get_copy());
     stopButton_->setEnabled(vm_.can_stop.get_copy());
     emergencyStopButton_->setEnabled(vm_.can_abort.get_copy());
