@@ -62,6 +62,7 @@ namespace ui {
         void rebuildRows();
         void applyValidation(std::optional<domain::common::CalibrationResultValidation> validation);
         void applyInfo(const mvvm::CalibrationResultInfo& info);
+        void applyGaugePressurePoints(std::vector<float> points);
         void appendInfoRows();
         void refreshRowsWithReset();
         void updateRowsInPlace();
@@ -74,10 +75,12 @@ namespace ui {
         mvvm::Observable<std::optional<domain::common::CalibrationResult>>::Subscription current_result_sub_;
         mvvm::Observable<std::optional<domain::common::CalibrationResultValidation>>::Subscription current_validation_sub_;
         mvvm::Observable<mvvm::CalibrationResultInfo>::Subscription current_info_sub_;
+        mvvm::Observable<std::vector<float>>::Subscription gauge_pressure_points_sub_;
 
         std::optional<domain::common::CalibrationResult> current_result_;
         std::optional<domain::common::CalibrationResultValidation> current_validation_;
         mvvm::CalibrationResultInfo current_info_;
+        std::vector<float> gauge_pressure_points_;
         QVector<Row> rows_{};
         std::array<QString, kColumnCount> horizontal_headers_{};
     };

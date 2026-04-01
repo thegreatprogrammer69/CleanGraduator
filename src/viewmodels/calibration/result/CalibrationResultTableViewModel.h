@@ -3,8 +3,10 @@
 
 #include <map>
 #include <unordered_map>
+#include <vector>
 
 #include "domain/core/drivers/motor/MotorDirection.h"
+#include "application/ports/catalogs/IGaugeCatalog.h"
 #include "application/ports/settings/IInfoSettingsStorage.h"
 #include "domain/ports/calibration/recording/ICalibrationRecorderObserver.h"
 #include "domain/ports/calibration/result/ICalibrationResultObserver.h"
@@ -46,6 +48,7 @@ namespace mvvm {
         domain::ports::ICalibrationResultValidationSource& validation_source;
         domain::ports::ICalibrationRecorder& recorder;
         application::ports::IInfoSettingsStorage& settings_storage;
+        application::ports::IGaugeCatalog& gauge_catalog;
     };
 
     class CalibrationResultTableViewModel final
@@ -63,12 +66,14 @@ namespace mvvm {
         Observable<std::optional<domain::common::CalibrationResult>> current_result;
         Observable<std::optional<domain::common::CalibrationResultValidation>> current_validation;
         Observable<CalibrationResultInfo> current_info;
+        Observable<std::vector<float>> gauge_pressure_points;
 
     private:
         void resetInfo();
         void updateInfoFromResult(const domain::common::CalibrationResult& result);
         void updateCurrentInfo();
         void refreshMeasurementCountsFromRecorder();
+        void refreshGaugePressurePoints();
         static std::optional<float> calculateNonlinearity(
             const domain::common::CalibrationResult& result,
             domain::common::SourceId source_id,
@@ -84,6 +89,8 @@ namespace mvvm {
         domain::ports::ICalibrationResultValidationSource& validation_source_;
         domain::ports::ICalibrationRecorder& recorder_;
         application::ports::IInfoSettingsStorage& settings_storage_;
+        application::ports::IGaugeCatalog& gauge_catalog_;
+        int gauge_idx_{-1};
         CalibrationResultInfo info_;
     };
 }
