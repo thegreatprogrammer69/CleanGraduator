@@ -69,7 +69,8 @@ void CalibrationResultValidationSource::requestRefresh()
 void CalibrationResultValidationSource::rebuild()
 {
     if (!current_result_) {
-        current_validation_.reset();
+        current_validation_ = CalibrationResultValidation{};
+        notifyObservers();
         return;
     }
 

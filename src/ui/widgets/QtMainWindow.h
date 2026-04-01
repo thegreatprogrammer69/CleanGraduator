@@ -2,9 +2,11 @@
 #define CLEANGRADUATOR_MAINWINDOW_H
 
 #include <QMainWindow>
+#include <QTabWidget>
 
 #include "status_bar/QtAppStatusBarWidget.h"
 #include "../../viewmodels/calibration/recording/CalibrationSeriesViewModel.h"
+#include "viewmodels/Observable.h"
 
 class QDockWidget;
 class QWidget;
@@ -33,6 +35,8 @@ namespace ui {
         void createLogDock(mvvm::LogViewerViewModel& log_vm);
 
         void createCalibrationDock(mvvm::CalibrationSeriesViewModel &vm);
+        void bindSettingsAccessGuard();
+        void applySettingsLocked(bool locked);
 
     private:
 
@@ -43,6 +47,10 @@ namespace ui {
 
         QtCalibrationSeriesWidget* calibration_widget_ = nullptr;
         QDockWidget* calibration_dock_ = nullptr;
+        QTabWidget* panel_ = nullptr;
+        int process_tab_index_ = -1;
+        int settings_tab_index_ = -1;
+        mvvm::Observable<bool>::Subscription can_start_sub_;
 
         mvvm::MainWindowViewModel& model_;
     };

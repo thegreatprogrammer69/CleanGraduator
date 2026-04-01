@@ -430,61 +430,69 @@ void QtCalibrationResultTableModel::rebuildRows()
 {
     rows_.clear();
 
-    if (!current_result_) {
-        return;
-    }
-
-    const auto& result = *current_result_;
-    rows_.reserve(static_cast<qsizetype>(result.points().size()) + 5);
+    const auto measurement_row_count = current_result_
+        ? static_cast<qsizetype>(current_result_->points().size())
+        : static_cast<qsizetype>(current_info_.template_pressures.size());
+    rows_.reserve(measurement_row_count + 5);
 
     static const std::vector<domain::common::CalibrationCellIssue> empty_calc_issues;
 
-    for (const auto& point : result.points()) {
-        Row row;
-        row.label = QString::number(point.pressure, 'f', 2);
-        row.kind = RowKind::Measurement;
+    if (current_result_) {
+        const auto& result = *current_result_;
+        for (const auto& point : result.points()) {
+            Row row;
+            row.label = QString::number(point.pressure, 'f', 2);
+            row.kind = RowKind::Measurement;
 
-        for (int i = 0; i < kSourceCount; ++i) {
-            for (int j = 0; j < 2; ++j) {
-                domain::common::CalibrationCellKey key;
-                key.point_id = point;
-                key.source_id = domain::common::SourceId{i + 1};
-                key.direction = static_cast<domain::common::MotorDirection>(j);
+            for (int i = 0; i < kSourceCount; ++i) {
+                for (int j = 0; j < 2; ++j) {
+                    domain::common::CalibrationCellKey key;
+                    key.point_id = point;
+                    key.source_id = domain::common::SourceId{i + 1};
+                    key.direction = static_cast<domain::common::MotorDirection>(j);
 
-                Cell& ui_cell = row.cells[static_cast<std::size_t>(i * 2 + j)];
-                const auto cell = result.cell(key);
-                const auto* validation_issues = current_validation_
-                    ? &current_validation_->issuesFor(key)
-                    : nullptr;
+                    Cell& ui_cell = row.cells[static_cast<std::size_t>(i * 2 + j)];
+                    const auto cell = result.cell(key);
+                    const auto* validation_issues = current_validation_
+                        ? &current_validation_->issuesFor(key)
+                        : nullptr;
 
-                if (cell) {
-                    if (cell->angle()) {
-                        ui_cell.display = QString::number(*cell->angle(), 'f', 2);
-                    }
+                    if (cell) {
+                        if (cell->angle()) {
+                            ui_cell.display = QString::number(*cell->angle(), 'f', 2);
+                        }
 
-                    const auto& issues = cell->issues();
-                    ui_cell.tooltip = buildIssuesTooltip(issues, validation_issues, isMeasurementIssueKind);
-                    ui_cell.max_severity = maxSeverityOf(
-                        maxSeverityOf(issues),
-                        validation_issues
+                        const auto& issues = cell->issues();
+                        ui_cell.tooltip = buildIssuesTooltip(issues, validation_issues, isMeasurementIssueKind);
+                        ui_cell.max_severity = maxSeverityOf(
+                            maxSeverityOf(issues),
+                            validation_issues
+                                ? maxSeverityOf(*validation_issues, isMeasurementIssueKind)
+                                : std::nullopt);
+                        ui_cell.validation_kind = validation_issues
+                            ? maxValidationKindOf(*validation_issues, isMeasurementIssueKind)
+                            : std::nullopt;
+                    } else {
+                        ui_cell.tooltip = buildIssuesTooltip(empty_calc_issues, validation_issues, isMeasurementIssueKind);
+                        ui_cell.max_severity = validation_issues
                             ? maxSeverityOf(*validation_issues, isMeasurementIssueKind)
-                            : std::nullopt);
-                    ui_cell.validation_kind = validation_issues
-                        ? maxValidationKindOf(*validation_issues, isMeasurementIssueKind)
-                        : std::nullopt;
-                } else {
-                    ui_cell.tooltip = buildIssuesTooltip(empty_calc_issues, validation_issues, isMeasurementIssueKind);
-                    ui_cell.max_severity = validation_issues
-                        ? maxSeverityOf(*validation_issues, isMeasurementIssueKind)
-                        : std::nullopt;
-                    ui_cell.validation_kind = validation_issues
-                        ? maxValidationKindOf(*validation_issues, isMeasurementIssueKind)
-                        : std::nullopt;
+                            : std::nullopt;
+                        ui_cell.validation_kind = validation_issues
+                            ? maxValidationKindOf(*validation_issues, isMeasurementIssueKind)
+                            : std::nullopt;
+                    }
                 }
             }
-        }
 
-        rows_.push_back(std::move(row));
+            rows_.push_back(std::move(row));
+        }
+    } else {
+        for (const auto pressure : current_info_.template_pressures) {
+            Row row;
+            row.label = QString::number(pressure, 'f', 2);
+            row.kind = RowKind::Measurement;
+            rows_.push_back(std::move(row));
+        }
     }
 
     appendInfoRows();
