@@ -17,7 +17,7 @@ namespace {
 const QColor kResultRowBackground{248, 248, 248};
 const QColor kInfoRowBackground{236, 236, 236};
 const QColor kHighNonlinearityBackground{255, 205, 210};
-const QColor kCenterDeviationWarningBackground{255, 249, 196};
+const QColor kCenterDeviationErrorBackground{255, 205, 210};
 constexpr float kHighNonlinearityThresholdPercent = 10.0F;
 
 bool isAngleSpanIssueKind(domain::common::CalibrationValidationIssueKind kind)
@@ -310,7 +310,7 @@ QVariant QtCalibrationResultTableModel::data(const QModelIndex& index, int role)
             && current_info_.centered_mark_enabled
             && cell.center_deviation_deg.has_value()
             && *cell.center_deviation_deg > current_info_.max_center_deviation_deg) {
-            background = blendColors(background, kCenterDeviationWarningBackground, 0.7);
+            background = blendColors(background, kCenterDeviationErrorBackground, 0.7);
         }
         if (cell.validation_kind.has_value()) {
             background = blendColors(background, validationColor(*cell.validation_kind));
@@ -558,16 +558,16 @@ void QtCalibrationResultTableModel::appendInfoRows()
                     center_deviation_row.cells[static_cast<std::size_t>(forward_col)].display = displayFloat(dir_it->second, 2, QStringLiteral("°"));
                     center_deviation_row.cells[static_cast<std::size_t>(forward_col)].center_deviation_deg = dir_it->second;
                     if (dir_it->second > current_info_.max_center_deviation_deg) {
-                        center_deviation_row.cells[static_cast<std::size_t>(forward_col)].max_severity = domain::common::CalibrationIssueSeverity::Warning;
-                        center_deviation_row.cells[static_cast<std::size_t>(forward_col)].tooltip = tr("Предупреждение: отклонение центрированной метки выше заданного предела");
+                        center_deviation_row.cells[forward_col].max_severity = domain::common::CalibrationIssueSeverity::Error;
+                        center_deviation_row.cells[forward_col].tooltip = tr("Ошибка: отклонение центрированной метки выше заданного предела");
                     }
                 }
                 if (const auto dir_it = source_it->second.find(domain::common::MotorDirection::Backward); dir_it != source_it->second.end()) {
                     center_deviation_row.cells[static_cast<std::size_t>(backward_col)].display = displayFloat(dir_it->second, 2, QStringLiteral("°"));
                     center_deviation_row.cells[static_cast<std::size_t>(backward_col)].center_deviation_deg = dir_it->second;
                     if (dir_it->second > current_info_.max_center_deviation_deg) {
-                        center_deviation_row.cells[static_cast<std::size_t>(backward_col)].max_severity = domain::common::CalibrationIssueSeverity::Warning;
-                        center_deviation_row.cells[static_cast<std::size_t>(backward_col)].tooltip = tr("Предупреждение: отклонение центрированной метки выше заданного предела");
+                        center_deviation_row.cells[backward_col].max_severity = domain::common::CalibrationIssueSeverity::Error;
+                        center_deviation_row.cells[backward_col].tooltip = tr("Ошибка: отклонение центрированной метки выше заданного предела");
                     }
                 }
             }
