@@ -21,7 +21,7 @@ namespace {
 // 1) раскомментировать #define ниже;
 // 2) пересобрать проект.
 // Файлы сохраняются БЕЗ сжатия в ./bad_angle в формате PPM (P6).
-// #define ENABLE_BAD_ANGLE_FRAME_DUMP
+#define ENABLE_BAD_ANGLE_FRAME_DUMP
 
 bool isValidAngleMeasurement(const domain::common::Angle& angle)
 {
