@@ -24,4 +24,14 @@ namespace infra::platform {
             // если EINTR — req уже содержит оставшееся время
         }
     }
+
+    void auto_sleep(std::chrono::steady_clock::duration duration) {
+        using namespace std::chrono;
+        if (duration < 1ms) {
+            precise_sleep(duration);
+        }
+        else {
+            sleep(duration);
+        }
+    }
 }

@@ -350,11 +350,11 @@ namespace infra::motor {
 
         // 3. Первый фронт
         lpt_port_.write(step_bytes[0]);
-        platform::precise_sleep(half_period);
+        platform::auto_sleep(half_period);
 
         // 4. Второй фронт
         lpt_port_.write(step_bytes[1]);
-        platform::precise_sleep(half_period);
+        platform::auto_sleep(half_period);
     }
 
     std::uint8_t G540LptMotorDriver::readState() const {

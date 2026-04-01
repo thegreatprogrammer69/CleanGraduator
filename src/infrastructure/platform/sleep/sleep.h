@@ -5,6 +5,8 @@
 namespace infra::platform {
     void sleep(std::chrono::steady_clock::duration duration);
     void precise_sleep(std::chrono::steady_clock::duration duration);
+    void auto_sleep(std::chrono::steady_clock::duration duration);
+
 }
 
 #endif //CLEANGRADUATOR_SLEEP_H

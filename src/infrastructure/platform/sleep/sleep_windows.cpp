@@ -18,4 +18,14 @@ namespace infra::platform {
             _mm_pause();
         }
     }
+
+    void auto_sleep(std::chrono::steady_clock::duration duration) {
+        using namespace std::chrono;
+        if (duration < 1ms) {
+            precise_sleep(duration);
+        }
+        else {
+            sleep(duration);
+        }
+    }
 }
