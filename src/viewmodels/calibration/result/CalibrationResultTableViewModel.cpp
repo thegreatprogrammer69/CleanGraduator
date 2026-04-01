@@ -10,6 +10,7 @@
 #include "domain/ports/calibration/recording/ICalibrationRecorder.h"
 #include "domain/ports/calibration/result/ICalibrationResultSource.h"
 #include "domain/ports/calibration/result/ICalibrationResultValidationSource.h"
+#include "application/ports/catalogs/IGaugeCatalog.h"
 
 using namespace mvvm;
 using namespace domain::common;
@@ -41,6 +42,7 @@ CalibrationResultTableViewModel::CalibrationResultTableViewModel(CalibrationResu
     , validation_source_(deps.validation_source)
     , recorder_(deps.recorder)
     , settings_storage_(deps.settings_storage)
+    , gauge_catalog_(deps.gauge_catalog)
 {
     result_source_.addObserver(*this);
     validation_source_.addObserver(*this);
@@ -51,9 +53,13 @@ CalibrationResultTableViewModel::CalibrationResultTableViewModel(CalibrationResu
 
     resetInfo();
     refreshSettings();
+    refreshTemplatePressures();
     refreshMeasurementCountsFromRecorder();
-    if (const auto& result = result_source_.currentResult(); result) {
+    if (const auto& result = result_source_.currentResult();
+        result && isCurrentResultCompatibleWithSelectedGauge()) {
         updateInfoFromResult(*result);
+    } else {
+        current_result.set(std::nullopt);
     }
     updateCurrentInfo();
 }
@@ -66,12 +72,32 @@ CalibrationResultTableViewModel::~CalibrationResultTableViewModel() {
 
 void CalibrationResultTableViewModel::onCalibrationResultUpdated(const CalibrationResult &result) {
     current_result.set(result);
+    if (!isCurrentResultCompatibleWithSelectedGauge()) {
+        current_result.set(std::nullopt);
+        resetInfo();
+        refreshSettings();
+        refreshTemplatePressures();
+        refreshMeasurementCountsFromRecorder();
+        updateCurrentInfo();
+        return;
+    }
+
     updateInfoFromResult(result);
 }
 
 void CalibrationResultTableViewModel::onCalibrationResultValidationUpdated(const CalibrationResultValidation& validation) {
     current_validation.set(validation, true);
     refreshSettings();
+    refreshTemplatePressures();
+    if (!isCurrentResultCompatibleWithSelectedGauge()) {
+        current_result.set(std::nullopt);
+        resetInfo();
+        refreshSettings();
+        refreshTemplatePressures();
+        refreshMeasurementCountsFromRecorder();
+        updateCurrentInfo();
+        return;
+    }
     updateCurrentInfo();
 }
 
@@ -228,4 +254,48 @@ void CalibrationResultTableViewModel::refreshSettings()
     const auto settings = settings_storage_.loadInfoSettings();
     info_.centered_mark_enabled = settings.centered_mark_enabled;
     info_.max_center_deviation_deg = settings.max_center_deviation_deg;
+}
+
+void CalibrationResultTableViewModel::refreshTemplatePressures()
+{
+    info_.template_pressures.clear();
+
+    const auto settings = settings_storage_.loadInfoSettings();
+    const auto gauge = gauge_catalog_.at(settings.gauge_idx);
+    if (!gauge) {
+        return;
+    }
+
+    info_.template_pressures.reserve(gauge->points.value.size());
+    for (const auto pressure_point : gauge->points.value) {
+        info_.template_pressures.push_back(pressure_point);
+    }
+}
+
+bool CalibrationResultTableViewModel::isCurrentResultCompatibleWithSelectedGauge() const
+{
+    const auto result = current_result.get_copy();
+    if (!result) {
+        return true;
+    }
+
+    const auto settings = settings_storage_.loadInfoSettings();
+    const auto gauge = gauge_catalog_.at(settings.gauge_idx);
+    if (!gauge) {
+        return false;
+    }
+
+    const auto& result_points = result->points();
+    const auto& gauge_points = gauge->points.value;
+    if (result_points.size() != gauge_points.size()) {
+        return false;
+    }
+
+    for (std::size_t index = 0; index < gauge_points.size(); ++index) {
+        if (result_points[index].pressure != gauge_points[index]) {
+            return false;
+        }
+    }
+
+    return true;
 }

@@ -3,9 +3,11 @@
 
 #include <map>
 #include <unordered_map>
+#include <vector>
 
 #include "domain/core/drivers/motor/MotorDirection.h"
 #include "application/ports/settings/IInfoSettingsStorage.h"
+#include "application/ports/catalogs/IGaugeCatalog.h"
 #include "domain/ports/calibration/recording/ICalibrationRecorderObserver.h"
 #include "domain/ports/calibration/result/ICalibrationResultObserver.h"
 #include "domain/ports/calibration/result/ICalibrationResultValidationObserver.h"
@@ -29,6 +31,7 @@ namespace mvvm {
             std::map<domain::common::MotorDirection, float>> center_deviations_deg;
         float max_center_deviation_deg{0.9F};
         bool centered_mark_enabled{false};
+        std::vector<float> template_pressures;
 
         bool operator==(const CalibrationResultInfo& other) const {
             return total_angles == other.total_angles
@@ -37,7 +40,8 @@ namespace mvvm {
                 && current_angles == other.current_angles
                 && center_deviations_deg == other.center_deviations_deg
                 && max_center_deviation_deg == other.max_center_deviation_deg
-                && centered_mark_enabled == other.centered_mark_enabled;
+                && centered_mark_enabled == other.centered_mark_enabled
+                && template_pressures == other.template_pressures;
         }
     };
 
@@ -46,6 +50,7 @@ namespace mvvm {
         domain::ports::ICalibrationResultValidationSource& validation_source;
         domain::ports::ICalibrationRecorder& recorder;
         application::ports::IInfoSettingsStorage& settings_storage;
+        application::ports::IGaugeCatalog& gauge_catalog;
     };
 
     class CalibrationResultTableViewModel final
@@ -78,12 +83,15 @@ namespace mvvm {
             domain::common::SourceId source_id,
             domain::common::MotorDirection direction);
         void refreshSettings();
+        void refreshTemplatePressures();
+        bool isCurrentResultCompatibleWithSelectedGauge() const;
 
     private:
         domain::ports::ICalibrationResultSource& result_source_;
         domain::ports::ICalibrationResultValidationSource& validation_source_;
         domain::ports::ICalibrationRecorder& recorder_;
         application::ports::IInfoSettingsStorage& settings_storage_;
+        application::ports::IGaugeCatalog& gauge_catalog_;
         CalibrationResultInfo info_;
     };
 }

@@ -30,6 +30,8 @@
 #include "calibration/recording/QtCalibrationSeriesWidget.h"
 #include "logging/QtLogViewerWidget.h"
 #include "video/QtVideoSourceGridWidget.h"
+#include "viewmodels/control/ControlViewModel.h"
+#include "viewmodels/control/CalibrationSessionControlViewModel.h"
 #include "viewmodels/MainWindowViewModel.h"
 
 ui::QtMainWindow::QtMainWindow(
@@ -78,8 +80,8 @@ ui::QtMainWindow::QtMainWindow(
 
     /* ================= Tabs ================= */
 
-    auto* panel = new QTabWidget(rightPanel);
-    panel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    panel_ = new QTabWidget(rightPanel);
+    panel_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
 
     /* =================================================
@@ -163,10 +165,11 @@ ui::QtMainWindow::QtMainWindow(
 
     /* ================= Добавление вкладок ================= */
 
-    panel->addTab(processPage,  tr("Процесс"));
-    panel->addTab(settingsPage, tr("Настройки"));
+    process_tab_index_ = panel_->addTab(processPage,  tr("Процесс"));
+    settings_tab_index_ = panel_->addTab(settingsPage, tr("Настройки"));
+    bindSettingsAccessGuard();
 
-    rightLayout->addWidget(panel, 1);
+    rightLayout->addWidget(panel_, 1);
 
 
     /* ================= Status Bar Widgets ================= */
@@ -237,4 +240,28 @@ void ui::QtMainWindow::createCalibrationDock(mvvm::CalibrationSeriesViewModel& v
 
     calibration_dock_->setFloating(true);
     calibration_dock_->hide();
+}
+
+void ui::QtMainWindow::bindSettingsAccessGuard()
+{
+    auto& calibration_vm = model_.controlViewModel().calibrationViewModel();
+    can_start_sub_ = calibration_vm.can_start.subscribe([this](const auto& change) {
+        QMetaObject::invokeMethod(this, [this, can_start = change.new_value]() {
+            applySettingsLocked(!can_start);
+        }, Qt::QueuedConnection);
+    }, false);
+
+    applySettingsLocked(!calibration_vm.can_start.get_copy());
+}
+
+void ui::QtMainWindow::applySettingsLocked(bool locked)
+{
+    if (!panel_ || settings_tab_index_ < 0) {
+        return;
+    }
+
+    panel_->setTabEnabled(settings_tab_index_, !locked);
+    if (locked && panel_->currentIndex() == settings_tab_index_) {
+        panel_->setCurrentIndex(process_tab_index_);
+    }
 }
