@@ -14,14 +14,27 @@ namespace ui {
 
 namespace {
 
-    const QColor kResultRowBackground{248, 248, 248};
-    const QColor kInfoRowBackground{236, 236, 236};
-    const QColor kHighNonlinearityBackground{255, 205, 210};
-    const QColor kCenterDeviationWarningBackground{255, 249, 196};
-    constexpr float kHighNonlinearityThresholdPercent = 10.0F;
+const QColor kResultRowBackground{248, 248, 248};
+const QColor kInfoRowBackground{236, 236, 236};
+const QColor kHighNonlinearityBackground{255, 205, 210};
+const QColor kCenterDeviationWarningBackground{255, 249, 196};
+constexpr float kHighNonlinearityThresholdPercent = 10.0F;
 
-QString buildIssuesTooltip(const std::vector<domain::common::CalibrationCellIssue>& issues,
-                          const domain::common::CalibrationResultValidation::Issues& validation_issues)
+bool isAngleSpanIssueKind(domain::common::CalibrationValidationIssueKind kind)
+{
+    using Kind = domain::common::CalibrationValidationIssueKind;
+    return kind == Kind::AngleSpanTooHigh || kind == Kind::AngleSpanTooLow;
+}
+
+bool isMeasurementIssueKind(domain::common::CalibrationValidationIssueKind kind)
+{
+    return !isAngleSpanIssueKind(kind);
+}
+
+QString buildIssuesTooltip(
+    const std::vector<domain::common::CalibrationCellIssue>& issues,
+    const domain::common::CalibrationResultValidation::Issues* validation_issues,
+    bool (*validation_predicate)(domain::common::CalibrationValidationIssueKind) = nullptr)
 {
     QStringList lines;
 
@@ -32,13 +45,26 @@ QString buildIssuesTooltip(const std::vector<domain::common::CalibrationCellIssu
         }
     }
 
-    if (!validation_issues.empty()) {
-        if (!lines.isEmpty()) {
-            lines.push_back(QString());
+    if (validation_issues) {
+        bool has_validation = false;
+        for (const auto& issue : *validation_issues) {
+            if (!validation_predicate || validation_predicate(issue.kind)) {
+                has_validation = true;
+                break;
+            }
         }
-        lines.push_back(QStringLiteral("Проблемы валидации:"));
-        for (const auto& issue : validation_issues) {
-            lines.push_back(QStringLiteral("• %1").arg(QString::fromStdString(issue.message)));
+
+        if (has_validation) {
+            if (!lines.isEmpty()) {
+                lines.push_back(QString());
+            }
+            lines.push_back(QStringLiteral("Проблемы валидации:"));
+            for (const auto& issue : *validation_issues) {
+                if (validation_predicate && !validation_predicate(issue.kind)) {
+                    continue;
+                }
+                lines.push_back(QStringLiteral("• %1").arg(QString::fromStdString(issue.message)));
+            }
         }
     }
 
@@ -63,20 +89,20 @@ std::optional<domain::common::CalibrationIssueSeverity> maxSeverityOf(
 }
 
 std::optional<domain::common::CalibrationIssueSeverity> maxSeverityOf(
-    const domain::common::CalibrationResultValidation::Issues& issues)
+    const domain::common::CalibrationResultValidation::Issues& issues,
+    bool (*validation_predicate)(domain::common::CalibrationValidationIssueKind) = nullptr)
 {
-    if (issues.empty()) {
-        return std::nullopt;
-    }
-
-    auto maxSeverity = issues.front().severity;
+    std::optional<domain::common::CalibrationIssueSeverity> max_severity;
     for (const auto& issue : issues) {
-        if (static_cast<int>(issue.severity) > static_cast<int>(maxSeverity)) {
-            maxSeverity = issue.severity;
+        if (validation_predicate && !validation_predicate(issue.kind)) {
+            continue;
+        }
+        if (!max_severity.has_value()
+            || static_cast<int>(issue.severity) > static_cast<int>(*max_severity)) {
+            max_severity = issue.severity;
         }
     }
-
-    return maxSeverity;
+    return max_severity;
 }
 
 std::optional<domain::common::CalibrationIssueSeverity> maxSeverityOf(
@@ -106,40 +132,22 @@ int issueKindPriority(domain::common::CalibrationValidationIssueKind kind)
     return 0;
 }
 
-bool isAngleSpanIssueKind(domain::common::CalibrationValidationIssueKind kind)
-{
-    using Kind = domain::common::CalibrationValidationIssueKind;
-    return kind == Kind::AngleSpanTooHigh || kind == Kind::AngleSpanTooLow;
-}
-
-domain::common::CalibrationResultValidation::Issues filterMeasurementValidationIssues(
-    const domain::common::CalibrationResultValidation::Issues& issues)
-{
-    domain::common::CalibrationResultValidation::Issues filtered;
-    filtered.reserve(issues.size());
-    for (const auto& issue : issues) {
-        if (!isAngleSpanIssueKind(issue.kind)) {
-            filtered.push_back(issue);
-        }
-    }
-    return filtered;
-}
-
 std::optional<domain::common::CalibrationValidationIssueKind> maxValidationKindOf(
-    const domain::common::CalibrationResultValidation::Issues& issues)
+    const domain::common::CalibrationResultValidation::Issues& issues,
+    bool (*validation_predicate)(domain::common::CalibrationValidationIssueKind) = nullptr)
 {
-    if (issues.empty()) {
-        return std::nullopt;
-    }
-
-    auto selectedKind = issues.front().kind;
+    std::optional<domain::common::CalibrationValidationIssueKind> selected_kind;
     for (const auto& issue : issues) {
-        if (issueKindPriority(issue.kind) > issueKindPriority(selectedKind)) {
-            selectedKind = issue.kind;
+        if (validation_predicate && !validation_predicate(issue.kind)) {
+            continue;
+        }
+        if (!selected_kind.has_value()
+            || issueKindPriority(issue.kind) > issueKindPriority(*selected_kind)) {
+            selected_kind = issue.kind;
         }
     }
 
-    return selectedKind;
+    return selected_kind;
 }
 
 QColor validationColor(domain::common::CalibrationValidationIssueKind kind)
@@ -185,6 +193,17 @@ QIcon iconForSeverity(domain::common::CalibrationIssueSeverity severity)
     return {};
 }
 
+const QIcon& iconForSeverityCached(domain::common::CalibrationIssueSeverity severity)
+{
+    static const std::array<QIcon, 3> icons{
+        iconForSeverity(domain::common::CalibrationIssueSeverity::Info),
+        iconForSeverity(domain::common::CalibrationIssueSeverity::Warning),
+        iconForSeverity(domain::common::CalibrationIssueSeverity::Error)
+    };
+
+    return icons[static_cast<std::size_t>(severity)];
+}
+
 QString displayFloat(float value, int precision = 2, const QString& suffix = {})
 {
     return QStringLiteral("%1%2")
@@ -199,6 +218,12 @@ QtCalibrationResultTableModel::QtCalibrationResultTableModel(
     : QAbstractTableModel(parent)
     , vm_(deps.vm)
 {
+    for (int section = 0; section < kColumnCount; ++section) {
+        horizontal_headers_[section] = tr("у.%1.%2")
+            .arg(section % 2 == 0 ? tr("п") : tr("о"))
+            .arg(section / 2 + 1);
+    }
+
     current_result_sub_ = vm_.current_result.subscribe([this](const auto& e) {
         const auto copy = e.new_value;
 
@@ -237,7 +262,7 @@ int QtCalibrationResultTableModel::columnCount(const QModelIndex& parent) const
         return 0;
     }
 
-    return 16;
+    return kColumnCount;
 }
 
 QVariant QtCalibrationResultTableModel::data(const QModelIndex& index, int role) const
@@ -252,11 +277,11 @@ QVariant QtCalibrationResultTableModel::data(const QModelIndex& index, int role)
 
     const auto& row = rows_[index.row()];
 
-    if (index.column() < 0 || index.column() >= row.cells.size()) {
+    if (index.column() < 0 || index.column() >= kColumnCount) {
         return {};
     }
 
-    const auto& cell = row.cells[index.column()];
+    const auto& cell = row.cells[static_cast<std::size_t>(index.column())];
 
     if (role == Qt::DisplayRole) {
         return cell.display;
@@ -267,7 +292,7 @@ QVariant QtCalibrationResultTableModel::data(const QModelIndex& index, int role)
     }
 
     if (role == Qt::DecorationRole && cell.max_severity.has_value()) {
-        return iconForSeverity(*cell.max_severity);
+        return iconForSeverityCached(*cell.max_severity);
     }
 
     if (role == Qt::TextAlignmentRole) {
@@ -306,13 +331,11 @@ QVariant QtCalibrationResultTableModel::headerData(
     int role) const
 {
     if (orientation == Qt::Horizontal) {
-        if (role != Qt::DisplayRole) {
+        if (role != Qt::DisplayRole || section < 0 || section >= kColumnCount) {
             return {};
         }
 
-        return tr("у.%1.%2")
-            .arg(section % 2 == 0 ? tr("п") : tr("о"))
-            .arg(section / 2 + 1);
+        return horizontal_headers_[static_cast<std::size_t>(section)];
     }
 
     if (orientation == Qt::Vertical) {
@@ -367,80 +390,97 @@ void QtCalibrationResultTableModel::applyResult(
     beginResetModel();
 
     current_result_ = std::move(result);
-    refreshRows();
+    refreshRowsWithReset();
 
     endResetModel();
 }
 
 void QtCalibrationResultTableModel::applyValidation(
-    const std::optional<domain::common::CalibrationResultValidation>& validation)
+    std::optional<domain::common::CalibrationResultValidation> validation)
 {
-    current_validation_ = validation;
-
     if (!current_result_) {
+        current_validation_ = std::move(validation);
         return;
     }
 
-    beginResetModel();
-    refreshRows();
-    endResetModel();
+    if (current_validation_ == validation) {
+        return;
+    }
+
+    current_validation_ = std::move(validation);
+    updateRowsInPlace();
 }
 
 void QtCalibrationResultTableModel::applyInfo(const mvvm::CalibrationResultInfo& info)
 {
+    if (current_info_ == info) {
+        return;
+    }
+
     current_info_ = info;
 
     if (!current_result_) {
         return;
     }
 
-    beginResetModel();
-    refreshRows();
-    endResetModel();
+    updateRowsInPlace();
 }
 
-void QtCalibrationResultTableModel::rebuildRows(const domain::common::CalibrationResult& result)
+void QtCalibrationResultTableModel::rebuildRows()
 {
     rows_.clear();
+
+    if (!current_result_) {
+        return;
+    }
+
+    const auto& result = *current_result_;
+    rows_.reserve(static_cast<qsizetype>(result.points().size()) + 5);
+
+    static const std::vector<domain::common::CalibrationCellIssue> empty_calc_issues;
 
     for (const auto& point : result.points()) {
         Row row;
         row.label = QString::number(point.pressure, 'f', 2);
         row.kind = RowKind::Measurement;
-        row.cells.reserve(16);
 
-        for (int i = 0; i < 8; ++i) {
+        for (int i = 0; i < kSourceCount; ++i) {
             for (int j = 0; j < 2; ++j) {
                 domain::common::CalibrationCellKey key;
                 key.point_id = point;
                 key.source_id = domain::common::SourceId{i + 1};
                 key.direction = static_cast<domain::common::MotorDirection>(j);
 
-                Cell uiCell;
+                Cell& ui_cell = row.cells[static_cast<std::size_t>(i * 2 + j)];
                 const auto cell = result.cell(key);
-                const auto raw_validation_issues = current_validation_
-                    ? current_validation_->issuesFor(key)
-                    : domain::common::CalibrationResultValidation::Issues{};
-                const auto validation_issues = filterMeasurementValidationIssues(raw_validation_issues);
+                const auto* validation_issues = current_validation_
+                    ? &current_validation_->issuesFor(key)
+                    : nullptr;
 
                 if (cell) {
                     if (cell->angle()) {
-                        uiCell.display = QString::number(*cell->angle(), 'f', 2);
+                        ui_cell.display = QString::number(*cell->angle(), 'f', 2);
                     }
 
                     const auto& issues = cell->issues();
-                    uiCell.tooltip = buildIssuesTooltip(issues, validation_issues);
-                    uiCell.max_severity = maxSeverityOf(
+                    ui_cell.tooltip = buildIssuesTooltip(issues, validation_issues, isMeasurementIssueKind);
+                    ui_cell.max_severity = maxSeverityOf(
                         maxSeverityOf(issues),
-                        maxSeverityOf(validation_issues));
-                    uiCell.validation_kind = maxValidationKindOf(validation_issues);
+                        validation_issues
+                            ? maxSeverityOf(*validation_issues, isMeasurementIssueKind)
+                            : std::nullopt);
+                    ui_cell.validation_kind = validation_issues
+                        ? maxValidationKindOf(*validation_issues, isMeasurementIssueKind)
+                        : std::nullopt;
                 } else {
-                    uiCell.tooltip = buildIssuesTooltip({}, validation_issues);
-                    uiCell.max_severity = maxSeverityOf(validation_issues);
-                    uiCell.validation_kind = maxValidationKindOf(validation_issues);
+                    ui_cell.tooltip = buildIssuesTooltip(empty_calc_issues, validation_issues, isMeasurementIssueKind);
+                    ui_cell.max_severity = validation_issues
+                        ? maxSeverityOf(*validation_issues, isMeasurementIssueKind)
+                        : std::nullopt;
+                    ui_cell.validation_kind = validation_issues
+                        ? maxValidationKindOf(*validation_issues, isMeasurementIssueKind)
+                        : std::nullopt;
                 }
-
-                row.cells.push_back(std::move(uiCell));
             }
         }
 
@@ -456,7 +496,6 @@ void QtCalibrationResultTableModel::appendInfoRows()
         Row row;
         row.label = label;
         row.kind = kind;
-        row.cells.resize(16);
         return row;
     };
 
@@ -466,13 +505,13 @@ void QtCalibrationResultTableModel::appendInfoRows()
     Row count_row = makeRow(tr("кол-во"), RowKind::MeasurementCount);
     Row current_angle_row = makeRow(tr("тек. уг."), RowKind::CurrentAngle);
 
-    for (int i = 0; i < 8; ++i) {
+    for (int i = 0; i < kSourceCount; ++i) {
         const auto source_id = domain::common::SourceId{i + 1};
         const int forward_col = i * 2;
         const int backward_col = forward_col + 1;
 
         if (const auto it = current_info_.total_angles.find(source_id); it != current_info_.total_angles.end()) {
-            total_row.cells[forward_col].display = displayFloat(it->second);
+            total_row.cells[static_cast<std::size_t>(forward_col)].display = displayFloat(it->second);
         }
 
         if (current_result_ && current_validation_) {
@@ -483,13 +522,11 @@ void QtCalibrationResultTableModel::appendInfoRows()
                     domain::common::MotorDirection::Forward
                 };
                 const auto& issues = current_validation_->issuesFor(key);
-                auto it = std::find_if(issues.begin(), issues.end(), [](const auto& issue) {
-                    return isAngleSpanIssueKind(issue.kind);
-                });
-                if (it != issues.end()) {
-                    total_row.cells[forward_col].validation_kind = it->kind;
-                    total_row.cells[forward_col].max_severity = it->severity;
-                    total_row.cells[forward_col].tooltip = buildIssuesTooltip({}, {*it});
+                const auto issue_kind = maxValidationKindOf(issues, isAngleSpanIssueKind);
+                if (issue_kind.has_value()) {
+                    total_row.cells[static_cast<std::size_t>(forward_col)].validation_kind = issue_kind;
+                    total_row.cells[static_cast<std::size_t>(forward_col)].max_severity = maxSeverityOf(issues, isAngleSpanIssueKind);
+                    total_row.cells[static_cast<std::size_t>(forward_col)].tooltip = buildIssuesTooltip({}, &issues, isAngleSpanIssueKind);
                     break;
                 }
             }
@@ -497,19 +534,19 @@ void QtCalibrationResultTableModel::appendInfoRows()
 
         if (const auto source_it = current_info_.nonlinearities.find(source_id); source_it != current_info_.nonlinearities.end()) {
             if (const auto dir_it = source_it->second.find(domain::common::MotorDirection::Forward); dir_it != source_it->second.end()) {
-                nonlinearity_row.cells[forward_col].display = displayFloat(dir_it->second, 2, QStringLiteral("%"));
-                nonlinearity_row.cells[forward_col].nonlinearity_percent = dir_it->second;
+                nonlinearity_row.cells[static_cast<std::size_t>(forward_col)].display = displayFloat(dir_it->second, 2, QStringLiteral("%"));
+                nonlinearity_row.cells[static_cast<std::size_t>(forward_col)].nonlinearity_percent = dir_it->second;
                 if (dir_it->second > kHighNonlinearityThresholdPercent) {
-                    nonlinearity_row.cells[forward_col].max_severity = domain::common::CalibrationIssueSeverity::Error;
-                    nonlinearity_row.cells[forward_col].tooltip = tr("Ошибка: нелинейность выше 10%%");
+                    nonlinearity_row.cells[static_cast<std::size_t>(forward_col)].max_severity = domain::common::CalibrationIssueSeverity::Error;
+                    nonlinearity_row.cells[static_cast<std::size_t>(forward_col)].tooltip = tr("Ошибка: нелинейность выше 10%%");
                 }
             }
             if (const auto dir_it = source_it->second.find(domain::common::MotorDirection::Backward); dir_it != source_it->second.end()) {
-                nonlinearity_row.cells[backward_col].display = displayFloat(dir_it->second, 2, QStringLiteral("%"));
-                nonlinearity_row.cells[backward_col].nonlinearity_percent = dir_it->second;
+                nonlinearity_row.cells[static_cast<std::size_t>(backward_col)].display = displayFloat(dir_it->second, 2, QStringLiteral("%"));
+                nonlinearity_row.cells[static_cast<std::size_t>(backward_col)].nonlinearity_percent = dir_it->second;
                 if (dir_it->second > kHighNonlinearityThresholdPercent) {
-                    nonlinearity_row.cells[backward_col].max_severity = domain::common::CalibrationIssueSeverity::Error;
-                    nonlinearity_row.cells[backward_col].tooltip = tr("Ошибка: нелинейность выше 10%%");
+                    nonlinearity_row.cells[static_cast<std::size_t>(backward_col)].max_severity = domain::common::CalibrationIssueSeverity::Error;
+                    nonlinearity_row.cells[static_cast<std::size_t>(backward_col)].tooltip = tr("Ошибка: нелинейность выше 10%%");
                 }
             }
         }
@@ -518,19 +555,19 @@ void QtCalibrationResultTableModel::appendInfoRows()
             if (const auto source_it = current_info_.center_deviations_deg.find(source_id);
                 source_it != current_info_.center_deviations_deg.end()) {
                 if (const auto dir_it = source_it->second.find(domain::common::MotorDirection::Forward); dir_it != source_it->second.end()) {
-                    center_deviation_row.cells[forward_col].display = displayFloat(dir_it->second, 2, QStringLiteral("°"));
-                    center_deviation_row.cells[forward_col].center_deviation_deg = dir_it->second;
+                    center_deviation_row.cells[static_cast<std::size_t>(forward_col)].display = displayFloat(dir_it->second, 2, QStringLiteral("°"));
+                    center_deviation_row.cells[static_cast<std::size_t>(forward_col)].center_deviation_deg = dir_it->second;
                     if (dir_it->second > current_info_.max_center_deviation_deg) {
-                        center_deviation_row.cells[forward_col].max_severity = domain::common::CalibrationIssueSeverity::Warning;
-                        center_deviation_row.cells[forward_col].tooltip = tr("Предупреждение: отклонение центрированной метки выше заданного предела");
+                        center_deviation_row.cells[static_cast<std::size_t>(forward_col)].max_severity = domain::common::CalibrationIssueSeverity::Warning;
+                        center_deviation_row.cells[static_cast<std::size_t>(forward_col)].tooltip = tr("Предупреждение: отклонение центрированной метки выше заданного предела");
                     }
                 }
                 if (const auto dir_it = source_it->second.find(domain::common::MotorDirection::Backward); dir_it != source_it->second.end()) {
-                    center_deviation_row.cells[backward_col].display = displayFloat(dir_it->second, 2, QStringLiteral("°"));
-                    center_deviation_row.cells[backward_col].center_deviation_deg = dir_it->second;
+                    center_deviation_row.cells[static_cast<std::size_t>(backward_col)].display = displayFloat(dir_it->second, 2, QStringLiteral("°"));
+                    center_deviation_row.cells[static_cast<std::size_t>(backward_col)].center_deviation_deg = dir_it->second;
                     if (dir_it->second > current_info_.max_center_deviation_deg) {
-                        center_deviation_row.cells[backward_col].max_severity = domain::common::CalibrationIssueSeverity::Warning;
-                        center_deviation_row.cells[backward_col].tooltip = tr("Предупреждение: отклонение центрированной метки выше заданного предела");
+                        center_deviation_row.cells[static_cast<std::size_t>(backward_col)].max_severity = domain::common::CalibrationIssueSeverity::Warning;
+                        center_deviation_row.cells[static_cast<std::size_t>(backward_col)].tooltip = tr("Предупреждение: отклонение центрированной метки выше заданного предела");
                     }
                 }
             }
@@ -538,15 +575,15 @@ void QtCalibrationResultTableModel::appendInfoRows()
 
         if (const auto source_it = current_info_.measurement_counts.find(source_id); source_it != current_info_.measurement_counts.end()) {
             if (const auto dir_it = source_it->second.find(domain::common::MotorDirection::Forward); dir_it != source_it->second.end()) {
-                count_row.cells[forward_col].display = dir_it->second;
+                count_row.cells[static_cast<std::size_t>(forward_col)].display = dir_it->second;
             }
             if (const auto dir_it = source_it->second.find(domain::common::MotorDirection::Backward); dir_it != source_it->second.end()) {
-                count_row.cells[backward_col].display = dir_it->second;
+                count_row.cells[static_cast<std::size_t>(backward_col)].display = dir_it->second;
             }
         }
 
         if (const auto it = current_info_.current_angles.find(source_id); it != current_info_.current_angles.end()) {
-            current_angle_row.cells[forward_col].display = displayFloat(it->second);
+            current_angle_row.cells[static_cast<std::size_t>(forward_col)].display = displayFloat(it->second);
         }
     }
 
@@ -557,11 +594,20 @@ void QtCalibrationResultTableModel::appendInfoRows()
     rows_.push_back(std::move(current_angle_row));
 }
 
-void QtCalibrationResultTableModel::refreshRows()
+void QtCalibrationResultTableModel::refreshRowsWithReset()
 {
     rows_.clear();
     if (current_result_) {
-        rebuildRows(*current_result_);
+        rebuildRows();
+    }
+}
+
+void QtCalibrationResultTableModel::updateRowsInPlace()
+{
+    rebuildRows();
+
+    if (!rows_.isEmpty()) {
+        emit dataChanged(index(0, 0), index(rows_.size() - 1, kColumnCount - 1));
     }
 }
 

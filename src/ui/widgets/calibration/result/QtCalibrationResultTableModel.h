@@ -2,6 +2,7 @@
 #define CLEANGRADUATOR_QTCALIBRATIONRESULTTABLEMODEL_H
 
 #include <optional>
+#include <array>
 #include <QAbstractTableModel>
 #include <QVector>
 #include <QString>
@@ -53,18 +54,22 @@ namespace ui {
         };
         struct Row final {
             QVariant label{};
-            QVector<Cell> cells{};
+            std::array<Cell, 16> cells{};
             RowKind kind{RowKind::Measurement};
         };
 
         void applyResult(std::optional<domain::common::CalibrationResult> result);
-        void rebuildRows(const domain::common::CalibrationResult& result);
-        void applyValidation(const std::optional<domain::common::CalibrationResultValidation>& validation);
+        void rebuildRows();
+        void applyValidation(std::optional<domain::common::CalibrationResultValidation> validation);
         void applyInfo(const mvvm::CalibrationResultInfo& info);
         void appendInfoRows();
-        void refreshRows();
+        void refreshRowsWithReset();
+        void updateRowsInPlace();
 
     private:
+        static constexpr int kColumnCount = 16;
+        static constexpr int kSourceCount = 8;
+
         mvvm::CalibrationResultTableViewModel& vm_;
         mvvm::Observable<std::optional<domain::common::CalibrationResult>>::Subscription current_result_sub_;
         mvvm::Observable<std::optional<domain::common::CalibrationResultValidation>>::Subscription current_validation_sub_;
@@ -73,7 +78,8 @@ namespace ui {
         std::optional<domain::common::CalibrationResult> current_result_;
         std::optional<domain::common::CalibrationResultValidation> current_validation_;
         mvvm::CalibrationResultInfo current_info_;
-        QVector<Row> rows_;
+        QVector<Row> rows_{};
+        std::array<QString, kColumnCount> horizontal_headers_{};
     };
 
 }

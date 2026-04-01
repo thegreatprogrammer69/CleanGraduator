@@ -56,7 +56,7 @@ void QtCalibrationResultTableWidget::setupUi()
 
 void QtCalibrationResultTableWidget::connectModelSignals()
 {
-    auto refresh = [this] {
+    auto refresh_layout = [this] {
         QMetaObject::invokeMethod(this, [this] {
             updateGeometry();
             updateSectionSizes();
@@ -64,13 +64,18 @@ void QtCalibrationResultTableWidget::connectModelSignals()
         }, Qt::QueuedConnection);
     };
 
-    connect(&model_, &QAbstractItemModel::modelReset, this, refresh);
-    connect(&model_, &QAbstractItemModel::layoutChanged, this, refresh);
-    connect(&model_, &QAbstractItemModel::dataChanged, this, refresh);
-    connect(&model_, &QAbstractItemModel::rowsInserted, this, refresh);
-    connect(&model_, &QAbstractItemModel::rowsRemoved, this, refresh);
-    connect(&model_, &QAbstractItemModel::columnsInserted, this, refresh);
-    connect(&model_, &QAbstractItemModel::columnsRemoved, this, refresh);
+    connect(&model_, &QAbstractItemModel::modelReset, this, refresh_layout);
+    connect(&model_, &QAbstractItemModel::layoutChanged, this, refresh_layout);
+    connect(&model_, &QAbstractItemModel::rowsInserted, this, refresh_layout);
+    connect(&model_, &QAbstractItemModel::rowsRemoved, this, refresh_layout);
+    connect(&model_, &QAbstractItemModel::columnsInserted, this, refresh_layout);
+    connect(&model_, &QAbstractItemModel::columnsRemoved, this, refresh_layout);
+
+    connect(&model_, &QAbstractItemModel::dataChanged, this, [this] {
+        QMetaObject::invokeMethod(viewport(), [this] {
+            viewport()->update();
+        }, Qt::QueuedConnection);
+    });
 }
 
 void QtCalibrationResultTableWidget::resizeEvent(QResizeEvent* event)
@@ -159,7 +164,9 @@ void QtCalibrationResultTableWidget::updateSectionSizes()
             max_width = std::max(max_width, fm.horizontalAdvance(text) + 12);
         }
 
-        verticalHeader()->setFixedWidth(max_width);
+        if (verticalHeader()->width() != max_width) {
+            verticalHeader()->setFixedWidth(max_width);
+        }
         vertical_header_width = max_width;
     }
 
@@ -190,15 +197,6 @@ void QtCalibrationResultTableWidget::updateSectionSizes()
         for (int col = 0; col < column_count; col += 2) {
             setSpan(row, col, 1, 2);
         }
-    }
-
-    // Строкам задаём нормальную "естественную" высоту.
-    for (int row = 0; row < row_count; ++row) {
-        int h = sizeHintForRow(row);
-        if (h <= 0) {
-            h = verticalHeader()->defaultSectionSize();
-        }
-        setRowHeight(row, h);
     }
 
     updateGeometry();
