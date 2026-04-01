@@ -19,6 +19,7 @@
 #include <QTableWidget>
 #include <QHeaderView>
 #include <QStatusBar>
+#include <QMetaObject>
 
 #include "control/QtControlWidget.h"
 #include "ui/widgets/settings/QtSettingsWidget.h"
@@ -30,6 +31,8 @@
 #include "calibration/recording/QtCalibrationSeriesWidget.h"
 #include "logging/QtLogViewerWidget.h"
 #include "video/QtVideoSourceGridWidget.h"
+#include "viewmodels/control/ControlViewModel.h"
+#include "viewmodels/control/CalibrationSessionControlViewModel.h"
 #include "viewmodels/MainWindowViewModel.h"
 
 ui::QtMainWindow::QtMainWindow(
@@ -78,8 +81,8 @@ ui::QtMainWindow::QtMainWindow(
 
     /* ================= Tabs ================= */
 
-    auto* panel = new QTabWidget(rightPanel);
-    panel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    panel_ = new QTabWidget(rightPanel);
+    panel_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
 
     /* =================================================
@@ -163,10 +166,16 @@ ui::QtMainWindow::QtMainWindow(
 
     /* ================= Добавление вкладок ================= */
 
-    panel->addTab(processPage,  tr("Процесс"));
-    panel->addTab(settingsPage, tr("Настройки"));
+    const int process_tab_index = panel_->addTab(processPage,  tr("Процесс"));
+    const int settings_tab_index = panel_->addTab(settingsPage, tr("Настройки"));
 
-    rightLayout->addWidget(panel, 1);
+    bindSettingsTabState(
+        model_.controlViewModel().calibrationViewModel(),
+        *panel_,
+        process_tab_index,
+        settings_tab_index);
+
+    rightLayout->addWidget(panel_, 1);
 
 
     /* ================= Status Bar Widgets ================= */
@@ -237,4 +246,27 @@ void ui::QtMainWindow::createCalibrationDock(mvvm::CalibrationSeriesViewModel& v
 
     calibration_dock_->setFloating(true);
     calibration_dock_->hide();
+}
+
+void ui::QtMainWindow::bindSettingsTabState(
+    mvvm::CalibrationSessionControlViewModel& calibration_vm,
+    QTabWidget& panel,
+    int process_tab_index,
+    int settings_tab_index)
+{
+    const auto update_tab_state = [&panel, process_tab_index, settings_tab_index](bool can_start) {
+        const bool settings_enabled = can_start;
+        panel.setTabEnabled(settings_tab_index, settings_enabled);
+        if (!settings_enabled && panel.currentIndex() == settings_tab_index) {
+            panel.setCurrentIndex(process_tab_index);
+        }
+    };
+
+    settings_tab_enabled_sub_ = calibration_vm.can_start.subscribe([this, update_tab_state](const auto& event) {
+        QMetaObject::invokeMethod(this, [update_tab_state, can_start = event.new_value]() {
+            update_tab_state(can_start);
+        }, Qt::QueuedConnection);
+    }, true);
+
+    update_tab_state(calibration_vm.can_start.get_copy());
 }

@@ -41,6 +41,7 @@ CalibrationResultTableViewModel::CalibrationResultTableViewModel(CalibrationResu
     , validation_source_(deps.validation_source)
     , recorder_(deps.recorder)
     , settings_storage_(deps.settings_storage)
+    , gauge_catalog_(deps.gauge_catalog)
 {
     result_source_.addObserver(*this);
     validation_source_.addObserver(*this);
@@ -50,6 +51,7 @@ CalibrationResultTableViewModel::CalibrationResultTableViewModel(CalibrationResu
     current_validation.set(validation_source_.currentValidation());
 
     resetInfo();
+    refreshGaugePressurePoints();
     refreshSettings();
     refreshMeasurementCountsFromRecorder();
     if (const auto& result = result_source_.currentResult(); result) {
@@ -70,6 +72,7 @@ void CalibrationResultTableViewModel::onCalibrationResultUpdated(const Calibrati
 }
 
 void CalibrationResultTableViewModel::onCalibrationResultValidationUpdated(const CalibrationResultValidation& validation) {
+    refreshGaugePressurePoints();
     current_validation.set(validation, true);
     refreshSettings();
     updateCurrentInfo();
@@ -138,6 +141,30 @@ void CalibrationResultTableViewModel::updateCurrentInfo()
 void CalibrationResultTableViewModel::refreshMeasurementCountsFromRecorder()
 {
     info_.measurement_counts = recorder_.angleCounts();
+}
+
+void CalibrationResultTableViewModel::refreshGaugePressurePoints()
+{
+    const auto settings = settings_storage_.loadInfoSettings();
+    const auto gauge = gauge_catalog_.at(settings.gauge_idx);
+
+    std::vector<float> pressure_points;
+    if (gauge) {
+        pressure_points = gauge->points.value;
+    }
+
+    const bool changed = gauge_idx_ != settings.gauge_idx;
+    gauge_idx_ = settings.gauge_idx;
+
+    gauge_pressure_points.set(std::move(pressure_points), true);
+
+    if (!changed) {
+        return;
+    }
+
+    current_result.set(std::nullopt, true);
+    current_validation.set(std::nullopt, true);
+    resetInfo();
 }
 
 std::optional<float> CalibrationResultTableViewModel::calculateNonlinearity(
