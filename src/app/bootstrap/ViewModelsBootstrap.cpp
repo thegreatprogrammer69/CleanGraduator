@@ -198,6 +198,7 @@ void ViewModelsBootstrap::createCalibrationResultTable() {
         *app_.calibration_result_source,
         *app_.calibration_result_validation_source,
         *app_.calibration_recorder,
+        *app_.gauge_catalog,
         *app_.info_settings_storage
     };
     calibration_result_table = std::make_unique<CalibrationResultTableViewModel>(deps);

@@ -19,6 +19,7 @@
 #include <QTableWidget>
 #include <QHeaderView>
 #include <QStatusBar>
+#include <QMetaObject>
 
 #include "control/QtControlWidget.h"
 #include "ui/widgets/settings/QtSettingsWidget.h"
@@ -31,6 +32,8 @@
 #include "logging/QtLogViewerWidget.h"
 #include "video/QtVideoSourceGridWidget.h"
 #include "viewmodels/MainWindowViewModel.h"
+#include "viewmodels/control/ControlViewModel.h"
+#include "viewmodels/control/CalibrationSessionControlViewModel.h"
 
 ui::QtMainWindow::QtMainWindow(
     mvvm::MainWindowViewModel& model,
@@ -78,8 +81,8 @@ ui::QtMainWindow::QtMainWindow(
 
     /* ================= Tabs ================= */
 
-    auto* panel = new QTabWidget(rightPanel);
-    panel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    panel_ = new QTabWidget(rightPanel);
+    panel_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
 
     /* =================================================
@@ -163,10 +166,10 @@ ui::QtMainWindow::QtMainWindow(
 
     /* ================= Добавление вкладок ================= */
 
-    panel->addTab(processPage,  tr("Процесс"));
-    panel->addTab(settingsPage, tr("Настройки"));
+    process_tab_index_ = panel_->addTab(processPage,  tr("Процесс"));
+    settings_tab_index_ = panel_->addTab(settingsPage, tr("Настройки"));
 
-    rightLayout->addWidget(panel, 1);
+    rightLayout->addWidget(panel_, 1);
 
 
     /* ================= Status Bar Widgets ================= */
@@ -205,6 +208,21 @@ ui::QtMainWindow::QtMainWindow(
 
     root->addWidget(m_cameras);
     root->addWidget(rightPanel, 1);
+
+    auto& calibration_vm = model_.controlViewModel().calibrationViewModel();
+    calibration_can_start_sub_ = calibration_vm.can_start.subscribe([this](const auto& ev) {
+        const bool settings_locked = !ev.new_value;
+        QMetaObject::invokeMethod(this, [this, settings_locked] {
+            if (!panel_ || settings_tab_index_ < 0 || process_tab_index_ < 0) {
+                return;
+            }
+
+            panel_->setTabEnabled(settings_tab_index_, !settings_locked);
+            if (settings_locked && panel_->currentIndex() == settings_tab_index_) {
+                panel_->setCurrentIndex(process_tab_index_);
+            }
+        }, Qt::QueuedConnection);
+    }, false);
 }
 
 ui::QtMainWindow::~QtMainWindow()

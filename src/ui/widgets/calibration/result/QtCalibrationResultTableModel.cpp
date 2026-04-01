@@ -245,6 +245,13 @@ QtCalibrationResultTableModel::QtCalibrationResultTableModel(
             applyInfo(copy);
         }, Qt::QueuedConnection);
     });
+
+    current_gauge_points_sub_ = vm_.current_gauge_points.subscribe([this](const auto& e) {
+        const auto copy = e.new_value;
+        QMetaObject::invokeMethod(this, [this, copy] {
+            applyGaugePoints(copy);
+        }, Qt::QueuedConnection);
+    });
 }
 
 int QtCalibrationResultTableModel::rowCount(const QModelIndex& parent) const
@@ -395,6 +402,18 @@ void QtCalibrationResultTableModel::applyResult(
     endResetModel();
 }
 
+void QtCalibrationResultTableModel::applyGaugePoints(const std::vector<float>& points)
+{
+    if (current_gauge_points_ == points) {
+        return;
+    }
+
+    beginResetModel();
+    current_gauge_points_ = points;
+    refreshRowsWithReset();
+    endResetModel();
+}
+
 void QtCalibrationResultTableModel::applyValidation(
     std::optional<domain::common::CalibrationResultValidation> validation)
 {
@@ -429,33 +448,39 @@ void QtCalibrationResultTableModel::applyInfo(const mvvm::CalibrationResultInfo&
 void QtCalibrationResultTableModel::rebuildRows()
 {
     rows_.clear();
-
-    if (!current_result_) {
-        return;
-    }
-
-    const auto& result = *current_result_;
-    rows_.reserve(static_cast<qsizetype>(result.points().size()) + 5);
+    const auto point_count = current_result_
+        ? current_result_->points().size()
+        : current_gauge_points_.size();
+    rows_.reserve(static_cast<qsizetype>(point_count) + 5);
 
     static const std::vector<domain::common::CalibrationCellIssue> empty_calc_issues;
 
-    for (const auto& point : result.points()) {
+    const auto append_point_row = [this, &empty_calc_issues](float point_pressure, std::optional<domain::common::PointId> point_id) {
         Row row;
-        row.label = QString::number(point.pressure, 'f', 2);
+        row.label = QString::number(point_pressure, 'f', 2);
         row.kind = RowKind::Measurement;
 
         for (int i = 0; i < kSourceCount; ++i) {
             for (int j = 0; j < 2; ++j) {
-                domain::common::CalibrationCellKey key;
-                key.point_id = point;
-                key.source_id = domain::common::SourceId{i + 1};
-                key.direction = static_cast<domain::common::MotorDirection>(j);
-
                 Cell& ui_cell = row.cells[static_cast<std::size_t>(i * 2 + j)];
-                const auto cell = result.cell(key);
-                const auto* validation_issues = current_validation_
-                    ? &current_validation_->issuesFor(key)
-                    : nullptr;
+                const auto source_id = domain::common::SourceId{i + 1};
+                const auto direction = static_cast<domain::common::MotorDirection>(j);
+                const auto* validation_issues = [&]() -> const domain::common::CalibrationResultValidation::Issues* {
+                    if (!current_validation_ || !point_id) {
+                        return nullptr;
+                    }
+                    const domain::common::CalibrationCellKey key{*point_id, source_id, direction};
+                    return &current_validation_->issuesFor(key);
+                }();
+
+                const auto* cell = [&]() -> const domain::common::CalibrationCell* {
+                    if (!current_result_ || !point_id) {
+                        return nullptr;
+                    }
+                    const domain::common::CalibrationCellKey key{*point_id, source_id, direction};
+                    const auto maybe_cell = current_result_->cell(key);
+                    return maybe_cell ? &(*maybe_cell) : nullptr;
+                }();
 
                 if (cell) {
                     if (cell->angle()) {
@@ -485,6 +510,16 @@ void QtCalibrationResultTableModel::rebuildRows()
         }
 
         rows_.push_back(std::move(row));
+    };
+
+    if (current_result_) {
+        for (const auto& point : current_result_->points()) {
+            append_point_row(point.pressure, point);
+        }
+    } else {
+        for (const float point_pressure : current_gauge_points_) {
+            append_point_row(point_pressure, std::nullopt);
+        }
     }
 
     appendInfoRows();
@@ -597,7 +632,7 @@ void QtCalibrationResultTableModel::appendInfoRows()
 void QtCalibrationResultTableModel::refreshRowsWithReset()
 {
     rows_.clear();
-    if (current_result_) {
+    if (current_result_ || !current_gauge_points_.empty()) {
         rebuildRows();
     }
 }

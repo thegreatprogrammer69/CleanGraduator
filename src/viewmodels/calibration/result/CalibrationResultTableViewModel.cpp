@@ -40,6 +40,7 @@ CalibrationResultTableViewModel::CalibrationResultTableViewModel(CalibrationResu
     : result_source_(deps.result_source)
     , validation_source_(deps.validation_source)
     , recorder_(deps.recorder)
+    , gauge_catalog_(deps.gauge_catalog)
     , settings_storage_(deps.settings_storage)
 {
     result_source_.addObserver(*this);
@@ -51,6 +52,7 @@ CalibrationResultTableViewModel::CalibrationResultTableViewModel(CalibrationResu
 
     resetInfo();
     refreshSettings();
+    refreshGaugePoints();
     refreshMeasurementCountsFromRecorder();
     if (const auto& result = result_source_.currentResult(); result) {
         updateInfoFromResult(*result);
@@ -70,6 +72,7 @@ void CalibrationResultTableViewModel::onCalibrationResultUpdated(const Calibrati
 }
 
 void CalibrationResultTableViewModel::onCalibrationResultValidationUpdated(const CalibrationResultValidation& validation) {
+    refreshGaugePoints();
     current_validation.set(validation, true);
     refreshSettings();
     updateCurrentInfo();
@@ -228,4 +231,26 @@ void CalibrationResultTableViewModel::refreshSettings()
     const auto settings = settings_storage_.loadInfoSettings();
     info_.centered_mark_enabled = settings.centered_mark_enabled;
     info_.max_center_deviation_deg = settings.max_center_deviation_deg;
+}
+
+void CalibrationResultTableViewModel::refreshGaugePoints()
+{
+    const auto settings = settings_storage_.loadInfoSettings();
+    if (settings.gauge_idx == selected_gauge_idx_) {
+        return;
+    }
+
+    selected_gauge_idx_ = settings.gauge_idx;
+
+    std::vector<float> points;
+    if (const auto gauge = gauge_catalog_.at(settings.gauge_idx); gauge) {
+        points = gauge->points.value;
+    }
+
+    current_result.set(std::nullopt);
+    current_validation.set(std::nullopt, true);
+    resetInfo();
+    refreshMeasurementCountsFromRecorder();
+    current_gauge_points.set(points, true);
+    updateCurrentInfo();
 }
