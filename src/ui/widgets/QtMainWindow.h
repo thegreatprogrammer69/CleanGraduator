@@ -5,9 +5,11 @@
 
 #include "status_bar/QtAppStatusBarWidget.h"
 #include "../../viewmodels/calibration/recording/CalibrationSeriesViewModel.h"
+#include "../../viewmodels/Observable.h"
 
 class QDockWidget;
 class QWidget;
+class QTabWidget;
 
 namespace mvvm {
     class MainWindowViewModel;
@@ -43,6 +45,10 @@ namespace ui {
 
         QtCalibrationSeriesWidget* calibration_widget_ = nullptr;
         QDockWidget* calibration_dock_ = nullptr;
+        QTabWidget* panel_ = nullptr;
+        int process_tab_index_ = -1;
+        int settings_tab_index_ = -1;
+        mvvm::Observable<bool>::Subscription calibration_can_start_sub_;
 
         mvvm::MainWindowViewModel& model_;
     };

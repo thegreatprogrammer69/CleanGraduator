@@ -59,6 +59,7 @@ namespace ui {
         };
 
         void applyResult(std::optional<domain::common::CalibrationResult> result);
+        void applyGaugePoints(const std::vector<float>& points);
         void rebuildRows();
         void applyValidation(std::optional<domain::common::CalibrationResultValidation> validation);
         void applyInfo(const mvvm::CalibrationResultInfo& info);
@@ -74,10 +75,12 @@ namespace ui {
         mvvm::Observable<std::optional<domain::common::CalibrationResult>>::Subscription current_result_sub_;
         mvvm::Observable<std::optional<domain::common::CalibrationResultValidation>>::Subscription current_validation_sub_;
         mvvm::Observable<mvvm::CalibrationResultInfo>::Subscription current_info_sub_;
+        mvvm::Observable<std::vector<float>>::Subscription current_gauge_points_sub_;
 
         std::optional<domain::common::CalibrationResult> current_result_;
         std::optional<domain::common::CalibrationResultValidation> current_validation_;
         mvvm::CalibrationResultInfo current_info_;
+        std::vector<float> current_gauge_points_;
         QVector<Row> rows_{};
         std::array<QString, kColumnCount> horizontal_headers_{};
     };
