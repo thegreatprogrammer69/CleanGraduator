@@ -258,6 +258,15 @@ QtCalibrationResultTableModel::QtCalibrationResultTableModel(
             endResetModel();
         }, Qt::QueuedConnection);
     });
+
+    current_result_ = vm_.current_result.get_copy();
+    current_validation_ = vm_.current_validation.get_copy();
+    current_info_ = vm_.current_info.get_copy();
+    selected_gauge_pressures_ = vm_.selected_gauge_pressures.get_copy();
+
+    beginResetModel();
+    refreshRowsWithReset();
+    endResetModel();
 }
 
 int QtCalibrationResultTableModel::rowCount(const QModelIndex& parent) const
