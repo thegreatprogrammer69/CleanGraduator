@@ -3,6 +3,7 @@
 
 #include <optional>
 #include <array>
+#include <vector>
 #include <QAbstractTableModel>
 #include <QVector>
 #include <QString>
@@ -74,10 +75,12 @@ namespace ui {
         mvvm::Observable<std::optional<domain::common::CalibrationResult>>::Subscription current_result_sub_;
         mvvm::Observable<std::optional<domain::common::CalibrationResultValidation>>::Subscription current_validation_sub_;
         mvvm::Observable<mvvm::CalibrationResultInfo>::Subscription current_info_sub_;
+        mvvm::Observable<std::vector<float>>::Subscription selected_gauge_pressures_sub_;
 
         std::optional<domain::common::CalibrationResult> current_result_;
         std::optional<domain::common::CalibrationResultValidation> current_validation_;
         mvvm::CalibrationResultInfo current_info_;
+        std::vector<float> selected_gauge_pressures_;
         QVector<Row> rows_{};
         std::array<QString, kColumnCount> horizontal_headers_{};
     };

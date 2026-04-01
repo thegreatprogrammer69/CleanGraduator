@@ -31,6 +31,8 @@
 #include "logging/QtLogViewerWidget.h"
 #include "video/QtVideoSourceGridWidget.h"
 #include "viewmodels/MainWindowViewModel.h"
+#include "viewmodels/control/ControlViewModel.h"
+#include "viewmodels/control/CalibrationSessionControlViewModel.h"
 
 ui::QtMainWindow::QtMainWindow(
     mvvm::MainWindowViewModel& model,
@@ -78,8 +80,8 @@ ui::QtMainWindow::QtMainWindow(
 
     /* ================= Tabs ================= */
 
-    auto* panel = new QTabWidget(rightPanel);
-    panel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    tabs_ = new QTabWidget(rightPanel);
+    tabs_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
 
     /* =================================================
@@ -163,10 +165,10 @@ ui::QtMainWindow::QtMainWindow(
 
     /* ================= Добавление вкладок ================= */
 
-    panel->addTab(processPage,  tr("Процесс"));
-    panel->addTab(settingsPage, tr("Настройки"));
+    tabs_->addTab(processPage,  tr("Процесс"));
+    settings_tab_index_ = tabs_->addTab(settingsPage, tr("Настройки"));
 
-    rightLayout->addWidget(panel, 1);
+    rightLayout->addWidget(tabs_, 1);
 
 
     /* ================= Status Bar Widgets ================= */
@@ -205,6 +207,8 @@ ui::QtMainWindow::QtMainWindow(
 
     root->addWidget(m_cameras);
     root->addWidget(rightPanel, 1);
+
+    bindSettingsTabState();
 }
 
 ui::QtMainWindow::~QtMainWindow()
@@ -237,4 +241,25 @@ void ui::QtMainWindow::createCalibrationDock(mvvm::CalibrationSeriesViewModel& v
 
     calibration_dock_->setFloating(true);
     calibration_dock_->hide();
+}
+
+void ui::QtMainWindow::bindSettingsTabState()
+{
+    auto& calibration_vm = model_.controlViewModel().calibrationViewModel();
+    can_start_sub_ = calibration_vm.can_start.subscribe([this](const auto& change) {
+        QMetaObject::invokeMethod(this, [this, can_start = change.new_value] {
+            if (!tabs_ || settings_tab_index_ < 0) {
+                return;
+            }
+
+            const bool settings_enabled = can_start;
+            tabs_->setTabEnabled(settings_tab_index_, settings_enabled);
+            if (!settings_enabled && tabs_->currentIndex() == settings_tab_index_) {
+                tabs_->setCurrentIndex(0);
+            }
+        }, Qt::QueuedConnection);
+    }, false);
+
+    const bool settings_enabled = calibration_vm.can_start.get_copy();
+    tabs_->setTabEnabled(settings_tab_index_, settings_enabled);
 }

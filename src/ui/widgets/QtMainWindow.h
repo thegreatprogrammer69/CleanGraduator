@@ -5,9 +5,11 @@
 
 #include "status_bar/QtAppStatusBarWidget.h"
 #include "../../viewmodels/calibration/recording/CalibrationSeriesViewModel.h"
+#include "viewmodels/Observable.h"
 
 class QDockWidget;
 class QWidget;
+class QTabWidget;
 
 namespace mvvm {
     class MainWindowViewModel;
@@ -33,6 +35,7 @@ namespace ui {
         void createLogDock(mvvm::LogViewerViewModel& log_vm);
 
         void createCalibrationDock(mvvm::CalibrationSeriesViewModel &vm);
+        void bindSettingsTabState();
 
     private:
 
@@ -43,6 +46,9 @@ namespace ui {
 
         QtCalibrationSeriesWidget* calibration_widget_ = nullptr;
         QDockWidget* calibration_dock_ = nullptr;
+        QTabWidget* tabs_ = nullptr;
+        int settings_tab_index_ = -1;
+        mvvm::Observable<bool>::Subscription can_start_sub_;
 
         mvvm::MainWindowViewModel& model_;
     };

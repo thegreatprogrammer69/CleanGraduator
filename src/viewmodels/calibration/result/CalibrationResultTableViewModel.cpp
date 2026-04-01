@@ -41,18 +41,20 @@ CalibrationResultTableViewModel::CalibrationResultTableViewModel(CalibrationResu
     , validation_source_(deps.validation_source)
     , recorder_(deps.recorder)
     , settings_storage_(deps.settings_storage)
+    , gauge_catalog_(deps.gauge_catalog)
 {
     result_source_.addObserver(*this);
     validation_source_.addObserver(*this);
     recorder_.addObserver(*this);
 
-    current_result.set(result_source_.currentResult());
+    latest_result_ = result_source_.currentResult();
     current_validation.set(validation_source_.currentValidation());
 
     resetInfo();
     refreshSettings();
     refreshMeasurementCountsFromRecorder();
-    if (const auto& result = result_source_.currentResult(); result) {
+    updateCurrentResult();
+    if (const auto& result = current_result.get_copy(); result) {
         updateInfoFromResult(*result);
     }
     updateCurrentInfo();
@@ -65,13 +67,17 @@ CalibrationResultTableViewModel::~CalibrationResultTableViewModel() {
 }
 
 void CalibrationResultTableViewModel::onCalibrationResultUpdated(const CalibrationResult &result) {
-    current_result.set(result);
-    updateInfoFromResult(result);
+    latest_result_ = result;
+    updateCurrentResult();
+    if (current_result.get_copy()) {
+        updateInfoFromResult(result);
+    }
 }
 
 void CalibrationResultTableViewModel::onCalibrationResultValidationUpdated(const CalibrationResultValidation& validation) {
     current_validation.set(validation, true);
     refreshSettings();
+    updateCurrentResult();
     updateCurrentInfo();
 }
 
@@ -228,4 +234,33 @@ void CalibrationResultTableViewModel::refreshSettings()
     const auto settings = settings_storage_.loadInfoSettings();
     info_.centered_mark_enabled = settings.centered_mark_enabled;
     info_.max_center_deviation_deg = settings.max_center_deviation_deg;
+
+    std::vector<float> pressures;
+    if (const auto gauge = gauge_catalog_.at(settings.gauge_idx); gauge) {
+        pressures = gauge->points.value;
+    }
+
+    if (selected_gauge_pressures_ != pressures) {
+        selected_gauge_pressures_ = std::move(pressures);
+        selected_gauge_pressures.set(selected_gauge_pressures_, true);
+    }
+}
+
+void CalibrationResultTableViewModel::updateCurrentResult()
+{
+    if (!latest_result_) {
+        current_result.set(std::nullopt, true);
+        return;
+    }
+
+    const auto& gauge_points = latest_result_->gauge().points.value;
+    if (gauge_points != selected_gauge_pressures_) {
+        current_result.set(std::nullopt, true);
+        resetInfo();
+        refreshMeasurementCountsFromRecorder();
+        updateCurrentInfo();
+        return;
+    }
+
+    current_result.set(latest_result_, true);
 }
