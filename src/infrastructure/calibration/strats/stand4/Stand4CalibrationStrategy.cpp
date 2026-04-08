@@ -369,9 +369,11 @@ void Stand4CalibrationStrategy::transitionToBackward(Verdict& v)
 
     points_tracker_.endTracking();
 
-    points_tracker_.beginTracking(
-        pressure_points_,
-        MotorDirection::Backward);
+    if (calibration_mode_ == CalibrationMode::Full) {
+        points_tracker_.beginTracking(
+            pressure_points_,
+            MotorDirection::Backward);
+    }
 
     v.commands.push_back(
         Verdict::MotorSetFrequency{0});
