@@ -1,6 +1,7 @@
 #include "FileCalibrationResultSaver.h"
 
 #include <fstream>
+#include <optional>
 
 namespace {
 
@@ -9,9 +10,11 @@ namespace {
     }
 
     void write_result(const domain::common::CalibrationResult& result,
-                      const std::filesystem::path& path)
+                      const std::filesystem::path& path,
+                      const std::optional<std::vector<domain::common::SourceId>>& selected_sources)
     {
-        for (const auto& source_id : result.sources()) {
+        const auto& sources = selected_sources.has_value() ? *selected_sources : result.sources();
+        for (const auto& source_id : sources) {
 
             std::ofstream file(path / ("scale" + std::to_string(source_id.value) + ".tbl"));
             if (!file.is_open())
@@ -61,7 +64,8 @@ namespace infra::calib {
 
     application::ports::ICalibrationResultSaver::Result
     FileCalibrationResultSaver::save(const domain::common::CalibrationResult& result,
-                                     const std::filesystem::path& directory) {
+                                     const std::filesystem::path& directory,
+                                     const std::optional<std::vector<domain::common::SourceId>>& source_ids) {
         std::error_code ec;
         std::filesystem::create_directories(directory, ec);
         if (ec) {
@@ -69,7 +73,7 @@ namespace infra::calib {
             return {false, "Не удалось создать директорию для сохранения.", {}};
         }
 
-        write_result(result, directory);
+        write_result(result, directory, source_ids);
         return {true, "", directory};
     }
 

@@ -3,6 +3,7 @@
 
 #include <filesystem>
 #include <string>
+#include <vector>
 
 #include "application/usecases/calibration/SaveCalibrationResult.h"
 #include "domain/ports/calibration/result/ICalibrationResultObserver.h"
@@ -28,6 +29,12 @@ struct CalibrationResultSaveViewModelDeps {
 
 class CalibrationResultSaveViewModel final : public domain::ports::ICalibrationResultObserver {
 public:
+    struct SaveActionFeedback {
+        bool success;
+        std::string error;
+        std::filesystem::path saved_to;
+    };
+
     explicit CalibrationResultSaveViewModel(CalibrationResultSaveViewModelDeps deps);
     ~CalibrationResultSaveViewModel() override;
 
@@ -35,7 +42,9 @@ public:
 
     void save();
     void saveAs(const std::filesystem::path& directory);
+    SaveActionFeedback saveForCameras(const std::vector<int>& camera_numbers);
     bool canRevealInExplorer() const;
+    std::vector<int> cameraNumbers() const;
 
     Observable<int> batch_number{0};
     Observable<std::string> batch_text{std::string("Партия № —")};
