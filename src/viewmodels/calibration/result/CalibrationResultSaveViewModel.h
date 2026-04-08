@@ -3,6 +3,7 @@
 
 #include <filesystem>
 #include <string>
+#include <vector>
 
 #include "application/usecases/calibration/SaveCalibrationResult.h"
 #include "domain/ports/calibration/result/ICalibrationResultObserver.h"
@@ -33,9 +34,13 @@ public:
 
     void onCalibrationResultUpdated(const domain::common::CalibrationResult& result) override;
 
-    void save();
-    void saveAs(const std::filesystem::path& directory);
+    application::usecase::SaveCalibrationResult::Result save();
+    application::usecase::SaveCalibrationResult::Result save(const std::vector<int>& camera_ids);
+    application::usecase::SaveCalibrationResult::Result saveAs(const std::filesystem::path& directory);
+    application::usecase::SaveCalibrationResult::Result saveAs(const std::filesystem::path& directory,
+                                                               const std::vector<int>& camera_ids);
     bool canRevealInExplorer() const;
+    std::vector<int> availableCameraIds() const;
 
     Observable<int> batch_number{0};
     Observable<std::string> batch_text{std::string("Партия № —")};
@@ -46,8 +51,10 @@ public:
     Observable<bool> can_save_as{false};
     Observable<bool> can_show_in_explorer{false};
     Observable<std::filesystem::path> last_saved_path{};
+    Observable<std::vector<int>> available_camera_ids{};
 
 private:
+    std::vector<domain::common::SourceId> mapToSourceIds(const std::vector<int>& camera_ids) const;
     void applySaveResult(const application::usecase::SaveCalibrationResult::Result& result);
     void updateBatchInfo();
 

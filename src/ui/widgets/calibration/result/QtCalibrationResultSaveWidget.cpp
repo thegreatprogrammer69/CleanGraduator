@@ -1,9 +1,16 @@
 #include "QtCalibrationResultSaveWidget.h"
 
 #include <QDesktopServices>
+#include <QDialog>
 #include <QFileDialog>
+#include <QDialogButtonBox>
+#include <QCheckBox>
+#include <QHeaderView>
 #include <QHBoxLayout>
+#include <QMessageBox>
 #include <QMetaObject>
+#include <QTableWidget>
+#include <QTableWidgetItem>
 #include <QUrl>
 #include <QVBoxLayout>
 #include <QVariant>
@@ -74,7 +81,13 @@ void QtCalibrationResultSaveWidget::setupUi() {
 void QtCalibrationResultSaveWidget::bind()
 {
     connect(saveButton_, &QPushButton::clicked, this, [this] {
-        vm_.save();
+        const auto selected_camera_ids = requestCameraSelection();
+        if (!selected_camera_ids.has_value()) {
+            return;
+        }
+
+        const auto result = vm_.save(*selected_camera_ids);
+        showSaveResult(result);
     });
 
     connect(saveAsButton_, &QPushButton::clicked, this, [this] {
@@ -86,7 +99,13 @@ void QtCalibrationResultSaveWidget::bind()
             return;
         }
 
-        vm_.saveAs(directory.toStdString());
+        const auto selected_camera_ids = requestCameraSelection();
+        if (!selected_camera_ids.has_value()) {
+            return;
+        }
+
+        const auto result = vm_.saveAs(directory.toStdString(), *selected_camera_ids);
+        showSaveResult(result);
     });
 
     connect(showInExplorerButton_, &QPushButton::clicked, this, [this] {
@@ -182,6 +201,105 @@ void QtCalibrationResultSaveWidget::openInExplorer(const std::filesystem::path& 
     }
 
     QDesktopServices::openUrl(QUrl::fromLocalFile(QString::fromStdString(path.string())));
+}
+
+std::optional<std::vector<int>> QtCalibrationResultSaveWidget::requestCameraSelection()
+{
+    const auto camera_ids = vm_.available_camera_ids.get_copy();
+    if (camera_ids.empty()) {
+        QMessageBox::warning(
+            this,
+            tr("Сохранение результата"),
+            tr("Нет доступных камер для сохранения результата."));
+        return std::nullopt;
+    }
+
+    QDialog dialog(this);
+    dialog.setWindowTitle(tr("Выбор камер для сохранения"));
+    dialog.resize(480, 180);
+
+    auto* layout = new QVBoxLayout(&dialog);
+
+    auto* table = new QTableWidget(2, static_cast<int>(camera_ids.size()), &dialog);
+    table->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    table->setSelectionMode(QAbstractItemView::NoSelection);
+    table->verticalHeader()->setVisible(true);
+    table->horizontalHeader()->setVisible(false);
+    table->verticalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    table->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    table->setVerticalHeaderItem(0, new QTableWidgetItem(tr("Камера")));
+    table->setVerticalHeaderItem(1, new QTableWidgetItem(tr("Сохранить")));
+
+    std::vector<QCheckBox*> checkboxes;
+    checkboxes.reserve(camera_ids.size());
+
+    for (int col = 0; col < static_cast<int>(camera_ids.size()); ++col) {
+        auto* camera_item = new QTableWidgetItem(QString::number(camera_ids[static_cast<size_t>(col)));
+        camera_item->setTextAlignment(Qt::AlignCenter);
+        table->setItem(0, col, camera_item);
+
+        auto* checkbox = new QCheckBox(&dialog);
+        checkbox->setChecked(true);
+        auto* wrapper = new QWidget(&dialog);
+        auto* wrapper_layout = new QHBoxLayout(wrapper);
+        wrapper_layout->setContentsMargins(0, 0, 0, 0);
+        wrapper_layout->addStretch();
+        wrapper_layout->addWidget(checkbox);
+        wrapper_layout->addStretch();
+        table->setCellWidget(1, col, wrapper);
+        checkboxes.push_back(checkbox);
+    }
+
+    auto* buttons = new QDialogButtonBox(QDialogButtonBox::Save | QDialogButtonBox::Cancel, &dialog);
+    buttons->button(QDialogButtonBox::Save)->setText(tr("Сохранить"));
+    buttons->button(QDialogButtonBox::Cancel)->setText(tr("Отмена"));
+
+    connect(buttons, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
+    connect(buttons, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
+
+    layout->addWidget(table);
+    layout->addWidget(buttons);
+
+    if (dialog.exec() != QDialog::Accepted) {
+        return std::nullopt;
+    }
+
+    std::vector<int> selected_camera_ids;
+    for (size_t i = 0; i < camera_ids.size(); ++i) {
+        if (checkboxes[i]->isChecked()) {
+            selected_camera_ids.push_back(camera_ids[i]);
+        }
+    }
+
+    return selected_camera_ids;
+}
+
+void QtCalibrationResultSaveWidget::showSaveResult(const application::usecase::SaveCalibrationResult::Result& result)
+{
+    const QString path = result.saved_to.empty()
+        ? tr("не определён")
+        : QString::fromStdString(result.saved_to.string());
+
+    if (!result.success) {
+        QMessageBox::critical(
+            this,
+            tr("Сохранение результата"),
+            tr("Сохранение завершилось с ошибкой.\nПуть: %1\nОшибка: %2")
+                .arg(path, QString::fromStdString(result.error)));
+        return;
+    }
+
+    QMessageBox box(this);
+    box.setIcon(QMessageBox::Information);
+    box.setWindowTitle(tr("Сохранение результата"));
+    box.setText(tr("Результат успешно сохранён.\nПуть: %1").arg(path));
+    box.addButton(tr("ОК"), QMessageBox::AcceptRole);
+    auto* show_button = box.addButton(tr("Показать в проводнике"), QMessageBox::ActionRole);
+
+    box.exec();
+    if (box.clickedButton() == show_button) {
+        openInExplorer(result.saved_to);
+    }
 }
 
 } // namespace ui
