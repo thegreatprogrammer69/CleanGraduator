@@ -6,6 +6,7 @@
 #include "domain/core/drivers/motor/MotorFlapsState.h"
 
 #include "infrastructure/calibration/tracking/PressurePointsTrackerEvent.h"
+#include <cmath>
 
 using namespace domain;
 using namespace domain::common;
@@ -52,7 +53,11 @@ Stand4CalibrationStrategy::begin(const CalibrationStrategyBeginContext& ctx)
 
     logger_.info("Запуск стратегии калибровки Stand4");
 
+    calibration_mode_ = ctx.calibration_mode;
     pressure_points_ = ctx.pressure_points.to(ctx.pressure_unit);
+    if (calibration_mode_ == CalibrationMode::OnlyLast && pressure_points_.size() > 2) {
+        pressure_points_ = {pressure_points_.front(), pressure_points_.back()};
+    }
 
     last_pressure_ = 0.0;
     last_time_ = 0.0;
@@ -61,6 +66,13 @@ Stand4CalibrationStrategy::begin(const CalibrationStrategyBeginContext& ctx)
     p_target_   = computeTargetPressure(ctx.pressure_points).to(ctx.pressure_unit);
     p_limit_    = computeLimitPressure(ctx.pressure_points).to(ctx.pressure_unit);
     dp_nominal_ = computeNominalVelocity(ctx.pressure_points).to(ctx.pressure_unit);
+    if (calibration_mode_ == CalibrationMode::OnlyLast) {
+        const auto mode_points = PressurePoints::from(pressure_points_, ctx.pressure_unit);
+        p_preload_  = computePreloadPressure(mode_points).to(ctx.pressure_unit);
+        p_target_   = computeTargetPressure(mode_points).to(ctx.pressure_unit);
+        p_limit_    = computeLimitPressure(mode_points).to(ctx.pressure_unit);
+        dp_nominal_ = computeNominalVelocity(mode_points).to(ctx.pressure_unit);
+    }
 
     points_tracker_.setEnterThreshold(0.15);
     points_tracker_.setExitThreshold(0.1);
@@ -237,8 +249,8 @@ void Stand4CalibrationStrategy::updateForward(
         dt);
 
     if (ctx.limits_state.end) {
-        logger_.error("Конечный концевик был активен во время обратного хода");
-        v.commands.push_back(Verdict::Fault{logger_.lastError()});
+        logger_.warn("Достигнут конечный концевик на прямом ходе, переход на обратный ход");
+        transitionToBackward(v);
         return;
     }
 
@@ -252,11 +264,14 @@ void Stand4CalibrationStrategy::updateForward(
         return;
     }
 
-    const int freq = freq_calc_.frequency(
-        p_cur,
-        p_target_,
-        dp_cur,
-        dp_nominal_);
+    const float mode_multiplier = calibration_mode_ == CalibrationMode::OnlyLast ? 2.0F : 1.0F;
+    const int freq = static_cast<int>(std::round(
+        mode_multiplier
+        * static_cast<float>(freq_calc_.frequency(
+            p_cur,
+            p_target_,
+            dp_cur,
+            dp_nominal_))));
 
     logger_.info("Расчёт частоты двигателя {}", freq);
 
@@ -266,18 +281,37 @@ void Stand4CalibrationStrategy::updateForward(
 
 void Stand4CalibrationStrategy::updateBackward(const CalibrationStrategyFeedContext& ctx, Verdict& v)
 {
-    // if (ctx.pressure < 10) {
     if (ctx.limits_state.home) {
-        logger_.info("Двигатель дошёл до конечного концевика");
+        logger_.info("Двигатель дошёл до начального концевика");
         transitionToFinished(v);
+        return;
     }
 
-    const int f_max = 2000; // можно брать из config
+    constexpr int f_max = 2000; // можно брать из config
+    int frequency = f_max;
 
-   logger_.info("Возврат двигателя домой частота {}", f_max);
+    if (calibration_mode_ == CalibrationMode::Full) {
+        const float dt = ctx.timestamp - last_time_;
+        const float dp_cur =
+            (last_time_ > 0.0f && dt > 0.0f)
+            ? std::abs((ctx.pressure - last_pressure_) / dt)
+            : 0.0f;
+
+        const float pressure_for_calc =
+            ctx.pressure < 0.0f
+            ? 0.0f
+            : (ctx.pressure > p_target_ ? static_cast<float>(p_target_) : ctx.pressure);
+        frequency = freq_calc_.frequency(
+            pressure_for_calc,
+            p_target_,
+            dp_cur,
+            dp_nominal_);
+    }
+
+    logger_.info("Возврат двигателя домой частота {}", frequency);
 
     v.commands.push_back(
-        Verdict::MotorSetFrequency{f_max});
+        Verdict::MotorSetFrequency{frequency});
 }
 
 /* ============================

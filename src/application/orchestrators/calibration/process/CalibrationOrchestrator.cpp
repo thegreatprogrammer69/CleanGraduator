@@ -139,10 +139,17 @@ bool CalibrationOrchestrator::start(CalibrationOrchestratorInput input)
                 calibration_layout.directions.push_back(MotorDirection::Backward);
             }
 
+            std::vector<float> points_for_layout = inp_.gauge.points.value;
+            if (inp_.calibration_mode == CalibrationMode::OnlyLast
+                && points_for_layout.size() > 2)
+            {
+                points_for_layout = {points_for_layout.front(), points_for_layout.back()};
+            }
+
             int i = 0;
-            for (const auto& pp : inp_.gauge.points.value) {
+            for (const auto& pp : points_for_layout) {
                 calibration_layout.points.push_back(PointId(i, pp));
-                i++;
+                ++i;
             }
 
             CalibrationRecordingContext recording_context {

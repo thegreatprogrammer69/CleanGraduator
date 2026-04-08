@@ -11,6 +11,7 @@
 #include "Stand4FrequencyCalculator.h"
 
 #include "domain/fmt/Logger.h"
+#include "domain/core/calibration/common/CalibrationMode.h"
 
 #include "infrastructure/calibration/strats/CalibrationStrategyPorts.h"
 #include "infrastructure/calibration/tracking/IPressurePointsTrackerObserver.h"
@@ -85,6 +86,7 @@ private:
     std::atomic<State> state_{State::Idle};
 
     std::vector<float> pressure_points_;
+    domain::common::CalibrationMode calibration_mode_{domain::common::CalibrationMode::Full};
 
     double p_preload_{0.0};
     double p_target_{0.0};

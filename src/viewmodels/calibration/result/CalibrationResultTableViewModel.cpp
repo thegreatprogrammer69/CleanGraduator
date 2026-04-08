@@ -110,6 +110,10 @@ void CalibrationResultTableViewModel::resetInfo()
 
 void CalibrationResultTableViewModel::updateInfoFromResult(const CalibrationResult& result)
 {
+    const bool is_aim_mode_result =
+        result.points().size() == 2
+        && result.gauge().points.value.size() > 2;
+
     for (const auto& source_id : result.sources()) {
         if (!result.points().empty()) {
             const auto& first_point = result.points().front();
@@ -122,9 +126,11 @@ void CalibrationResultTableViewModel::updateInfoFromResult(const CalibrationResu
         }
 
         for (const auto direction : result.directions()) {
-            const auto nonlinearity = calculateNonlinearity(result, source_id, direction);
-            if (nonlinearity) {
-                info_.nonlinearities[source_id][direction] = *nonlinearity;
+            if (!is_aim_mode_result) {
+                const auto nonlinearity = calculateNonlinearity(result, source_id, direction);
+                if (nonlinearity) {
+                    info_.nonlinearities[source_id][direction] = *nonlinearity;
+                }
             }
             const auto center_deviation = calculateCenterDeviationDeg(result, source_id, direction);
             if (center_deviation) {
