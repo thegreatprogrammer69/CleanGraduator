@@ -26,6 +26,17 @@ using namespace domain::common;
 
 namespace {
 constexpr auto kMotorWatchdogTimeout = std::chrono::milliseconds(200);
+
+std::vector<float> selectCalibrationPoints(
+    const std::vector<float>& gauge_points,
+    domain::common::CalibrationMode mode)
+{
+    if (mode != domain::common::CalibrationMode::OnlyLast || gauge_points.size() <= 2) {
+        return gauge_points;
+    }
+
+    return {gauge_points.front(), gauge_points.back()};
+}
 }
 
 CalibrationOrchestrator::CalibrationOrchestrator(CalibrationOrchestratorPorts ports)
@@ -139,8 +150,12 @@ bool CalibrationOrchestrator::start(CalibrationOrchestratorInput input)
                 calibration_layout.directions.push_back(MotorDirection::Backward);
             }
 
+            const auto calibration_points = selectCalibrationPoints(
+                inp_.gauge.points.value,
+                inp_.calibration_mode);
+
             int i = 0;
-            for (const auto& pp : inp_.gauge.points.value) {
+            for (const auto& pp : calibration_points) {
                 calibration_layout.points.push_back(PointId(i, pp));
                 i++;
             }
