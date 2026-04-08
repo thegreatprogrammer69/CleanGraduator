@@ -85,8 +85,6 @@ elseif(UNIX)
             calibration/batch/BatchContextProviderPorts.h
             calibration/batch/BatchContextProvider.cpp
             calibration/batch/BatchContextProvider.h
-            ../shared/color/Color.cpp
-            ../shared/color/Color.h
     )
 endif()
 
