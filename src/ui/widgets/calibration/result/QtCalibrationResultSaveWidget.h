@@ -4,6 +4,8 @@
 #include <QLabel>
 #include <QPushButton>
 #include <QWidget>
+#include <optional>
+#include <vector>
 
 #include "viewmodels/Observable.h"
 #include "viewmodels/calibration/result/CalibrationResultSaveViewModel.h"
@@ -22,6 +24,8 @@ private:
     void bind();
     void updateStateBadge(mvvm::CalibrationResultSaveState state, const QString& text);
     void openInExplorer(const std::filesystem::path& path);
+    std::optional<std::vector<int>> requestCameraSelection();
+    void showSaveResult(const application::usecase::SaveCalibrationResult::Result& result);
 
     mvvm::CalibrationResultSaveViewModel& vm_;
     QLabel* batchLabel_{nullptr};
