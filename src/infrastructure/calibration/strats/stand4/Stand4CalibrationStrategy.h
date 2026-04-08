@@ -75,6 +75,11 @@ private:
     void transitionToFault(Verdict& v);
 
 private:
+    [[nodiscard]] bool isReverseSpeedRegulated() const noexcept;
+    [[nodiscard]] int maxBackwardFrequency() const noexcept;
+    [[nodiscard]] int applyForwardModeFrequency(int frequency) const noexcept;
+
+private:
 
     fmt::Logger logger_;
 
@@ -93,6 +98,7 @@ private:
 
     double last_pressure_{0.0};
     double last_time_{0.0};
+    domain::common::CalibrationMode calibration_mode_{domain::common::CalibrationMode::Full};
 
     // команды, накопленные из tracker callbacks
     std::vector<Verdict::Command> pending_;
