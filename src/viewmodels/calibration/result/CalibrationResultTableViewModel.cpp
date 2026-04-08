@@ -162,7 +162,7 @@ std::optional<float> CalibrationResultTableViewModel::calculateNonlinearity(
         angles.push_back(*angle);
     }
 
-    if (angles.size() < 2) {
+    if (angles.size() < 3) {
         return std::nullopt;
     }
 

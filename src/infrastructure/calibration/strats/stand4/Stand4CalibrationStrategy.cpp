@@ -17,6 +17,8 @@ using namespace infra::calib::tracking;
 
 namespace
 {
+constexpr int kMaxMotorFrequencyHz = 2000;
+
 const char* toString(Stand4CalibrationStrategy::State s)
 {
     switch (s) {
@@ -53,9 +55,16 @@ Stand4CalibrationStrategy::begin(const CalibrationStrategyBeginContext& ctx)
     logger_.info("Запуск стратегии калибровки Stand4");
 
     pressure_points_ = ctx.pressure_points.to(ctx.pressure_unit);
+    calibration_mode_ = ctx.calibration_mode;
+
+    if (calibration_mode_ == CalibrationMode::OnlyLast && pressure_points_.size() >= 2) {
+        pressure_points_ = { pressure_points_.front(), pressure_points_.back() };
+    }
 
     last_pressure_ = 0.0;
     last_time_ = 0.0;
+    p_backward_start_ = 0.0;
+    p_backward_target_ = 0.0;
 
     p_preload_  = computePreloadPressure(ctx.pressure_points).to(ctx.pressure_unit);
     p_target_   = computeTargetPressure(ctx.pressure_points).to(ctx.pressure_unit);
@@ -237,8 +246,8 @@ void Stand4CalibrationStrategy::updateForward(
         dt);
 
     if (ctx.limits_state.end) {
-        logger_.error("Конечный концевик был активен во время обратного хода");
-        v.commands.push_back(Verdict::Fault{logger_.lastError()});
+        logger_.info("Достигнут конечный концевик на прямом ходе");
+        transitionToBackward(v);
         return;
     }
 
@@ -257,27 +266,48 @@ void Stand4CalibrationStrategy::updateForward(
         p_target_,
         dp_cur,
         dp_nominal_);
+    const int mode_freq = calibration_mode_ == CalibrationMode::OnlyLast
+        ? std::min(freq * 2, kMaxMotorFrequencyHz)
+        : freq;
 
-    logger_.info("Расчёт частоты двигателя {}", freq);
+    logger_.info("Расчёт частоты двигателя {}", mode_freq);
 
     v.commands.push_back(
-        Verdict::MotorSetFrequency{freq});
+        Verdict::MotorSetFrequency{mode_freq});
 }
 
 void Stand4CalibrationStrategy::updateBackward(const CalibrationStrategyFeedContext& ctx, Verdict& v)
 {
-    // if (ctx.pressure < 10) {
     if (ctx.limits_state.home) {
         logger_.info("Двигатель дошёл до конечного концевика");
         transitionToFinished(v);
+        return;
     }
 
-    const int f_max = 2000; // можно брать из config
+    const float p_cur = ctx.pressure;
+    const float dt = ctx.timestamp - last_time_;
 
-   logger_.info("Возврат двигателя домой частота {}", f_max);
+    const float dp_cur =
+        (last_time_ > 0.0f && dt > 0.0f)
+        ? (p_cur - last_pressure_) / dt
+        : 0.0f;
+
+    int frequency = kMaxMotorFrequencyHz;
+
+    if (calibration_mode_ == CalibrationMode::Full) {
+        const double backward_progress = std::max(0.0, p_backward_start_ - static_cast<double>(p_cur));
+        const double backward_target = std::max(0.001, p_backward_start_ - p_backward_target_);
+        frequency = freq_calc_.frequency(
+            backward_progress,
+            backward_target,
+            -dp_cur,
+            dp_nominal_);
+    }
+
+    logger_.info("Возврат двигателя домой частота {}", frequency);
 
     v.commands.push_back(
-        Verdict::MotorSetFrequency{f_max});
+        Verdict::MotorSetFrequency{frequency});
 }
 
 /* ============================
@@ -330,6 +360,9 @@ void Stand4CalibrationStrategy::transitionToForward(Verdict& v)
 void Stand4CalibrationStrategy::transitionToBackward(Verdict& v)
 {
     transition(State::Backward);
+    freq_calc_.reset();
+    p_backward_start_ = last_pressure_;
+    p_backward_target_ = p_preload_;
 
     v.commands.push_back(Verdict::EndSession{});
 

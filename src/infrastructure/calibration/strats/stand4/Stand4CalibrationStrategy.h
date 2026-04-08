@@ -10,6 +10,7 @@
 #include "stand4logic.h"
 #include "Stand4FrequencyCalculator.h"
 
+#include "domain/core/calibration/common/CalibrationMode.h"
 #include "domain/fmt/Logger.h"
 
 #include "infrastructure/calibration/strats/CalibrationStrategyPorts.h"
@@ -90,9 +91,14 @@ private:
     double p_target_{0.0};
     double p_limit_{0.0};
     double dp_nominal_{0.0};
+    double p_backward_start_{0.0};
+    double p_backward_target_{0.0};
 
     double last_pressure_{0.0};
     double last_time_{0.0};
+    domain::common::CalibrationMode calibration_mode_{
+        domain::common::CalibrationMode::Full
+    };
 
     // команды, накопленные из tracker callbacks
     std::vector<Verdict::Command> pending_;

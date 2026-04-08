@@ -135,14 +135,24 @@ bool CalibrationOrchestrator::start(CalibrationOrchestratorInput input)
             calibration_layout.sources = std::vector(opened_angle_sources_.begin(), opened_angle_sources_.end());
             calibration_layout.directions.push_back(MotorDirection::Forward);
 
-            if (inp_.calibration_mode == CalibrationMode::Full) {
+            if (inp_.calibration_mode != CalibrationMode::OnlyForward) {
                 calibration_layout.directions.push_back(MotorDirection::Backward);
             }
 
-            int i = 0;
-            for (const auto& pp : inp_.gauge.points.value) {
-                calibration_layout.points.push_back(PointId(i, pp));
-                i++;
+            const auto& gauge_points = inp_.gauge.points.value;
+            if (gauge_points.empty()) {
+                throw std::runtime_error("Gauge has no pressure points");
+            }
+
+            if (inp_.calibration_mode == CalibrationMode::OnlyLast && gauge_points.size() >= 2) {
+                calibration_layout.points.push_back(PointId(0, gauge_points.front()));
+                calibration_layout.points.push_back(PointId(1, gauge_points.back()));
+            } else {
+                int i = 0;
+                for (const auto& pp : gauge_points) {
+                    calibration_layout.points.push_back(PointId(i, pp));
+                    i++;
+                }
             }
 
             CalibrationRecordingContext recording_context {
