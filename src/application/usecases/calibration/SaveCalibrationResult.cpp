@@ -16,23 +16,26 @@ SaveCalibrationResult::SaveCalibrationResult(
 {
 }
 
-SaveCalibrationResult::Result SaveCalibrationResult::save()
+SaveCalibrationResult::Result SaveCalibrationResult::save(
+    const std::vector<domain::common::SourceId>& selected_sources)
 {
     const auto batch = batch_context_provider_.current();
     if (!batch) {
         return {false, "Не удалось подготовить директорию партии.", std::nullopt, {}};
     }
 
-    return saveToDirectory(batch->full_path, batch);
+    return saveToDirectory(batch->full_path, batch, selected_sources);
 }
 
-SaveCalibrationResult::Result SaveCalibrationResult::saveAs(const std::filesystem::path& directory)
+SaveCalibrationResult::Result SaveCalibrationResult::saveAs(
+    const std::filesystem::path& directory,
+    const std::vector<domain::common::SourceId>& selected_sources)
 {
     if (directory.empty()) {
         return {false, "Не выбрана директория для сохранения.", last_batch_, last_saved_path_};
     }
 
-    return saveToDirectory(directory, std::nullopt);
+    return saveToDirectory(directory, std::nullopt, selected_sources);
 }
 
 const std::optional<application::models::BatchContext>& SaveCalibrationResult::lastBatch() const
@@ -47,14 +50,15 @@ const std::filesystem::path& SaveCalibrationResult::lastSavedPath() const
 
 SaveCalibrationResult::Result SaveCalibrationResult::saveToDirectory(
     const std::filesystem::path& directory,
-    std::optional<application::models::BatchContext> batch)
+    std::optional<application::models::BatchContext> batch,
+    const std::vector<domain::common::SourceId>& selected_sources)
 {
     const auto& current_result = result_source_.currentResult();
     if (!current_result) {
         return {false, "Нет результата для сохранения.", last_batch_, last_saved_path_};
     }
 
-    const auto save_result = saver_.save(*current_result, directory);
+    const auto save_result = saver_.save(*current_result, directory, selected_sources);
     if (!save_result.success) {
         return {false, save_result.error, last_batch_, last_saved_path_};
     }

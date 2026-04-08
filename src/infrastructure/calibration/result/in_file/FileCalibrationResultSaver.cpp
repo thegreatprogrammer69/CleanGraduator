@@ -1,6 +1,7 @@
 #include "FileCalibrationResultSaver.h"
 
 #include <fstream>
+#include <unordered_set>
 
 namespace {
 
@@ -9,9 +10,18 @@ namespace {
     }
 
     void write_result(const domain::common::CalibrationResult& result,
-                      const std::filesystem::path& path)
+                      const std::filesystem::path& path,
+                      const std::vector<domain::common::SourceId>& selected_sources)
     {
+        std::unordered_set<domain::common::SourceId> selected;
+        if (!selected_sources.empty()) {
+            selected.insert(selected_sources.begin(), selected_sources.end());
+        }
+
         for (const auto& source_id : result.sources()) {
+            if (!selected.empty() && selected.find(source_id) == selected.end()) {
+                continue;
+            }
 
             std::ofstream file(path / ("scale" + std::to_string(source_id.value) + ".tbl"));
             if (!file.is_open())
@@ -61,7 +71,8 @@ namespace infra::calib {
 
     application::ports::ICalibrationResultSaver::Result
     FileCalibrationResultSaver::save(const domain::common::CalibrationResult& result,
-                                     const std::filesystem::path& directory) {
+                                     const std::filesystem::path& directory,
+                                     const std::vector<domain::common::SourceId>& selected_sources) {
         std::error_code ec;
         std::filesystem::create_directories(directory, ec);
         if (ec) {
@@ -69,7 +80,7 @@ namespace infra::calib {
             return {false, "Не удалось создать директорию для сохранения.", {}};
         }
 
-        write_result(result, directory);
+        write_result(result, directory, selected_sources);
         return {true, "", directory};
     }
 
