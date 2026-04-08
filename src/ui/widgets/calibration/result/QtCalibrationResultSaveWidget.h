@@ -2,7 +2,9 @@
 #define CLEANGRADUATOR_QTCALIBRATIONRESULTSAVEWIDGET_H
 
 #include <QLabel>
+#include <optional>
 #include <QPushButton>
+#include <vector>
 #include <QWidget>
 
 #include "viewmodels/Observable.h"
@@ -20,6 +22,8 @@ public:
 private:
     void setupUi();
     void bind();
+    std::optional<std::vector<int>> requestSelectedCameras();
+    void showSaveFeedbackMessage(const mvvm::CalibrationResultSaveViewModel::SaveActionFeedback& result);
     void updateStateBadge(mvvm::CalibrationResultSaveState state, const QString& text);
     void openInExplorer(const std::filesystem::path& path);
 

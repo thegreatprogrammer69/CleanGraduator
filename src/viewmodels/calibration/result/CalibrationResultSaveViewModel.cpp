@@ -1,5 +1,7 @@
 #include "CalibrationResultSaveViewModel.h"
 
+#include <algorithm>
+
 #include "domain/ports/calibration/result/ICalibrationResultSource.h"
 
 namespace mvvm {
@@ -50,9 +52,45 @@ void CalibrationResultSaveViewModel::saveAs(const std::filesystem::path& directo
     applySaveResult(save_use_case_.saveAs(directory));
 }
 
+CalibrationResultSaveViewModel::SaveActionFeedback
+CalibrationResultSaveViewModel::saveForCameras(const std::vector<int>& camera_numbers)
+{
+    std::vector<domain::common::SourceId> source_ids;
+    source_ids.reserve(camera_numbers.size());
+    for (const auto camera : camera_numbers) {
+        source_ids.emplace_back(camera);
+    }
+
+    save_state.set(CalibrationResultSaveState::Saving);
+    save_state_text.set("Сохраняется");
+    error_text.set("");
+
+    const auto result = save_use_case_.saveForSources(source_ids);
+    applySaveResult(result);
+
+    return {result.success, result.error, result.saved_to};
+}
+
 bool CalibrationResultSaveViewModel::canRevealInExplorer() const
 {
     return !save_use_case_.lastSavedPath().empty();
+}
+
+std::vector<int> CalibrationResultSaveViewModel::cameraNumbers() const
+{
+    std::vector<int> cameras;
+    const auto& result = result_source_.currentResult();
+    if (!result) {
+        return cameras;
+    }
+
+    cameras.reserve(result->sources().size());
+    for (const auto& source : result->sources()) {
+        cameras.push_back(source.value);
+    }
+
+    std::sort(cameras.begin(), cameras.end());
+    return cameras;
 }
 
 void CalibrationResultSaveViewModel::applySaveResult(const application::usecase::SaveCalibrationResult::Result& result)

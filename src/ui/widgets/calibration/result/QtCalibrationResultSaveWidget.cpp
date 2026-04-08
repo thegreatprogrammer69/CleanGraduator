@@ -1,9 +1,15 @@
 #include "QtCalibrationResultSaveWidget.h"
 
 #include <QDesktopServices>
+#include <QDialog>
+#include <QDialogButtonBox>
 #include <QFileDialog>
 #include <QHBoxLayout>
+#include <QHeaderView>
+#include <QMessageBox>
 #include <QMetaObject>
+#include <QTableWidget>
+#include <QTableWidgetItem>
 #include <QUrl>
 #include <QVBoxLayout>
 #include <QVariant>
@@ -74,7 +80,13 @@ void QtCalibrationResultSaveWidget::setupUi() {
 void QtCalibrationResultSaveWidget::bind()
 {
     connect(saveButton_, &QPushButton::clicked, this, [this] {
-        vm_.save();
+        const auto selected_cameras = requestSelectedCameras();
+        if (!selected_cameras.has_value()) {
+            return;
+        }
+
+        const auto result = vm_.saveForCameras(*selected_cameras);
+        showSaveFeedbackMessage(result);
     });
 
     connect(saveAsButton_, &QPushButton::clicked, this, [this] {
@@ -146,6 +158,98 @@ void QtCalibrationResultSaveWidget::bind()
     saveButton_->setEnabled(vm_.can_save.get_copy());
     saveAsButton_->setEnabled(vm_.can_save_as.get_copy());
     showInExplorerButton_->setEnabled(vm_.can_show_in_explorer.get_copy());
+}
+
+std::optional<std::vector<int>> QtCalibrationResultSaveWidget::requestSelectedCameras()
+{
+    const auto cameras = vm_.cameraNumbers();
+    if (cameras.empty()) {
+        QMessageBox::warning(
+            this,
+            tr("Сохранение результата"),
+            tr("Нет доступных камер для сохранения."));
+        return std::nullopt;
+    }
+
+    QDialog dialog(this);
+    dialog.setWindowTitle(tr("Выбор камер для сохранения"));
+    dialog.setModal(true);
+
+    auto* layout = new QVBoxLayout(&dialog);
+    auto* table = new QTableWidget(2, static_cast<int>(cameras.size()), &dialog);
+    table->verticalHeader()->setVisible(false);
+    table->horizontalHeader()->setVisible(false);
+    table->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    table->setSelectionMode(QAbstractItemView::NoSelection);
+    table->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+
+    for (int col = 0; col < static_cast<int>(cameras.size()); ++col) {
+        auto* camera_item = new QTableWidgetItem(QString::number(cameras[col]));
+        camera_item->setTextAlignment(Qt::AlignCenter);
+        table->setItem(0, col, camera_item);
+
+        auto* check_item = new QTableWidgetItem();
+        check_item->setFlags(Qt::ItemIsEnabled | Qt::ItemIsUserCheckable);
+        check_item->setCheckState(Qt::Checked);
+        table->setItem(1, col, check_item);
+    }
+
+    auto* buttons = new QDialogButtonBox(QDialogButtonBox::Save | QDialogButtonBox::Cancel, &dialog);
+    buttons->button(QDialogButtonBox::Save)->setText(tr("Сохранить"));
+    buttons->button(QDialogButtonBox::Cancel)->setText(tr("Отмена"));
+
+    QObject::connect(buttons, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
+    QObject::connect(buttons, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
+
+    layout->addWidget(table);
+    layout->addWidget(buttons);
+
+    if (dialog.exec() != QDialog::Accepted) {
+        return std::nullopt;
+    }
+
+    std::vector<int> selected;
+    for (int col = 0; col < table->columnCount(); ++col) {
+        const auto* item = table->item(1, col);
+        if (item != nullptr && item->checkState() == Qt::Checked) {
+            selected.push_back(cameras[col]);
+        }
+    }
+
+    return selected;
+}
+
+void QtCalibrationResultSaveWidget::showSaveFeedbackMessage(
+    const mvvm::CalibrationResultSaveViewModel::SaveActionFeedback& result)
+{
+    QMessageBox message_box(this);
+    message_box.setWindowTitle(tr("Сохранение результата"));
+
+    QString text;
+    if (result.success) {
+        text = tr("Результат успешно сохранён.\nПуть: %1")
+                   .arg(QString::fromStdString(result.saved_to.string()));
+        message_box.setIcon(QMessageBox::Information);
+        message_box.setText(text);
+
+        const auto open_button = message_box.addButton(tr("Показать в проводнике"), QMessageBox::ActionRole);
+        message_box.addButton(QMessageBox::Ok);
+        message_box.exec();
+
+        if (message_box.clickedButton() == open_button) {
+            openInExplorer(result.saved_to);
+        }
+        return;
+    }
+
+    const QString path_text = result.saved_to.empty()
+        ? tr("не определён")
+        : QString::fromStdString(result.saved_to.string());
+    text = tr("Ошибка сохранения: %1\nПуть: %2")
+               .arg(QString::fromStdString(result.error), path_text);
+    message_box.setIcon(QMessageBox::Critical);
+    message_box.setText(text);
+    message_box.exec();
 }
 
 void QtCalibrationResultSaveWidget::updateStateBadge(mvvm::CalibrationResultSaveState state, const QString& text)
