@@ -1,5 +1,7 @@
 #include "CalibrationResultSaveViewModel.h"
 
+#include <algorithm>
+
 #include "domain/ports/calibration/result/ICalibrationResultSource.h"
 
 namespace mvvm {
@@ -32,27 +34,75 @@ void CalibrationResultSaveViewModel::onCalibrationResultUpdated(const domain::co
     can_show_in_explorer.set(canRevealInExplorer());
 }
 
-void CalibrationResultSaveViewModel::save()
+application::usecase::SaveCalibrationResult::Result CalibrationResultSaveViewModel::save()
 {
-    save_state.set(CalibrationResultSaveState::Saving);
-    save_state_text.set("Сохраняется");
-    error_text.set("");
-
-    applySaveResult(save_use_case_.save());
+    const auto camera_ids = availableCameraIds();
+    return save(camera_ids);
 }
 
-void CalibrationResultSaveViewModel::saveAs(const std::filesystem::path& directory)
+application::usecase::SaveCalibrationResult::Result CalibrationResultSaveViewModel::save(const std::vector<int>& camera_ids)
 {
     save_state.set(CalibrationResultSaveState::Saving);
     save_state_text.set("Сохраняется");
     error_text.set("");
 
-    applySaveResult(save_use_case_.saveAs(directory));
+    std::vector<domain::common::SourceId> selected_sources;
+    selected_sources.reserve(camera_ids.size());
+    for (const int camera_id : camera_ids) {
+        selected_sources.emplace_back(camera_id);
+    }
+
+    const auto result = save_use_case_.save(selected_sources);
+    applySaveResult(result);
+    return result;
+}
+
+application::usecase::SaveCalibrationResult::Result CalibrationResultSaveViewModel::saveAs(
+    const std::filesystem::path& directory)
+{
+    const auto camera_ids = availableCameraIds();
+    return saveAs(directory, camera_ids);
+}
+
+application::usecase::SaveCalibrationResult::Result CalibrationResultSaveViewModel::saveAs(
+    const std::filesystem::path& directory,
+    const std::vector<int>& camera_ids)
+{
+    save_state.set(CalibrationResultSaveState::Saving);
+    save_state_text.set("Сохраняется");
+    error_text.set("");
+
+    std::vector<domain::common::SourceId> selected_sources;
+    selected_sources.reserve(camera_ids.size());
+    for (const int camera_id : camera_ids) {
+        selected_sources.emplace_back(camera_id);
+    }
+
+    const auto result = save_use_case_.saveAs(directory, selected_sources);
+    applySaveResult(result);
+    return result;
 }
 
 bool CalibrationResultSaveViewModel::canRevealInExplorer() const
 {
     return !save_use_case_.lastSavedPath().empty();
+}
+
+std::vector<int> CalibrationResultSaveViewModel::availableCameraIds() const
+{
+    std::vector<int> camera_ids;
+    const auto current = result_source_.currentResult();
+    if (!current) {
+        return camera_ids;
+    }
+
+    camera_ids.reserve(current->sources().size());
+    for (const auto& source_id : current->sources()) {
+        camera_ids.push_back(source_id.value);
+    }
+    std::sort(camera_ids.begin(), camera_ids.end());
+    camera_ids.erase(std::unique(camera_ids.begin(), camera_ids.end()), camera_ids.end());
+    return camera_ids;
 }
 
 void CalibrationResultSaveViewModel::applySaveResult(const application::usecase::SaveCalibrationResult::Result& result)

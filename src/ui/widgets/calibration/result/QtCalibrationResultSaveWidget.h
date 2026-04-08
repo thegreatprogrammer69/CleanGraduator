@@ -4,6 +4,7 @@
 #include <QLabel>
 #include <QPushButton>
 #include <QWidget>
+#include <vector>
 
 #include "viewmodels/Observable.h"
 #include "viewmodels/calibration/result/CalibrationResultSaveViewModel.h"
@@ -18,8 +19,15 @@ public:
     ~QtCalibrationResultSaveWidget() override;
 
 private:
+    struct CameraSelectionResult {
+        bool accepted{false};
+        std::vector<int> selected_camera_ids;
+    };
+
     void setupUi();
     void bind();
+    CameraSelectionResult requestCameraSelection() const;
+    void showSaveResultMessage(const application::usecase::SaveCalibrationResult::Result& result);
     void updateStateBadge(mvvm::CalibrationResultSaveState state, const QString& text);
     void openInExplorer(const std::filesystem::path& path);
 

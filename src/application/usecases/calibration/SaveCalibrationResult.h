@@ -4,8 +4,10 @@
 #include <filesystem>
 #include <optional>
 #include <string>
+#include <vector>
 
 #include "application/common/info/BatchContext.h"
+#include "domain/core/angle/SourceId.h"
 
 namespace application::ports {
 class IBatchContextProvider;
@@ -32,14 +34,18 @@ public:
                           application::ports::IBatchContextProvider& batch_context_provider);
 
     Result save();
+    Result save(const std::vector<domain::common::SourceId>& selected_sources);
     Result saveAs(const std::filesystem::path& directory);
+    Result saveAs(const std::filesystem::path& directory,
+                  const std::vector<domain::common::SourceId>& selected_sources);
 
     const std::optional<application::models::BatchContext>& lastBatch() const;
     const std::filesystem::path& lastSavedPath() const;
 
 private:
     Result saveToDirectory(const std::filesystem::path& directory,
-                           std::optional<application::models::BatchContext> batch);
+                           std::optional<application::models::BatchContext> batch,
+                           const std::vector<domain::common::SourceId>& selected_sources = {});
 
     domain::ports::ICalibrationResultSource& result_source_;
     application::ports::ICalibrationResultSaver& saver_;

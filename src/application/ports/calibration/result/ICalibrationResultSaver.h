@@ -3,6 +3,7 @@
 
 #include <filesystem>
 #include <string>
+#include <vector>
 
 #include "domain/core/calibration/result/CalibrationResult.h"
 
@@ -18,7 +19,8 @@ public:
 
     virtual ~ICalibrationResultSaver() = default;
     virtual Result save(const domain::common::CalibrationResult& result,
-                        const std::filesystem::path& directory) = 0;
+                        const std::filesystem::path& directory,
+                        const std::vector<domain::common::SourceId>& selected_sources = {}) = 0;
 };
 
 }
