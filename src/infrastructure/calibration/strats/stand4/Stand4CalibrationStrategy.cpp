@@ -1,5 +1,7 @@
 #include "Stand4CalibrationStrategy.h"
 
+#include <algorithm>
+
 #include "domain/core/calibration/recording/CalibrationSessionId.h"
 #include "domain/core/calibration/strategy/CalibrationStrategyBeginContext.h"
 #include "domain/core/calibration/strategy/CalibrationStrategyFeedContext.h"
@@ -51,8 +53,12 @@ Stand4CalibrationStrategy::begin(const CalibrationStrategyBeginContext& ctx)
     Verdict v;
 
     logger_.info("Запуск стратегии калибровки Stand4");
+    calibration_mode_ = ctx.calibration_mode;
 
     pressure_points_ = ctx.pressure_points.to(ctx.pressure_unit);
+    if (calibration_mode_ == CalibrationMode::OnlyLast && pressure_points_.size() > 2) {
+        pressure_points_ = {pressure_points_.front(), pressure_points_.back()};
+    }
 
     last_pressure_ = 0.0;
     last_time_ = 0.0;
@@ -66,7 +72,8 @@ Stand4CalibrationStrategy::begin(const CalibrationStrategyBeginContext& ctx)
     points_tracker_.setExitThreshold(0.1);
 
     logger_.info(
-        "Параметры калибровки: preload={}, target={}, limit={}, dp_nominal={}",
+        "Параметры калибровки: mode={}, preload={}, target={}, limit={}, dp_nominal={}",
+        static_cast<int>(calibration_mode_),
         p_preload_,
         p_target_,
         p_limit_,
@@ -237,7 +244,7 @@ void Stand4CalibrationStrategy::updateForward(
         dt);
 
     if (ctx.limits_state.end) {
-        logger_.error("Конечный концевик был активен во время обратного хода");
+        logger_.error("Двигатель дошёл до конечного концевика во время прямого хода");
         v.commands.push_back(Verdict::Fault{logger_.lastError()});
         return;
     }
@@ -252,11 +259,7 @@ void Stand4CalibrationStrategy::updateForward(
         return;
     }
 
-    const int freq = freq_calc_.frequency(
-        p_cur,
-        p_target_,
-        dp_cur,
-        dp_nominal_);
+    const int freq = calculateForwardFrequency(p_cur, dp_cur);
 
     logger_.info("Расчёт частоты двигателя {}", freq);
 
@@ -266,18 +269,25 @@ void Stand4CalibrationStrategy::updateForward(
 
 void Stand4CalibrationStrategy::updateBackward(const CalibrationStrategyFeedContext& ctx, Verdict& v)
 {
-    // if (ctx.pressure < 10) {
+    const float p_cur = ctx.pressure;
+    const float dt = ctx.timestamp - last_time_;
+    const float dp_cur =
+        (last_time_ > 0.0f && dt > 0.0f)
+        ? (p_cur - last_pressure_) / dt
+        : 0.0f;
+
     if (ctx.limits_state.home) {
         logger_.info("Двигатель дошёл до конечного концевика");
         transitionToFinished(v);
+        return;
     }
 
-    const int f_max = 2000; // можно брать из config
+    const int freq = calculateBackwardFrequency(p_cur, dp_cur);
 
-   logger_.info("Возврат двигателя домой частота {}", f_max);
+    logger_.info("Возврат двигателя домой частота {}", freq);
 
     v.commands.push_back(
-        Verdict::MotorSetFrequency{f_max});
+        Verdict::MotorSetFrequency{freq});
 }
 
 /* ============================
@@ -369,4 +379,44 @@ void Stand4CalibrationStrategy::transitionToFault(Verdict& v)
     v.commands.push_back(Verdict::MotorStop{});
 
     points_tracker_.endTracking();
+}
+
+int Stand4CalibrationStrategy::calculateForwardFrequency(float p_cur, float dp_cur) const
+{
+    int freq = freq_calc_.frequency(
+        p_cur,
+        p_target_,
+        dp_cur,
+        dp_nominal_);
+
+    if (isAimMode()) {
+        freq *= 2;
+        freq = std::min(freq, 2000);
+    }
+
+    return freq;
+}
+
+int Stand4CalibrationStrategy::calculateBackwardFrequency(float p_cur, float dp_cur) const
+{
+    if (!isBackwardRegulated()) {
+        return 2000;
+    }
+
+    const float back_progress = std::max(0.0f, static_cast<float>(p_target_ - p_cur));
+    return freq_calc_.frequency(
+        back_progress,
+        p_target_,
+        -dp_cur,
+        dp_nominal_);
+}
+
+bool Stand4CalibrationStrategy::isBackwardRegulated() const
+{
+    return calibration_mode_ == CalibrationMode::Full;
+}
+
+bool Stand4CalibrationStrategy::isAimMode() const
+{
+    return calibration_mode_ == CalibrationMode::OnlyLast;
 }
