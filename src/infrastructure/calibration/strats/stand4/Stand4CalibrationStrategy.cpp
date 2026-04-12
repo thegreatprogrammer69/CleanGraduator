@@ -94,6 +94,7 @@ Stand4CalibrationStrategy::feed(const CalibrationStrategyFeedContext& ctx)
     const State current = state_.load();
 
     if (current == State::Finished) {
+        logger_.info("Получен feed в состоянии Complete");
         v.commands.push_back(Verdict::Complete{});
         return v;
     }
@@ -387,11 +388,9 @@ void Stand4CalibrationStrategy::transitionToFinished(Verdict& v)
 
     points_tracker_.endTracking();
 
-    v.commands.push_back(
-        Verdict::MotorSetFlaps{MotorFlapsState::ExhaustOpened});
+    v.commands.push_back(Verdict::MotorStop{});
 
-    v.commands.push_back(
-        Verdict::MotorStop{});
+    v.commands.push_back(Verdict::MotorSetFlaps{MotorFlapsState::ExhaustOpened});
 }
 
 void Stand4CalibrationStrategy::transitionToFault(Verdict& v)

@@ -80,6 +80,7 @@ private:
     void applyCommand(const StrategyVerdict::MotorSetFlaps& cmd);
     void applyCommand(const StrategyVerdict::MotorStart& cmd);
     void applyCommand(const StrategyVerdict::MotorStop& cmd);
+    void applyCommand(const StrategyVerdict::Complete&);
 
 private:
     std::atomic<CalibrationOrchestratorState> state_{

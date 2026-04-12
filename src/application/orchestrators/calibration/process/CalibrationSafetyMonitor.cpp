@@ -249,9 +249,9 @@ private:
     };
 
     static constexpr double kReferenceDeltaSec = 1.0;   // хотим брать точку ~1 секунду назад
-    static constexpr double kMinDtSec = 0.95;           // защита от слишком малого dt
-    static constexpr double kProjectionHorizonSec = 1.0;
-    static constexpr double kCriticalAngleDeg = 340.0;
+    static constexpr double kMinDtSec = 1.95;           // защита от слишком малого dt
+    static constexpr double kProjectionHorizonSec = 2.0;
+    static constexpr double kCriticalAngleDeg = 350.0;
 
     std::unordered_map<int, SourceState> states_;
 };

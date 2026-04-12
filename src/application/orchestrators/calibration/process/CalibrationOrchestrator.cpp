@@ -205,14 +205,7 @@ void CalibrationOrchestrator::stop()
         return;
     }
 
-    CalibrationOrchestratorState expected = current;
-    if (!state_.compare_exchange_strong(
-            expected,
-            CalibrationOrchestratorState::Stopping,
-            std::memory_order_acq_rel))
-    {
-        return;
-    }
+    state_.store(CalibrationOrchestratorState::Stopping, std::memory_order_acq_rel);
 
     teardown();
 
@@ -558,4 +551,9 @@ void CalibrationOrchestrator::applyCommand(const StrategyVerdict::MotorStart&)
 void CalibrationOrchestrator::applyCommand(const StrategyVerdict::MotorStop&)
 {
     ports_.motor_driver.stop();
+}
+
+void CalibrationOrchestrator::applyCommand(const StrategyVerdict::Complete&)
+{
+    stop();
 }
