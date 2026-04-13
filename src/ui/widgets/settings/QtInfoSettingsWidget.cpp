@@ -1,6 +1,7 @@
 #include "QtInfoSettingsWidget.h"
 
 #include <QComboBox>
+#include <QCheckBox>
 #include <QDoubleSpinBox>
 #include <QFormLayout>
 #include <QLabel>
@@ -30,6 +31,7 @@ void QtInfoSettingsWidget::buildUi() {
     precisionCombo_ = new QComboBox(this);
     pressureUnitCombo_ = new QComboBox(this);
     printerCombo_ = new QComboBox(this);
+    fileLoggingCheckBox_ = new QCheckBox(this);
     maxCenterDeviationSpinBox_ = new QDoubleSpinBox(this);
     maxCenterDeviationSpinBox_->setDecimals(2);
     maxCenterDeviationSpinBox_->setRange(0.0, 360.0);
@@ -68,6 +70,7 @@ void QtInfoSettingsWidget::buildUi() {
     addRow(tr("Класс точности"), precisionCombo_);
     addRow(tr("Подставка"), displacementCombo_);
     addRow(tr("Принтер"), printerCombo_);
+    addRow(tr("Логирование в файл"), fileLoggingCheckBox_);
     addRow(tr("Максимальное отклонение от центра"), maxCenterDeviationSpinBox_);
 }
 
@@ -94,6 +97,11 @@ void QtInfoSettingsWidget::connectUi() {
 
     connect(printerCombo_, qOverload<int>(&QComboBox::currentIndexChanged), this, [this](int idx) {
         model_.selectedPrinter.set(idx);
+        model_.save();
+    });
+
+    connect(fileLoggingCheckBox_, &QCheckBox::toggled, this, [this](bool enabled) {
+        model_.fileLoggingEnabled.set(enabled);
         model_.save();
     });
 
@@ -134,6 +142,12 @@ void QtInfoSettingsWidget::connectViewModel() {
         }
     }, false);
 
+    fileLoggingEnabledSub_ = model_.fileLoggingEnabled.subscribe([this](const auto& ev) {
+        if (fileLoggingCheckBox_->isChecked() != ev.new_value) {
+            fileLoggingCheckBox_->setChecked(ev.new_value);
+        }
+    }, false);
+
     maxCenterDeviationSub_ = model_.maxCenterDeviationDeg.subscribe([this](const auto& ev) {
         const auto value = static_cast<double>(ev.new_value);
         if (!qFuzzyCompare(maxCenterDeviationSpinBox_->value() + 1.0, value + 1.0)) {
@@ -146,5 +160,6 @@ void QtInfoSettingsWidget::connectViewModel() {
     precisionCombo_->setCurrentIndex(model_.selectedPrecision.get_copy());
     pressureUnitCombo_->setCurrentIndex(model_.selectedPressureUnit.get_copy());
     printerCombo_->setCurrentIndex(model_.selectedPrinter.get_copy());
+    fileLoggingCheckBox_->setChecked(model_.fileLoggingEnabled.get_copy());
     maxCenterDeviationSpinBox_->setValue(model_.maxCenterDeviationDeg.get_copy());
 }

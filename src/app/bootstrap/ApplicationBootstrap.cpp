@@ -5,6 +5,7 @@
 
 #include "application/orchestrators/calibration/result/CalibrationResultBuilder.h"
 #include "application/orchestrators/calibration/result/CalibrationResultValidationSource.h"
+#include "application/ports/logging/IFileLoggingControl.h"
 #include "application/orchestrators/video/VideoSourceManager.h"
 #include "application/ports/logging/ILoggerFactory.h"
 #include "infrastructure/calculation/angle/CastAnglemeter.h"
@@ -22,6 +23,7 @@
 #include "infrastructure/factory/VideoSourceFactory.h"
 #include "infrastructure/logging/ConsoleLogger.h"
 #include "infrastructure/logging/FileLogger.h"
+#include "infrastructure/logging/FileLoggingController.h"
 #include "infrastructure/logging/NamedMultiLogger.h"
 #include "infrastructure/overlay/crosshair/CrosshairVideoOverlay.h"
 #include "infrastructure/platform/com/ComPort.h"
@@ -81,6 +83,7 @@ ApplicationBootstrap::~ApplicationBootstrap() {
 
 void ApplicationBootstrap::initialize() {
     createLogSourcesStorage();
+    file_logging_control = std::make_unique<FileLoggingController>(true);
 
     createSessionClock();
     createClock();
@@ -90,6 +93,7 @@ void ApplicationBootstrap::initialize() {
     createPrecisionCatalog();
     createPrinterCatalog();
     createPressureUnitCatalog();
+    createInfoSettingsStorage();
 
     createAnglemeter();
 
@@ -106,7 +110,6 @@ void ApplicationBootstrap::initialize() {
     createCalibrationCalculator();
     createCalibrationResultSource();
 
-    createInfoSettingsStorage();
     createCalibrationResultValidationSource();
 }
 
@@ -120,6 +123,8 @@ ILogger & ApplicationBootstrap::createLogger(const std::string &logger_name) {
     multi_logger->addLogger(*console_logger);
 
     NamedMultiLogger &multi_logger_ref = *multi_logger;
+
+    static_cast<FileLoggingController*>(file_logging_control.get())->addLogger(*file_logger);
 
     loggers.emplace_back(std::move(file_logger));
     loggers.emplace_back(std::move(console_logger));
@@ -356,6 +361,9 @@ void ApplicationBootstrap::createInfoSettingsStorage() {
             "CleanGraduator",
             catalogs
         );
+
+    const auto info_settings = info_settings_storage->loadInfoSettings();
+    file_logging_control->setFileLoggingEnabled(info_settings.file_logging_enabled);
 }
 
 

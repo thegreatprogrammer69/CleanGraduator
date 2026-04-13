@@ -102,6 +102,7 @@ void ViewModelsBootstrap::createInfoSettings() {
         *app_.precision_catalog,
         *app_.pressure_unit_catalog,
         *app_.printer_catalog,
+        *app_.file_logging_control,
         *app_.calibration_result_validation_source,
     };
 
