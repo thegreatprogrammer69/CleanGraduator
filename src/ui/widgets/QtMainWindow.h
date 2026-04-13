@@ -18,6 +18,7 @@ namespace mvvm {
 
 namespace ui {
     class QtCalibrationSeriesWidget;
+    class QtCalibrationGraphsWidget;
 
     class QtLogViewerWidget;
     class QtVideoSourceGridWidget;
@@ -35,6 +36,7 @@ namespace ui {
         void createLogDock(mvvm::LogViewerViewModel& log_vm);
 
         void createCalibrationDock(mvvm::CalibrationSeriesViewModel &vm);
+        void createGraphsDock(mvvm::CalibrationSeriesViewModel& vm);
         void bindSettingsTabState();
 
     private:
@@ -46,6 +48,9 @@ namespace ui {
 
         QtCalibrationSeriesWidget* calibration_widget_ = nullptr;
         QDockWidget* calibration_dock_ = nullptr;
+
+        QtCalibrationGraphsWidget* graphs_widget_ = nullptr;
+        QDockWidget* graphs_dock_ = nullptr;
         QTabWidget* tabs_ = nullptr;
         int settings_tab_index_ = -1;
         mvvm::Observable<bool>::Subscription can_start_sub_;
