@@ -14,6 +14,7 @@
 #include "application/orchestrators/calibration/process/CalibrationSafetyMonitor.h"
 #include "application/ports/calibration/orchestration/CalibrationOrchestratorObserver.h"
 #include "domain/core/angle/SourceId.h"
+#include "domain/core/calibration/strategy/CalibrationStrategyFeedContext.h"
 #include "domain/core/calibration/strategy/CalibrationStrategyVerdict.h"
 #include "domain/fmt/Logger.h"
 #include "domain/ports/angle/IAngleSink.h"
@@ -65,6 +66,7 @@ private:
 private:
     void attachObservers();
     void detachObservers();
+    void processStrategyFeed(const domain::common::CalibrationStrategyFeedContext& ctx);
 
     void notifyObservers(const CalibrationOrchestratorEvent& ev);
 
@@ -97,6 +99,9 @@ private:
     CalibrationOrchestratorPorts ports_;
     CalibrationOrchestratorInput inp_;
     CalibrationSafetyMonitor safety_monitor_;
+    double last_pressure_{0.0};
+    double last_pressure_timestamp_{0.0};
+    bool has_pressure_sample_{false};
 };
 
 } // namespace application::orchestrators

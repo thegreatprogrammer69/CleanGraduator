@@ -56,6 +56,9 @@ bool CalibrationOrchestrator::start(CalibrationOrchestratorInput input)
 
     inp_ = std::move(input);
     opened_angle_sources_.clear();
+    has_pressure_sample_ = false;
+    last_pressure_ = 0.0;
+    last_pressure_timestamp_ = 0.0;
 
     try
     {
@@ -270,35 +273,16 @@ void CalibrationOrchestrator::onPressurePacket(const PressurePacket& p)
         return;
     }
 
+    last_pressure_timestamp_ = p.timestamp.asSeconds();
+    last_pressure_ = p.pressure.to(inp_.pressure_unit);
+    has_pressure_sample_ = true;
+
     CalibrationStrategyFeedContext ctx;
-    ctx.timestamp = p.timestamp.asSeconds();
-    ctx.pressure  = p.pressure.to(inp_.pressure_unit);
+    ctx.timestamp = last_pressure_timestamp_;
+    ctx.pressure = last_pressure_;
     ctx.limits_state = ports_.motor_driver.limits();
 
-    ports_.motor_driver.watchdog().feed();
-    const auto verdict = ports_.strategy.feed(ctx);
-    const auto exec = applyVerdict(verdict);
-
-    if (!exec.complete &&
-        !exec.fault &&
-        state_.load(std::memory_order_acquire) == CalibrationOrchestratorState::Started)
-    {
-        PressureSample sample;
-        sample.time = p.timestamp.asSeconds();
-        sample.pressure = p.pressure.to(inp_.pressure_unit);
-        ports_.recorder.record(sample);
-    }
-
-    if (exec.complete)
-    {
-        logger_.info("Calibration strategy finished successfully.");
-        stop();
-    }
-    else if (exec.fault)
-    {
-        logger_.error("Calibration strategy failed: {}", *exec.fault);
-        stopWithError(*exec.fault);
-    }
+    processStrategyFeed(ctx);
 }
 
 void CalibrationOrchestrator::onAnglePacket(const AngleSourcePacket& p)
@@ -350,12 +334,13 @@ void CalibrationOrchestrator::onAngleSourceEvent(const AngleSourceEvent& ev)
 void CalibrationOrchestrator::onMotorEvent(const MotorDriverEvent& ev)
 {
     std::string error_to_report;
+    bool reached_limit_switch = false;
 
     if (state_.load(std::memory_order_acquire) != CalibrationOrchestratorState::Started)
         return;
 
     std::visit(
-        [&error_to_report](const auto& e)
+        [&error_to_report, &reached_limit_switch](const auto& e)
         {
             using T = std::decay_t<decltype(e)>;
 
@@ -363,11 +348,29 @@ void CalibrationOrchestrator::onMotorEvent(const MotorDriverEvent& ev)
             {
                 error_to_report = e.error.message;
             }
+            else if constexpr (std::is_same_v<T, MotorDriverEvent::StoppedAtEnd> ||
+                               std::is_same_v<T, MotorDriverEvent::StoppedAtHome>)
+            {
+                reached_limit_switch = true;
+            }
         },
         ev.data);
 
     if (!error_to_report.empty())
+    {
         stopWithError(error_to_report);
+        return;
+    }
+
+    if (reached_limit_switch)
+    {
+        CalibrationStrategyFeedContext ctx;
+        ctx.timestamp = last_pressure_timestamp_;
+        ctx.pressure = last_pressure_;
+        ctx.limits_state = ports_.motor_driver.limits();
+
+        processStrategyFeed(ctx);
+    }
 }
 
 void CalibrationOrchestrator::attachObservers()
@@ -554,4 +557,37 @@ void CalibrationOrchestrator::applyCommand(const StrategyVerdict::MotorStop&)
 void CalibrationOrchestrator::applyCommand(const StrategyVerdict::Complete&)
 {
     stop();
+}
+
+void CalibrationOrchestrator::processStrategyFeed(const CalibrationStrategyFeedContext& ctx)
+{
+    if (state_.load(std::memory_order_acquire) != CalibrationOrchestratorState::Started)
+        return;
+
+    ports_.motor_driver.watchdog().feed();
+
+    const auto verdict = ports_.strategy.feed(ctx);
+    const auto exec = applyVerdict(verdict);
+
+    if (!exec.complete &&
+        !exec.fault &&
+        has_pressure_sample_ &&
+        state_.load(std::memory_order_acquire) == CalibrationOrchestratorState::Started)
+    {
+        PressureSample sample;
+        sample.time = last_pressure_timestamp_;
+        sample.pressure = last_pressure_;
+        ports_.recorder.record(sample);
+    }
+
+    if (exec.complete)
+    {
+        logger_.info("Calibration strategy finished successfully.");
+        stop();
+    }
+    else if (exec.fault)
+    {
+        logger_.error("Calibration strategy failed: {}", *exec.fault);
+        stopWithError(*exec.fault);
+    }
 }
