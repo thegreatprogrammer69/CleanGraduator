@@ -14,6 +14,7 @@ namespace application::orchestrators {
         void openAll();
         void closeAll();
 
+        std::vector<SourceId> available();
         const std::vector<SourceId>& opened() const;
 
     private:

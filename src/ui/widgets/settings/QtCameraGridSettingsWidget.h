@@ -13,6 +13,7 @@ namespace mvvm {
 class QLineEdit;
 class QPushButton;
 class QCheckBox;
+class QComboBox;
 
 class QtCameraGridSettingsWidget final : public QWidget {
     Q_OBJECT
@@ -38,6 +39,7 @@ private:
     mvvm::Observable<std::string>::Subscription cameraInputSub_;
 
     QLineEdit*   camerasEdit_{nullptr};
+    QComboBox* cameraCountCombo_{nullptr};
     QPushButton* openButton_{nullptr};
     QPushButton* openAllButton_{nullptr};
     QPushButton* closeAllButton_{nullptr};

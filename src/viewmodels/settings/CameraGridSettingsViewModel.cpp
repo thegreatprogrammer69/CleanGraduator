@@ -1,5 +1,6 @@
 #include "CameraGridSettingsViewModel.h"
 
+#include <algorithm>
 #include <set>
 
 #include "../../application/orchestrators/video/VideoSourceManager.h"
@@ -39,6 +40,36 @@ void CameraGridSettingsViewModel::openAll()
 void CameraGridSettingsViewModel::closeAll()
 {
      setIndexes(deps_.close_all.execute());
+}
+
+int CameraGridSettingsViewModel::availableCameraCount() const
+{
+    return static_cast<int>(deps_.video_source_manager.available().size());
+}
+
+std::string CameraGridSettingsViewModel::cameraSequenceForCount(int count) const
+{
+    if (count <= 0) {
+        return "";
+    }
+
+    const int max_count = availableCameraCount();
+    if (max_count <= 0) {
+        return "";
+    }
+
+    const int safe_count = std::min(count, max_count);
+
+    std::string output;
+    output.reserve(safe_count);
+
+    for (int idx = 1; idx <= safe_count; ++idx) {
+        if (idx >= 0 && idx <= 9) {
+            output.push_back(static_cast<char>('0' + idx));
+        }
+    }
+
+    return output;
 }
 
 void CameraGridSettingsViewModel::setIndexes(const std::vector<int>& indexes)

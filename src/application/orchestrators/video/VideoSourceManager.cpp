@@ -72,8 +72,18 @@ void VideoSourceManager::closeAll()
     opened_.clear();
 }
 
+std::vector<SourceId> VideoSourceManager::available()
+{
+    std::vector<SourceId> ids;
+
+    for (const auto& source : storage_.all()) {
+        ids.push_back(source.id);
+    }
+
+    return ids;
+}
+
 const std::vector<SourceId>& VideoSourceManager::opened() const
 {
     return opened_;
 }
-

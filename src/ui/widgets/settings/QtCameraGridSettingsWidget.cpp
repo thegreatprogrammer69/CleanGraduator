@@ -5,6 +5,7 @@
 #include <QLineEdit>
 #include <QPushButton>
 #include <QLabel>
+#include <QComboBox>
 
 #include "viewmodels/settings/CameraGridSettingsViewModel.h"
 
@@ -33,6 +34,14 @@ void QtCameraGridSettingsWidget::buildUi()
     camerasEdit_->setProperty("variant", "numeric");
     camerasEdit_->setMinimumWidth(250);
 
+    cameraCountCombo_ = new QComboBox();
+    cameraCountCombo_->setMinimumWidth(100);
+
+    const int available_count = model_.availableCameraCount();
+    for (int count = 1; count <= available_count; ++count) {
+        cameraCountCombo_->addItem(QString::number(count), count);
+    }
+
     // Кнопки
     openButton_     = new QPushButton(tr("Открыть"));
     openButton_->setMinimumWidth(150);
@@ -45,6 +54,7 @@ void QtCameraGridSettingsWidget::buildUi()
     closeAllButton_->setMinimumWidth(150);
 
     rootLayout->addWidget(camerasEdit_);
+    rootLayout->addWidget(cameraCountCombo_);
     rootLayout->addWidget(openButton_);
     rootLayout->addWidget(openAllButton_);
     rootLayout->addWidget(closeAllButton_);
@@ -59,6 +69,17 @@ void QtCameraGridSettingsWidget::connectUi()
             this,
             [this](const QString& text) {
                 model_.cameraInput.set(text.toStdString());
+            });
+
+    connect(cameraCountCombo_, qOverload<int>(&QComboBox::currentIndexChanged),
+            this,
+            [this](int index) {
+                if (index < 0) {
+                    return;
+                }
+
+                const int count = cameraCountCombo_->currentData().toInt();
+                model_.cameraInput.set(model_.cameraSequenceForCount(count));
             });
 
     // Кнопки
@@ -93,6 +114,16 @@ void QtCameraGridSettingsWidget::connectViewModel()
                 camerasEdit_->setText(
                     QString::fromStdString(value)
                 );
+            }
+
+            for (int i = 0; i < cameraCountCombo_->count(); ++i) {
+                const int count = cameraCountCombo_->itemData(i).toInt();
+                if (model_.cameraSequenceForCount(count) == value) {
+                    if (cameraCountCombo_->currentIndex() != i) {
+                        cameraCountCombo_->setCurrentIndex(i);
+                    }
+                    break;
+                }
             }
         });
 }

@@ -1,6 +1,7 @@
 #ifndef CLEANGRADUATOR_CAMERAGRIDSETTINGSVIEWMODEL_H
 #define CLEANGRADUATOR_CAMERAGRIDSETTINGSVIEWMODEL_H
 #include <string>
+#include <vector>
 
 #include "viewmodels/Observable.h"
 
@@ -19,6 +20,7 @@ namespace mvvm {
         application::usecase::OpenSelectedCameras& open_selected;
         application::usecase::OpenAllCameras& open_all;
         application::usecase::CloseAllCameras& close_all;
+        application::orchestrators::VideoSourceManager& video_source_manager;
     };
 
     class CameraGridSettingsViewModel {
@@ -30,6 +32,8 @@ namespace mvvm {
         void open();
         void openAll();
         void closeAll();
+        int availableCameraCount() const;
+        std::string cameraSequenceForCount(int count) const;
 
     private:
         void setIndexes(const std::vector<int> &indexes);
