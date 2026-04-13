@@ -46,10 +46,6 @@ namespace infra::camera {
         bool configureSampleGrabber();
         bool runGraph();
 
-        void startWatchdog();
-        void stopWatchdog();
-        void watchdogTick();
-
         void failOpen(const std::string& reason);
         void failRuntime(const std::string& reason);
 
@@ -61,9 +57,6 @@ namespace infra::camera {
         domain::ports::IClock& clock_;
         detail::VideoSourceNotifier notifier_;
         DShowCameraConfig config_;
-
-        shared::thread::ThreadWorker watchdog_worker_;
-        std::atomic<bool> watchdog_enabled_{false};
     };
 
 } // namespace infra::camera

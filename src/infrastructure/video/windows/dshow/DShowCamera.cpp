@@ -147,7 +147,6 @@ DShowCamera::DShowCamera(VideoSourcePorts ports, DShowCameraConfig config)
     : logger_(ports.logger)
     , clock_(ports.clock)
     , config_(config)
-    , watchdog_worker_([this]() { watchdogTick(); })
 {
     logger_.info("DShowCamera ctor: camera index={}", config_.index);
 }
@@ -184,8 +183,6 @@ bool DShowCamera::open() {
 
     lock.unlock();
 
-    startWatchdog();
-
     logger_.info("DShowCamera opened successfully");
     notifier_.notifyEvent(VideoSourceEvent(VideoSourceEvent::Opened{}));
 
@@ -193,8 +190,6 @@ bool DShowCamera::open() {
 }
 
 void DShowCamera::close() {
-    stopWatchdog();
-
     std::unique_ptr<DShowCameraImpl> impl_to_destroy;
 
     {
@@ -484,48 +479,6 @@ bool DShowCamera::runGraph() {
 
     logger_.info("Graph started");
     return true;
-}
-
-void DShowCamera::startWatchdog() {
-    watchdog_enabled_.store(true, std::memory_order_release);
-    watchdog_worker_.start();
-    logger_.info("Watchdog started");
-}
-
-void DShowCamera::stopWatchdog() {
-    watchdog_enabled_.store(false, std::memory_order_release);
-    watchdog_worker_.stop();
-}
-
-void DShowCamera::watchdogTick() {
-    using namespace std::chrono_literals;
-
-    std::this_thread::sleep_for(500ms);
-
-    if (!watchdog_enabled_.load(std::memory_order_acquire)) {
-        return;
-    }
-
-    bool timeout_detected = false;
-
-    {
-        std::lock_guard<std::mutex> lock(state_mutex_);
-
-        if (!impl_ || !impl_->running) {
-            return;
-        }
-
-        const long long elapsed_ms = nowSteadyMs() - impl_->last_frame_tick_ms;
-        if (elapsed_ms > impl_->timeout.count()) {
-            impl_->running = false;
-            timeout_detected = true;
-        }
-    }
-
-    if (timeout_detected) {
-        watchdog_enabled_.store(false, std::memory_order_release);
-        failRuntime("Video stream timeout (no frames)");
-    }
 }
 
 void DShowCamera::failOpen(const std::string& reason) {
