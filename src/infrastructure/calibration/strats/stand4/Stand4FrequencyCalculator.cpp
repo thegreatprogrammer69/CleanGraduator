@@ -5,7 +5,8 @@
 
 infra::calib::stand4::Stand4FrequencyCalculator::Stand4FrequencyCalculator(double divider_min, double divider_max, double freq_min,
     double freq_max, double k_upper_dead_zone, double k_lower_dead_zone, double k_divider_step_percent)
-        : divider_min_(divider_min), divider_max_(divider_max), freq_min_(freq_min), freq_max_(freq_max)
+        : divider_(divider_min)
+        , divider_min_(divider_min), divider_max_(divider_max), freq_min_(freq_min), freq_max_(freq_max)
         , k_upper_dead_zone_(k_upper_dead_zone), k_lower_dead_zone_(k_lower_dead_zone)
         , k_divider_step_percent_(k_divider_step_percent) {
 
@@ -30,6 +31,9 @@ int infra::calib::stand4::Stand4FrequencyCalculator::frequency(double p_cur, dou
     }
 
     divider_ = std::clamp(divider_, divider_min_, divider_max_);
+    if (std::fabs(divider_) < 1e-12) {
+        return static_cast<int>(std::clamp(freq_min_, freq_min_, freq_max_));
+    }
 
     const double freq_base = (freq_max_ - freq_min_) * (p_cur / p_target) + freq_min_;
 
