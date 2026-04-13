@@ -28,24 +28,27 @@ void NamedMultiLogger::addLogger(ILogger &logger) {
 }
 
 void NamedMultiLogger::info(const std::string &msg) {
+    const auto prefixed_message = "[" + name_ + "] " + msg;
     for (auto &logger : loggers_) {
-        logger->info(msg);
+        logger->info(prefixed_message);
     }
 
     pushLog(LogLevel::Info, msg);
 }
 
 void NamedMultiLogger::warn(const std::string &msg) {
+    const auto prefixed_message = "[" + name_ + "] " + msg;
     for (auto &logger : loggers_) {
-        logger->warn(msg);
+        logger->warn(prefixed_message);
     }
 
     pushLog(LogLevel::Warn, msg);
 }
 
 void NamedMultiLogger::error(const std::string &msg) {
+    const auto prefixed_message = "[" + name_ + "] " + msg;
     for (auto &logger : loggers_) {
-        logger->error(msg);
+        logger->error(prefixed_message);
     }
 
     pushLog(LogLevel::Error, msg);
@@ -102,4 +105,3 @@ void NamedMultiLogger::pushLog(LogLevel level, const std::string& msg)
         sink->onLog(log_entry);
     }
 }
-

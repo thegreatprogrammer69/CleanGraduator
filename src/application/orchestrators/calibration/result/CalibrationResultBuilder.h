@@ -33,6 +33,7 @@ namespace application::orchestrators {
         CalibrationResultBuilderPorts ports_;
         std::optional<domain::common::CalibrationResult> active_result_;
         std::optional<domain::common::CalibrationLayout> active_layout_;
+        bool has_backward_sessions_ = false;
         ThreadSafeObserverList<domain::ports::ICalibrationResultObserver> observers_;
     };
 }

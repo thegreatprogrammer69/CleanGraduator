@@ -121,6 +121,7 @@ private:
     std::string catalogs_dir_;
     std::string logs_dir_;
     std::string session_logs_dir_;
+    domain::ports::ILogger* shared_conditional_file_logger_ = nullptr;
 
     ////////////////////////////////////////////////////////////////////////////////////////
     void createLogSourcesStorage();
