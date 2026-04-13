@@ -28,6 +28,7 @@
 
 #include "calibration/result/QtCalibrationResultTableWidget.h"
 #include "calibration/recording/QtCalibrationSeriesWidget.h"
+#include "calibration/recording/QtCalibrationGraphsWidget.h"
 #include "logging/QtLogViewerWidget.h"
 #include "video/QtVideoSourceGridWidget.h"
 #include "viewmodels/MainWindowViewModel.h"
@@ -45,10 +46,12 @@ ui::QtMainWindow::QtMainWindow(
 
     createLogDock(model_.logViewerViewModel());
     createCalibrationDock(model_.calibrationSeries());
+    createGraphsDock(model_.calibrationSeries());
 
     auto* viewMenu = menuBar()->addMenu(tr("Диагностика"));
     viewMenu->addAction(log_dock_->toggleViewAction());
     viewMenu->addAction(calibration_dock_->toggleViewAction());
+    viewMenu->addAction(graphs_dock_->toggleViewAction());
 
 
     /* ================= Central ================= */
@@ -241,6 +244,21 @@ void ui::QtMainWindow::createCalibrationDock(mvvm::CalibrationSeriesViewModel& v
 
     calibration_dock_->setFloating(true);
     calibration_dock_->hide();
+}
+
+
+void ui::QtMainWindow::createGraphsDock(mvvm::CalibrationSeriesViewModel& vm)
+{
+    graphs_widget_ = new QtCalibrationGraphsWidget(vm);
+
+    graphs_dock_ = new QDockWidget(tr("Графики калибровки"), this);
+    graphs_dock_->setWidget(graphs_widget_);
+
+    graphs_dock_->setAllowedAreas(Qt::AllDockWidgetAreas);
+    addDockWidget(Qt::BottomDockWidgetArea, graphs_dock_);
+
+    graphs_dock_->setFloating(true);
+    graphs_dock_->hide();
 }
 
 void ui::QtMainWindow::bindSettingsTabState()
