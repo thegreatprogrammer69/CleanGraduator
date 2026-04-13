@@ -134,10 +134,7 @@ bool CalibrationOrchestrator::start(CalibrationOrchestratorInput input)
 
             calibration_layout.sources = std::vector(opened_angle_sources_.begin(), opened_angle_sources_.end());
             calibration_layout.directions.push_back(MotorDirection::Forward);
-
-            if (inp_.calibration_mode != CalibrationMode::OnlyForward) {
-                calibration_layout.directions.push_back(MotorDirection::Backward);
-            }
+            calibration_layout.directions.push_back(MotorDirection::Backward);
 
             const auto& gauge_points = inp_.gauge.points.value;
             if (gauge_points.empty()) {
