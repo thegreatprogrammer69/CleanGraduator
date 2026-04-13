@@ -1,6 +1,8 @@
 # --- Build directories ---
 /cmake-build-*/
 
+/logs/
+
 # --- Root resource folders (ignore only root ones) ---
 /catalogs/
 /styles/
