@@ -94,7 +94,7 @@ Stand4CalibrationStrategy::feed(const CalibrationStrategyFeedContext& ctx)
     const State current = state_.load();
 
     if (current == State::Finished) {
-        logger_.info("Получен feed в состоянии Complete");
+        logger_.info("Получен feed в состоянии Finished");
         v.commands.push_back(Verdict::Complete{});
         return v;
     }
@@ -279,6 +279,12 @@ void Stand4CalibrationStrategy::updateForward(
 
 void Stand4CalibrationStrategy::updateBackward(const CalibrationStrategyFeedContext& ctx, Verdict& v)
 {
+    // if (ctx.pressure < 15) {
+    //     logger_.info("Двигатель дошёл до конечного концевика");
+    //     transitionToFinished(v);
+    //     return;
+    // }
+
     if (ctx.limits_state.home) {
         logger_.info("Двигатель дошёл до конечного концевика");
         transitionToFinished(v);
@@ -391,6 +397,8 @@ void Stand4CalibrationStrategy::transitionToFinished(Verdict& v)
     v.commands.push_back(Verdict::MotorStop{});
 
     v.commands.push_back(Verdict::MotorSetFlaps{MotorFlapsState::ExhaustOpened});
+
+    v.commands.push_back(Verdict::Complete{});
 }
 
 void Stand4CalibrationStrategy::transitionToFault(Verdict& v)

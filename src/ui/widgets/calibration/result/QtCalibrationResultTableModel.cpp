@@ -31,45 +31,6 @@ bool isMeasurementIssueKind(domain::common::CalibrationValidationIssueKind kind)
     return !isAngleSpanIssueKind(kind);
 }
 
-QString buildIssuesTooltip(
-    const std::vector<domain::common::CalibrationCellIssue>& issues,
-    const domain::common::CalibrationResultValidation::Issues* validation_issues,
-    bool (*validation_predicate)(domain::common::CalibrationValidationIssueKind) = nullptr)
-{
-    QStringList lines;
-
-    if (!issues.empty()) {
-        lines.push_back(QStringLiteral("Проблемы расчёта:"));
-        for (const auto& issue : issues) {
-            lines.push_back(QStringLiteral("• %1").arg(QString::fromStdString(issue.message)));
-        }
-    }
-
-    if (validation_issues) {
-        bool has_validation = false;
-        for (const auto& issue : *validation_issues) {
-            if (!validation_predicate || validation_predicate(issue.kind)) {
-                has_validation = true;
-                break;
-            }
-        }
-
-        if (has_validation) {
-            if (!lines.isEmpty()) {
-                lines.push_back(QString());
-            }
-            lines.push_back(QStringLiteral("Проблемы валидации:"));
-            for (const auto& issue : *validation_issues) {
-                if (validation_predicate && !validation_predicate(issue.kind)) {
-                    continue;
-                }
-                lines.push_back(QStringLiteral("• %1").arg(QString::fromStdString(issue.message)));
-            }
-        }
-    }
-
-    return lines.join('\n');
-}
 
 std::optional<domain::common::CalibrationIssueSeverity> maxSeverityOf(
     const std::vector<domain::common::CalibrationCellIssue>& issues)
@@ -448,6 +409,46 @@ void QtCalibrationResultTableModel::applyInfo(const mvvm::CalibrationResultInfo&
     updateRowsInPlace();
 }
 
+QString QtCalibrationResultTableModel::buildIssuesTooltip(
+        const std::vector<domain::common::CalibrationCellIssue>& issues,
+        const domain::common::CalibrationResultValidation::Issues* validation_issues,
+        bool (*validation_predicate)(domain::common::CalibrationValidationIssueKind) = nullptr)
+{
+    QStringList lines;
+
+    if (!issues.empty()) {
+        lines.push_back(tr("Проблемы расчёта:"));
+        for (const auto& issue : issues) {
+            lines.push_back(tr("• %1").arg(QString::fromStdString(issue.message)));
+        }
+    }
+
+    if (validation_issues) {
+        bool has_validation = false;
+        for (const auto& issue : *validation_issues) {
+            if (!validation_predicate || validation_predicate(issue.kind)) {
+                has_validation = true;
+                break;
+            }
+        }
+
+        if (has_validation) {
+            if (!lines.isEmpty()) {
+                lines.push_back(QString());
+            }
+            lines.push_back(tr("Проблемы валидации:"));
+            for (const auto& issue : *validation_issues) {
+                if (validation_predicate && !validation_predicate(issue.kind)) {
+                    continue;
+                }
+                lines.push_back(tr("• %1").arg(QString::fromStdString(issue.message)));
+            }
+        }
+    }
+
+    return lines.join('\n');
+}
+
 void QtCalibrationResultTableModel::rebuildRows()
 {
     rows_.clear();
@@ -587,7 +588,7 @@ void QtCalibrationResultTableModel::appendInfoRows()
             if (const auto source_it = current_info_.center_deviations_deg.find(source_id);
                 source_it != current_info_.center_deviations_deg.end()) {
                 if (const auto dir_it = source_it->second.find(domain::common::MotorDirection::Forward); dir_it != source_it->second.end()) {
-                    center_deviation_row.cells[static_cast<std::size_t>(forward_col)].display = displayFloat(dir_it->second, 2, QStringLiteral("°"));
+                    center_deviation_row.cells[static_cast<std::size_t>(forward_col)].display = displayFloat(dir_it->second, 2, tr("°"));
                     center_deviation_row.cells[static_cast<std::size_t>(forward_col)].center_deviation_deg = dir_it->second;
                     if (dir_it->second > current_info_.max_center_deviation_deg) {
                         center_deviation_row.cells[forward_col].max_severity = domain::common::CalibrationIssueSeverity::Error;
@@ -595,7 +596,7 @@ void QtCalibrationResultTableModel::appendInfoRows()
                     }
                 }
                 if (const auto dir_it = source_it->second.find(domain::common::MotorDirection::Backward); dir_it != source_it->second.end()) {
-                    center_deviation_row.cells[static_cast<std::size_t>(backward_col)].display = displayFloat(dir_it->second, 2, QStringLiteral("°"));
+                    center_deviation_row.cells[static_cast<std::size_t>(backward_col)].display = displayFloat(dir_it->second, 2, tr("°"));
                     center_deviation_row.cells[static_cast<std::size_t>(backward_col)].center_deviation_deg = dir_it->second;
                     if (dir_it->second > current_info_.max_center_deviation_deg) {
                         center_deviation_row.cells[backward_col].max_severity = domain::common::CalibrationIssueSeverity::Error;

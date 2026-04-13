@@ -63,6 +63,11 @@ namespace ui {
         void rebuildRows();
         void applyValidation(std::optional<domain::common::CalibrationResultValidation> validation);
         void applyInfo(const mvvm::CalibrationResultInfo& info);
+
+        QString buildIssuesTooltip(const std::vector<domain::common::CalibrationCellIssue> &issues,
+                                   const domain::common::CalibrationResultValidation::Issues *validation_issues,
+                                   bool (*validation_predicate)(domain::common::CalibrationValidationIssueKind));
+
         void appendInfoRows();
         void refreshRowsWithReset();
         void updateRowsInPlace();
