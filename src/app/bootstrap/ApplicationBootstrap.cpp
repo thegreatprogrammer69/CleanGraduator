@@ -109,6 +109,30 @@ namespace {
         ILogger& logger_;
         application::ports::IFileLoggingControl& control_;
     };
+
+    class PrefixedLogger final : public ILogger {
+    public:
+        PrefixedLogger(ILogger& logger, std::string name)
+            : logger_(logger)
+            , prefix_("[" + std::move(name) + "] ") {
+        }
+
+        void info(const std::string& msg) override {
+            logger_.info(prefix_ + msg);
+        }
+
+        void warn(const std::string& msg) override {
+            logger_.warn(prefix_ + msg);
+        }
+
+        void error(const std::string& msg) override {
+            logger_.error(prefix_ + msg);
+        }
+
+    private:
+        ILogger& logger_;
+        std::string prefix_;
+    };
 }
 
 
@@ -168,17 +192,23 @@ void ApplicationBootstrap::initialize() {
 ILogger & ApplicationBootstrap::createLogger(const std::string &logger_name) {
     auto multi_logger = std::make_unique<NamedMultiLogger>(*uptime_clock, logger_name);
 
-    auto file_logger = std::make_unique<FileLogger>(session_logs_dir_ + "/" + logger_name + ".log");
-    auto conditional_file_logger = std::make_unique<ConditionalFileLogger>(*file_logger, *file_logging_control);
-    multi_logger->addLogger(*conditional_file_logger);
+    if (!session_file_logger_) {
+        auto session_file_logger = std::make_unique<FileLogger>(session_logs_dir_ + "/session.log");
+        session_file_logger_ = session_file_logger.get();
+        loggers.emplace_back(std::move(session_file_logger));
+    }
+
+    auto conditional_file_logger = std::make_unique<ConditionalFileLogger>(*session_file_logger_, *file_logging_control);
+    auto prefixed_file_logger = std::make_unique<PrefixedLogger>(*conditional_file_logger, logger_name);
+    multi_logger->addLogger(*prefixed_file_logger);
 
     auto console_logger = std::make_unique<ConsoleLogger>();
     multi_logger->addLogger(*console_logger);
 
     NamedMultiLogger &multi_logger_ref = *multi_logger;
 
-    loggers.emplace_back(std::move(file_logger));
     loggers.emplace_back(std::move(conditional_file_logger));
+    loggers.emplace_back(std::move(prefixed_file_logger));
     loggers.emplace_back(std::move(console_logger));
     loggers.emplace_back(std::move(multi_logger));
 

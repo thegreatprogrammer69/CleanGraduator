@@ -14,19 +14,15 @@ void domain::common::CalibrationResult::setCell(const CalibrationCellKey &key, C
     auto idx = getFlatIndex(key);
     if (!idx) return;
 
-    if ((key.point_id.id == 0 || key.point_id.id == points_.size() - 1)
-        && key.direction == MotorDirection::Backward) return;
+    cells_[*idx] = cell;
 
-    cells_[*idx] = std::move(cell);
-
-    if ((key.point_id.id == 0 || key.point_id.id == points_.size() - 1)
-        && key.direction == MotorDirection::Forward)
+    if (key.direction == MotorDirection::Forward)
     {
-        auto new_key = key;
-        new_key.direction = MotorDirection::Backward;
-        auto new_idx = getFlatIndex(new_key);
-        if (!new_idx) return;
-        cells_[*new_idx] = std::move(cell);
+        auto backward_key = key;
+        backward_key.direction = MotorDirection::Backward;
+        if (const auto backward_idx = getFlatIndex(backward_key)) {
+            cells_[*backward_idx] = std::move(cell);
+        }
     }
 }
 

@@ -248,7 +248,11 @@ void Stand4CalibrationStrategy::updateForward(
 
     if (ctx.limits_state.end) {
         logger_.info("Достигнут конечный концевик на прямом ходе");
-        transitionToBackward(v);
+        if (calibration_mode_ == CalibrationMode::OnlyForward) {
+            transitionToFinished(v);
+        } else {
+            transitionToBackward(v);
+        }
         return;
     }
 
@@ -258,7 +262,11 @@ void Stand4CalibrationStrategy::updateForward(
             p_cur,
             p_target_);
 
-        transitionToBackward(v);
+        if (calibration_mode_ == CalibrationMode::OnlyForward) {
+            transitionToFinished(v);
+        } else {
+            transitionToBackward(v);
+        }
         return;
     }
 

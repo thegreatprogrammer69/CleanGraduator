@@ -429,6 +429,7 @@ void CalibrationOrchestrator::notifyObservers(const CalibrationOrchestratorEvent
 void CalibrationOrchestrator::teardown()
 {
     safety_monitor_.stop();
+    ports_.motor_driver.watchdog().stop();
     ports_.motor_driver.stop();
     detachObservers();
 

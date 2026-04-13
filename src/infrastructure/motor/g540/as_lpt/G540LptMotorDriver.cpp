@@ -104,6 +104,7 @@ namespace infra::motor {
     }
 
     void G540LptMotorDriver::stop() {
+        software_watchdog_.stop();
 
         // 1. Предупреждение при повторной остановке
         if (state_ == MotorDriverState::Stopped) {
@@ -127,6 +128,8 @@ namespace infra::motor {
 
     void G540LptMotorDriver::emergencyStop()
     {
+        software_watchdog_.stop();
+
         // 1. Немедленная остановка worker-потока
         thread_worker_.stop();
 
