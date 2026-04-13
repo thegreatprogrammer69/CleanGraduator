@@ -248,11 +248,7 @@ void Stand4CalibrationStrategy::updateForward(
 
     if (ctx.limits_state.end) {
         logger_.info("Достигнут конечный концевик на прямом ходе");
-        if (calibration_mode_ == CalibrationMode::OnlyForward) {
-            transitionToFinished(v);
-        } else {
-            transitionToBackward(v);
-        }
+        transitionToBackward(v);
         return;
     }
 
@@ -261,12 +257,7 @@ void Stand4CalibrationStrategy::updateForward(
             "Достигнуто целевое давление {} >= {}",
             p_cur,
             p_target_);
-
-        if (calibration_mode_ == CalibrationMode::OnlyForward) {
-            transitionToFinished(v);
-        } else {
-            transitionToBackward(v);
-        }
+        transitionToBackward(v);
         return;
     }
 
