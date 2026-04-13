@@ -56,6 +56,9 @@ bool CalibrationOrchestrator::start(CalibrationOrchestratorInput input)
 
     inp_ = std::move(input);
     opened_angle_sources_.clear();
+    has_pressure_sample_.store(false, std::memory_order_release);
+    last_pressure_.store(0.0f, std::memory_order_release);
+    last_pressure_timestamp_.store(0.0f, std::memory_order_release);
 
     try
     {
@@ -274,6 +277,9 @@ void CalibrationOrchestrator::onPressurePacket(const PressurePacket& p)
     ctx.timestamp = p.timestamp.asSeconds();
     ctx.pressure  = p.pressure.to(inp_.pressure_unit);
     ctx.limits_state = ports_.motor_driver.limits();
+    last_pressure_.store(ctx.pressure, std::memory_order_release);
+    last_pressure_timestamp_.store(ctx.timestamp, std::memory_order_release);
+    has_pressure_sample_.store(true, std::memory_order_release);
 
     ports_.motor_driver.watchdog().feed();
     const auto verdict = ports_.strategy.feed(ctx);
@@ -350,12 +356,13 @@ void CalibrationOrchestrator::onAngleSourceEvent(const AngleSourceEvent& ev)
 void CalibrationOrchestrator::onMotorEvent(const MotorDriverEvent& ev)
 {
     std::string error_to_report;
+    bool should_finalize_from_home_limit = false;
 
     if (state_.load(std::memory_order_acquire) != CalibrationOrchestratorState::Started)
         return;
 
     std::visit(
-        [&error_to_report](const auto& e)
+        [&error_to_report, &should_finalize_from_home_limit](const auto& e)
         {
             using T = std::decay_t<decltype(e)>;
 
@@ -363,11 +370,42 @@ void CalibrationOrchestrator::onMotorEvent(const MotorDriverEvent& ev)
             {
                 error_to_report = e.error.message;
             }
+            else if constexpr (std::is_same_v<T, MotorDriverEvent::StoppedAtHome>)
+            {
+                should_finalize_from_home_limit = true;
+            }
         },
         ev.data);
 
     if (!error_to_report.empty())
+    {
         stopWithError(error_to_report);
+        return;
+    }
+
+    if (!should_finalize_from_home_limit)
+        return;
+
+    CalibrationStrategyFeedContext ctx;
+    ctx.timestamp = has_pressure_sample_.load(std::memory_order_acquire)
+        ? last_pressure_timestamp_.load(std::memory_order_acquire)
+        : ports_.session_clock.now().asSeconds();
+    ctx.pressure = last_pressure_.load(std::memory_order_acquire);
+    ctx.limits_state = ports_.motor_driver.limits();
+
+    const auto verdict = ports_.strategy.feed(ctx);
+    const auto exec = applyVerdict(verdict);
+
+    if (exec.complete)
+    {
+        logger_.info("Calibration strategy completed after HOME limit event.");
+        stop();
+    }
+    else if (exec.fault)
+    {
+        logger_.error("Calibration strategy failed after HOME limit event: {}", *exec.fault);
+        stopWithError(*exec.fault);
+    }
 }
 
 void CalibrationOrchestrator::attachObservers()
