@@ -56,6 +56,7 @@ bool CalibrationOrchestrator::start(CalibrationOrchestratorInput input)
 
     inp_ = std::move(input);
     opened_angle_sources_.clear();
+    recording_enabled_.store(false, std::memory_order_release);
 
     try
     {
@@ -159,6 +160,7 @@ bool CalibrationOrchestrator::start(CalibrationOrchestratorInput input)
             };
 
             ports_.recorder.startRecording(recording_context);
+            recording_enabled_.store(true, std::memory_order_release);
         }
 
         state_.store(
@@ -281,7 +283,8 @@ void CalibrationOrchestrator::onPressurePacket(const PressurePacket& p)
 
     if (!exec.complete &&
         !exec.fault &&
-        state_.load(std::memory_order_acquire) == CalibrationOrchestratorState::Started)
+        state_.load(std::memory_order_acquire) == CalibrationOrchestratorState::Started &&
+        recording_enabled_.load(std::memory_order_acquire))
     {
         PressureSample sample;
         sample.time = p.timestamp.asSeconds();
@@ -304,6 +307,9 @@ void CalibrationOrchestrator::onPressurePacket(const PressurePacket& p)
 void CalibrationOrchestrator::onAnglePacket(const AngleSourcePacket& p)
 {
     if (state_.load(std::memory_order_acquire) != CalibrationOrchestratorState::Started)
+        return;
+
+    if (!recording_enabled_.load(std::memory_order_acquire))
         return;
 
     if (const auto incident = safety_monitor_.onAnglePacket(p))
@@ -428,6 +434,7 @@ void CalibrationOrchestrator::notifyObservers(const CalibrationOrchestratorEvent
 
 void CalibrationOrchestrator::teardown()
 {
+    recording_enabled_.store(false, std::memory_order_release);
     safety_monitor_.stop();
     ports_.motor_driver.watchdog().stop();
     ports_.motor_driver.stop();
@@ -545,6 +552,12 @@ void CalibrationOrchestrator::applyCommand(const StrategyVerdict::MotorSetDirect
 {
     ports_.motor_driver.setDirection(cmd.direction);
     safety_monitor_.setMotorDirection(cmd.direction);
+
+    if (inp_.calibration_mode == CalibrationMode::OnlyForward &&
+        cmd.direction == MotorDirection::Backward)
+    {
+        recording_enabled_.store(false, std::memory_order_release);
+    }
 }
 
 void CalibrationOrchestrator::applyCommand(const StrategyVerdict::MotorSetFlaps& cmd)
