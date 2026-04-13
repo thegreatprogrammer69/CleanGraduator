@@ -11,6 +11,7 @@ namespace mvvm {
 
 class QComboBox;
 class QDoubleSpinBox;
+class QCheckBox;
 
 class QtInfoSettingsWidget final : public QWidget {
     Q_OBJECT
@@ -36,6 +37,7 @@ private:
     mvvm::Observable<int>::Subscription precisionSub_;
     mvvm::Observable<int>::Subscription pressureUnitSub_;
     mvvm::Observable<int>::Subscription printerSub_;
+    mvvm::Observable<bool>::Subscription fileLoggingEnabledSub_;
     mvvm::Observable<float>::Subscription maxCenterDeviationSub_;
 
     QComboBox* displacementCombo_{nullptr};
@@ -43,6 +45,7 @@ private:
     QComboBox* precisionCombo_{nullptr};
     QComboBox* pressureUnitCombo_{nullptr};
     QComboBox* printerCombo_{nullptr};
+    QCheckBox* fileLoggingEnabledCheckBox_{nullptr};
     QDoubleSpinBox* maxCenterDeviationSpinBox_{nullptr};
 };
 
