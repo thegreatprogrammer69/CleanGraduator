@@ -28,8 +28,14 @@ CalibrationSeriesViewModel::pressureHistory() const
 const std::vector<CalibrationSeriesViewModel::AngleEntry>&
 CalibrationSeriesViewModel::angleHistory(SourceId source_id) const
 {
-    if (angle_history_.find(source_id) == angle_history_.end()) return {};
-    return angle_history_.at(source_id);
+    static const std::vector<AngleEntry> empty;
+
+    const auto it = angle_history_.find(source_id);
+    if (it == angle_history_.end()) {
+        return empty;
+    }
+
+    return it->second;
 }
 
 const std::vector<SourceId> & CalibrationSeriesViewModel::openedSources() const {
