@@ -97,6 +97,9 @@ private:
     CalibrationOrchestratorPorts ports_;
     CalibrationOrchestratorInput inp_;
     CalibrationSafetyMonitor safety_monitor_;
+    std::atomic<float> last_pressure_{0.0f};
+    std::atomic<float> last_pressure_timestamp_{0.0f};
+    std::atomic<bool> has_pressure_sample_{false};
 };
 
 } // namespace application::orchestrators
