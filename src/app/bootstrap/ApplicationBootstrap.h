@@ -24,6 +24,7 @@ namespace domain::ports {
 }
 
 namespace application::ports {
+    struct IFileLoggingControl;
     struct ILogSourcesStorage;
     struct IInfoSettingsStorage;
     struct IPrinterCatalog;
@@ -59,6 +60,7 @@ public:
     // Логеры
     std::unique_ptr<application::ports::ILogSourcesStorage> log_sources_storage;
     std::vector<std::unique_ptr<domain::ports::ILogger>> loggers;
+    std::unique_ptr<application::ports::IFileLoggingControl> file_logging_control;
 
     ////////////////////////////////////////////////////////////////////////////////////////
     // Время процесса

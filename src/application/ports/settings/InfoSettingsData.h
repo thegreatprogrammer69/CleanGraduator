@@ -10,6 +10,7 @@ namespace application::ports {
         int printer_idx{0};
         bool ku_enabled{false};
         bool centered_mark_enabled{false};
+        bool file_logging_enabled{true};
         float max_center_deviation_deg{0.9F};
     };
 }

@@ -21,6 +21,7 @@ set(SOURCES
 
         logging/ConsoleLogger.cpp
         logging/FileLogger.cpp
+        logging/FileLoggingController.cpp
         logging/NamedMultiLogger.cpp
 
         clock/SessionClock.cpp
