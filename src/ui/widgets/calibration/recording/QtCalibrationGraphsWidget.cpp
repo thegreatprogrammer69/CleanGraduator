@@ -69,7 +69,7 @@ protected:
         const bool zoom_in = event->angleDelta().y() > 0;
         const double factor = zoom_in ? (1.0 / zoom_step) : zoom_step;
 
-        const auto data_pos = screenToData(event->localPos());
+        const auto data_pos = screenToData(event->pos());
         if (!data_pos.has_value()) {
             return;
         }
