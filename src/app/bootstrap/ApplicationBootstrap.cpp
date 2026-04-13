@@ -168,17 +168,23 @@ void ApplicationBootstrap::initialize() {
 ILogger & ApplicationBootstrap::createLogger(const std::string &logger_name) {
     auto multi_logger = std::make_unique<NamedMultiLogger>(*uptime_clock, logger_name);
 
-    auto file_logger = std::make_unique<FileLogger>(session_logs_dir_ + "/" + logger_name + ".log");
-    auto conditional_file_logger = std::make_unique<ConditionalFileLogger>(*file_logger, *file_logging_control);
-    multi_logger->addLogger(*conditional_file_logger);
+    if (shared_conditional_file_logger_ == nullptr) {
+        auto shared_file_logger = std::make_unique<FileLogger>(session_logs_dir_ + "/application.log");
+        auto shared_conditional_file_logger = std::make_unique<ConditionalFileLogger>(*shared_file_logger, *file_logging_control);
+
+        shared_conditional_file_logger_ = shared_conditional_file_logger.get();
+
+        loggers.emplace_back(std::move(shared_file_logger));
+        loggers.emplace_back(std::move(shared_conditional_file_logger));
+    }
+
+    multi_logger->addLogger(*shared_conditional_file_logger_);
 
     auto console_logger = std::make_unique<ConsoleLogger>();
     multi_logger->addLogger(*console_logger);
 
     NamedMultiLogger &multi_logger_ref = *multi_logger;
 
-    loggers.emplace_back(std::move(file_logger));
-    loggers.emplace_back(std::move(conditional_file_logger));
     loggers.emplace_back(std::move(console_logger));
     loggers.emplace_back(std::move(multi_logger));
 

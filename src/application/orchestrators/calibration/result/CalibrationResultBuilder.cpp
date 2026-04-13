@@ -28,7 +28,8 @@ void CalibrationResultBuilder::onCalibrationRecorderEvent(const CalibrationRecor
         using T = std::decay_t<decltype(e)>;
 
         if constexpr (std::is_same_v<T, CalibrationRecorderEvent::RecordingStarted> ||
-            std::is_same_v<T, CalibrationRecorderEvent::SessionEnded>)
+            std::is_same_v<T, CalibrationRecorderEvent::SessionEnded> ||
+            std::is_same_v<T, CalibrationRecorderEvent::RecordingStopped>)
         {
             handleEvent(e);
         }
@@ -42,6 +43,7 @@ void CalibrationResultBuilder::handleEvent(const CalibrationRecorderEvent::Recor
 
     active_layout_ = e.layout;
     active_result_ = CalibrationResult(e.layout, e.gauge);
+    has_backward_sessions_ = false;
 
     observers_.notify([this] (domain::ports::ICalibrationResultObserver &o) {
         o.onCalibrationResultUpdated(*active_result_);
@@ -59,6 +61,9 @@ void CalibrationResultBuilder::handleEvent(const CalibrationRecorderEvent::Sessi
         e.id.direction,
         e.result.id.point.pressure
     );
+    if (e.id.direction == MotorDirection::Backward) {
+        has_backward_sessions_ = true;
+    }
 
 
     CalibrationCellKey key;
@@ -102,7 +107,23 @@ void CalibrationResultBuilder::handleEvent(const CalibrationRecorderEvent::Sessi
 }
 
 void CalibrationResultBuilder::handleEvent(const CalibrationRecorderEvent::RecordingStopped &e) {
+    (void)e;
     if (!active_result_) return;
+
+    if (!has_backward_sessions_ && active_layout_) {
+        for (const auto& point : active_layout_->points) {
+            for (const auto& source : active_layout_->sources) {
+                CalibrationCellKey forward_key{point, source, MotorDirection::Forward};
+                CalibrationCellKey backward_key{point, source, MotorDirection::Backward};
+
+                const auto& forward_cell = active_result_->cell(forward_key);
+                if (forward_cell.has_value()) {
+                    active_result_->setCell(backward_key, *forward_cell);
+                }
+            }
+        }
+    }
+
     active_result_->markReady();
     observers_.notify([this] (domain::ports::ICalibrationResultObserver &o) {
         o.onCalibrationResultUpdated(*active_result_);
@@ -122,4 +143,3 @@ void CalibrationResultBuilder::addObserver(domain::ports::ICalibrationResultObse
 void CalibrationResultBuilder::removeObserver(domain::ports::ICalibrationResultObserver &o) {
     observers_.remove(o);
 }
-
