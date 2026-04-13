@@ -374,9 +374,14 @@ void Stand4CalibrationStrategy::transitionToBackward(Verdict& v)
 
     points_tracker_.endTracking();
 
-    points_tracker_.beginTracking(
-        pressure_points_,
-        MotorDirection::Backward);
+    if (calibration_mode_ != CalibrationMode::OnlyForward) {
+        points_tracker_.beginTracking(
+            pressure_points_,
+            MotorDirection::Backward);
+    } else {
+        logger_.info(
+            "Режим OnlyForward: запись завершена, возврат к HOME без трекинга точек");
+    }
 
     v.commands.push_back(
         Verdict::MotorSetFrequency{0});
