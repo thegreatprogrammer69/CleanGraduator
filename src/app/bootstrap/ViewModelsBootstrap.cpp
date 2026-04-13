@@ -90,6 +90,7 @@ void ViewModelsBootstrap::createCameraGridSettings() {
         *use_cases_.open_selected_cameras,
         *use_cases_.open_all_cameras,
         *use_cases_.close_all_cameras,
+        *app_.video_source_manager,
     };
     camera_grid_settings = std::make_unique<CameraGridSettingsViewModel>(deps);
 }
