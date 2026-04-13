@@ -350,12 +350,13 @@ void CalibrationOrchestrator::onAngleSourceEvent(const AngleSourceEvent& ev)
 void CalibrationOrchestrator::onMotorEvent(const MotorDriverEvent& ev)
 {
     std::string error_to_report;
+    bool reached_home = false;
 
     if (state_.load(std::memory_order_acquire) != CalibrationOrchestratorState::Started)
         return;
 
     std::visit(
-        [&error_to_report](const auto& e)
+        [&error_to_report, &reached_home](const auto& e)
         {
             using T = std::decay_t<decltype(e)>;
 
@@ -363,11 +364,40 @@ void CalibrationOrchestrator::onMotorEvent(const MotorDriverEvent& ev)
             {
                 error_to_report = e.error.message;
             }
+            else if constexpr (std::is_same_v<T, MotorDriverEvent::StoppedAtHome>)
+            {
+                reached_home = true;
+            }
         },
         ev.data);
 
     if (!error_to_report.empty())
+    {
         stopWithError(error_to_report);
+        return;
+    }
+
+    if (!reached_home)
+        return;
+
+    CalibrationStrategyFeedContext ctx;
+    ctx.timestamp = ports_.session_clock.now().asSeconds();
+    ctx.pressure = 0.0f;
+    ctx.limits_state = ports_.motor_driver.limits();
+
+    const auto verdict = ports_.strategy.feed(ctx);
+    const auto exec = applyVerdict(verdict);
+
+    if (exec.complete)
+    {
+        logger_.info("Calibration strategy completed by HOME limit event.");
+        stop();
+    }
+    else if (exec.fault)
+    {
+        logger_.error("Calibration strategy failed after HOME limit event: {}", *exec.fault);
+        stopWithError(*exec.fault);
+    }
 }
 
 void CalibrationOrchestrator::attachObservers()
