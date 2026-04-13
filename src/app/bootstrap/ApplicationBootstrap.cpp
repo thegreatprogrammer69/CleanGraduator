@@ -1,7 +1,13 @@
 #include "ApplicationBootstrap.h"
 
 #include <stdexcept>
+#include <filesystem>
+#include <chrono>
+#include <ctime>
+#include <iomanip>
+#include <sstream>
 #include <vector>
+#include <QSettings>
 
 #include "application/orchestrators/calibration/result/CalibrationResultBuilder.h"
 #include "application/orchestrators/calibration/result/CalibrationResultValidationSource.h"
@@ -22,6 +28,7 @@
 #include "infrastructure/factory/VideoSourceFactory.h"
 #include "infrastructure/logging/ConsoleLogger.h"
 #include "infrastructure/logging/FileLogger.h"
+#include "infrastructure/logging/FileLoggingControl.h"
 #include "infrastructure/logging/NamedMultiLogger.h"
 #include "infrastructure/overlay/crosshair/CrosshairVideoOverlay.h"
 #include "infrastructure/platform/com/ComPort.h"
@@ -58,6 +65,52 @@ using namespace infra::platform;
 using namespace infra::repo;
 using namespace infra::storage;
 
+namespace {
+    constexpr const char* kInfoSettingsGroup = "InfoSettings";
+    constexpr const char* kFileLoggingKey = "file_logging_enabled";
+
+    std::string makeSessionLogsDirectory(const std::string& base_logs_dir) {
+        const auto now = std::chrono::system_clock::now();
+        const std::time_t now_time = std::chrono::system_clock::to_time_t(now);
+        const std::tm tm = *std::localtime(&now_time);
+
+        std::ostringstream stream;
+        stream << std::put_time(&tm, "%Y-%m-%d_%H-%M-%S");
+
+        return (std::filesystem::path(base_logs_dir) / stream.str()).string();
+    }
+
+    class ConditionalFileLogger final : public ILogger {
+    public:
+        ConditionalFileLogger(ILogger& logger, application::ports::IFileLoggingControl& control)
+            : logger_(logger)
+            , control_(control) {
+        }
+
+        void info(const std::string& msg) override {
+            if (control_.isFileLoggingEnabled()) {
+                logger_.info(msg);
+            }
+        }
+
+        void warn(const std::string& msg) override {
+            if (control_.isFileLoggingEnabled()) {
+                logger_.warn(msg);
+            }
+        }
+
+        void error(const std::string& msg) override {
+            if (control_.isFileLoggingEnabled()) {
+                logger_.error(msg);
+            }
+        }
+
+    private:
+        ILogger& logger_;
+        application::ports::IFileLoggingControl& control_;
+    };
+}
+
 
 struct LoggerFactory final : ILoggerFactory {
     explicit LoggerFactory(ApplicationBootstrap& app) : app(app) {}
@@ -81,6 +134,8 @@ ApplicationBootstrap::~ApplicationBootstrap() {
 
 void ApplicationBootstrap::initialize() {
     createLogSourcesStorage();
+    createFileLoggingControl();
+    createSessionLogsDirectory();
 
     createSessionClock();
     createClock();
@@ -113,8 +168,9 @@ void ApplicationBootstrap::initialize() {
 ILogger & ApplicationBootstrap::createLogger(const std::string &logger_name) {
     auto multi_logger = std::make_unique<NamedMultiLogger>(*uptime_clock, logger_name);
 
-    auto file_logger = std::make_unique<FileLogger>(logs_dir_ + "/" + logger_name + ".log");
-    multi_logger->addLogger(*file_logger);
+    auto file_logger = std::make_unique<FileLogger>(session_logs_dir_ + "/" + logger_name + ".log");
+    auto conditional_file_logger = std::make_unique<ConditionalFileLogger>(*file_logger, *file_logging_control);
+    multi_logger->addLogger(*conditional_file_logger);
 
     auto console_logger = std::make_unique<ConsoleLogger>();
     multi_logger->addLogger(*console_logger);
@@ -122,6 +178,7 @@ ILogger & ApplicationBootstrap::createLogger(const std::string &logger_name) {
     NamedMultiLogger &multi_logger_ref = *multi_logger;
 
     loggers.emplace_back(std::move(file_logger));
+    loggers.emplace_back(std::move(conditional_file_logger));
     loggers.emplace_back(std::move(console_logger));
     loggers.emplace_back(std::move(multi_logger));
 
@@ -137,6 +194,20 @@ ILogger & ApplicationBootstrap::createLogger(const std::string &logger_name) {
 
 void ApplicationBootstrap::createLogSourcesStorage() {
     log_sources_storage = std::make_unique<LogSourcesStorage>();
+}
+
+void ApplicationBootstrap::createFileLoggingControl() {
+    QSettings settings("CleanGraduator", "CleanGraduator");
+    settings.beginGroup(kInfoSettingsGroup);
+    const bool enabled = settings.value(kFileLoggingKey, true).toBool();
+    settings.endGroup();
+
+    file_logging_control = std::make_unique<FileLoggingControl>(enabled);
+}
+
+void ApplicationBootstrap::createSessionLogsDirectory() {
+    session_logs_dir_ = makeSessionLogsDirectory(logs_dir_);
+    std::filesystem::create_directories(session_logs_dir_);
 }
 
 void ApplicationBootstrap::createSessionClock() {

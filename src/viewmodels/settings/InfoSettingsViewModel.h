@@ -9,6 +9,7 @@
 #include "application/ports/catalogs/IGaugePrecisionCatalog.h"
 #include "application/ports/catalogs/IPressureUnitCatalog.h"
 #include "application/ports/catalogs/IPrinterCatalog.h"
+#include "application/ports/logging/IFileLoggingControl.h"
 #include "application/ports/settings/IInfoSettingsStorage.h"
 #include "domain/ports/calibration/result/ICalibrationResultValidationSource.h"
 #include "viewmodels/Observable.h"
@@ -21,6 +22,7 @@ namespace mvvm {
         application::ports::IGaugePrecisionCatalog& precision_catalog;
         application::ports::IPressureUnitCatalog& pressure_unit_catalog;
         application::ports::IPrinterCatalog& printer_catalog;
+        application::ports::IFileLoggingControl& file_logging_control;
         domain::ports::ICalibrationResultValidationSource& validation_source;
     };
 
@@ -39,6 +41,7 @@ namespace mvvm {
         Observable<int> selectedPrecision;
         Observable<int> selectedPressureUnit;
         Observable<int> selectedPrinter;
+        Observable<bool> fileLoggingEnabled;
         Observable<float> maxCenterDeviationDeg;
 
         void save();

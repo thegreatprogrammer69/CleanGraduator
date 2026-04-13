@@ -12,6 +12,7 @@ namespace {
     constexpr const char* KEY_PRINTER = "printer_idx";
     constexpr const char* KEY_KU_ENABLED = "ku_enabled";
     constexpr const char* KEY_CENTERED_MARK_ENABLED = "centered_mark_enabled";
+    constexpr const char* KEY_FILE_LOGGING_ENABLED = "file_logging_enabled";
     constexpr const char* KEY_MAX_CENTER_DEVIATION_DEG = "max_center_deviation_deg";
 }
 
@@ -42,6 +43,7 @@ InfoSettingsData QtInfoSettingsStorage::loadInfoSettings() {
     data.printer_idx = settings_.value(KEY_PRINTER, 0).toInt();
     data.ku_enabled = settings_.value(KEY_KU_ENABLED, false).toBool();
     data.centered_mark_enabled = settings_.value(KEY_CENTERED_MARK_ENABLED, false).toBool();
+    data.file_logging_enabled = settings_.value(KEY_FILE_LOGGING_ENABLED, true).toBool();
     data.max_center_deviation_deg = settings_.value(KEY_MAX_CENTER_DEVIATION_DEG, 0.9).toFloat();
 
     settings_.endGroup();
@@ -67,6 +69,7 @@ void QtInfoSettingsStorage::saveInfoSettings(const InfoSettingsData& data) {
     settings_.setValue(KEY_PRINTER, data.printer_idx);
     settings_.setValue(KEY_KU_ENABLED, data.ku_enabled);
     settings_.setValue(KEY_CENTERED_MARK_ENABLED, data.centered_mark_enabled);
+    settings_.setValue(KEY_FILE_LOGGING_ENABLED, data.file_logging_enabled);
     settings_.setValue(KEY_MAX_CENTER_DEVIATION_DEG, data.max_center_deviation_deg);
 
     settings_.endGroup();
