@@ -16,6 +16,28 @@
 
 namespace ui {
 
+namespace {
+
+std::filesystem::path qStringToPath(const QString& value)
+{
+#ifdef _WIN32
+    return std::filesystem::path(value.toStdWString());
+#else
+    return std::filesystem::path(value.toUtf8().constData());
+#endif
+}
+
+QString pathToQString(const std::filesystem::path& path)
+{
+#ifdef _WIN32
+    return QString::fromStdWString(path.native());
+#else
+    return QString::fromUtf8(path.native().c_str());
+#endif
+}
+
+} // namespace
+
 QtCalibrationResultSaveWidget::QtCalibrationResultSaveWidget(
     mvvm::CalibrationResultSaveViewModel& vm,
     QWidget* parent)
@@ -117,7 +139,7 @@ void QtCalibrationResultSaveWidget::bind()
             return;
         }
 
-        const auto result = vm_.saveAs(directory.toStdString(), selection.selected_camera_ids);
+        const auto result = vm_.saveAs(qStringToPath(directory), selection.selected_camera_ids);
         showSaveResultMessage(result);
     });
 
@@ -278,7 +300,7 @@ void QtCalibrationResultSaveWidget::showSaveResultMessage(
         msg.setIcon(QMessageBox::Information);
         msg.setWindowTitle(tr("Сохранение результата"));
         msg.setText(tr("Результат успешно сохранён."));
-        msg.setInformativeText(tr("Путь: %1").arg(QString::fromStdString(result.saved_to.string())));
+        msg.setInformativeText(tr("Путь: %1").arg(pathToQString(result.saved_to)));
         auto* openButton = msg.addButton(tr("Показать в проводнике"), QMessageBox::ActionRole);
         msg.addButton(QMessageBox::Ok);
         msg.exec();
@@ -294,7 +316,7 @@ void QtCalibrationResultSaveWidget::showSaveResultMessage(
         tr("Сохранение результата"),
         tr("Не удалось сохранить результат.\n%1\nПуть: %2")
             .arg(QString::fromStdString(result.error),
-                 QString::fromStdString(result.saved_to.string())));
+                 pathToQString(result.saved_to)));
 }
 
 void QtCalibrationResultSaveWidget::openInExplorer(const std::filesystem::path& path)
@@ -303,7 +325,7 @@ void QtCalibrationResultSaveWidget::openInExplorer(const std::filesystem::path& 
         return;
     }
 
-    QDesktopServices::openUrl(QUrl::fromLocalFile(QString::fromStdString(path.string())));
+    QDesktopServices::openUrl(QUrl::fromLocalFile(pathToQString(path)));
 }
 
 } // namespace ui
