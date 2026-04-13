@@ -349,13 +349,14 @@ void CalibrationOrchestrator::onAngleSourceEvent(const AngleSourceEvent& ev)
 
 void CalibrationOrchestrator::onMotorEvent(const MotorDriverEvent& ev)
 {
+    bool should_stop_successfully = false;
     std::string error_to_report;
 
     if (state_.load(std::memory_order_acquire) != CalibrationOrchestratorState::Started)
         return;
 
     std::visit(
-        [&error_to_report](const auto& e)
+        [&error_to_report, &should_stop_successfully](const auto& e)
         {
             using T = std::decay_t<decltype(e)>;
 
@@ -363,11 +364,20 @@ void CalibrationOrchestrator::onMotorEvent(const MotorDriverEvent& ev)
             {
                 error_to_report = e.error.message;
             }
+            else if constexpr (std::is_same_v<T, MotorDriverEvent::StoppedAtHome>)
+            {
+                should_stop_successfully = true;
+            }
         },
         ev.data);
 
     if (!error_to_report.empty())
         stopWithError(error_to_report);
+    else if (should_stop_successfully)
+    {
+        logger_.info("Motor reported HOME limit reached, finishing calibration.");
+        stop();
+    }
 }
 
 void CalibrationOrchestrator::attachObservers()
