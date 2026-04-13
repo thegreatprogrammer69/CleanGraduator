@@ -106,14 +106,24 @@ protected:
             return;
         }
 
-        if (std::abs(max_x - min_x) < 1e-6) {
+        const double x_range = max_x - min_x;
+        if (std::abs(x_range) < 1e-6) {
             min_x -= 1.0;
             max_x += 1.0;
+        } else {
+            const double x_padding = x_range / 3.0;
+            min_x -= x_padding;
+            max_x += x_padding;
         }
 
-        if (std::abs(max_y - min_y) < 1e-6) {
+        const double y_range = max_y - min_y;
+        if (std::abs(y_range) < 1e-6) {
             min_y -= 1.0;
             max_y += 1.0;
+        } else {
+            const double y_padding = y_range / 3.0;
+            min_y -= y_padding;
+            max_y += y_padding;
         }
 
         const auto map_to_plot = [&](const QPointF& pt) {
