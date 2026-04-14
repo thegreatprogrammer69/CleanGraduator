@@ -289,6 +289,9 @@ void Stand4CalibrationStrategy::updateBackward(const CalibrationStrategyFeedCont
         transitionToFinished(v);
         return;
     }
+    /*
+     *Когда программа только запущена, и камеры не открывались, в комбо-боксе выбрана 1 камера, но в строке камер тогда надо тоже написать 1. А ещё, при выборе в комбо боксе кол-ва камер, нужн автоматич
+     **/
 
     const float p_cur = ctx.pressure;
     const float dt = ctx.timestamp - last_time_;
