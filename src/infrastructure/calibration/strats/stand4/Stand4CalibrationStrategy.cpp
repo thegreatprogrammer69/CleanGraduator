@@ -307,7 +307,7 @@ void Stand4CalibrationStrategy::updateBackward(const CalibrationStrategyFeedCont
             backward_progress,
             backward_target,
             -dp_cur,
-            dp_nominal_ / 1.5);
+            dp_nominal_ / 1.15);
     }
 
     logger_.info("Возврат двигателя домой частота {}", frequency);
