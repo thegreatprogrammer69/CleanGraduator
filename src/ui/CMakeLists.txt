@@ -12,8 +12,6 @@ add_library(ui STATIC
 
         widgets/calibration/recording/QtCalibrationSeriesWidget.cpp
         widgets/calibration/recording/QtCalibrationSeriesWidget.h
-        widgets/calibration/recording/QtCalibrationGraphsWidget.cpp
-        widgets/calibration/recording/QtCalibrationGraphsWidget.h
         widgets/calibration/result/QtCalibrationResultTableModel.cpp
         widgets/calibration/result/QtCalibrationResultTableModel.h
         widgets/calibration/result/QtCalibrationResultTableWidget.cpp
