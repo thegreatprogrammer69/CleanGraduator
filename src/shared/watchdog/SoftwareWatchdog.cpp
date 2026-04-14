@@ -1,5 +1,8 @@
 #include "SoftwareWatchdog.h"
 
+#include <iostream>
+#include <stdexcept>
+
 namespace shared::watchdog {
 
     SoftwareWatchdog::SoftwareWatchdog() = default;
@@ -9,6 +12,10 @@ namespace shared::watchdog {
     }
 
     void SoftwareWatchdog::start(std::chrono::milliseconds timeout) {
+        if (timeout <= std::chrono::milliseconds::zero()) {
+            throw std::invalid_argument("SoftwareWatchdog timeout must be positive");
+        }
+
         stop(); // Гарантируем корректный сброс, если start() вызван повторно
 
         std::lock_guard<std::mutex> lock(mutex_);
@@ -17,7 +24,27 @@ namespace shared::watchdog {
         running_ = true;
         expired_.store(false, std::memory_order_release);
 
-        worker_ = std::thread(&SoftwareWatchdog::run, this);
+        try {
+            worker_ = std::thread([this]() {
+                try {
+                    run();
+                } catch (const std::exception& e) {
+                    std::cerr << "SoftwareWatchdog worker failed: " << e.what() << std::endl;
+                    std::lock_guard<std::mutex> inner_lock(mutex_);
+                    running_ = false;
+                    expired_.store(false, std::memory_order_release);
+                } catch (...) {
+                    std::cerr << "SoftwareWatchdog worker failed: unknown exception" << std::endl;
+                    std::lock_guard<std::mutex> inner_lock(mutex_);
+                    running_ = false;
+                    expired_.store(false, std::memory_order_release);
+                }
+            });
+        } catch (...) {
+            running_ = false;
+            expired_.store(false, std::memory_order_release);
+            throw;
+        }
     }
 
     void SoftwareWatchdog::stop() {

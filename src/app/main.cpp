@@ -78,4 +78,8 @@ int main(int argc, char *argv[])
         std::cerr << "Startup error: " << e.what() << std::endl;
         return 1;
     }
+    catch (...) {
+        std::cerr << "Startup error: unknown exception" << std::endl;
+        return 1;
+    }
 }

@@ -1,5 +1,8 @@
 #include "ThreadWorker.h"
 
+#include <iostream>
+#include <stdexcept>
+
 namespace shared::thread {
 
     ThreadWorker::ThreadWorker(Task task)
@@ -15,6 +18,10 @@ namespace shared::thread {
         if (m_running.load())
             return;
 
+        if (!m_task) {
+            throw std::logic_error("ThreadWorker task is not set");
+        }
+
         {
             std::lock_guard<std::mutex> lock(m_mutex);
             m_stopRequested = false;
@@ -22,7 +29,12 @@ namespace shared::thread {
         }
 
         m_running.store(true);
-        m_thread = std::thread(&ThreadWorker::threadLoop, this);
+        try {
+            m_thread = std::thread(&ThreadWorker::threadLoop, this);
+        } catch (...) {
+            m_running.store(false);
+            throw;
+        }
     }
 
     void ThreadWorker::stop() {
@@ -83,11 +95,28 @@ namespace shared::thread {
             // Выполняем задачу вне критической секции
             lock.unlock();
 
-            if (m_task)
+            try {
                 m_task();
+            } catch (const std::exception& e) {
+                std::cerr << "ThreadWorker task failed: " << e.what() << std::endl;
+                lock.lock();
+                m_stopRequested = true;
+                m_running.store(false);
+                m_cv.notify_all();
+                break;
+            } catch (...) {
+                std::cerr << "ThreadWorker task failed: unknown exception" << std::endl;
+                lock.lock();
+                m_stopRequested = true;
+                m_running.store(false);
+                m_cv.notify_all();
+                break;
+            }
 
             lock.lock();
         }
+
+        m_running.store(false);
     }
 
 }
