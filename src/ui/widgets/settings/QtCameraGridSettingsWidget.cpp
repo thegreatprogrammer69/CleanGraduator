@@ -42,6 +42,11 @@ void QtCameraGridSettingsWidget::buildUi()
         cameraCountCombo_->addItem(QString::number(count), count);
     }
 
+    if (cameraCountCombo_->count() > 0 && model_.cameraInput.get_copy().empty()) {
+        const int initial_count = cameraCountCombo_->itemData(0).toInt();
+        model_.cameraInput.set(model_.cameraSequenceForCount(initial_count));
+    }
+
     // Кнопки
     openButton_     = new QPushButton(tr("Открыть"));
     openButton_->setMinimumWidth(150);
@@ -71,7 +76,7 @@ void QtCameraGridSettingsWidget::connectUi()
                 model_.cameraInput.set(text.toStdString());
             });
 
-    connect(cameraCountCombo_, qOverload<int>(&QComboBox::currentIndexChanged),
+    connect(cameraCountCombo_, qOverload<int>(&QComboBox::activated),
             this,
             [this](int index) {
                 if (index < 0) {
@@ -80,6 +85,7 @@ void QtCameraGridSettingsWidget::connectUi()
 
                 const int count = cameraCountCombo_->currentData().toInt();
                 model_.cameraInput.set(model_.cameraSequenceForCount(count));
+                model_.open();
             });
 
     // Кнопки
