@@ -41,7 +41,7 @@ void CalibrationResultBuilder::handleEvent(const CalibrationRecorderEvent::Recor
         e.layout.points.size(), e.layout.sources.size(), e.layout.directions.size());
 
     active_layout_ = e.layout;
-    active_result_ = CalibrationResult(e.layout, e.gauge);
+    active_result_ = CalibrationResult(e.layout, e.gauge, e.calibration_mode);
 
     observers_.notify([this] (domain::ports::ICalibrationResultObserver &o) {
         o.onCalibrationResultUpdated(*active_result_);
@@ -122,4 +122,3 @@ void CalibrationResultBuilder::addObserver(domain::ports::ICalibrationResultObse
 void CalibrationResultBuilder::removeObserver(domain::ports::ICalibrationResultObserver &o) {
     observers_.remove(o);
 }
-

@@ -1,10 +1,14 @@
 #include "CalibrationResult.h"
 
-domain::common::CalibrationResult::CalibrationResult(const CalibrationLayout &layout, application::models::Gauge gauge)
+domain::common::CalibrationResult::CalibrationResult(
+    const CalibrationLayout &layout,
+    application::models::Gauge gauge,
+    CalibrationMode calibration_mode)
     : directions_(layout.directions)
     , points_(layout.points)
     , sources_(layout.sources)
     , gauge_(std::move(gauge))
+    , calibration_mode_(calibration_mode)
 {
     buildIndexMaps();
     cells_.resize(layout.getTotalCells());
@@ -18,6 +22,13 @@ void domain::common::CalibrationResult::setCell(const CalibrationCellKey &key, C
 
     if (key.direction == MotorDirection::Forward)
     {
+        const bool is_edge_point = !points_.empty() &&
+            (key.point_id == points_.front() || key.point_id == points_.back());
+        const bool mirror_to_backward = calibration_mode_ != CalibrationMode::Full || is_edge_point;
+        if (!mirror_to_backward) {
+            return;
+        }
+
         auto backward_key = key;
         backward_key.direction = MotorDirection::Backward;
         if (const auto backward_idx = getFlatIndex(backward_key)) {

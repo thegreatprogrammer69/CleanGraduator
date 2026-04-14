@@ -28,6 +28,7 @@ void InMemoryCalibrationRecorder::startRecording(CalibrationRecordingContext ctx
     CalibrationRecorderEvent::RecordingStarted e;
     e.layout = ctx.layout;
     e.gauge = ctx.gauge;
+    e.calibration_mode = ctx.calibration_mode;
     notify(CalibrationRecorderEvent(e));
 }
 

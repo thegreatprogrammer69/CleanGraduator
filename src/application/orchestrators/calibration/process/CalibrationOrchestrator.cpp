@@ -156,6 +156,7 @@ bool CalibrationOrchestrator::start(CalibrationOrchestratorInput input)
             CalibrationRecordingContext recording_context {
                 calibration_layout,
                 inp_.gauge,
+                inp_.calibration_mode,
             };
 
             ports_.recorder.startRecording(recording_context);

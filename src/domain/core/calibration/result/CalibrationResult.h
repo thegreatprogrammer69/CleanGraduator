@@ -9,13 +9,17 @@
 #include "CalibrationCellKey.h"
 #include "application/common/info/Gauge.h"
 #include "domain/core/calibration/common/CalibrationLayout.h"
+#include "domain/core/calibration/common/CalibrationMode.h"
 
 namespace domain::common {
 
 class CalibrationResult
 {
 public:
-    explicit CalibrationResult(const CalibrationLayout& layout, application::models::Gauge gauge);
+    explicit CalibrationResult(
+        const CalibrationLayout& layout,
+        application::models::Gauge gauge,
+        CalibrationMode calibration_mode);
 
     /**
      * @brief Безопасная установка ячейки.
@@ -63,6 +67,7 @@ private:
     std::vector<std::optional<CalibrationCell>> cells_;
 
     application::models::Gauge gauge_;
+    CalibrationMode calibration_mode_{CalibrationMode::Full};
 };
 
 } // namespace domain::common
