@@ -94,11 +94,10 @@ void InMemoryCalibrationRecorder::record(const AngleSample& sample)
     if (active_session_)
     {
         active_session_->angle_series[sample.id].push(sample.time, sample.angle);
-    }
-
-    if (last_direction_)
-    {
-        ++angle_counts_[sample.id][*last_direction_];
+        if (last_direction_)
+        {
+            ++angle_counts_[sample.id][*last_direction_];
+        }
     }
 
     CalibrationRecorderEvent::AngleSampleRecorded ev;
@@ -142,6 +141,7 @@ void InMemoryCalibrationRecorder::endSession()
     notify(CalibrationRecorderEvent(ev));
 
     active_session_.reset();
+    last_direction_.reset();
 }
 
 std::vector<CalibrationSessionId>
