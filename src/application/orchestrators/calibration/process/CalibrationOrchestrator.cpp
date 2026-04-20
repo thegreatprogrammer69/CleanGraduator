@@ -262,63 +262,89 @@ void CalibrationOrchestrator::onPressureSourceEvent(const PressureSourceEvent& e
 
 void CalibrationOrchestrator::onPressurePacket(const PressurePacket& p)
 {
-    if (state_.load(std::memory_order_acquire) != CalibrationOrchestratorState::Started)
-        return;
-
-    if (const auto incident = safety_monitor_.onPressurePacket(p))
+    try
     {
-        stopWithError(incident->message);
-        return;
+        if (state_.load(std::memory_order_acquire) != CalibrationOrchestratorState::Started)
+            return;
+
+        if (const auto incident = safety_monitor_.onPressurePacket(p))
+        {
+            stopWithError(incident->message);
+            return;
+        }
+
+        CalibrationStrategyFeedContext ctx;
+        ctx.timestamp = p.timestamp.asSeconds();
+        ctx.pressure  = p.pressure.to(inp_.pressure_unit);
+        ctx.limits_state = ports_.motor_driver.limits();
+
+        ports_.motor_driver.watchdog().feed();
+        const auto verdict = ports_.strategy.feed(ctx);
+        const auto exec = applyVerdict(verdict);
+
+        if (!exec.complete &&
+            !exec.fault &&
+            state_.load(std::memory_order_acquire) == CalibrationOrchestratorState::Started)
+        {
+            PressureSample sample;
+            sample.time = p.timestamp.asSeconds();
+            sample.pressure = p.pressure.to(inp_.pressure_unit);
+            ports_.recorder.record(sample);
+        }
+
+        if (exec.complete)
+        {
+            logger_.info("Calibration strategy finished successfully.");
+            stop();
+        }
+        else if (exec.fault)
+        {
+            logger_.error("Calibration strategy failed: {}", *exec.fault);
+            stopWithError(*exec.fault);
+        }
     }
-
-    CalibrationStrategyFeedContext ctx;
-    ctx.timestamp = p.timestamp.asSeconds();
-    ctx.pressure  = p.pressure.to(inp_.pressure_unit);
-    ctx.limits_state = ports_.motor_driver.limits();
-
-    ports_.motor_driver.watchdog().feed();
-    const auto verdict = ports_.strategy.feed(ctx);
-    const auto exec = applyVerdict(verdict);
-
-    if (!exec.complete &&
-        !exec.fault &&
-        state_.load(std::memory_order_acquire) == CalibrationOrchestratorState::Started)
+    catch (const std::exception& e)
     {
-        PressureSample sample;
-        sample.time = p.timestamp.asSeconds();
-        sample.pressure = p.pressure.to(inp_.pressure_unit);
-        ports_.recorder.record(sample);
+        logger_.error("Unhandled exception in pressure packet handler: {}", e.what());
+        stopWithError("Unhandled exception in pressure handler");
     }
-
-    if (exec.complete)
+    catch (...)
     {
-        logger_.info("Calibration strategy finished successfully.");
-        stop();
-    }
-    else if (exec.fault)
-    {
-        logger_.error("Calibration strategy failed: {}", *exec.fault);
-        stopWithError(*exec.fault);
+        logger_.error("Unknown exception in pressure packet handler");
+        stopWithError("Unknown exception in pressure handler");
     }
 }
 
 void CalibrationOrchestrator::onAnglePacket(const AngleSourcePacket& p)
 {
-    if (state_.load(std::memory_order_acquire) != CalibrationOrchestratorState::Started)
-        return;
-
-    if (const auto incident = safety_monitor_.onAnglePacket(p))
+    try
     {
-        stopWithError(incident->message);
-        return;
+        if (state_.load(std::memory_order_acquire) != CalibrationOrchestratorState::Started)
+            return;
+
+        if (const auto incident = safety_monitor_.onAnglePacket(p))
+        {
+            stopWithError(incident->message);
+            return;
+        }
+
+        AngleSample sample;
+        sample.id = p.source_id;
+        sample.time = p.timestamp.asSeconds();
+        sample.angle = p.angle.to(inp_.angle_unit);
+
+        ports_.recorder.record(sample);
     }
-
-    AngleSample sample;
-    sample.id = p.source_id;
-    sample.time = p.timestamp.asSeconds();
-    sample.angle = p.angle.to(inp_.angle_unit);
-
-    ports_.recorder.record(sample);
+    catch (const std::exception& e)
+    {
+        logger_.error("Unhandled exception in angle packet handler: {}", e.what());
+        stopWithError("Unhandled exception in angle handler");
+    }
+    catch (...)
+    {
+        logger_.error("Unknown exception in angle packet handler");
+        stopWithError("Unknown exception in angle handler");
+    }
 }
 
 void CalibrationOrchestrator::onAngleSourceEvent(const AngleSourceEvent& ev)
