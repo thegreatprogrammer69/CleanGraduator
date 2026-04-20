@@ -6,6 +6,11 @@
 #include <QPushButton>
 #include <QLabel>
 #include <QComboBox>
+#include <QMetaObject>
+#include <QPointer>
+
+#include <thread>
+#include <utility>
 
 #include "viewmodels/settings/CameraGridSettingsViewModel.h"
 
@@ -84,28 +89,90 @@ void QtCameraGridSettingsWidget::connectUi()
                 }
 
                 const int count = cameraCountCombo_->currentData().toInt();
-                model_.cameraInput.set(model_.cameraSequenceForCount(count));
-                model_.open();
+                const std::string input = model_.cameraSequenceForCount(count);
+                model_.cameraInput.set(input);
+                runCameraActionAsync([this, input]() {
+                    return model_.openForInput(input);
+                });
             });
 
     // Кнопки
     connect(openButton_, &QPushButton::clicked,
             this,
             [this]() {
-                model_.open();
+                const std::string input = model_.cameraInput.get_copy();
+                runCameraActionAsync([this, input]() {
+                    return model_.openForInput(input);
+                });
             });
 
     connect(openAllButton_, &QPushButton::clicked,
             this,
             [this]() {
-                model_.openAll();
+                runCameraActionAsync([this]() {
+                    return model_.openAllRaw();
+                });
             });
 
     connect(closeAllButton_, &QPushButton::clicked,
             this,
             [this]() {
-                model_.closeAll();
+                runCameraActionAsync([this]() {
+                    return model_.closeAllRaw();
+                });
             });
+}
+
+void QtCameraGridSettingsWidget::runCameraActionAsync(std::function<std::vector<int>()> task)
+{
+    if (cameraActionInProgress_) {
+        return;
+    }
+
+    cameraActionInProgress_ = true;
+    setControlsEnabled(false);
+
+    QPointer<QtCameraGridSettingsWidget> widget_guard(this);
+
+    std::thread([widget_guard, task = std::move(task)]() mutable {
+        std::vector<int> corrected = task();
+        if (!widget_guard) {
+            return;
+        }
+
+        QMetaObject::invokeMethod(widget_guard, [widget_guard, corrected = std::move(corrected)]() mutable {
+            if (!widget_guard) {
+                return;
+            }
+
+            widget_guard->model_.cameraInput.set(widget_guard->model_.indexesToInput(corrected));
+            widget_guard->cameraActionInProgress_ = false;
+            widget_guard->setControlsEnabled(true);
+        }, Qt::QueuedConnection);
+    }).detach();
+}
+
+void QtCameraGridSettingsWidget::setControlsEnabled(bool enabled)
+{
+    if (camerasEdit_) {
+        camerasEdit_->setEnabled(enabled);
+    }
+
+    if (cameraCountCombo_) {
+        cameraCountCombo_->setEnabled(enabled);
+    }
+
+    if (openButton_) {
+        openButton_->setEnabled(enabled);
+    }
+
+    if (openAllButton_) {
+        openAllButton_->setEnabled(enabled);
+    }
+
+    if (closeAllButton_) {
+        closeAllButton_->setEnabled(enabled);
+    }
 }
 
 void QtCameraGridSettingsWidget::connectViewModel()

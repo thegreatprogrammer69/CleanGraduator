@@ -17,8 +17,21 @@ CameraGridSettingsViewModel::CameraGridSettingsViewModel(CameraGridSettingsViewM
 
 void CameraGridSettingsViewModel::open()
 {
-    const std::string input = cameraInput.get_copy();
+    setIndexes(openForInput(cameraInput.get_copy()));
+}
 
+void CameraGridSettingsViewModel::openAll()
+{
+     setIndexes(openAllRaw());
+}
+
+void CameraGridSettingsViewModel::closeAll()
+{
+     setIndexes(closeAllRaw());
+}
+
+std::vector<int> CameraGridSettingsViewModel::openForInput(const std::string& input)
+{
     std::set<int> unique_indexes;
 
     for (char ch : input) {
@@ -28,18 +41,31 @@ void CameraGridSettingsViewModel::open()
     }
 
     const std::vector request(unique_indexes.begin(), unique_indexes.end());
-    const std::vector<int> corrected = deps_.open_selected.execute(request);
-    setIndexes(corrected);
+    return deps_.open_selected.execute(request);
 }
 
-void CameraGridSettingsViewModel::openAll()
+std::vector<int> CameraGridSettingsViewModel::openAllRaw()
 {
-     setIndexes(deps_.open_all.execute());
+    return deps_.open_all.execute();
 }
 
-void CameraGridSettingsViewModel::closeAll()
+std::vector<int> CameraGridSettingsViewModel::closeAllRaw()
 {
-     setIndexes(deps_.close_all.execute());
+    return deps_.close_all.execute();
+}
+
+std::string CameraGridSettingsViewModel::indexesToInput(const std::vector<int>& indexes) const
+{
+    std::string output;
+    output.reserve(indexes.size());
+
+    for (int idx : indexes)
+    {
+        if (idx >= 0 && idx <= 9)
+            output.push_back(static_cast<char>('0' + idx));
+    }
+
+    return output;
 }
 
 int CameraGridSettingsViewModel::availableCameraCount() const
@@ -74,14 +100,5 @@ std::string CameraGridSettingsViewModel::cameraSequenceForCount(int count) const
 
 void CameraGridSettingsViewModel::setIndexes(const std::vector<int>& indexes)
 {
-    std::string output;
-    output.reserve(indexes.size());
-
-    for (int idx : indexes)
-    {
-        if (idx >= 0 && idx <= 9)
-            output.push_back(static_cast<char>('0' + idx));
-    }
-
-    cameraInput.set(output);
+    cameraInput.set(indexesToInput(indexes));
 }

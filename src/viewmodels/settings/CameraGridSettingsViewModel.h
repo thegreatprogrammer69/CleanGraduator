@@ -32,6 +32,10 @@ namespace mvvm {
         void open();
         void openAll();
         void closeAll();
+        std::vector<int> openForInput(const std::string& input);
+        std::vector<int> openAllRaw();
+        std::vector<int> closeAllRaw();
+        std::string indexesToInput(const std::vector<int>& indexes) const;
         int availableCameraCount() const;
         std::string cameraSequenceForCount(int count) const;
 
