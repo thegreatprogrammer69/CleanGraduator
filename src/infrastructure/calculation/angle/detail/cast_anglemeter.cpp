@@ -219,6 +219,13 @@ private:
 
     void buildGray(const unsigned char* img) {
         const size_t pixel_count = static_cast<size_t>(img_width_) * static_cast<size_t>(img_height_);
+        if (gray_.size() != pixel_count) {
+            gray_.resize(pixel_count);
+        }
+        if (pixel_count == 0) {
+            return;
+        }
+
         const unsigned char* p = img;
 
         for (size_t i = 0; i < pixel_count; ++i, p += 3) {
