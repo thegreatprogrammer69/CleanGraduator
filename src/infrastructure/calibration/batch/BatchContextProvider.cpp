@@ -26,7 +26,7 @@ infra::calib::BatchContextProvider::current()
 
     std::string base_path = calibration_context->batch_path();
     std::string date = QDate::currentDate().toString("dd.MM.yyyy").toStdString();
-    std::string path = base_path + "\\" + "stend4" + "\\" + date;
+    std::string path = base_path + "\\" + "stend1" + "\\" + date;
 
     int displacement_id = calibration_context->displacement.id;
 
