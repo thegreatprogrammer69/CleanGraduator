@@ -91,8 +91,28 @@ public:
             return;
         }
 
+        if (width <= 0 || height <= 0) {
+            img_width_ = 0;
+            img_height_ = 0;
+            gray_.clear();
+            col_scans_.clear();
+            row_scans_.clear();
+            return;
+        }
+
         img_width_ = width;
         img_height_ = height;
+
+        const size_t width_sz = static_cast<size_t>(img_width_);
+        const size_t height_sz = static_cast<size_t>(img_height_);
+        if (width_sz > (std::numeric_limits<size_t>::max() / height_sz)) {
+            img_width_ = 0;
+            img_height_ = 0;
+            gray_.clear();
+            col_scans_.clear();
+            row_scans_.clear();
+            return;
+        }
 
         const size_t pixel_count = static_cast<size_t>(img_width_) * static_cast<size_t>(img_height_);
         gray_.resize(pixel_count);
@@ -219,6 +239,10 @@ private:
 
     void buildGray(const unsigned char* img) {
         const size_t pixel_count = static_cast<size_t>(img_width_) * static_cast<size_t>(img_height_);
+        if (gray_.size() < pixel_count) {
+            gray_.resize(pixel_count);
+        }
+
         const unsigned char* p = img;
 
         for (size_t i = 0; i < pixel_count; ++i, p += 3) {
