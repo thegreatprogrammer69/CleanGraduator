@@ -2,6 +2,7 @@
 #define CLEANGRADUATOR_INMEMORYCALIBRATIONRECORDER_H
 
 #include <optional>
+#include <mutex>
 #include <unordered_map>
 #include <vector>
 
@@ -41,6 +42,7 @@ namespace infra::calib {
 
         void notify(const domain::common::CalibrationRecorderEvent& ev);
 
+        mutable std::mutex mutex_;
         fmt::Logger logger_;
 
         bool recording_active_ = false;

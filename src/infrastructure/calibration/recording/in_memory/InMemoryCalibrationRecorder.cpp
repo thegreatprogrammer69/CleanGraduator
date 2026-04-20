@@ -15,13 +15,16 @@ InMemoryCalibrationRecorder::InMemoryCalibrationRecorder(CalibrationRecorderPort
 
 void InMemoryCalibrationRecorder::startRecording(CalibrationRecordingContext ctx)
 {
-    if (recording_active_)
-        return;
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        if (recording_active_)
+            return;
 
-    recording_active_ = true;
+        recording_active_ = true;
 
-    angle_counts_.clear();
-    last_direction_.reset();
+        angle_counts_.clear();
+        last_direction_.reset();
+    }
 
     logger_.info("Calibration recording started.");
 
@@ -34,13 +37,21 @@ void InMemoryCalibrationRecorder::startRecording(CalibrationRecordingContext ctx
 
 void InMemoryCalibrationRecorder::stopRecording()
 {
-    if (!recording_active_)
-        return;
+    bool should_end_session = false;
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        if (!recording_active_)
+            return;
 
-    if (active_session_)
+        should_end_session = active_session_.has_value();
+    }
+    if (should_end_session)
         endSession();
 
-    recording_active_ = false;
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        recording_active_ = false;
+    }
 
     logger_.info("Calibration recording stopped.");
 
@@ -51,7 +62,13 @@ void InMemoryCalibrationRecorder::stopRecording()
 
 void InMemoryCalibrationRecorder::beginSession(CalibrationSessionId id)
 {
-    if (active_session_)
+    bool should_close_previous = false;
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        should_close_previous = active_session_.has_value();
+    }
+
+    if (should_close_previous)
     {
         logger_.warn(
             "beginSession() called while another session is active. "
@@ -62,8 +79,11 @@ void InMemoryCalibrationRecorder::beginSession(CalibrationSessionId id)
     CalibrationSession new_session;
     new_session.id = id;
 
-    active_session_ = std::move(new_session);
-    last_direction_ = id.direction;
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        active_session_ = std::move(new_session);
+        last_direction_ = id.direction;
+    }
 
     logger_.info(
         "Calibration {}/{} session started.",
@@ -78,9 +98,12 @@ void InMemoryCalibrationRecorder::beginSession(CalibrationSessionId id)
 
 void InMemoryCalibrationRecorder::record(const PressureSample& sample)
 {
-    if (active_session_)
     {
-        active_session_->pressure_series.push(sample.time, sample.pressure);
+        std::lock_guard<std::mutex> lock(mutex_);
+        if (active_session_)
+        {
+            active_session_->pressure_series.push(sample.time, sample.pressure);
+        }
     }
 
     CalibrationRecorderEvent::PressureSampleRecorded ev;
@@ -91,14 +114,17 @@ void InMemoryCalibrationRecorder::record(const PressureSample& sample)
 
 void InMemoryCalibrationRecorder::record(const AngleSample& sample)
 {
-    if (active_session_)
     {
-        active_session_->angle_series[sample.id].push(sample.time, sample.angle);
-    }
+        std::lock_guard<std::mutex> lock(mutex_);
+        if (active_session_)
+        {
+            active_session_->angle_series[sample.id].push(sample.time, sample.angle);
+        }
 
-    if (last_direction_)
-    {
-        ++angle_counts_[sample.id][*last_direction_];
+        if (last_direction_)
+        {
+            ++angle_counts_[sample.id][*last_direction_];
+        }
     }
 
     CalibrationRecorderEvent::AngleSampleRecorded ev;
@@ -109,19 +135,29 @@ void InMemoryCalibrationRecorder::record(const AngleSample& sample)
 
 void InMemoryCalibrationRecorder::endSession()
 {
-    if (!active_session_)
+    CalibrationSession session_copy;
+    bool has_session = false;
+
     {
-        logger_.warn(
-            "endSession() called, but there is no active calibration session.");
-        return;
+        std::lock_guard<std::mutex> lock(mutex_);
+        if (!active_session_)
+        {
+            logger_.warn(
+                "endSession() called, but there is no active calibration session.");
+            return;
+        }
+
+        session_copy = *active_session_;
+        has_session = true;
     }
 
-    const auto& session = *active_session_;
+    if (!has_session)
+        return;
 
-    const std::size_t pressure_count = session.pressure_series.size();
+    const std::size_t pressure_count = session_copy.pressure_series.size();
 
     std::size_t angle_count = 0;
-    for (const auto& [id, series] : session.angle_series)
+    for (const auto& [id, series] : session_copy.angle_series)
     {
         (void)id;
         angle_count += series.size();
@@ -133,22 +169,24 @@ void InMemoryCalibrationRecorder::endSession()
         angle_count
     );
 
-    sessions_[session.id] = session;
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        sessions_[session_copy.id] = session_copy;
+        active_session_.reset();
+    }
 
     CalibrationRecorderEvent::SessionEnded ev;
-    ev.id = session.id;
-    ev.result = session;
+    ev.id = session_copy.id;
+    ev.result = session_copy;
 
     notify(CalibrationRecorderEvent(ev));
-
-    active_session_.reset();
 }
 
 std::vector<CalibrationSessionId>
 InMemoryCalibrationRecorder::sessions() const
 {
     std::vector<CalibrationSessionId> result;
-
+    std::lock_guard<std::mutex> lock(mutex_);
     result.reserve(
         sessions_.size() +
         (active_session_ ? 1U : 0U));
@@ -174,6 +212,7 @@ InMemoryCalibrationRecorder::sessions() const
 std::optional<CalibrationSession>
 InMemoryCalibrationRecorder::session(CalibrationSessionId id) const
 {
+    std::lock_guard<std::mutex> lock(mutex_);
     if (active_session_ && active_session_->id == id)
         return active_session_;
 
@@ -208,5 +247,6 @@ void InMemoryCalibrationRecorder::notify(
 }
 domain::ports::CalibrationAngleCounts InMemoryCalibrationRecorder::angleCounts() const
 {
+    std::lock_guard<std::mutex> lock(mutex_);
     return angle_counts_;
 }

@@ -235,10 +235,12 @@ void CalibrationOrchestrator::removeObserver(ports::CalibrationOrchestratorObser
 
 void CalibrationOrchestrator::onPressureSourceEvent(const PressureSourceEvent& ev)
 {
-    std::string error_to_report;
+    try
+    {
+        std::string error_to_report;
 
-    if (state_.load(std::memory_order_acquire) != CalibrationOrchestratorState::Started)
-        return;
+        if (state_.load(std::memory_order_acquire) != CalibrationOrchestratorState::Started)
+            return;
 
     std::visit(
         [&error_to_report](const auto& e)
@@ -256,14 +258,22 @@ void CalibrationOrchestrator::onPressureSourceEvent(const PressureSourceEvent& e
         },
         ev.data);
 
-    if (!error_to_report.empty())
-        stopWithError(error_to_report);
+        if (!error_to_report.empty())
+            stopWithError(error_to_report);
+    }
+    catch (const std::exception& e)
+    {
+        logger_.error("Unhandled exception in onPressureSourceEvent: {}", e.what());
+        stopWithError(fmt::format("Calibration crashed in pressure event handler: {}", e.what()));
+    }
 }
 
 void CalibrationOrchestrator::onPressurePacket(const PressurePacket& p)
 {
-    if (state_.load(std::memory_order_acquire) != CalibrationOrchestratorState::Started)
-        return;
+    try
+    {
+        if (state_.load(std::memory_order_acquire) != CalibrationOrchestratorState::Started)
+            return;
 
     if (const auto incident = safety_monitor_.onPressurePacket(p))
     {
@@ -290,22 +300,30 @@ void CalibrationOrchestrator::onPressurePacket(const PressurePacket& p)
         ports_.recorder.record(sample);
     }
 
-    if (exec.complete)
-    {
-        logger_.info("Calibration strategy finished successfully.");
-        stop();
+        if (exec.complete)
+        {
+            logger_.info("Calibration strategy finished successfully.");
+            stop();
+        }
+        else if (exec.fault)
+        {
+            logger_.error("Calibration strategy failed: {}", *exec.fault);
+            stopWithError(*exec.fault);
+        }
     }
-    else if (exec.fault)
+    catch (const std::exception& e)
     {
-        logger_.error("Calibration strategy failed: {}", *exec.fault);
-        stopWithError(*exec.fault);
+        logger_.error("Unhandled exception in onPressurePacket: {}", e.what());
+        stopWithError(fmt::format("Calibration crashed in pressure handler: {}", e.what()));
     }
 }
 
 void CalibrationOrchestrator::onAnglePacket(const AngleSourcePacket& p)
 {
-    if (state_.load(std::memory_order_acquire) != CalibrationOrchestratorState::Started)
-        return;
+    try
+    {
+        if (state_.load(std::memory_order_acquire) != CalibrationOrchestratorState::Started)
+            return;
 
     if (const auto incident = safety_monitor_.onAnglePacket(p))
     {
@@ -318,15 +336,23 @@ void CalibrationOrchestrator::onAnglePacket(const AngleSourcePacket& p)
     sample.time = p.timestamp.asSeconds();
     sample.angle = p.angle.to(inp_.angle_unit);
 
-    ports_.recorder.record(sample);
+        ports_.recorder.record(sample);
+    }
+    catch (const std::exception& e)
+    {
+        logger_.error("Unhandled exception in onAnglePacket: {}", e.what());
+        stopWithError(fmt::format("Calibration crashed in angle handler: {}", e.what()));
+    }
 }
 
 void CalibrationOrchestrator::onAngleSourceEvent(const AngleSourceEvent& ev)
 {
-    std::string error_to_report;
+    try
+    {
+        std::string error_to_report;
 
-    if (state_.load(std::memory_order_acquire) != CalibrationOrchestratorState::Started)
-        return;
+        if (state_.load(std::memory_order_acquire) != CalibrationOrchestratorState::Started)
+            return;
 
     std::visit(
         [&error_to_report](const auto& e)
@@ -344,14 +370,22 @@ void CalibrationOrchestrator::onAngleSourceEvent(const AngleSourceEvent& ev)
         },
         ev.data);
 
-    if (!error_to_report.empty())
-        stopWithError(error_to_report);
+        if (!error_to_report.empty())
+            stopWithError(error_to_report);
+    }
+    catch (const std::exception& e)
+    {
+        logger_.error("Unhandled exception in onAngleSourceEvent: {}", e.what());
+        stopWithError(fmt::format("Calibration crashed in angle source event handler: {}", e.what()));
+    }
 }
 
 void CalibrationOrchestrator::onMotorEvent(const MotorDriverEvent& ev)
 {
-    bool should_stop_successfully = false;
-    std::string error_to_report;
+    try
+    {
+        bool should_stop_successfully = false;
+        std::string error_to_report;
 
     if (state_.load(std::memory_order_acquire) != CalibrationOrchestratorState::Started)
         return;
@@ -372,12 +406,18 @@ void CalibrationOrchestrator::onMotorEvent(const MotorDriverEvent& ev)
         },
         ev.data);
 
-    if (!error_to_report.empty())
-        stopWithError(error_to_report);
-    else if (should_stop_successfully)
+        if (!error_to_report.empty())
+            stopWithError(error_to_report);
+        else if (should_stop_successfully)
+        {
+            logger_.info("Motor reported HOME limit reached, finishing calibration.");
+            stop();
+        }
+    }
+    catch (const std::exception& e)
     {
-        logger_.info("Motor reported HOME limit reached, finishing calibration.");
-        stop();
+        logger_.error("Unhandled exception in onMotorEvent: {}", e.what());
+        stopWithError(fmt::format("Calibration crashed in motor event handler: {}", e.what()));
     }
 }
 
@@ -429,39 +469,46 @@ void CalibrationOrchestrator::notifyObservers(const CalibrationOrchestratorEvent
 
 void CalibrationOrchestrator::teardown()
 {
-    safety_monitor_.stop();
-    ports_.motor_driver.watchdog().stop();
-    ports_.motor_driver.stop();
-    detachObservers();
-
-    // Сначала даём стратегии корректно завершиться и вернуть shutdown-команды.
-    if (ports_.strategy.isRunning())
+    try
     {
-        const auto end_verdict = ports_.strategy.end();
-        const auto exec = applyVerdict(end_verdict);
-
-        if (exec.fault)
-            logger_.warn("Strategy end() reported fault: {}", *exec.fault);
-    }
-    else
-    {
-        // defensive stop на случай частично поднятой системы
+        safety_monitor_.stop();
+        ports_.motor_driver.watchdog().stop();
         ports_.motor_driver.stop();
+        detachObservers();
+
+        // Сначала даём стратегии корректно завершиться и вернуть shutdown-команды.
+        if (ports_.strategy.isRunning())
+        {
+            const auto end_verdict = ports_.strategy.end();
+            const auto exec = applyVerdict(end_verdict);
+
+            if (exec.fault)
+                logger_.warn("Strategy end() reported fault: {}", *exec.fault);
+        }
+        else
+        {
+            // defensive stop на случай частично поднятой системы
+            ports_.motor_driver.stop();
+        }
+
+        ports_.pressure_source.stop();
+
+        for (const auto& id : opened_angle_sources_)
+        {
+            auto src = ports_.source_storage.at(id);
+            if (src) src->angle_source.stop();
+        }
+
+        opened_angle_sources_.clear();
+        ports_.session_clock.stop();
+
+        // ОСТАНОВИТЬ ЗАПИСЬ
+        ports_.recorder.stopRecording();
     }
-
-    ports_.pressure_source.stop();
-
-    for (const auto& id : opened_angle_sources_)
+    catch (const std::exception& e)
     {
-        auto src = ports_.source_storage.at(id);
-        if (src) src->angle_source.stop();
+        logger_.error("Unhandled exception during calibration teardown: {}", e.what());
     }
-
-    opened_angle_sources_.clear();
-    ports_.session_clock.stop();
-
-    // ОСТАНОВИТЬ ЗАПИСЬ
-    ports_.recorder.stopRecording();
 }
 
 void CalibrationOrchestrator::stopWithError(const std::string& error)
