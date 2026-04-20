@@ -48,6 +48,11 @@ vec3 sampleYuyv(float xPix, float yPix)
 
 vec4 circleOverlayColor(vec2 fragCoord)
 {
+    if (uNoVideo == 1)
+    {
+        return vec4(0.0);
+    }
+
     if (uCircleDiameterPx <= 0.0 || uViewportSize.y <= 0.0)
     {
         return vec4(0.0);
@@ -86,7 +91,7 @@ void main()
 
     if (uNoVideo == 1)
     {
-        baseColor = vec4(1.0);
+        baseColor = vec4(240.0 / 255.0, 240.0 / 255.0, 240.0 / 255.0, 1.0);
     }
     else if (uFormat == 0)
     {

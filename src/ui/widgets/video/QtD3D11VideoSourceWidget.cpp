@@ -88,7 +88,7 @@ float4 sampleBaseColor(VSOut i)
 {
     if (uNoVideo != 0)
     {
-        return float4(0.05, 0.05, 0.05, 1.0);
+        return float4(240.0 / 255.0, 240.0 / 255.0, 240.0 / 255.0, 1.0);
     }
 
     uint width  = max(uWidth,  1u);
@@ -110,6 +110,11 @@ float4 sampleBaseColor(VSOut i)
 
 float4 circleOverlay(float2 fragCoord)
 {
+    if (uNoVideo != 0)
+    {
+        return float4(0.0, 0.0, 0.0, 0.0);
+    }
+
     if (uCircleDiameterPx <= 0.0 || uViewportWidth <= 0.0 || uViewportHeight <= 0.0)
     {
         return float4(0.0, 0.0, 0.0, 0.0);
