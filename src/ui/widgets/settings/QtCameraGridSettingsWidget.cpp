@@ -6,6 +6,7 @@
 #include <QPushButton>
 #include <QLabel>
 #include <QComboBox>
+#include <QMetaObject>
 
 #include "viewmodels/settings/CameraGridSettingsViewModel.h"
 
@@ -16,12 +17,28 @@ QtCameraGridSettingsWidget::QtCameraGridSettingsWidget(
     : QWidget(parent)
     , model_(model)
 {
+    cameraWorker_ = std::thread([this] {
+        cameraWorkerLoop();
+    });
+
     buildUi();
     connectUi();
     connectViewModel();
 }
 
-QtCameraGridSettingsWidget::~QtCameraGridSettingsWidget() = default;
+QtCameraGridSettingsWidget::~QtCameraGridSettingsWidget()
+{
+    {
+        std::lock_guard<std::mutex> lock(cameraActionsMutex_);
+        stopCameraWorker_ = true;
+        cameraActions_.clear();
+    }
+    cameraActionsCv_.notify_one();
+
+    if (cameraWorker_.joinable()) {
+        cameraWorker_.join();
+    }
+}
 
 void QtCameraGridSettingsWidget::buildUi()
 {
@@ -85,26 +102,26 @@ void QtCameraGridSettingsWidget::connectUi()
 
                 const int count = cameraCountCombo_->currentData().toInt();
                 model_.cameraInput.set(model_.cameraSequenceForCount(count));
-                model_.open();
+                enqueueCameraAction([this]() { model_.open(); });
             });
 
     // Кнопки
     connect(openButton_, &QPushButton::clicked,
             this,
             [this]() {
-                model_.open();
+                enqueueCameraAction([this]() { model_.open(); });
             });
 
     connect(openAllButton_, &QPushButton::clicked,
             this,
             [this]() {
-                model_.openAll();
+                enqueueCameraAction([this]() { model_.openAll(); });
             });
 
     connect(closeAllButton_, &QPushButton::clicked,
             this,
             [this]() {
-                model_.closeAll();
+                enqueueCameraAction([this]() { model_.closeAll(); });
             });
 }
 
@@ -112,24 +129,61 @@ void QtCameraGridSettingsWidget::connectViewModel()
 {
     cameraInputSub_ = model_.cameraInput.subscribe(
         [this](const auto& event) {
+            const std::string value = event.new_value;
 
-            const std::string& value = event.new_value;
-
-            if (camerasEdit_->text().toStdString() != value)
-            {
-                camerasEdit_->setText(
-                    QString::fromStdString(value)
-                );
-            }
-
-            for (int i = 0; i < cameraCountCombo_->count(); ++i) {
-                const int count = cameraCountCombo_->itemData(i).toInt();
-                if (model_.cameraSequenceForCount(count) == value) {
-                    if (cameraCountCombo_->currentIndex() != i) {
-                        cameraCountCombo_->setCurrentIndex(i);
-                    }
-                    break;
+            QMetaObject::invokeMethod(this, [this, value]() {
+                if (camerasEdit_->text().toStdString() != value)
+                {
+                    camerasEdit_->setText(
+                        QString::fromStdString(value)
+                    );
                 }
-            }
+
+                for (int i = 0; i < cameraCountCombo_->count(); ++i) {
+                    const int count = cameraCountCombo_->itemData(i).toInt();
+                    if (model_.cameraSequenceForCount(count) == value) {
+                        if (cameraCountCombo_->currentIndex() != i) {
+                            cameraCountCombo_->setCurrentIndex(i);
+                        }
+                        break;
+                    }
+                }
+            }, Qt::QueuedConnection);
         });
+}
+
+void QtCameraGridSettingsWidget::enqueueCameraAction(std::function<void()> action)
+{
+    {
+        std::lock_guard<std::mutex> lock(cameraActionsMutex_);
+        cameraActions_.clear();
+        cameraActions_.push_back(std::move(action));
+    }
+
+    cameraActionsCv_.notify_one();
+}
+
+void QtCameraGridSettingsWidget::cameraWorkerLoop()
+{
+    while (true) {
+        std::function<void()> action;
+
+        {
+            std::unique_lock<std::mutex> lock(cameraActionsMutex_);
+            cameraActionsCv_.wait(lock, [this] {
+                return stopCameraWorker_ || !cameraActions_.empty();
+            });
+
+            if (stopCameraWorker_) {
+                return;
+            }
+
+            action = std::move(cameraActions_.back());
+            cameraActions_.clear();
+        }
+
+        if (action) {
+            action();
+        }
+    }
 }
