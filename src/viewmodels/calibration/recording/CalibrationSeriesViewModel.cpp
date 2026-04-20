@@ -45,7 +45,6 @@ const std::vector<SourceId> & CalibrationSeriesViewModel::openedSources() const 
 void CalibrationSeriesViewModel::onCalibrationRecorderEvent(
     const CalibrationRecorderEvent& ev)
 {
-    if (!source_ids.has_observers()) return;
     std::visit(
         [this](const auto& e)
         {
@@ -53,8 +52,10 @@ void CalibrationSeriesViewModel::onCalibrationRecorderEvent(
 
             if constexpr (std::is_same_v<T,CalibrationRecorderEvent::RecordingStarted>)
             {
+                in_session_ = false;
                 source_ids.set(deps_.video_source_manager.opened());
                 pressure_history_.clear();
+                angle_history_.clear();
                 current_pressure.set({});
             }
             else if constexpr (std::is_same_v<T,CalibrationRecorderEvent::PressureSampleRecorded>)
