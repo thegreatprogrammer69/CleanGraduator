@@ -2,13 +2,12 @@
 
 #include <algorithm>
 #include <cctype>
-#include <codecvt>
 #include <fstream>
-#include <locale>
 #include <sstream>
 #include <stdexcept>
 
 #include "application/fmt/fmt_application.h"
+#include "shared/text/Cp1251.h"
 
 namespace {
 void trim(std::string& s) {
@@ -71,15 +70,11 @@ FilePrinterCatalog::FilePrinterCatalog(CatalogPorts ports, std::string filePath)
             continue;
         }
 
-        try {
-            application::models::Printer printer;
-            printer.name = name;
-            printer.path = path;
-            printers_.push_back(printer);
-            logger_.info("Loaded printer model: {}", printers_.back());
-        } catch (const std::range_error&) {
-            logger_.error("Invalid UTF-8 in printer line: {}", line);
-        }
+        application::models::Printer printer;
+        printer.name = shared::text::cp1251ToUtf8(name);
+        printer.path = shared::text::cp1251ToUtf8(path);
+        printers_.push_back(printer);
+        logger_.info("Loaded printer model: {}", printers_.back());
     }
 }
 

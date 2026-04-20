@@ -53,6 +53,7 @@ set(SOURCES
         ../shared/thread/ThreadWorker.cpp
         ../shared/ini/IniFile.cpp
         ../shared/watchdog/SoftwareWatchdog.cpp
+        ../shared/text/Cp1251.cpp
 
 )
 

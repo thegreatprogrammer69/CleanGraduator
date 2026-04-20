@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <fstream>
 
+#include "shared/text/Cp1251.h"
+
 namespace {
 
     constexpr double deg_to_rad(double deg) {
@@ -22,12 +24,12 @@ namespace {
                 }
             }
 
-            std::ofstream file(path / ("scale" + std::to_string(source_id.value) + ".tbl"));
+            std::ofstream file(path / ("scale" + std::to_string(source_id.value) + ".tbl"), std::ios::binary);
             if (!file.is_open())
                 continue;
 
             file << "       320       240       230" << std::endl;
-            file << result.gauge().name << std::endl;
+            file << shared::text::utf8ToCp1251(result.gauge().name) << std::endl;
 
             for (const auto& point_id : result.points()) {
 
