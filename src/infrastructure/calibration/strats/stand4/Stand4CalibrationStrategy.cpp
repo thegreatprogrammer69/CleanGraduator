@@ -1,5 +1,7 @@
 #include "Stand4CalibrationStrategy.h"
 
+#include <cmath>
+
 #include "domain/core/calibration/recording/CalibrationSessionId.h"
 #include "domain/core/calibration/strategy/CalibrationStrategyBeginContext.h"
 #include "domain/core/calibration/strategy/CalibrationStrategyFeedContext.h"
@@ -54,6 +56,17 @@ Stand4CalibrationStrategy::begin(const CalibrationStrategyBeginContext& ctx)
 
     logger_.info("Запуск стратегии калибровки Stand4");
 
+    if (!hasValidPointsForStand4(ctx.pressure_points)) {
+        logger_.error(
+            "Недостаточно точек давления для расчёта Stand4: {}",
+            ctx.pressure_points.value.size());
+        transitionToFault(v);
+        v.commands.push_back(Verdict::Fault{
+            "Недостаточно точек давления для запуска калибровки"
+        });
+        return v;
+    }
+
     pressure_points_ = ctx.pressure_points.to(ctx.pressure_unit);
     calibration_mode_ = ctx.calibration_mode;
 
@@ -70,6 +83,23 @@ Stand4CalibrationStrategy::begin(const CalibrationStrategyBeginContext& ctx)
     p_target_   = computeTargetPressure(ctx.pressure_points).to(ctx.pressure_unit);
     p_limit_    = computeLimitPressure(ctx.pressure_points).to(ctx.pressure_unit);
     dp_nominal_ = computeNominalVelocity(ctx.pressure_points).to(ctx.pressure_unit);
+
+    const bool computed_params_are_finite =
+        std::isfinite(p_preload_) &&
+        std::isfinite(p_target_) &&
+        std::isfinite(p_limit_) &&
+        std::isfinite(dp_nominal_);
+
+    if (!computed_params_are_finite) {
+        logger_.error(
+            "Параметры Stand4 невалидны: preload={}, target={}, limit={}, dp_nominal={}",
+            p_preload_, p_target_, p_limit_, dp_nominal_);
+        transitionToFault(v);
+        v.commands.push_back(Verdict::Fault{
+            "Некорректные параметры калибровки (NaN/Inf)"
+        });
+        return v;
+    }
 
     points_tracker_.setEnterThreshold(0.15);
     points_tracker_.setExitThreshold(0.1);
