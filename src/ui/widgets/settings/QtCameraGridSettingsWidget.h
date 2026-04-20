@@ -1,6 +1,8 @@
 #ifndef CLEANGRADUATOR_QTCAMERASETTINGSWIDGET_H
 #define CLEANGRADUATOR_QTCAMERASETTINGSWIDGET_H
 
+#include <functional>
+#include <vector>
 
 #include <QWidget>
 
@@ -33,6 +35,8 @@ private:
     void buildUi();
     void connectUi();
     void connectViewModel();
+    void runCameraActionAsync(std::function<std::vector<int>()> task);
+    void setControlsEnabled(bool enabled);
 
 private:
     mvvm::CameraGridSettingsViewModel& model_;
@@ -43,6 +47,7 @@ private:
     QPushButton* openButton_{nullptr};
     QPushButton* openAllButton_{nullptr};
     QPushButton* closeAllButton_{nullptr};
+    bool cameraActionInProgress_{false};
 };
 
 
