@@ -31,8 +31,39 @@ namespace {
     }
 }
 
+#include <windows.h>
+#include <DbgHelp.h>
+
+void CreateDump(EXCEPTION_POINTERS* pep) {
+    HANDLE hFile = CreateFile(L"crash.dmp", GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+
+    MINIDUMP_EXCEPTION_INFORMATION mei;
+    mei.ThreadId = GetCurrentThreadId();
+    mei.ExceptionPointers = pep;
+    mei.ClientPointers = FALSE;
+
+    MiniDumpWriteDump(
+        GetCurrentProcess(),
+        GetCurrentProcessId(),
+        hFile,
+        MiniDumpNormal,
+        &mei,
+        NULL,
+        NULL
+    );
+
+    CloseHandle(hFile);
+}
+
+LONG WINAPI ExceptionHandler(EXCEPTION_POINTERS* ExceptionInfo) {
+    CreateDump(ExceptionInfo);
+    return EXCEPTION_EXECUTE_HANDLER;
+}
+
 int main(int argc, char *argv[])
 {
+    SetUnhandledExceptionFilter(ExceptionHandler);
+
     QCoreApplication::setAttribute(Qt::AA_UseDesktopOpenGL);
     QApplication app(argc, argv);
 
