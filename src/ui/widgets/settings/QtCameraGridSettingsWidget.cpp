@@ -3,6 +3,7 @@
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QLineEdit>
+#include <QMetaObject>
 #include <QPushButton>
 #include <QLabel>
 #include <QComboBox>
@@ -21,7 +22,10 @@ QtCameraGridSettingsWidget::QtCameraGridSettingsWidget(
     connectViewModel();
 }
 
-QtCameraGridSettingsWidget::~QtCameraGridSettingsWidget() = default;
+QtCameraGridSettingsWidget::~QtCameraGridSettingsWidget()
+{
+    joinWorkerIfNeeded();
+}
 
 void QtCameraGridSettingsWidget::buildUi()
 {
@@ -85,26 +89,36 @@ void QtCameraGridSettingsWidget::connectUi()
 
                 const int count = cameraCountCombo_->currentData().toInt();
                 model_.cameraInput.set(model_.cameraSequenceForCount(count));
-                model_.open();
+                const std::string requested = model_.cameraInput.get_copy();
+                runCameraOperation([this, requested]() {
+                    return model_.openForInput(requested);
+                });
             });
 
     // Кнопки
     connect(openButton_, &QPushButton::clicked,
             this,
             [this]() {
-                model_.open();
+                const std::string requested = model_.cameraInput.get_copy();
+                runCameraOperation([this, requested]() {
+                    return model_.openForInput(requested);
+                });
             });
 
     connect(openAllButton_, &QPushButton::clicked,
             this,
             [this]() {
-                model_.openAll();
+                runCameraOperation([this]() {
+                    return model_.openAllIndexes();
+                });
             });
 
     connect(closeAllButton_, &QPushButton::clicked,
             this,
             [this]() {
-                model_.closeAll();
+                runCameraOperation([this]() {
+                    return model_.closeAllIndexes();
+                });
             });
 }
 
@@ -132,4 +146,42 @@ void QtCameraGridSettingsWidget::connectViewModel()
                 }
             }
         });
+}
+
+void QtCameraGridSettingsWidget::setBusy(bool busy)
+{
+    busy_ = busy;
+
+    camerasEdit_->setEnabled(!busy_);
+    cameraCountCombo_->setEnabled(!busy_);
+    openButton_->setEnabled(!busy_);
+    openAllButton_->setEnabled(!busy_);
+    closeAllButton_->setEnabled(!busy_);
+}
+
+void QtCameraGridSettingsWidget::joinWorkerIfNeeded()
+{
+    if (worker_.joinable()) {
+        worker_.join();
+    }
+}
+
+void QtCameraGridSettingsWidget::runCameraOperation(const std::function<std::vector<int>()>& operation)
+{
+    if (busy_) {
+        return;
+    }
+
+    joinWorkerIfNeeded();
+    setBusy(true);
+
+    worker_ = std::thread([this, operation]() {
+        std::vector<int> result = operation();
+
+        QMetaObject::invokeMethod(this, [this, result = std::move(result)]() mutable {
+            model_.applyIndexes(result);
+            setBusy(false);
+            joinWorkerIfNeeded();
+        });
+    });
 }

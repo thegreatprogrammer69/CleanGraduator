@@ -17,8 +17,11 @@ CameraGridSettingsViewModel::CameraGridSettingsViewModel(CameraGridSettingsViewM
 
 void CameraGridSettingsViewModel::open()
 {
-    const std::string input = cameraInput.get_copy();
+    applyIndexes(openForInput(cameraInput.get_copy()));
+}
 
+std::vector<int> CameraGridSettingsViewModel::openForInput(const std::string& input)
+{
     std::set<int> unique_indexes;
 
     for (char ch : input) {
@@ -28,18 +31,32 @@ void CameraGridSettingsViewModel::open()
     }
 
     const std::vector request(unique_indexes.begin(), unique_indexes.end());
-    const std::vector<int> corrected = deps_.open_selected.execute(request);
-    setIndexes(corrected);
+    return deps_.open_selected.execute(request);
 }
 
 void CameraGridSettingsViewModel::openAll()
 {
-     setIndexes(deps_.open_all.execute());
+     applyIndexes(openAllIndexes());
+}
+
+std::vector<int> CameraGridSettingsViewModel::openAllIndexes()
+{
+    return deps_.open_all.execute();
 }
 
 void CameraGridSettingsViewModel::closeAll()
 {
-     setIndexes(deps_.close_all.execute());
+     applyIndexes(closeAllIndexes());
+}
+
+std::vector<int> CameraGridSettingsViewModel::closeAllIndexes()
+{
+    return deps_.close_all.execute();
+}
+
+void CameraGridSettingsViewModel::applyIndexes(const std::vector<int>& indexes)
+{
+    setIndexes(indexes);
 }
 
 int CameraGridSettingsViewModel::availableCameraCount() const
