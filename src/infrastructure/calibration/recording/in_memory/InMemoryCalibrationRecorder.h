@@ -4,6 +4,7 @@
 #include <optional>
 #include <unordered_map>
 #include <vector>
+#include <mutex>
 
 #include "../CalibrationRecorderPorts.h"
 #include "domain/core/calibration/common/CalibrationLayout.h"
@@ -53,6 +54,8 @@ namespace infra::calib {
             domain::common::CalibrationSessionId,
             domain::common::CalibrationSession
         > sessions_;
+
+        mutable std::mutex state_mutex_;
 
         ThreadSafeObserverList<domain::ports::ICalibrationRecorderObserver> observers_;
     };
