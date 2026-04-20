@@ -128,6 +128,11 @@ void AngleSourceFromVideo::onVideoFrame(const domain::common::VideoFramePacket& 
         return;
     }
 
+    if (!packet.frame) {
+        logger_.error("angle calc skipped (ts={}): empty frame packet", packet.timestamp);
+        return;
+    }
+
     domain::common::AngleCalculatorInput input{};
     input.frame = packet.frame;
 

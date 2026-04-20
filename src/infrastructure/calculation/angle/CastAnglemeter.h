@@ -4,6 +4,7 @@
 #include "CastAnglemeterConfig.h"
 #include "AnglemeterPorts.h"
 #include "domain/fmt/Logger.h"
+#include <mutex>
 #include <vector>
 
 namespace infra::calc {
@@ -22,6 +23,7 @@ namespace infra::calc {
         struct CastAnglemeterImpl;
         std::unique_ptr<CastAnglemeterImpl> impl_;
         fmt::Logger logger_;
+        mutable std::mutex mutex_;
     };
 }
 
