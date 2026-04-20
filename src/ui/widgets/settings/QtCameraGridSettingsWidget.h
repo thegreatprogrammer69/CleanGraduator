@@ -4,6 +4,12 @@
 
 #include <QWidget>
 
+#include <condition_variable>
+#include <deque>
+#include <functional>
+#include <mutex>
+#include <thread>
+
 #include "viewmodels/Observable.h"
 
 namespace mvvm {
@@ -33,6 +39,8 @@ private:
     void buildUi();
     void connectUi();
     void connectViewModel();
+    void enqueueCameraAction(std::function<void()> action);
+    void cameraWorkerLoop();
 
 private:
     mvvm::CameraGridSettingsViewModel& model_;
@@ -43,6 +51,12 @@ private:
     QPushButton* openButton_{nullptr};
     QPushButton* openAllButton_{nullptr};
     QPushButton* closeAllButton_{nullptr};
+
+    std::thread cameraWorker_;
+    std::mutex cameraActionsMutex_;
+    std::condition_variable cameraActionsCv_;
+    std::deque<std::function<void()>> cameraActions_;
+    bool stopCameraWorker_{false};
 };
 
 
