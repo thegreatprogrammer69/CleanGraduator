@@ -1,6 +1,7 @@
 #include "CalibrationOrchestrator.h"
 
 #include <algorithm>
+#include <exception>
 #include <stdexcept>
 #include <type_traits>
 #include <utility>
@@ -43,6 +44,8 @@ CalibrationOrchestrator::~CalibrationOrchestrator()
 
 bool CalibrationOrchestrator::start(CalibrationOrchestratorInput input)
 {
+    const std::lock_guard<std::mutex> lock(lifecycle_mutex_);
+
     logger_.info("CalibrationOrchestrator start requested");
 
     CalibrationOrchestratorState expected = CalibrationOrchestratorState::Stopped;
@@ -196,6 +199,8 @@ bool CalibrationOrchestrator::start(CalibrationOrchestratorInput input)
 
 void CalibrationOrchestrator::stop()
 {
+    const std::lock_guard<std::mutex> lock(lifecycle_mutex_);
+
     auto current = state_.load(std::memory_order_acquire);
 
     if (current == CalibrationOrchestratorState::Stopped ||
@@ -262,63 +267,89 @@ void CalibrationOrchestrator::onPressureSourceEvent(const PressureSourceEvent& e
 
 void CalibrationOrchestrator::onPressurePacket(const PressurePacket& p)
 {
-    if (state_.load(std::memory_order_acquire) != CalibrationOrchestratorState::Started)
-        return;
-
-    if (const auto incident = safety_monitor_.onPressurePacket(p))
+    try
     {
-        stopWithError(incident->message);
-        return;
+        if (state_.load(std::memory_order_acquire) != CalibrationOrchestratorState::Started)
+            return;
+
+        if (const auto incident = safety_monitor_.onPressurePacket(p))
+        {
+            stopWithError(incident->message);
+            return;
+        }
+
+        CalibrationStrategyFeedContext ctx;
+        ctx.timestamp = p.timestamp.asSeconds();
+        ctx.pressure  = p.pressure.to(inp_.pressure_unit);
+        ctx.limits_state = ports_.motor_driver.limits();
+
+        ports_.motor_driver.watchdog().feed();
+        const auto verdict = ports_.strategy.feed(ctx);
+        const auto exec = applyVerdict(verdict);
+
+        if (!exec.complete &&
+            !exec.fault &&
+            state_.load(std::memory_order_acquire) == CalibrationOrchestratorState::Started)
+        {
+            PressureSample sample;
+            sample.time = p.timestamp.asSeconds();
+            sample.pressure = p.pressure.to(inp_.pressure_unit);
+            ports_.recorder.record(sample);
+        }
+
+        if (exec.complete)
+        {
+            logger_.info("Calibration strategy finished successfully.");
+            stop();
+        }
+        else if (exec.fault)
+        {
+            logger_.error("Calibration strategy failed: {}", *exec.fault);
+            stopWithError(*exec.fault);
+        }
     }
-
-    CalibrationStrategyFeedContext ctx;
-    ctx.timestamp = p.timestamp.asSeconds();
-    ctx.pressure  = p.pressure.to(inp_.pressure_unit);
-    ctx.limits_state = ports_.motor_driver.limits();
-
-    ports_.motor_driver.watchdog().feed();
-    const auto verdict = ports_.strategy.feed(ctx);
-    const auto exec = applyVerdict(verdict);
-
-    if (!exec.complete &&
-        !exec.fault &&
-        state_.load(std::memory_order_acquire) == CalibrationOrchestratorState::Started)
+    catch (const std::exception& e)
     {
-        PressureSample sample;
-        sample.time = p.timestamp.asSeconds();
-        sample.pressure = p.pressure.to(inp_.pressure_unit);
-        ports_.recorder.record(sample);
+        logger_.error("Pressure handler crashed: {}", e.what());
+        stopWithError("Pressure handler exception");
     }
-
-    if (exec.complete)
+    catch (...)
     {
-        logger_.info("Calibration strategy finished successfully.");
-        stop();
-    }
-    else if (exec.fault)
-    {
-        logger_.error("Calibration strategy failed: {}", *exec.fault);
-        stopWithError(*exec.fault);
+        logger_.error("Pressure handler crashed: unknown exception");
+        stopWithError("Pressure handler unknown exception");
     }
 }
 
 void CalibrationOrchestrator::onAnglePacket(const AngleSourcePacket& p)
 {
-    if (state_.load(std::memory_order_acquire) != CalibrationOrchestratorState::Started)
-        return;
-
-    if (const auto incident = safety_monitor_.onAnglePacket(p))
+    try
     {
-        stopWithError(incident->message);
-        return;
+        if (state_.load(std::memory_order_acquire) != CalibrationOrchestratorState::Started)
+            return;
+
+        if (const auto incident = safety_monitor_.onAnglePacket(p))
+        {
+            stopWithError(incident->message);
+            return;
+        }
+
+        AngleSample sample;
+        sample.id = p.source_id;
+        sample.time = p.timestamp.asSeconds();
+        sample.angle = p.angle.to(inp_.angle_unit);
+
+        ports_.recorder.record(sample);
     }
-
-    AngleSample sample;
-    sample.id = p.source_id;
-    sample.time = p.timestamp.asSeconds();
-    sample.angle = p.angle.to(inp_.angle_unit);
-
-    ports_.recorder.record(sample);
+    catch (const std::exception& e)
+    {
+        logger_.error("Angle handler crashed: {}", e.what());
+        stopWithError("Angle handler exception");
+    }
+    catch (...)
+    {
+        logger_.error("Angle handler crashed: unknown exception");
+        stopWithError("Angle handler unknown exception");
+    }
 }
 
 void CalibrationOrchestrator::onAngleSourceEvent(const AngleSourceEvent& ev)
@@ -429,43 +460,109 @@ void CalibrationOrchestrator::notifyObservers(const CalibrationOrchestratorEvent
 
 void CalibrationOrchestrator::teardown()
 {
-    safety_monitor_.stop();
-    ports_.motor_driver.watchdog().stop();
-    ports_.motor_driver.stop();
-    detachObservers();
-
-    // Сначала даём стратегии корректно завершиться и вернуть shutdown-команды.
-    if (ports_.strategy.isRunning())
+    try
     {
-        const auto end_verdict = ports_.strategy.end();
-        const auto exec = applyVerdict(end_verdict);
-
-        if (exec.fault)
-            logger_.warn("Strategy end() reported fault: {}", *exec.fault);
+        safety_monitor_.stop();
     }
-    else
+    catch (const std::exception& e)
     {
-        // defensive stop на случай частично поднятой системы
+        logger_.warn("Safety monitor stop failed: {}", e.what());
+    }
+
+    try
+    {
+        ports_.motor_driver.watchdog().stop();
+    }
+    catch (const std::exception& e)
+    {
+        logger_.warn("Motor watchdog stop failed: {}", e.what());
+    }
+
+    try
+    {
         ports_.motor_driver.stop();
     }
+    catch (const std::exception& e)
+    {
+        logger_.warn("Motor stop failed: {}", e.what());
+    }
 
-    ports_.pressure_source.stop();
+    try
+    {
+        detachObservers();
+    }
+    catch (const std::exception& e)
+    {
+        logger_.warn("Observer detach failed: {}", e.what());
+    }
+
+    try
+    {
+        if (ports_.strategy.isRunning())
+        {
+            const auto end_verdict = ports_.strategy.end();
+            const auto exec = applyVerdict(end_verdict);
+
+            if (exec.fault)
+                logger_.warn("Strategy end() reported fault: {}", *exec.fault);
+        }
+    }
+    catch (const std::exception& e)
+    {
+        logger_.warn("Strategy shutdown failed: {}", e.what());
+    }
+
+    try
+    {
+        ports_.pressure_source.stop();
+    }
+    catch (const std::exception& e)
+    {
+        logger_.warn("Pressure source stop failed: {}", e.what());
+    }
 
     for (const auto& id : opened_angle_sources_)
     {
         auto src = ports_.source_storage.at(id);
-        if (src) src->angle_source.stop();
+        if (!src)
+            continue;
+
+        try
+        {
+            src->angle_source.stop();
+        }
+        catch (const std::exception& e)
+        {
+            logger_.warn("Angle source {} stop failed: {}", id.value, e.what());
+        }
     }
 
     opened_angle_sources_.clear();
-    ports_.session_clock.stop();
 
-    // ОСТАНОВИТЬ ЗАПИСЬ
-    ports_.recorder.stopRecording();
+    try
+    {
+        ports_.session_clock.stop();
+    }
+    catch (const std::exception& e)
+    {
+        logger_.warn("Session clock stop failed: {}", e.what());
+    }
+
+    try
+    {
+        ports_.recorder.stopRecording();
+    }
+    catch (const std::exception& e)
+    {
+        logger_.warn("Recorder stop failed: {}", e.what());
+    }
 }
+
 
 void CalibrationOrchestrator::stopWithError(const std::string& error)
 {
+    const std::lock_guard<std::mutex> lock(lifecycle_mutex_);
+
     auto current = state_.load(std::memory_order_acquire);
     if (current != CalibrationOrchestratorState::Starting &&
         current != CalibrationOrchestratorState::Started)
