@@ -8,22 +8,8 @@ namespace domain::common {
         PointId point;
         MotorDirection direction;
         bool operator==(const CalibrationSessionId& rhs) const { return point == rhs.point && direction == rhs.direction; }
+        bool operator<(const CalibrationSessionId& rhs) const { return point.id < rhs.point.id && direction < rhs.direction; }
     };
-}
-
-namespace std {
-    
-    template<>
-    struct hash<domain::common::CalibrationSessionId> {
-        size_t operator()(const domain::common::CalibrationSessionId& s) const noexcept {
-            size_t h1 = std::hash<domain::common::PointId>{}(s.point);
-            size_t h2 = std::hash<int>{}(static_cast<int>(s.direction));
-
-            // корректный hash combine (boost-style)
-            return h1 ^ (h2 + 0x9e3779b97f4a7c15ULL + (h1 << 6) + (h1 >> 2));
-        }
-    };
-
 }
 
 #endif //CLEANGRADUATOR_CALIBRATIONSESSIONID_H

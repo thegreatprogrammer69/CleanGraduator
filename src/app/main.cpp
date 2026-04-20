@@ -31,8 +31,60 @@ namespace {
     }
 }
 
+#include <windows.h>
+#include <DbgHelp.h>
+#pragma comment(lib, "Dbghelp.lib")
+
+
+void CreateDump(EXCEPTION_POINTERS* pep) {
+    HANDLE hFile = CreateFileW(
+        L"crash.dmp",
+        GENERIC_WRITE,
+        0,
+        nullptr,
+        CREATE_ALWAYS,
+        FILE_ATTRIBUTE_NORMAL,
+        nullptr
+    );
+
+    if (hFile == INVALID_HANDLE_VALUE) {
+        return;
+    }
+
+    MINIDUMP_EXCEPTION_INFORMATION mei{};
+    mei.ThreadId = GetCurrentThreadId();
+    mei.ExceptionPointers = pep;
+    mei.ClientPointers = FALSE;
+
+    BOOL ok = MiniDumpWriteDump(
+        GetCurrentProcess(),
+        GetCurrentProcessId(),
+        hFile,
+        MiniDumpNormal,
+        pep ? &mei : nullptr,
+        nullptr,
+        nullptr
+    );
+
+    if (!ok) {
+        DWORD err = GetLastError();
+        // сюда лог / OutputDebugString / запись в txt
+        (void)err;
+    }
+
+    FlushFileBuffers(hFile);
+    CloseHandle(hFile);
+}
+
+LONG WINAPI ExceptionHandler(EXCEPTION_POINTERS* ExceptionInfo) {
+    CreateDump(ExceptionInfo);
+    return EXCEPTION_EXECUTE_HANDLER;
+}
+
 int main(int argc, char *argv[])
 {
+    SetUnhandledExceptionFilter(ExceptionHandler);
+
     QCoreApplication::setAttribute(Qt::AA_UseDesktopOpenGL);
     QApplication app(argc, argv);
 

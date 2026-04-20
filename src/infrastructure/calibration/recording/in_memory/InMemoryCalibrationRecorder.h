@@ -49,7 +49,7 @@ namespace infra::calib {
         std::optional<domain::common::MotorDirection> last_direction_;
         domain::ports::CalibrationAngleCounts angle_counts_;
 
-        std::unordered_map<
+        std::map<
             domain::common::CalibrationSessionId,
             domain::common::CalibrationSession
         > sessions_;
