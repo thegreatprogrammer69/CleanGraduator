@@ -28,7 +28,8 @@ void CalibrationResultBuilder::onCalibrationRecorderEvent(const CalibrationRecor
         using T = std::decay_t<decltype(e)>;
 
         if constexpr (std::is_same_v<T, CalibrationRecorderEvent::RecordingStarted> ||
-            std::is_same_v<T, CalibrationRecorderEvent::SessionEnded>)
+            std::is_same_v<T, CalibrationRecorderEvent::SessionEnded> ||
+            std::is_same_v<T, CalibrationRecorderEvent::RecordingStopped>)
         {
             handleEvent(e);
         }
@@ -83,17 +84,36 @@ void CalibrationResultBuilder::handleEvent(const CalibrationRecorderEvent::Sessi
             e.result.pressure_series
         };
 
-        const auto result = ports_.calibration_calculator.compute(calculator_input);
-        active_result_->setCell(key, result.cell);
+        try {
+            const auto result = ports_.calibration_calculator.compute(calculator_input);
+            active_result_->setCell(key, result.cell);
 
-        logger_.info(
-            "Calibration cell updated: source={}, direction={}, pressure={}, angle={}, issues_count={}",
-            key.source_id.value,
-            key.direction,
-            key.point_id.pressure,
-            result.cell.angle(),
-            result.cell.issues().size()
-        );
+            logger_.info(
+                "Calibration cell updated: source={}, direction={}, pressure={}, angle={}, issues_count={}",
+                key.source_id.value,
+                key.direction,
+                key.point_id.pressure,
+                result.cell.angle(),
+                result.cell.issues().size()
+            );
+        } catch (const std::exception& ex) {
+            logger_.error(
+                "Calibration calculation failed for source={}, direction={}, pressure={}: {}",
+                key.source_id.value,
+                key.direction,
+                key.point_id.pressure,
+                ex.what());
+
+            continue;
+        } catch (...) {
+            logger_.error(
+                "Calibration calculation failed for source={}, direction={}, pressure={} with unknown error",
+                key.source_id.value,
+                key.direction,
+                key.point_id.pressure);
+
+            continue;
+        }
 
         observers_.notify([this] (domain::ports::ICalibrationResultObserver &o) {
             o.onCalibrationResultUpdated(*active_result_);
