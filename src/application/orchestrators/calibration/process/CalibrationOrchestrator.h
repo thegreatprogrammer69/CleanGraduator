@@ -2,6 +2,7 @@
 #define CLEANGRADUATOR_CALIBRATIONPROCESSORCHESTRATOR_H
 
 #include <atomic>
+#include <chrono>
 #include <mutex>
 #include <optional>
 #include <set>
@@ -42,6 +43,7 @@ public:
 
     bool start(CalibrationOrchestratorInput input);
     void stop();
+    void emergencyStop();
     bool isRunning() const;
 
     void addObserver(ports::CalibrationOrchestratorObserver& observer);
@@ -69,7 +71,14 @@ private:
     void notifyObservers(const CalibrationOrchestratorEvent& ev);
 
     void teardown();
+    void teardownImmediate();
+    void teardownFinalize();
     void stopWithError(const std::string& error);
+    void beginSuccessShutdownFlow();
+    void beginManualShutdownFlow();
+    void openExhaustAndWaitForZeroPressure();
+    void processPressureShutdownFlow(double pressure_pa);
+    void completeGracefulShutdown();
 
     StrategyExecutionResult applyVerdict(const StrategyVerdict& verdict);
 
@@ -97,6 +106,17 @@ private:
     CalibrationOrchestratorPorts ports_;
     CalibrationOrchestratorInput inp_;
     CalibrationSafetyMonitor safety_monitor_;
+
+    enum class ShutdownFlowState
+    {
+        None,
+        SuccessWaitPressure,
+        ManualWaitHome,
+        ManualWaitPressure
+    };
+
+    ShutdownFlowState shutdown_flow_state_{ShutdownFlowState::None};
+    std::optional<std::chrono::steady_clock::time_point> zero_pressure_since_{};
 };
 
 } // namespace application::orchestrators

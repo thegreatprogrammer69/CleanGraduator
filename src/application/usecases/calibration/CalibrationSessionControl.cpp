@@ -45,7 +45,7 @@ void CalibrationSessionControl::stop()
 
 void CalibrationSessionControl::emergencyStop()
 {
-    orchestrator_.stop();
+    orchestrator_.emergencyStop();
 }
 
 void CalibrationSessionControl::addObserver(
