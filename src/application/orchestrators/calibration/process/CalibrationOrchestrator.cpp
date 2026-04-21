@@ -235,149 +235,189 @@ void CalibrationOrchestrator::removeObserver(ports::CalibrationOrchestratorObser
 
 void CalibrationOrchestrator::onPressureSourceEvent(const PressureSourceEvent& ev)
 {
-    std::string error_to_report;
+    try
+    {
+        std::string error_to_report;
 
-    if (state_.load(std::memory_order_acquire) != CalibrationOrchestratorState::Started)
-        return;
+        if (state_.load(std::memory_order_acquire) != CalibrationOrchestratorState::Started)
+            return;
 
-    std::visit(
-        [&error_to_report](const auto& e)
-        {
-            using T = std::decay_t<decltype(e)>;
-
-            if constexpr (std::is_same_v<T, PressureSourceEvent::Closed>)
+        std::visit(
+            [&error_to_report](const auto& e)
             {
-                error_to_report = "Pressure source closed";
-            }
-            else if constexpr (std::is_same_v<T, PressureSourceEvent::Failed>)
-            {
-                error_to_report = "Pressure source failed";
-            }
-        },
-        ev.data);
+                using T = std::decay_t<decltype(e)>;
 
-    if (!error_to_report.empty())
-        stopWithError(error_to_report);
+                if constexpr (std::is_same_v<T, PressureSourceEvent::Closed>)
+                {
+                    error_to_report = "Pressure source closed";
+                }
+                else if constexpr (std::is_same_v<T, PressureSourceEvent::Failed>)
+                {
+                    error_to_report = "Pressure source failed";
+                }
+            },
+            ev.data);
+
+        if (!error_to_report.empty())
+            stopWithError(error_to_report);
+    }
+    catch (const std::exception& e)
+    {
+        logger_.error("Unhandled exception during pressure source event processing: {}", e.what());
+        stopWithError("Internal error during pressure source event processing");
+    }
 }
 
 void CalibrationOrchestrator::onPressurePacket(const PressurePacket& p)
 {
-    if (state_.load(std::memory_order_acquire) != CalibrationOrchestratorState::Started)
-        return;
-
-    if (const auto incident = safety_monitor_.onPressurePacket(p))
+    try
     {
-        stopWithError(incident->message);
-        return;
+        if (state_.load(std::memory_order_acquire) != CalibrationOrchestratorState::Started)
+            return;
+
+        if (const auto incident = safety_monitor_.onPressurePacket(p))
+        {
+            stopWithError(incident->message);
+            return;
+        }
+
+        CalibrationStrategyFeedContext ctx;
+        ctx.timestamp = p.timestamp.asSeconds();
+        ctx.pressure  = p.pressure.to(inp_.pressure_unit);
+        ctx.limits_state = ports_.motor_driver.limits();
+
+        ports_.motor_driver.watchdog().feed();
+        const auto verdict = ports_.strategy.feed(ctx);
+        const auto exec = applyVerdict(verdict);
+
+        if (!exec.complete &&
+            !exec.fault &&
+            state_.load(std::memory_order_acquire) == CalibrationOrchestratorState::Started)
+        {
+            PressureSample sample;
+            sample.time = p.timestamp.asSeconds();
+            sample.pressure = p.pressure.to(inp_.pressure_unit);
+            ports_.recorder.record(sample);
+        }
+
+        if (exec.complete)
+        {
+            logger_.info("Calibration strategy finished successfully.");
+            stop();
+        }
+        else if (exec.fault)
+        {
+            logger_.error("Calibration strategy failed: {}", *exec.fault);
+            stopWithError(*exec.fault);
+        }
     }
-
-    CalibrationStrategyFeedContext ctx;
-    ctx.timestamp = p.timestamp.asSeconds();
-    ctx.pressure  = p.pressure.to(inp_.pressure_unit);
-    ctx.limits_state = ports_.motor_driver.limits();
-
-    ports_.motor_driver.watchdog().feed();
-    const auto verdict = ports_.strategy.feed(ctx);
-    const auto exec = applyVerdict(verdict);
-
-    if (!exec.complete &&
-        !exec.fault &&
-        state_.load(std::memory_order_acquire) == CalibrationOrchestratorState::Started)
+    catch (const std::exception& e)
     {
-        PressureSample sample;
-        sample.time = p.timestamp.asSeconds();
-        sample.pressure = p.pressure.to(inp_.pressure_unit);
-        ports_.recorder.record(sample);
-    }
-
-    if (exec.complete)
-    {
-        logger_.info("Calibration strategy finished successfully.");
-        stop();
-    }
-    else if (exec.fault)
-    {
-        logger_.error("Calibration strategy failed: {}", *exec.fault);
-        stopWithError(*exec.fault);
+        logger_.error("Unhandled exception during pressure packet processing: {}", e.what());
+        stopWithError("Internal error during pressure packet processing");
     }
 }
 
 void CalibrationOrchestrator::onAnglePacket(const AngleSourcePacket& p)
 {
-    if (state_.load(std::memory_order_acquire) != CalibrationOrchestratorState::Started)
-        return;
-
-    if (const auto incident = safety_monitor_.onAnglePacket(p))
+    try
     {
-        stopWithError(incident->message);
-        return;
+        if (state_.load(std::memory_order_acquire) != CalibrationOrchestratorState::Started)
+            return;
+
+        if (const auto incident = safety_monitor_.onAnglePacket(p))
+        {
+            stopWithError(incident->message);
+            return;
+        }
+
+        AngleSample sample;
+        sample.id = p.source_id;
+        sample.time = p.timestamp.asSeconds();
+        sample.angle = p.angle.to(inp_.angle_unit);
+
+        ports_.recorder.record(sample);
     }
-
-    AngleSample sample;
-    sample.id = p.source_id;
-    sample.time = p.timestamp.asSeconds();
-    sample.angle = p.angle.to(inp_.angle_unit);
-
-    ports_.recorder.record(sample);
+    catch (const std::exception& e)
+    {
+        logger_.error("Unhandled exception during angle packet processing: {}", e.what());
+        stopWithError("Internal error during angle packet processing");
+    }
 }
 
 void CalibrationOrchestrator::onAngleSourceEvent(const AngleSourceEvent& ev)
 {
-    std::string error_to_report;
+    try
+    {
+        std::string error_to_report;
 
-    if (state_.load(std::memory_order_acquire) != CalibrationOrchestratorState::Started)
-        return;
+        if (state_.load(std::memory_order_acquire) != CalibrationOrchestratorState::Started)
+            return;
 
-    std::visit(
-        [&error_to_report](const auto& e)
-        {
-            using T = std::decay_t<decltype(e)>;
-
-            if constexpr (std::is_same_v<T, AngleSourceEvent::Stopped>)
+        std::visit(
+            [&error_to_report](const auto& e)
             {
-                error_to_report = "Angle source stopped";
-            }
-            else if constexpr (std::is_same_v<T, AngleSourceEvent::Failed>)
-            {
-                error_to_report = e.error.error;
-            }
-        },
-        ev.data);
+                using T = std::decay_t<decltype(e)>;
 
-    if (!error_to_report.empty())
-        stopWithError(error_to_report);
+                if constexpr (std::is_same_v<T, AngleSourceEvent::Stopped>)
+                {
+                    error_to_report = "Angle source stopped";
+                }
+                else if constexpr (std::is_same_v<T, AngleSourceEvent::Failed>)
+                {
+                    error_to_report = e.error.error;
+                }
+            },
+            ev.data);
+
+        if (!error_to_report.empty())
+            stopWithError(error_to_report);
+    }
+    catch (const std::exception& e)
+    {
+        logger_.error("Unhandled exception during angle source event processing: {}", e.what());
+        stopWithError("Internal error during angle source event processing");
+    }
 }
 
 void CalibrationOrchestrator::onMotorEvent(const MotorDriverEvent& ev)
 {
-    bool should_stop_successfully = false;
-    std::string error_to_report;
-
-    if (state_.load(std::memory_order_acquire) != CalibrationOrchestratorState::Started)
-        return;
-
-    std::visit(
-        [&error_to_report, &should_stop_successfully](const auto& e)
-        {
-            using T = std::decay_t<decltype(e)>;
-
-            if constexpr (std::is_same_v<T, MotorDriverEvent::Fault>)
-            {
-                error_to_report = e.error.message;
-            }
-            else if constexpr (std::is_same_v<T, MotorDriverEvent::StoppedAtHome>)
-            {
-                should_stop_successfully = true;
-            }
-        },
-        ev.data);
-
-    if (!error_to_report.empty())
-        stopWithError(error_to_report);
-    else if (should_stop_successfully)
+    try
     {
-        logger_.info("Motor reported HOME limit reached, finishing calibration.");
-        stop();
+        bool should_stop_successfully = false;
+        std::string error_to_report;
+
+        if (state_.load(std::memory_order_acquire) != CalibrationOrchestratorState::Started)
+            return;
+
+        std::visit(
+            [&error_to_report, &should_stop_successfully](const auto& e)
+            {
+                using T = std::decay_t<decltype(e)>;
+
+                if constexpr (std::is_same_v<T, MotorDriverEvent::Fault>)
+                {
+                    error_to_report = e.error.message;
+                }
+                else if constexpr (std::is_same_v<T, MotorDriverEvent::StoppedAtHome>)
+                {
+                    should_stop_successfully = true;
+                }
+            },
+            ev.data);
+
+        if (!error_to_report.empty())
+            stopWithError(error_to_report);
+        else if (should_stop_successfully)
+        {
+            logger_.info("Motor reported HOME limit reached, finishing calibration.");
+            stop();
+        }
+    }
+    catch (const std::exception& e)
+    {
+        logger_.error("Unhandled exception during motor event processing: {}", e.what());
+        stopWithError("Internal error during motor event processing");
     }
 }
 

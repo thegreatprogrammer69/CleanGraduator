@@ -15,13 +15,16 @@ InMemoryCalibrationRecorder::InMemoryCalibrationRecorder(CalibrationRecorderPort
 
 void InMemoryCalibrationRecorder::startRecording(CalibrationRecordingContext ctx)
 {
-    if (recording_active_)
-        return;
+    {
+        std::lock_guard lock(mutex_);
+        if (recording_active_)
+            return;
 
-    recording_active_ = true;
+        recording_active_ = true;
 
-    angle_counts_.clear();
-    last_direction_.reset();
+        angle_counts_.clear();
+        last_direction_.reset();
+    }
 
     logger_.info("Calibration recording started.");
 
@@ -34,13 +37,26 @@ void InMemoryCalibrationRecorder::startRecording(CalibrationRecordingContext ctx
 
 void InMemoryCalibrationRecorder::stopRecording()
 {
-    if (!recording_active_)
-        return;
+    std::optional<CalibrationRecorderEvent> ended_event;
 
-    if (active_session_)
-        endSession();
+    {
+        std::lock_guard lock(mutex_);
+        if (!recording_active_)
+            return;
 
-    recording_active_ = false;
+        if (active_session_)
+        {
+            CalibrationRecorderEvent::SessionEnded ev;
+            ev.id = active_session_->id;
+            ev.result = finishActiveSessionLocked();
+            ended_event = CalibrationRecorderEvent(ev);
+        }
+
+        recording_active_ = false;
+    }
+
+    if (ended_event)
+        notify(*ended_event);
 
     logger_.info("Calibration recording stopped.");
 
@@ -51,19 +67,30 @@ void InMemoryCalibrationRecorder::stopRecording()
 
 void InMemoryCalibrationRecorder::beginSession(CalibrationSessionId id)
 {
-    if (active_session_)
+    std::optional<CalibrationRecorderEvent> ended_event;
     {
-        logger_.warn(
-            "beginSession() called while another session is active. "
-            "Previous session will be closed automatically.");
-        endSession();
+        std::lock_guard lock(mutex_);
+        if (active_session_)
+        {
+            logger_.warn(
+                "beginSession() called while another session is active. "
+                "Previous session will be closed automatically.");
+
+            CalibrationRecorderEvent::SessionEnded ev;
+            ev.id = active_session_->id;
+            ev.result = finishActiveSessionLocked();
+            ended_event = CalibrationRecorderEvent(ev);
+        }
+
+        CalibrationSession new_session;
+        new_session.id = id;
+
+        active_session_ = std::move(new_session);
+        last_direction_ = id.direction;
     }
 
-    CalibrationSession new_session;
-    new_session.id = id;
-
-    active_session_ = std::move(new_session);
-    last_direction_ = id.direction;
+    if (ended_event)
+        notify(*ended_event);
 
     logger_.info(
         "Calibration {}/{} session started.",
@@ -78,9 +105,10 @@ void InMemoryCalibrationRecorder::beginSession(CalibrationSessionId id)
 
 void InMemoryCalibrationRecorder::record(const PressureSample& sample)
 {
-    if (active_session_)
     {
-        active_session_->pressure_series.push(sample.time, sample.pressure);
+        std::lock_guard lock(mutex_);
+        if (active_session_)
+            active_session_->pressure_series.push(sample.time, sample.pressure);
     }
 
     CalibrationRecorderEvent::PressureSampleRecorded ev;
@@ -91,14 +119,13 @@ void InMemoryCalibrationRecorder::record(const PressureSample& sample)
 
 void InMemoryCalibrationRecorder::record(const AngleSample& sample)
 {
-    if (active_session_)
     {
-        active_session_->angle_series[sample.id].push(sample.time, sample.angle);
-    }
+        std::lock_guard lock(mutex_);
+        if (active_session_)
+            active_session_->angle_series[sample.id].push(sample.time, sample.angle);
 
-    if (last_direction_)
-    {
-        ++angle_counts_[sample.id][*last_direction_];
+        if (last_direction_)
+            ++angle_counts_[sample.id][*last_direction_];
     }
 
     CalibrationRecorderEvent::AngleSampleRecorded ev;
@@ -109,44 +136,27 @@ void InMemoryCalibrationRecorder::record(const AngleSample& sample)
 
 void InMemoryCalibrationRecorder::endSession()
 {
-    if (!active_session_)
-    {
-        logger_.warn(
-            "endSession() called, but there is no active calibration session.");
-        return;
-    }
-
-    const auto& session = *active_session_;
-
-    const std::size_t pressure_count = session.pressure_series.size();
-
-    std::size_t angle_count = 0;
-    for (const auto& [id, series] : session.angle_series)
-    {
-        (void)id;
-        angle_count += series.size();
-    }
-
-    logger_.info(
-        "Calibration session finished, captured {} pressures and {} angles.",
-        pressure_count,
-        angle_count
-    );
-
-    sessions_[session.id] = session;
-
     CalibrationRecorderEvent::SessionEnded ev;
-    ev.id = session.id;
-    ev.result = session;
+    {
+        std::lock_guard lock(mutex_);
+        if (!active_session_)
+        {
+            logger_.warn(
+                "endSession() called, but there is no active calibration session.");
+            return;
+        }
+
+        ev.id = active_session_->id;
+        ev.result = finishActiveSessionLocked();
+    }
 
     notify(CalibrationRecorderEvent(ev));
-
-    active_session_.reset();
 }
 
 std::vector<CalibrationSessionId>
 InMemoryCalibrationRecorder::sessions() const
 {
+    std::lock_guard lock(mutex_);
     std::vector<CalibrationSessionId> result;
 
     result.reserve(
@@ -174,6 +184,7 @@ InMemoryCalibrationRecorder::sessions() const
 std::optional<CalibrationSession>
 InMemoryCalibrationRecorder::session(CalibrationSessionId id) const
 {
+    std::lock_guard lock(mutex_);
     if (active_session_ && active_session_->id == id)
         return active_session_;
 
@@ -208,5 +219,29 @@ void InMemoryCalibrationRecorder::notify(
 }
 domain::ports::CalibrationAngleCounts InMemoryCalibrationRecorder::angleCounts() const
 {
+    std::lock_guard lock(mutex_);
     return angle_counts_;
+}
+
+CalibrationSession InMemoryCalibrationRecorder::finishActiveSessionLocked()
+{
+    const auto session = *active_session_;
+    active_session_.reset();
+
+    const std::size_t pressure_count = session.pressure_series.size();
+    std::size_t angle_count = 0;
+    for (const auto& [id, series] : session.angle_series)
+    {
+        (void)id;
+        angle_count += series.size();
+    }
+
+    logger_.info(
+        "Calibration session finished, captured {} pressures and {} angles.",
+        pressure_count,
+        angle_count
+    );
+
+    sessions_[session.id] = session;
+    return session;
 }
