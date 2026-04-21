@@ -2,6 +2,7 @@
 #define CLEANGRADUATOR_INMEMORYCALIBRATIONRECORDER_H
 
 #include <optional>
+#include <mutex>
 #include <unordered_map>
 #include <vector>
 
@@ -55,6 +56,7 @@ namespace infra::calib {
         > sessions_;
 
         ThreadSafeObserverList<domain::ports::ICalibrationRecorderObserver> observers_;
+        mutable std::mutex state_mutex_;
     };
 
 }
