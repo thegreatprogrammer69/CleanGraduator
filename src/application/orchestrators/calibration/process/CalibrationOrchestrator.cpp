@@ -1,7 +1,9 @@
 #include "CalibrationOrchestrator.h"
 
 #include <algorithm>
+#include <chrono>
 #include <stdexcept>
+#include <thread>
 #include <type_traits>
 #include <utility>
 #include <variant>
@@ -26,6 +28,9 @@ using namespace domain::common;
 
 namespace {
 constexpr auto kMotorWatchdogTimeout = std::chrono::milliseconds(200);
+constexpr auto kPressureDrainDelay = std::chrono::milliseconds(1500);
+constexpr auto kMotorHomingPollInterval = std::chrono::milliseconds(20);
+constexpr auto kMotorHomingTimeout = std::chrono::seconds(60);
 }
 
 CalibrationOrchestrator::CalibrationOrchestrator(CalibrationOrchestratorPorts ports)
@@ -56,6 +61,10 @@ bool CalibrationOrchestrator::start(CalibrationOrchestratorInput input)
 
     inp_ = std::move(input);
     opened_angle_sources_.clear();
+    {
+        std::lock_guard lock(pressure_mutex_);
+        last_pressure_.reset();
+    }
 
     try
     {
@@ -178,7 +187,7 @@ bool CalibrationOrchestrator::start(CalibrationOrchestratorInput input)
     {
         logger_.error("Calibration start failed: {}", e.what());
 
-        teardown();
+        teardown(StopReason::Error);
 
         state_.store(
             CalibrationOrchestratorState::Stopped,
@@ -204,10 +213,31 @@ void CalibrationOrchestrator::stop()
         return;
     }
 
-    state_.store(CalibrationOrchestratorState::Stopping, std::memory_order_acq_rel);
+    state_.store(CalibrationOrchestratorState::Stopping, std::memory_order_release);
 
-    teardown();
+    teardown(StopReason::Manual);
 
+    state_.store(
+        CalibrationOrchestratorState::Stopped,
+        std::memory_order_release);
+
+    notifyObservers(
+        CalibrationOrchestratorEvent(
+            CalibrationOrchestratorEvent::Stopped{}));
+}
+
+void CalibrationOrchestrator::emergencyStop()
+{
+    auto current = state_.load(std::memory_order_acquire);
+
+    if (current == CalibrationOrchestratorState::Stopped ||
+        current == CalibrationOrchestratorState::Stopping)
+    {
+        return;
+    }
+
+    state_.store(CalibrationOrchestratorState::Stopping, std::memory_order_release);
+    teardown(StopReason::Emergency);
     state_.store(
         CalibrationOrchestratorState::Stopped,
         std::memory_order_release);
@@ -262,6 +292,12 @@ void CalibrationOrchestrator::onPressureSourceEvent(const PressureSourceEvent& e
 
 void CalibrationOrchestrator::onPressurePacket(const PressurePacket& p)
 {
+    {
+        std::lock_guard lock(pressure_mutex_);
+        last_pressure_ = p.pressure.to(inp_.pressure_unit);
+    }
+    pressure_cv_.notify_all();
+
     if (state_.load(std::memory_order_acquire) != CalibrationOrchestratorState::Started)
         return;
 
@@ -293,7 +329,16 @@ void CalibrationOrchestrator::onPressurePacket(const PressurePacket& p)
     if (exec.complete)
     {
         logger_.info("Calibration strategy finished successfully.");
-        stop();
+        state_.store(CalibrationOrchestratorState::Stopping, std::memory_order_release);
+        teardown(StopReason::StrategyCompleted);
+
+        state_.store(
+            CalibrationOrchestratorState::Stopped,
+            std::memory_order_release);
+
+        notifyObservers(
+            CalibrationOrchestratorEvent(
+                CalibrationOrchestratorEvent::Stopped{}));
     }
     else if (exec.fault)
     {
@@ -369,10 +414,34 @@ void CalibrationOrchestrator::onMotorEvent(const MotorDriverEvent& ev)
             {
                 should_stop_successfully = true;
             }
+            else if constexpr (std::is_same_v<T, MotorDriverEvent::EmergencyStopped>)
+            {
+                error_to_report = "Motor emergency stopped";
+            }
         },
         ev.data);
 
-    if (!error_to_report.empty())
+    if (error_to_report == "Motor emergency stopped")
+    {
+        auto current = state_.load(std::memory_order_acquire);
+        if (current != CalibrationOrchestratorState::Started &&
+            current != CalibrationOrchestratorState::Starting)
+        {
+            return;
+        }
+
+        state_.store(CalibrationOrchestratorState::Stopping, std::memory_order_release);
+        teardown(StopReason::Emergency);
+
+        state_.store(
+            CalibrationOrchestratorState::Stopped,
+            std::memory_order_release);
+
+        notifyObservers(
+            CalibrationOrchestratorEvent(
+                CalibrationOrchestratorEvent::Stopped{}));
+    }
+    else if (!error_to_report.empty())
         stopWithError(error_to_report);
     else if (should_stop_successfully)
     {
@@ -427,15 +496,13 @@ void CalibrationOrchestrator::notifyObservers(const CalibrationOrchestratorEvent
         });
 }
 
-void CalibrationOrchestrator::teardown()
+void CalibrationOrchestrator::teardown(StopReason reason)
 {
     safety_monitor_.stop();
     ports_.motor_driver.watchdog().stop();
-    ports_.motor_driver.stop();
-    detachObservers();
 
     // Сначала даём стратегии корректно завершиться и вернуть shutdown-команды.
-    if (ports_.strategy.isRunning())
+    if (reason != StopReason::Emergency && ports_.strategy.isRunning())
     {
         const auto end_verdict = ports_.strategy.end();
         const auto exec = applyVerdict(end_verdict);
@@ -443,12 +510,28 @@ void CalibrationOrchestrator::teardown()
         if (exec.fault)
             logger_.warn("Strategy end() reported fault: {}", *exec.fault);
     }
-    else
+    else if (reason != StopReason::Emergency)
     {
         // defensive stop на случай частично поднятой системы
         ports_.motor_driver.stop();
     }
 
+    if (reason == StopReason::Manual)
+    {
+        rollbackMotorToHome();
+    }
+
+    if (reason == StopReason::Manual || reason == StopReason::StrategyCompleted)
+    {
+        releasePressureWithExhaust();
+    }
+
+    if (reason != StopReason::Emergency)
+    {
+        ports_.motor_driver.stop();
+    }
+
+    detachObservers();
     ports_.pressure_source.stop();
 
     for (const auto& id : opened_angle_sources_)
@@ -462,6 +545,53 @@ void CalibrationOrchestrator::teardown()
 
     // ОСТАНОВИТЬ ЗАПИСЬ
     ports_.recorder.stopRecording();
+}
+
+void CalibrationOrchestrator::rollbackMotorToHome()
+{
+    if (ports_.motor_driver.limits().home)
+    {
+        logger_.info("Motor already at HOME point.");
+        return;
+    }
+
+    logger_.info("Manual stop: rollback motor to HOME.");
+
+    ports_.motor_driver.setDirection(MotorDirection::Backward);
+    ports_.motor_driver.setFrequency(ports_.motor_driver.frequencyLimits().max);
+    ports_.motor_driver.start();
+
+    const auto started_at = std::chrono::steady_clock::now();
+    while (!ports_.motor_driver.limits().home)
+    {
+        std::this_thread::sleep_for(kMotorHomingPollInterval);
+
+        if (std::chrono::steady_clock::now() - started_at >= kMotorHomingTimeout)
+        {
+            logger_.warn("Manual stop rollback timeout. Continue with pressure release.");
+            break;
+        }
+    }
+
+    ports_.motor_driver.stop();
+}
+
+void CalibrationOrchestrator::releasePressureWithExhaust()
+{
+    logger_.info("Open exhaust flap and wait for pressure <= 0 with extra delay.");
+    ports_.motor_driver.setFlapsState(MotorFlapsState::ExhaustOpened);
+
+    std::unique_lock lock(pressure_mutex_);
+    pressure_cv_.wait(
+        lock,
+        [this]
+        {
+            return last_pressure_.has_value() && *last_pressure_ <= 0.0;
+        });
+    lock.unlock();
+
+    std::this_thread::sleep_for(kPressureDrainDelay);
+    ports_.motor_driver.setFlapsState(MotorFlapsState::FlapsClosed);
 }
 
 void CalibrationOrchestrator::stopWithError(const std::string& error)
@@ -482,7 +612,7 @@ void CalibrationOrchestrator::stopWithError(const std::string& error)
         return;
     }
 
-    teardown();
+    teardown(StopReason::Error);
 
     state_.store(
         CalibrationOrchestratorState::Stopped,
