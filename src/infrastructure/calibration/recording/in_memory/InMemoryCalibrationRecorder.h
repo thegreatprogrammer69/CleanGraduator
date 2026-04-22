@@ -4,6 +4,7 @@
 #include <optional>
 #include <unordered_map>
 #include <vector>
+#include <mutex>
 
 #include "../CalibrationRecorderPorts.h"
 #include "domain/core/calibration/common/CalibrationLayout.h"
@@ -42,6 +43,7 @@ namespace infra::calib {
         void notify(const domain::common::CalibrationRecorderEvent& ev);
 
         fmt::Logger logger_;
+        mutable std::mutex mutex_;
 
         bool recording_active_ = false;
 
