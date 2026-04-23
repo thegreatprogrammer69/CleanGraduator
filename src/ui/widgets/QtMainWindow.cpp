@@ -130,8 +130,9 @@ ui::QtMainWindow::QtMainWindow(
 
     controlLayout->addWidget(controlWidget, 0, Qt::AlignRight);
 
-    processLayout->addWidget(calibrationResultTable, 1);
+    processLayout->addWidget(calibrationResultTable, 0, Qt::AlignTop);
     processLayout->addWidget(controlCard, 0);
+    processLayout->addStretch(1);
 
 
     /* =================================================

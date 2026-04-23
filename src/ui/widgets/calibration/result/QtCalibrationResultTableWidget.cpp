@@ -26,7 +26,7 @@ QtCalibrationResultTableWidget::QtCalibrationResultTableWidget(
 
 void QtCalibrationResultTableWidget::setupUi()
 {
-    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Maximum);
 
     setWordWrap(false);
     setTextElideMode(Qt::ElideNone);
