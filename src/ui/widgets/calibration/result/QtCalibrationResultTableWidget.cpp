@@ -26,7 +26,7 @@ QtCalibrationResultTableWidget::QtCalibrationResultTableWidget(
 
 void QtCalibrationResultTableWidget::setupUi()
 {
-    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 
     setWordWrap(false);
     setTextElideMode(Qt::ElideNone);
@@ -197,6 +197,12 @@ void QtCalibrationResultTableWidget::updateSectionSizes()
         for (int col = 0; col < column_count; col += 2) {
             setSpan(row, col, 1, 2);
         }
+    }
+
+    const int target_height = sizeHint().height();
+    if (minimumHeight() != target_height || maximumHeight() != target_height) {
+        setMinimumHeight(target_height);
+        setMaximumHeight(target_height);
     }
 
     updateGeometry();
