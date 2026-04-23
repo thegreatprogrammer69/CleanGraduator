@@ -56,21 +56,57 @@ void CalibrationSessionControlViewModel::setCenteredMarkEnabled(bool enabled)
 }
 
 void CalibrationSessionControlViewModel::startCalibration() {
+    const auto mode = reverse_mode_enabled.get_copy()
+        ? domain::common::CalibrationMode::OnlyForward
+        : domain::common::CalibrationMode::Full;
+
+    selected_mode.set(mode);
     applyState(CalibrationOrchestratorState::Starting, "");
+    status_text.set("Подготовка к запуску");
+
     std::string error_text;
-    if (!control_.start(selected_mode.get_copy(), error_text)) {
+    if (!control_.start(mode, slowdown_enabled.get_copy(), play_valve_enabled.get_copy(), error_text)) {
         applyState(CalibrationOrchestratorState::Stopped, error_text);
+        status_text.set("Ошибка запуска");
     }
+}
+
+void CalibrationSessionControlViewModel::aimCalibration() {
+    selected_mode.set(domain::common::CalibrationMode::OnlyLast);
+    applyState(CalibrationOrchestratorState::Starting, "");
+    status_text.set("Запуск прицела: последняя точка");
+
+    std::string error_text;
+    if (!control_.start(domain::common::CalibrationMode::OnlyLast, slowdown_enabled.get_copy(), play_valve_enabled.get_copy(), error_text)) {
+        applyState(CalibrationOrchestratorState::Stopped, error_text);
+        status_text.set("Ошибка запуска прицела");
+    }
+}
+
+void CalibrationSessionControlViewModel::setReverseModeEnabled(bool enabled)
+{
+    reverse_mode_enabled.set(enabled);
+}
+
+void CalibrationSessionControlViewModel::setSlowdownEnabled(bool enabled)
+{
+    slowdown_enabled.set(enabled);
+}
+
+void CalibrationSessionControlViewModel::setPlayValveEnabled(bool enabled)
+{
+    play_valve_enabled.set(enabled);
 }
 
 void CalibrationSessionControlViewModel::stopCalibration() {
     applyState(CalibrationOrchestratorState::Stopping, "");
+    status_text.set("Остановка двигателя");
     control_.stop();
 }
 
 void CalibrationSessionControlViewModel::emergencyStop() {
-    // Можно оставить так или выделить отдельное состояние при желании
     applyState(CalibrationOrchestratorState::Stopping, "");
+    status_text.set("Экстренный стоп");
     control_.emergencyStop();
 }
 
@@ -88,6 +124,10 @@ void CalibrationSessionControlViewModel::onCalibrationOrchestratorEvent(
         }
         else if constexpr (std::is_same_v<T, CalibrationOrchestratorEvent::Failed>) {
             applyState(CalibrationOrchestratorState::Stopped, event.error);
+            status_text.set("Ошибка: " + event.error);
+        }
+        else if constexpr (std::is_same_v<T, CalibrationOrchestratorEvent::StatusText>) {
+            status_text.set(event.text);
         }
     }, ev.data);
 }
@@ -109,4 +149,8 @@ void CalibrationSessionControlViewModel::applyState(
     can_start.set(is_stopped);
     can_stop.set(is_active);
     can_abort.set(is_started);
+
+    if (state == CalibrationOrchestratorState::Stopped && last_error.empty()) {
+        status_text.set("Ожидание запуска");
+    }
 }

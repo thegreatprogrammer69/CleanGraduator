@@ -69,7 +69,8 @@ Stand4CalibrationStrategy::begin(const CalibrationStrategyBeginContext& ctx)
     p_preload_  = computePreloadPressure(ctx.pressure_points).to(ctx.pressure_unit);
     p_target_   = computeTargetPressure(ctx.pressure_points).to(ctx.pressure_unit);
     p_limit_    = computeLimitPressure(ctx.pressure_points).to(ctx.pressure_unit);
-    dp_nominal_ = computeNominalVelocity(ctx.pressure_points).to(ctx.pressure_unit);
+    const double slowdown_multiplier = ctx.slowdown_at_checkpoints ? 0.7 : 1.0;
+    dp_nominal_ = computeNominalVelocity(ctx.pressure_points).to(ctx.pressure_unit) * slowdown_multiplier;
 
     points_tracker_.setEnterThreshold(0.15);
     points_tracker_.setExitThreshold(0.1);
@@ -82,6 +83,7 @@ Stand4CalibrationStrategy::begin(const CalibrationStrategyBeginContext& ctx)
         dp_nominal_);
 
     transitionToPreload(v);
+    v.commands.push_back(Verdict::StatusText{"Набор предварительного давления"});
 
     return v;
 }
@@ -345,6 +347,8 @@ void Stand4CalibrationStrategy::transitionToPreload(Verdict& v)
     points_tracker_.beginTracking(
         pressure_points_,
         MotorDirection::Forward);
+
+    v.commands.push_back(Verdict::StatusText{"Набор предварительного давления"});
 }
 
 void Stand4CalibrationStrategy::transitionToForward(Verdict& v)
@@ -364,6 +368,8 @@ void Stand4CalibrationStrategy::transitionToForward(Verdict& v)
 
     v.commands.push_back(
         Verdict::MotorStart{});
+
+    v.commands.push_back(Verdict::StatusText{"Прямой ход: съём показаний"});
 }
 
 void Stand4CalibrationStrategy::transitionToBackward(Verdict& v)
@@ -386,6 +392,8 @@ void Stand4CalibrationStrategy::transitionToBackward(Verdict& v)
 
     v.commands.push_back(
         Verdict::MotorSetDirection{MotorDirection::Backward});
+
+    v.commands.push_back(Verdict::StatusText{"Обратный ход: возврат и съём"});
 }
 
 void Stand4CalibrationStrategy::transitionToFinished(Verdict& v)
@@ -400,6 +408,7 @@ void Stand4CalibrationStrategy::transitionToFinished(Verdict& v)
 
     v.commands.push_back(Verdict::MotorSetFlaps{MotorFlapsState::ExhaustOpened});
 
+    v.commands.push_back(Verdict::StatusText{"Градуировка завершена"});
     v.commands.push_back(Verdict::Complete{});
 }
 
@@ -411,4 +420,5 @@ void Stand4CalibrationStrategy::transitionToFault(Verdict& v)
     v.commands.push_back(Verdict::MotorStop{});
 
     points_tracker_.endTracking();
+    v.commands.push_back(Verdict::StatusText{"Аварийная остановка: ошибка стратегии"});
 }

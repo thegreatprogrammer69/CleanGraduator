@@ -27,8 +27,12 @@ public:
 
     void setCalibrationMode(domain::common::CalibrationMode mode);
     void startCalibration();
+    void aimCalibration();
     void setKuModeEnabled(bool enabled);
     void setCenteredMarkEnabled(bool enabled);
+    void setReverseModeEnabled(bool enabled);
+    void setSlowdownEnabled(bool enabled);
+    void setPlayValveEnabled(bool enabled);
     void stopCalibration();
     void emergencyStop();
 
@@ -39,6 +43,10 @@ public:
     Observable<std::string> error_text{std::string()};
     Observable<bool> ku_mode_enabled{false};
     Observable<bool> centered_mark_enabled{false};
+    Observable<bool> reverse_mode_enabled{false};
+    Observable<bool> slowdown_enabled{false};
+    Observable<bool> play_valve_enabled{false};
+    Observable<std::string> status_text{std::string("Ожидание запуска")};
     Observable<bool> can_start{true};
     Observable<bool> can_stop{false};
     Observable<bool> can_abort{false};

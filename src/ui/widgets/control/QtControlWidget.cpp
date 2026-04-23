@@ -1,128 +1,190 @@
 #include "QtControlWidget.h"
 
 #include <QFrame>
+#include <sstream>
+#include <QGridLayout>
+#include <QGroupBox>
 #include <QHBoxLayout>
-#include <QLabel>
-#include <QTabWidget>
+#include <QMetaObject>
 #include <QVBoxLayout>
 
+#include "ui/widgets/calibration/result/QtCalibrationResultSaveWidget.h"
+#include "viewmodels/control/CalibrationSessionControlViewModel.h"
 #include "viewmodels/control/ControlViewModel.h"
-#include "../calibration/result/QtCalibrationResultSaveWidget.h"
+#include "viewmodels/control/DualValveControlViewModel.h"
+#include "viewmodels/control/MotorControlViewModel.h"
+#include "viewmodels/status_bar/AppStatusBarViewModel.h"
+#include "viewmodels/status_bar/PressureSensorStatusBarViewModel.h"
 
 namespace {
-QWidget* makeSectionContainer(QWidget* parent, const QString& title)
-{
-    auto* section = new QFrame(parent);
-    section->setObjectName("contentCard");
-    section->setAttribute(Qt::WA_StyledBackground, true);
-    section->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Minimum);
-
-    auto* layout = new QVBoxLayout(section);
-    layout->setContentsMargins(12, 12, 12, 12);
-    layout->setSpacing(8);
-
-    auto* titleLabel = new QLabel(title, section);
-    titleLabel->setStyleSheet("font-size: 14px; font-weight: 600;");
-    layout->addWidget(titleLabel);
-
-    return section;
-}
+constexpr int kManualMotorFrequency = 2000;
 }
 
-ui::QtControlWidget::QtControlWidget(
-        mvvm::ControlViewModel& vm,
-        QWidget* parent)
+namespace ui {
+
+QtControlWidget::QtControlWidget(mvvm::ControlViewModel& vm, QWidget* parent)
     : QWidget(parent)
     , vm_(vm)
 {
     setupUi();
+    bind();
 }
 
-void ui::QtControlWidget::setupUi()
+void QtControlWidget::setupUi()
 {
-    auto* root = new QHBoxLayout(this);
-    root->setSpacing(12);
+    auto* root = new QVBoxLayout(this);
     root->setContentsMargins(0, 0, 0, 0);
 
-    root->addWidget(makeResultSection(), 1);
-    root->addWidget(makeCalibrationSection(), 1);
-    root->addWidget(makeControlSection(), 1);
+    auto* top = new QHBoxLayout();
+    top->addWidget(makeCalibrationSection(), 1);
+    top->addWidget(makeResultSection(), 1);
+    top->addWidget(makeManualSection(), 1);
+    root->addLayout(top);
+
+    root->addWidget(makeStatusSection());
+    root->addWidget(makeMetricsSection());
 }
 
-QWidget* ui::QtControlWidget::makeResultSection()
+QWidget* QtControlWidget::makeCalibrationSection()
 {
-    auto* section = makeSectionContainer(this, tr("Результат"));
-    auto* layout = qobject_cast<QVBoxLayout*>(section->layout());
-
-    auto* widget = new QtCalibrationResultSaveWidget(vm_.calibrationResultSaveViewModel(), section);
-    layout->addWidget(widget);
-    layout->addStretch();
-
-    return section;
+    auto* box = new QGroupBox(tr("Градуировка"), this);
+    auto* layout = new QVBoxLayout(box);
+    layout->addWidget(new QtCalibrationSessionControlWidget(vm_.calibrationViewModel(), box));
+    return box;
 }
 
-QWidget* ui::QtControlWidget::makeCalibrationSection()
+QWidget* QtControlWidget::makeResultSection()
 {
-    auto* section = makeSectionContainer(this, tr("Градуировка"));
-    auto* layout = qobject_cast<QVBoxLayout*>(section->layout());
-
-    auto* widget = new QtCalibrationSessionControlWidget(
-        vm_.calibrationViewModel(),
-        section);
-
-    layout->addWidget(widget);
-    layout->addStretch();
-
-    return section;
+    auto* box = new QGroupBox(tr("Результат"), this);
+    auto* layout = new QVBoxLayout(box);
+    layout->addWidget(new QtCalibrationResultSaveWidget(vm_.calibrationResultSaveViewModel(), box));
+    return box;
 }
 
-QWidget* ui::QtControlWidget::makeControlSection()
+QWidget* QtControlWidget::makeManualSection()
 {
-    auto* section = makeSectionContainer(this, tr("Управление мотором/клапанами"));
-    auto* layout = qobject_cast<QVBoxLayout*>(section->layout());
+    auto* box = new QGroupBox(tr("Ручное управление"), this);
+    auto* layout = new QGridLayout(box);
 
-    auto* tabs = new QTabWidget(section);
-    tabs->setTabPosition(QTabWidget::North);
-    tabs->addTab(makeValvesPage(), tr("Клапаны"));
-    tabs->addTab(makeMotorPage(), tr("Двигатель"));
+    moveForwardButton_ = new QPushButton(tr("Дв. вперёд"), box);
+    motorStopButton_ = new QPushButton(tr("Стоп двигатель"), box);
+    moveBackwardButton_ = new QPushButton(tr("Дв. назад"), box);
 
-    layout->addWidget(tabs);
+    auto* closeFlaps = new QPushButton(tr("Закрыть клапана"), box);
+    auto* openIntake = new QPushButton(tr("Открыть впускной"), box);
+    auto* openExhaust = new QPushButton(tr("Открыть выпускной"), box);
 
-    return section;
+    layout->addWidget(moveForwardButton_, 0, 0);
+    layout->addWidget(motorStopButton_, 0, 1);
+    layout->addWidget(moveBackwardButton_, 0, 2);
+    layout->addWidget(closeFlaps, 1, 0, 1, 3);
+    layout->addWidget(openIntake, 2, 0, 1, 2);
+    layout->addWidget(openExhaust, 2, 2);
+
+    connect(moveForwardButton_, &QPushButton::clicked, this, [this] {
+        auto& vm = vm_.motorViewModel();
+        vm.setDirection(domain::common::MotorDirection::Forward);
+        vm.setFrequency(kManualMotorFrequency);
+        vm.start();
+    });
+    connect(moveBackwardButton_, &QPushButton::clicked, this, [this] {
+        auto& vm = vm_.motorViewModel();
+        vm.setDirection(domain::common::MotorDirection::Backward);
+        vm.setFrequency(kManualMotorFrequency);
+        vm.start();
+    });
+    connect(motorStopButton_, &QPushButton::clicked, this, [this] {
+        vm_.motorViewModel().stop();
+    });
+
+    connect(closeFlaps, &QPushButton::clicked, this, [this] { vm_.valvesViewModel().closeFlaps(); });
+    connect(openIntake, &QPushButton::clicked, this, [this] { vm_.valvesViewModel().openInputFlap(); });
+    connect(openExhaust, &QPushButton::clicked, this, [this] { vm_.valvesViewModel().openOutputFlap(); });
+
+    return box;
 }
 
-QWidget* ui::QtControlWidget::makeValvesPage()
+QWidget* QtControlWidget::makeStatusSection()
 {
-    auto* page = new QWidget;
+    auto* box = new QGroupBox(tr("Статус"), this);
+    auto* layout = new QHBoxLayout(box);
 
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(4, 4, 4, 4);
+    auto* dot = new QLabel("●", box);
+    dot->setStyleSheet("color:#22c55e; font-size: 20px;");
+    statusTextLabel_ = new QLabel(tr("Ожидание запуска"), box);
 
-    auto* widget =
-        new QtDualValveControlWidget(
-            vm_.valvesViewModel(),
-            page);
-
-    layout->addWidget(widget);
-    layout->addStretch();
-
-    return page;
+    layout->addWidget(dot);
+    layout->addWidget(statusTextLabel_, 1);
+    return box;
 }
 
-QWidget* ui::QtControlWidget::makeMotorPage()
+QWidget* QtControlWidget::makeMetricsSection()
 {
-    auto* page = new QWidget;
+    auto* w = new QWidget(this);
+    auto* layout = new QGridLayout(w);
 
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(4, 4, 4, 4);
+    sessionTimeLabel_ = new QLabel("00:00 мин.", w);
+    pressureLabel_ = new QLabel("0", w);
+    speedLabel_ = new QLabel("0", w);
 
-    auto* widget =
-        new QtMotorControlWidget(
-            vm_.motorViewModel(),
-            page);
-
-    layout->addWidget(widget);
-    layout->addStretch();
-
-    return page;
+    layout->addWidget(new QLabel(tr("Время:"), w), 0, 0);
+    layout->addWidget(sessionTimeLabel_, 0, 1);
+    layout->addWidget(new QLabel(tr("Давление:"), w), 1, 0);
+    layout->addWidget(pressureLabel_, 1, 1);
+    layout->addWidget(new QLabel(tr("Скорость роста двл.:"), w), 1, 2);
+    layout->addWidget(speedLabel_, 1, 3);
+    return w;
 }
+
+QString QtControlWidget::formatTime(domain::common::Timestamp ts) const
+{
+    using namespace std::chrono;
+    const auto total_seconds = duration_cast<seconds>(ts.toDuration()).count();
+    const auto minutes = total_seconds / 60;
+    const auto seconds = total_seconds % 60;
+    return QString("%1:%2 мин.")
+        .arg(qint64(minutes), 2, 10, QChar('0'))
+        .arg(qint64(seconds), 2, 10, QChar('0'));
+}
+
+void QtControlWidget::refreshMetrics()
+{
+    sessionTimeLabel_->setText(formatTime(vm_.appStatusViewModel().sessionTime()));
+
+    std::stringstream pressure_stream;
+    pressure_stream << vm_.pressureSensorViewModel().pressure.get_copy();
+    pressureLabel_->setText(QString::fromStdString(pressure_stream.str()));
+
+    std::stringstream speed_stream;
+    speed_stream << vm_.pressureSensorViewModel().pressureSpeedPerSecond();
+    speedLabel_->setText(QString::fromStdString(speed_stream.str()));
+}
+
+void QtControlWidget::bind()
+{
+    statusTextSub_ = vm_.calibrationViewModel().status_text.subscribe([this](const auto& change) {
+        QMetaObject::invokeMethod(this, [this, text = QString::fromStdString(change.new_value)] {
+            statusTextLabel_->setText(text);
+        }, Qt::QueuedConnection);
+    }, false);
+
+    motorRunningSub_ = vm_.motorViewModel().is_running.subscribe([this](const auto& change) {
+        QMetaObject::invokeMethod(this, [this, running = change.new_value] {
+            moveForwardButton_->setEnabled(!running);
+            moveBackwardButton_->setEnabled(!running);
+            motorStopButton_->setEnabled(running);
+        }, Qt::QueuedConnection);
+    }, false);
+
+    metricsTimer_.setInterval(150);
+    connect(&metricsTimer_, &QTimer::timeout, this, [this] { refreshMetrics(); });
+    metricsTimer_.start();
+
+    statusTextLabel_->setText(QString::fromStdString(vm_.calibrationViewModel().status_text.get_copy()));
+    moveForwardButton_->setEnabled(!vm_.motorViewModel().is_running.get_copy());
+    moveBackwardButton_->setEnabled(!vm_.motorViewModel().is_running.get_copy());
+    motorStopButton_->setEnabled(vm_.motorViewModel().is_running.get_copy());
+    refreshMetrics();
+}
+
+} // namespace ui

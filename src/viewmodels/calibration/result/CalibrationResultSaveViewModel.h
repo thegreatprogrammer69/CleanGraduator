@@ -7,6 +7,7 @@
 
 #include "application/usecases/calibration/SaveCalibrationResult.h"
 #include "domain/ports/calibration/result/ICalibrationResultObserver.h"
+#include "domain/ports/calibration/result/ICalibrationResultValidationSource.h"
 #include "viewmodels/Observable.h"
 
 namespace domain::ports {
@@ -25,6 +26,7 @@ enum class CalibrationResultSaveState {
 struct CalibrationResultSaveViewModelDeps {
     application::usecase::SaveCalibrationResult& save_use_case;
     domain::ports::ICalibrationResultSource& result_source;
+    domain::ports::ICalibrationResultValidationSource& validation_source;
 };
 
 class CalibrationResultSaveViewModel final : public domain::ports::ICalibrationResultObserver {
@@ -35,6 +37,7 @@ public:
     void onCalibrationResultUpdated(const domain::common::CalibrationResult& result) override;
 
     application::usecase::SaveCalibrationResult::Result save();
+    application::usecase::SaveCalibrationResult::Result saveWithoutErrors();
     application::usecase::SaveCalibrationResult::Result save(const std::vector<int>& camera_ids);
     application::usecase::SaveCalibrationResult::Result saveAs(const std::filesystem::path& directory);
     application::usecase::SaveCalibrationResult::Result saveAs(const std::filesystem::path& directory,
@@ -58,6 +61,7 @@ private:
 
     application::usecase::SaveCalibrationResult& save_use_case_;
     domain::ports::ICalibrationResultSource& result_source_;
+    domain::ports::ICalibrationResultValidationSource& validation_source_;
 };
 
 }

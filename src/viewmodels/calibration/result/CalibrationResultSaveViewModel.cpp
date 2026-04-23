@@ -1,6 +1,7 @@
 #include "CalibrationResultSaveViewModel.h"
 
 #include <algorithm>
+#include <unordered_set>
 
 #include "domain/ports/calibration/result/ICalibrationResultSource.h"
 
@@ -9,6 +10,7 @@ namespace mvvm {
 CalibrationResultSaveViewModel::CalibrationResultSaveViewModel(CalibrationResultSaveViewModelDeps deps)
     : save_use_case_(deps.save_use_case)
     , result_source_(deps.result_source)
+    , validation_source_(deps.validation_source)
 {
     result_source_.addObserver(*this);
 
@@ -38,6 +40,37 @@ application::usecase::SaveCalibrationResult::Result CalibrationResultSaveViewMod
 {
     const auto camera_ids = availableCameraIds();
     return save(camera_ids);
+}
+
+application::usecase::SaveCalibrationResult::Result CalibrationResultSaveViewModel::saveWithoutErrors()
+{
+    const auto current = result_source_.currentResult();
+    if (!current) {
+        return save({});
+    }
+
+    std::unordered_set<int> blocked_sources;
+    if (const auto validation = validation_source_.currentValidation()) {
+        for (const auto& [key, issues] : validation->allIssues()) {
+            const bool has_error = std::any_of(issues.begin(), issues.end(), [](const auto& issue) {
+                return issue.severity == domain::common::CalibrationIssueSeverity::Error;
+            });
+            if (has_error) {
+                blocked_sources.insert(key.source_id.value);
+            }
+        }
+    }
+
+    std::vector<int> selected;
+    for (const auto& source : current->sources()) {
+        if (!blocked_sources.contains(source.value)) {
+            selected.push_back(source.value);
+        }
+    }
+
+    std::sort(selected.begin(), selected.end());
+    selected.erase(std::unique(selected.begin(), selected.end()), selected.end());
+    return save(selected);
 }
 
 application::usecase::SaveCalibrationResult::Result CalibrationResultSaveViewModel::save(const std::vector<int>& camera_ids)

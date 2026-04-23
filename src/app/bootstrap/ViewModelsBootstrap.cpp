@@ -190,7 +190,9 @@ void ViewModelsBootstrap::createControl() {
         *dual_valve_control,
         *motor_control,
         *calibration_session_control,
-        *calibration_result_save
+        *calibration_result_save,
+        *app_status_bar,
+        *pressure_sensor_status
     };
     control = std::make_unique<ControlViewModel>(deps);
 }
@@ -209,7 +211,8 @@ void ViewModelsBootstrap::createCalibrationResultTable() {
 void ViewModelsBootstrap::createCalibrationResultSave() {
     CalibrationResultSaveViewModelDeps deps {
         *use_cases_.save_calibration_result,
-        *app_.calibration_result_source
+        *app_.calibration_result_source,
+        *app_.calibration_result_validation_source
     };
     calibration_result_save = std::make_unique<CalibrationResultSaveViewModel>(deps);
 }

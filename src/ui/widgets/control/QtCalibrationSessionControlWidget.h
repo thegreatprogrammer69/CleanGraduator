@@ -1,10 +1,9 @@
 #ifndef CLEANGRADUATOR_QTCALIBRATIONSESSIONCONTROLWIDGET_H
 #define CLEANGRADUATOR_QTCALIBRATIONSESSIONCONTROLWIDGET_H
 
-#include <QComboBox>
+#include <QCheckBox>
 #include <QLabel>
 #include <QPushButton>
-#include <QCheckBox>
 #include <QWidget>
 
 #include "viewmodels/Observable.h"
@@ -30,19 +29,23 @@ private:
     mvvm::CalibrationSessionControlViewModel& vm_;
 
     QLabel* errorLabel_{nullptr};
-    QComboBox* modeBox_{nullptr};
+    QCheckBox* reverseModeCheckBox_{nullptr};
+    QCheckBox* slowdownCheckBox_{nullptr};
+    QCheckBox* playValveCheckBox_{nullptr};
     QCheckBox* kuCheckBox_{nullptr};
     QCheckBox* centeredMarkCheckBox_{nullptr};
     QPushButton* startButton_{nullptr};
     QPushButton* stopButton_{nullptr};
-    QPushButton* emergencyStopButton_{nullptr};
+    QPushButton* aimButton_{nullptr};
 
     mvvm::Observable<std::string>::Subscription errorSub_;
     mvvm::Observable<bool>::Subscription kuModeSub_;
     mvvm::Observable<bool>::Subscription centeredMarkSub_;
+    mvvm::Observable<bool>::Subscription reverseModeSub_;
+    mvvm::Observable<bool>::Subscription slowdownSub_;
+    mvvm::Observable<bool>::Subscription playValveSub_;
     mvvm::Observable<bool>::Subscription canStartSub_;
     mvvm::Observable<bool>::Subscription canStopSub_;
-    mvvm::Observable<bool>::Subscription canAbortSub_;
 };
 
 } // namespace ui

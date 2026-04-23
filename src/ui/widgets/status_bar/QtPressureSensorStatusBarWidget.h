@@ -2,7 +2,6 @@
 #define CLEANGRADUATOR_QTPRESSURESENSORSTATUSBARWIDGET_H
 
 #include <QWidget>
-#include <QTimer>
 
 #include <memory>
 
@@ -24,23 +23,14 @@ namespace ui {
 
     private:
         static QString openedToText(bool opened);
-
-        void refreshAll();
         void setOpened(bool opened);
-        void setPressure();
-        void setSpeed();
 
     private:
         mvvm::PressureSensorStatusBarViewModel& vm_;
-
         QLabel* opened_value_{nullptr};
-        QLabel* pressure_value_{nullptr};
-        QLabel* speed_value_{nullptr};
 
         struct Subscriptions;
         std::unique_ptr<Subscriptions> subs_;
-
-        QTimer timer_;
     };
 
 }

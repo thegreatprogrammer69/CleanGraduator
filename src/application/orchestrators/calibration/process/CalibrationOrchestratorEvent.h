@@ -11,11 +11,14 @@ namespace application::orchestrators {
         struct Failed {
             std::string error;
         };
+        struct StatusText {
+            std::string text;
+        };
         struct StartFailed {
             std::string error;
         };
 
-        using Data = std::variant<Started, Stopped, Failed>;
+        using Data = std::variant<Started, Stopped, Failed, StatusText>;
         Data data;
 
         CalibrationOrchestratorEvent(Data data) : data(std::move(data)) {};

@@ -117,6 +117,8 @@ bool CalibrationOrchestrator::start(CalibrationOrchestratorInput input)
         ctx.pressure_unit    = inp_.pressure_unit;
         ctx.calibration_mode = inp_.calibration_mode;
         ctx.pressure_points  = PressurePoints::from(inp_.gauge.points.value, inp_.pressure_unit);
+        ctx.slowdown_at_checkpoints = inp_.slowdown_at_checkpoints;
+        ctx.play_valve = inp_.play_valve;
 
         const auto verdict = ports_.strategy.begin(ctx);
         const auto exec = applyVerdict(verdict);
@@ -561,6 +563,11 @@ void CalibrationOrchestrator::applyCommand(const StrategyVerdict::MotorStart&)
 void CalibrationOrchestrator::applyCommand(const StrategyVerdict::MotorStop&)
 {
     ports_.motor_driver.stop();
+}
+
+void CalibrationOrchestrator::applyCommand(const StrategyVerdict::StatusText& cmd)
+{
+    notifyObservers(CalibrationOrchestratorEvent(CalibrationOrchestratorEvent::StatusText{cmd.text}));
 }
 
 void CalibrationOrchestrator::applyCommand(const StrategyVerdict::Complete&)

@@ -9,6 +9,8 @@ namespace domain::common {
         CalibrationMode calibration_mode;
         PressurePoints pressure_points;
         PressureUnit pressure_unit;
+        bool slowdown_at_checkpoints{false};
+        bool play_valve{false};
     };
 
 }
