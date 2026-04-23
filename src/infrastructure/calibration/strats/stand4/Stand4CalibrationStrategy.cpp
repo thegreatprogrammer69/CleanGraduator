@@ -253,6 +253,7 @@ void Stand4CalibrationStrategy::updateForward(
         p_cur,
         dp_cur,
         dt);
+    emitStatus(v, buildForwardStatusText(p_cur));
 
     if (ctx.limits_state.end) {
         logger_.info("Достигнут конечный концевик на прямом ходе");
@@ -322,6 +323,7 @@ void Stand4CalibrationStrategy::updateBackward(const CalibrationStrategyFeedCont
     }
 
     logger_.info("Возврат двигателя домой частота {}", frequency);
+    emitStatus(v, buildBackwardStatusText(p_cur));
 
     v.commands.push_back(
         Verdict::MotorSetFrequency{frequency});
@@ -375,7 +377,7 @@ void Stand4CalibrationStrategy::transitionToForward(Verdict& v)
     v.commands.push_back(
         Verdict::MotorStart{});
 
-    emitStatus(v, "Прямой ход: съём показаний");
+    emitStatus(v, buildForwardStatusText(static_cast<float>(last_pressure_)));
 }
 
 void Stand4CalibrationStrategy::transitionToBackward(Verdict& v)
@@ -399,7 +401,7 @@ void Stand4CalibrationStrategy::transitionToBackward(Verdict& v)
     v.commands.push_back(
         Verdict::MotorSetDirection{MotorDirection::Backward});
 
-    emitStatus(v, "Обратный ход: возврат и съём");
+    emitStatus(v, buildBackwardStatusText(static_cast<float>(last_pressure_)));
 }
 
 void Stand4CalibrationStrategy::transitionToFinished(Verdict& v)
@@ -451,6 +453,45 @@ std::string Stand4CalibrationStrategy::buildPreloadStatusText(float current_pres
        << current_pressure
        << " / "
        << p_preload_
+       << " ("
+       << progress_percent
+       << "%)";
+
+    return ss.str();
+}
+
+std::string Stand4CalibrationStrategy::buildForwardStatusText(float current_pressure) const
+{
+    const double safe_target = std::max(0.001, p_target_);
+    const double progress = std::clamp(static_cast<double>(current_pressure) / safe_target, 0.0, 1.0);
+    const int progress_percent = static_cast<int>(progress * 100.0 + 0.5);
+
+    std::ostringstream ss;
+    ss << std::fixed << std::setprecision(1)
+       << "Прямой ход: съём показаний "
+       << current_pressure
+       << " / "
+       << p_target_
+       << " ("
+       << progress_percent
+       << "%)";
+
+    return ss.str();
+}
+
+std::string Stand4CalibrationStrategy::buildBackwardStatusText(float current_pressure) const
+{
+    const double total_path = std::max(0.001, p_backward_start_ - p_backward_target_);
+    const double done_path = std::max(0.0, p_backward_start_ - static_cast<double>(current_pressure));
+    const double progress = std::clamp(done_path / total_path, 0.0, 1.0);
+    const int progress_percent = static_cast<int>(progress * 100.0 + 0.5);
+
+    std::ostringstream ss;
+    ss << std::fixed << std::setprecision(1)
+       << "Обратный ход: возврат и съём "
+       << current_pressure
+       << " / "
+       << p_backward_target_
        << " ("
        << progress_percent
        << "%)";

@@ -77,6 +77,8 @@ private:
     void transitionToFault(Verdict& v);
     void emitStatus(Verdict& v, std::string text);
     std::string buildPreloadStatusText(float current_pressure) const;
+    std::string buildForwardStatusText(float current_pressure) const;
+    std::string buildBackwardStatusText(float current_pressure) const;
 
 private:
 
