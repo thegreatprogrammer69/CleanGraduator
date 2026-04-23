@@ -93,6 +93,8 @@ private:
     double dp_nominal_{0.0};
     double p_backward_start_{0.0};
     double p_backward_target_{0.0};
+    bool slowdown_enabled_{false};
+    bool play_valve_enabled_{false};
 
     double last_pressure_{0.0};
     double last_time_{0.0};

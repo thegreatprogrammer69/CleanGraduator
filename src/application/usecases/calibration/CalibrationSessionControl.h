@@ -23,6 +23,8 @@ namespace application::usecase {
 
         bool start(
             domain::common::CalibrationMode mode,
+            bool slowdown_enabled,
+            bool play_valve_enabled,
             std::string& error_text);
 
         void stop();

@@ -14,6 +14,8 @@ namespace application::orchestrators {
         domain::common::PressureUnit pressure_unit;
         domain::common::AngleUnit angle_unit;
         models::Gauge gauge;
+        bool slowdown_enabled{false};
+        bool play_valve_enabled{false};
     };
 }
 

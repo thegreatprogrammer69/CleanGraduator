@@ -3,7 +3,10 @@
 
 namespace domain::common {
     enum class CalibrationMode {
-        Full, OnlyForward, OnlyLast
+        Full,
+        OnlyForward,
+        OnlyBackward,
+        OnlyLast
     };
 }
 

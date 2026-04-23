@@ -9,6 +9,8 @@ add_library(ui STATIC
         widgets/control/QtCalibrationSessionControlWidget.h
         widgets/control/QtControlWidget.cpp
         widgets/control/QtControlWidget.h
+        widgets/control/QtProcessStatusWidget.cpp
+        widgets/control/QtProcessStatusWidget.h
 
         widgets/calibration/recording/QtCalibrationSeriesWidget.cpp
         widgets/calibration/recording/QtCalibrationSeriesWidget.h

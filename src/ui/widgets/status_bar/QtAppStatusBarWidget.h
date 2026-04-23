@@ -21,20 +21,14 @@ namespace ui {
 
     private:
         static QString stateToText(application::orchestrators::CalibrationOrchestratorState s);
-        static QString formatHhMmSs(domain::common::Timestamp ts);
-
         void refreshAll();
 
         void setState(application::orchestrators::CalibrationOrchestratorState s);
-        void setSession(domain::common::Timestamp ts);
-        void setUptime(domain::common::Timestamp ts);
 
     private:
         mvvm::AppStatusBarViewModel& vm_;
 
         QLabel* stateValue_{nullptr};
-        QLabel* sessionValue_{nullptr};
-        QLabel* uptimeValue_{nullptr};
 
         QTimer timer_;
     };

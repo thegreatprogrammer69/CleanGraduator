@@ -209,7 +209,8 @@ void ViewModelsBootstrap::createCalibrationResultTable() {
 void ViewModelsBootstrap::createCalibrationResultSave() {
     CalibrationResultSaveViewModelDeps deps {
         *use_cases_.save_calibration_result,
-        *app_.calibration_result_source
+        *app_.calibration_result_source,
+        *app_.calibration_result_validation_source
     };
     calibration_result_save = std::make_unique<CalibrationResultSaveViewModel>(deps);
 }

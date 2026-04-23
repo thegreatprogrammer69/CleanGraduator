@@ -9,6 +9,8 @@ bool CalibrationSessionControl::isRunning() const
 
 bool CalibrationSessionControl::start(
     domain::common::CalibrationMode mode,
+    bool slowdown_enabled,
+    bool play_valve_enabled,
     std::string& error_text)
 {
     error_text.clear();
@@ -27,7 +29,9 @@ bool CalibrationSessionControl::start(
         mode,
         calibration_context->pressure_unit.unit,
         domain::common::AngleUnit::deg,
-        calibration_context->gauge
+        calibration_context->gauge,
+        slowdown_enabled,
+        play_valve_enabled
     };
 
     if (!orchestrator_.start(input)) {

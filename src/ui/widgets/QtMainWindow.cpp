@@ -21,6 +21,7 @@
 #include <QStatusBar>
 
 #include "control/QtControlWidget.h"
+#include "control/QtProcessStatusWidget.h"
 #include "ui/widgets/settings/QtSettingsWidget.h"
 #include "ui/widgets/status_bar/QtAppStatusBarWidget.h"
 #include "ui/widgets/status_bar/QtMotorDriverStatusBarWidget.h"
@@ -130,8 +131,15 @@ ui::QtMainWindow::QtMainWindow(
 
     controlLayout->addWidget(controlWidget, 0, Qt::AlignRight);
 
+    auto* processStatus = new QtProcessStatusWidget(
+        model_.controlViewModel().calibrationViewModel(),
+        model_.statusBarViewModels().app_status_bar,
+        model_.statusBarViewModels().pressure_sensor_status,
+        processPage);
+
     processLayout->addWidget(calibrationResultTable, 1);
     processLayout->addWidget(controlCard, 0);
+    processLayout->addWidget(processStatus, 0);
 
 
     /* =================================================
