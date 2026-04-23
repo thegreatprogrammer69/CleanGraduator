@@ -5,8 +5,11 @@
 #include <QLabel>
 #include <QPushButton>
 #include <QWidget>
+#include <optional>
+#include <memory>
 
 #include "viewmodels/Observable.h"
+#include "ui/audio/IAudioCuePlayer.h"
 
 namespace mvvm {
 class CalibrationSessionControlViewModel;
@@ -39,6 +42,7 @@ private:
     QPushButton* aimButton_{nullptr};
 
     mvvm::Observable<std::string>::Subscription errorSub_;
+    mvvm::Observable<std::optional<domain::common::CalibrationAudioCue>>::Subscription audioCueSub_;
     mvvm::Observable<bool>::Subscription kuModeSub_;
     mvvm::Observable<bool>::Subscription centeredMarkSub_;
     mvvm::Observable<bool>::Subscription reverseModeSub_;
@@ -46,6 +50,7 @@ private:
     mvvm::Observable<bool>::Subscription playValveSub_;
     mvvm::Observable<bool>::Subscription canStartSub_;
     mvvm::Observable<bool>::Subscription canStopSub_;
+    std::unique_ptr<IAudioCuePlayer> audioCuePlayer_;
 };
 
 } // namespace ui

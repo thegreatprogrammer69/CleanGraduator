@@ -1,6 +1,7 @@
 #ifndef CLEANGRADUATOR_CALIBRATIONSESSIONCONTROLVIEWMODEL_H
 #define CLEANGRADUATOR_CALIBRATIONSESSIONCONTROLVIEWMODEL_H
 
+#include <optional>
 #include <string>
 
 #include "application/orchestrators/calibration/process/CalibrationOrchestratorInput.h"
@@ -8,6 +9,7 @@
 #include "application/usecases/calibration/CalibrationSessionControl.h"
 #include "application/ports/settings/IInfoSettingsStorage.h"
 #include "domain/ports/calibration/result/ICalibrationResultValidationSource.h"
+#include "domain/core/calibration/common/CalibrationAudioCue.h"
 #include "domain/core/calibration/common/CalibrationMode.h"
 #include "viewmodels/Observable.h"
 
@@ -47,6 +49,7 @@ public:
     Observable<bool> slowdown_enabled{false};
     Observable<bool> play_valve_enabled{false};
     Observable<std::string> status_text{std::string("Ожидание запуска")};
+    Observable<std::optional<domain::common::CalibrationAudioCue>> audio_cue{std::nullopt};
     Observable<bool> can_start{true};
     Observable<bool> can_stop{false};
     Observable<bool> can_abort{false};

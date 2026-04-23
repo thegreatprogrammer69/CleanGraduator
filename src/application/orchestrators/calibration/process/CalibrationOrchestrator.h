@@ -81,6 +81,7 @@ private:
     void applyCommand(const StrategyVerdict::MotorStart& cmd);
     void applyCommand(const StrategyVerdict::MotorStop& cmd);
     void applyCommand(const StrategyVerdict::StatusText& cmd);
+    void applyCommand(const StrategyVerdict::PlaySound& cmd);
     void applyCommand(const StrategyVerdict::Complete&);
 
 private:

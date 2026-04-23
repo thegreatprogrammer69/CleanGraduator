@@ -125,9 +125,13 @@ void CalibrationSessionControlViewModel::onCalibrationOrchestratorEvent(
         else if constexpr (std::is_same_v<T, CalibrationOrchestratorEvent::Failed>) {
             applyState(CalibrationOrchestratorState::Stopped, event.error);
             status_text.set("Ошибка: " + event.error);
+            audio_cue.set(domain::common::CalibrationAudioCue::Critical);
         }
         else if constexpr (std::is_same_v<T, CalibrationOrchestratorEvent::StatusText>) {
             status_text.set(event.text);
+        }
+        else if constexpr (std::is_same_v<T, CalibrationOrchestratorEvent::SoundCue>) {
+            audio_cue.set(event.cue);
         }
     }, ev.data);
 }
