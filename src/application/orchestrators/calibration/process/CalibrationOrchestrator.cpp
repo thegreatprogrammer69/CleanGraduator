@@ -117,6 +117,8 @@ bool CalibrationOrchestrator::start(CalibrationOrchestratorInput input)
         ctx.pressure_unit    = inp_.pressure_unit;
         ctx.calibration_mode = inp_.calibration_mode;
         ctx.pressure_points  = PressurePoints::from(inp_.gauge.points.value, inp_.pressure_unit);
+        ctx.slowdown_enabled = inp_.slowdown_enabled;
+        ctx.play_valve_enabled = inp_.play_valve_enabled;
 
         const auto verdict = ports_.strategy.begin(ctx);
         const auto exec = applyVerdict(verdict);
@@ -168,6 +170,8 @@ bool CalibrationOrchestrator::start(CalibrationOrchestratorInput input)
 
         ports_.session_clock.start();
 
+        notifyObservers(CalibrationOrchestratorEvent(CalibrationOrchestratorEvent::StatusChanged{
+            "Запуск сценария градуировки"}));
         notifyObservers(
             CalibrationOrchestratorEvent(
                 CalibrationOrchestratorEvent::Started{}));
@@ -212,6 +216,8 @@ void CalibrationOrchestrator::stop()
         CalibrationOrchestratorState::Stopped,
         std::memory_order_release);
 
+    notifyObservers(CalibrationOrchestratorEvent(CalibrationOrchestratorEvent::StatusChanged{
+        "Двигатель остановлен"}));
     notifyObservers(
         CalibrationOrchestratorEvent(
             CalibrationOrchestratorEvent::Stopped{}));

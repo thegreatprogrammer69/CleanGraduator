@@ -69,7 +69,13 @@ Stand4CalibrationStrategy::begin(const CalibrationStrategyBeginContext& ctx)
     p_preload_  = computePreloadPressure(ctx.pressure_points).to(ctx.pressure_unit);
     p_target_   = computeTargetPressure(ctx.pressure_points).to(ctx.pressure_unit);
     p_limit_    = computeLimitPressure(ctx.pressure_points).to(ctx.pressure_unit);
+    slowdown_enabled_ = ctx.slowdown_enabled;
+    play_valve_enabled_ = ctx.play_valve_enabled;
+
     dp_nominal_ = computeNominalVelocity(ctx.pressure_points).to(ctx.pressure_unit);
+    if (slowdown_enabled_) {
+        dp_nominal_ *= 0.7;
+    }
 
     points_tracker_.setEnterThreshold(0.15);
     points_tracker_.setExitThreshold(0.1);
@@ -219,11 +225,17 @@ void Stand4CalibrationStrategy::updatePreload(
         p_preload_);
 
     if (p_cur < p_preload_) {
-        v.commands.push_back(Verdict::MotorSetFlaps{MotorFlapsState::IntakeOpened});
+        const auto flaps = play_valve_enabled_ ? MotorFlapsState::ExhaustOpened : MotorFlapsState::IntakeOpened;
+        v.commands.push_back(Verdict::MotorSetFlaps{flaps});
         return;
     }
 
     logger_.info("Достигнуто давление преднагрузки {}", p_cur);
+
+    if (calibration_mode_ == CalibrationMode::OnlyBackward) {
+        transitionToBackward(v);
+        return;
+    }
 
     transitionToForward(v);
 }
@@ -303,7 +315,7 @@ void Stand4CalibrationStrategy::updateBackward(const CalibrationStrategyFeedCont
 
     int frequency = kMaxMotorFrequencyHz;
 
-    if (calibration_mode_ == CalibrationMode::Full) {
+    if (calibration_mode_ == CalibrationMode::Full || calibration_mode_ == CalibrationMode::OnlyBackward) {
         const double backward_progress = std::max(0.0, p_backward_start_ - static_cast<double>(p_cur));
         const double backward_target = std::max(0.001, p_backward_start_ - p_backward_target_);
         frequency = freq_calc_.frequency(

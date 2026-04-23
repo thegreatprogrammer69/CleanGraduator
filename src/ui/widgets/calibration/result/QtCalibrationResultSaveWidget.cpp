@@ -69,24 +69,21 @@ void QtCalibrationResultSaveWidget::setupUi() {
     topLayout->addStretch(1);
     topLayout->addWidget(stateLabel_);
 
-    saveButton_ = new QPushButton(tr("Сохранить партию"), this);
+    saveAllButton_ = new QPushButton(tr("Сохранить всё"), this);
+    saveSelectedButton_ = new QPushButton(tr("Сохранить только выбранные"), this);
 
-    auto* mainButtonLayout = new QHBoxLayout();
+    auto* mainButtonLayout = new QVBoxLayout();
     mainButtonLayout->setSpacing(8);
-    mainButtonLayout->addWidget(saveButton_);
-    mainButtonLayout->addStretch(1);
+    mainButtonLayout->addWidget(saveAllButton_);
+    mainButtonLayout->addWidget(saveSelectedButton_);
 
     auto* secondaryButtonLayout = new QHBoxLayout();
     secondaryButtonLayout->setSpacing(8);
 
     showInExplorerButton_ = new QPushButton(tr("Показать в проводнике"), this);
-    saveAsButton_ = new QPushButton(tr("Сохранить как"), this);
-
     showInExplorerButton_->setProperty("type", "secondary");
-    saveAsButton_->setProperty("type", "secondary");
 
     secondaryButtonLayout->addWidget(showInExplorerButton_);
-    secondaryButtonLayout->addWidget(saveAsButton_);
     secondaryButtonLayout->addStretch(1);
 
     errorLabel_ = new QLabel(this);
@@ -101,45 +98,30 @@ void QtCalibrationResultSaveWidget::setupUi() {
 
 void QtCalibrationResultSaveWidget::bind()
 {
-    connect(saveButton_, &QPushButton::clicked, this, [this] {
+    connect(saveAllButton_, &QPushButton::clicked, this, [this] {
+        const auto camera_ids = vm_.savableCameraIdsWithoutErrors();
+        if (camera_ids.empty()) {
+            QMessageBox::warning(this, tr("Сохранение результата"),
+                                 tr("Нет манометров без ошибок для сохранения."));
+            return;
+        }
+
+        const auto result = vm_.save(camera_ids);
+        showSaveResultMessage(result);
+    });
+
+    connect(saveSelectedButton_, &QPushButton::clicked, this, [this] {
         const auto selection = requestCameraSelection();
         if (!selection.accepted) {
             return;
         }
         if (selection.selected_camera_ids.empty()) {
-            QMessageBox::warning(
-                this,
-                tr("Сохранение результата"),
-                tr("Не выбрано ни одной камеры. Сохранение не выполнено."));
+            QMessageBox::warning(this, tr("Сохранение результата"),
+                                 tr("Не выбрано ни одной камеры. Сохранение не выполнено."));
             return;
         }
 
         const auto result = vm_.save(selection.selected_camera_ids);
-        showSaveResultMessage(result);
-    });
-
-    connect(saveAsButton_, &QPushButton::clicked, this, [this] {
-        const QString directory = QFileDialog::getExistingDirectory(
-            this,
-            tr("Выберите директорию для сохранения"));
-
-        if (directory.isEmpty()) {
-            return;
-        }
-
-        const auto selection = requestCameraSelection();
-        if (!selection.accepted) {
-            return;
-        }
-        if (selection.selected_camera_ids.empty()) {
-            QMessageBox::warning(
-                this,
-                tr("Сохранение результата"),
-                tr("Не выбрано ни одной камеры. Сохранение не выполнено."));
-            return;
-        }
-
-        const auto result = vm_.saveAs(qStringToPath(directory), selection.selected_camera_ids);
         showSaveResultMessage(result);
     });
 
@@ -177,13 +159,13 @@ void QtCalibrationResultSaveWidget::bind()
 
     canSaveSub_ = vm_.can_save.subscribe([this](const auto& change) {
         QMetaObject::invokeMethod(this, [this, enabled = change.new_value] {
-            saveButton_->setEnabled(enabled);
+            saveAllButton_->setEnabled(enabled);
         }, Qt::QueuedConnection);
     }, false);
 
     canSaveAsSub_ = vm_.can_save_as.subscribe([this](const auto& change) {
         QMetaObject::invokeMethod(this, [this, enabled = change.new_value] {
-            saveAsButton_->setEnabled(enabled);
+            saveSelectedButton_->setEnabled(enabled);
         }, Qt::QueuedConnection);
     }, false);
 
@@ -197,8 +179,8 @@ void QtCalibrationResultSaveWidget::bind()
     updateStateBadge(vm_.save_state.get_copy(), QString::fromStdString(vm_.save_state_text.get_copy()));
     errorLabel_->setText(QString::fromStdString(vm_.error_text.get_copy()));
     errorLabel_->setVisible(!errorLabel_->text().isEmpty());
-    saveButton_->setEnabled(vm_.can_save.get_copy());
-    saveAsButton_->setEnabled(vm_.can_save_as.get_copy());
+    saveAllButton_->setEnabled(vm_.can_save.get_copy());
+    saveSelectedButton_->setEnabled(vm_.can_save_as.get_copy());
     showInExplorerButton_->setEnabled(vm_.can_show_in_explorer.get_copy());
 }
 

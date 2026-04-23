@@ -9,6 +9,7 @@ namespace mvvm {
 CalibrationResultSaveViewModel::CalibrationResultSaveViewModel(CalibrationResultSaveViewModelDeps deps)
     : save_use_case_(deps.save_use_case)
     , result_source_(deps.result_source)
+    , validation_source_(deps.validation_source)
 {
     result_source_.addObserver(*this);
 
@@ -105,6 +106,37 @@ std::vector<int> CalibrationResultSaveViewModel::availableCameraIds() const
     return camera_ids;
 }
 
+
+std::vector<int> CalibrationResultSaveViewModel::savableCameraIdsWithoutErrors() const
+{
+    const auto current = result_source_.currentResult();
+    if (!current) {
+        return {};
+    }
+
+    const auto validation = validation_source_.currentValidation();
+    std::vector<int> result;
+
+    for (const auto& source : current->sources()) {
+        bool has_issues = false;
+        if (validation) {
+            for (const auto& [key, issues] : validation->allIssues()) {
+                if (key.source_id == source && !issues.empty()) {
+                    has_issues = true;
+                    break;
+                }
+            }
+        }
+
+        if (!has_issues) {
+            result.push_back(source.value);
+        }
+    }
+
+    std::sort(result.begin(), result.end());
+    result.erase(std::unique(result.begin(), result.end()), result.end());
+    return result;
+}
 void CalibrationResultSaveViewModel::applySaveResult(const application::usecase::SaveCalibrationResult::Result& result)
 {
     if (result.success) {

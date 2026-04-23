@@ -3,10 +3,6 @@
 
 #include <QWidget>
 
-#include "QtCalibrationSessionControlWidget.h"
-#include "QtDualValveControlWidget.h"
-#include "QtMotorControlWidget.h"
-
 namespace mvvm {
     class ControlViewModel;
 }
@@ -27,9 +23,7 @@ namespace ui {
 
         QWidget* makeResultSection();
         QWidget* makeCalibrationSection();
-        QWidget* makeControlSection();
-        QWidget* makeValvesPage();
-        QWidget* makeMotorPage();
+        QWidget* makeManualSection();
 
     private:
         mvvm::ControlViewModel& vm_;

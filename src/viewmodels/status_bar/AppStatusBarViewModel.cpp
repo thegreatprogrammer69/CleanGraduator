@@ -46,6 +46,10 @@ void mvvm::AppStatusBarViewModel::onCalibrationOrchestratorEvent(
         } else if constexpr (std::is_same_v<T, application::orchestrators::CalibrationOrchestratorEvent::Stopped>
                              || std::is_same_v<T, application::orchestrators::CalibrationOrchestratorEvent::Failed>) {
             current_state_.store(application::orchestrators::CalibrationOrchestratorState::Stopped, std::memory_order_relaxed);
+        } else if constexpr (std::is_same_v<T, application::orchestrators::CalibrationOrchestratorEvent::StatusChanged>) {
+            return;
+        } else {
+            current_state_.store(application::orchestrators::CalibrationOrchestratorState::Stopped, std::memory_order_relaxed);
         }
     }, ev.data);
 }

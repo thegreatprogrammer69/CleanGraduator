@@ -25,25 +25,31 @@ public:
     explicit CalibrationSessionControlViewModel(CalibrationSessionControlViewModelDeps deps);
     ~CalibrationSessionControlViewModel() override;
 
-    void setCalibrationMode(domain::common::CalibrationMode mode);
     void startCalibration();
+    void startAim();
     void setKuModeEnabled(bool enabled);
     void setCenteredMarkEnabled(bool enabled);
+    void setBackwardStrokeEnabled(bool enabled);
+    void setSlowdownEnabled(bool enabled);
+    void setPlayValveEnabled(bool enabled);
     void stopCalibration();
     void emergencyStop();
 
     void onCalibrationOrchestratorEvent(const application::orchestrators::CalibrationOrchestratorEvent &ev) override;
 
-
-    Observable<domain::common::CalibrationMode> selected_mode{domain::common::CalibrationMode::Full};
     Observable<std::string> error_text{std::string()};
+    Observable<std::string> status_text{std::string("Готов к запуску")};
     Observable<bool> ku_mode_enabled{false};
     Observable<bool> centered_mark_enabled{false};
+    Observable<bool> backward_stroke_enabled{false};
+    Observable<bool> slowdown_enabled{false};
+    Observable<bool> play_valve_enabled{false};
     Observable<bool> can_start{true};
     Observable<bool> can_stop{false};
     Observable<bool> can_abort{false};
 
 private:
+    void startWithMode(domain::common::CalibrationMode mode);
     void applyState(application::orchestrators::CalibrationOrchestratorState state, const std::string& last_error);
 
     application::usecase::CalibrationSessionControl& control_;
