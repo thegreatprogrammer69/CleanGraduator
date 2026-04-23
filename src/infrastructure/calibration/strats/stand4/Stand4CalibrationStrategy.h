@@ -4,6 +4,7 @@
 #include "domain/ports/calibration/strategy/ICalibrationStrategy.h"
 
 #include <atomic>
+#include <string>
 #include <vector>
 
 #include "Stand4CalibrationStrategyConfig.h"
@@ -74,6 +75,8 @@ private:
     void transitionToBackward(Verdict& v);
     void transitionToFinished(Verdict& v);
     void transitionToFault(Verdict& v);
+    void emitStatus(Verdict& v, std::string text);
+    std::string buildPreloadStatusText(float current_pressure) const;
 
 private:
 
@@ -99,6 +102,7 @@ private:
     domain::common::CalibrationMode calibration_mode_{
         domain::common::CalibrationMode::Full
     };
+    std::string last_status_text_;
 
     // команды, накопленные из tracker callbacks
     std::vector<Verdict::Command> pending_;

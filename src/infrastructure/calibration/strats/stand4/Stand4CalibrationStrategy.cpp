@@ -7,6 +7,10 @@
 
 #include "infrastructure/calibration/tracking/PressurePointsTrackerEvent.h"
 
+#include <algorithm>
+#include <iomanip>
+#include <sstream>
+
 using namespace domain;
 using namespace domain::common;
 using namespace domain::ports;
@@ -65,6 +69,7 @@ Stand4CalibrationStrategy::begin(const CalibrationStrategyBeginContext& ctx)
     last_time_ = 0.0;
     p_backward_start_ = 0.0;
     p_backward_target_ = 0.0;
+    last_status_text_.clear();
 
     p_preload_  = computePreloadPressure(ctx.pressure_points).to(ctx.pressure_unit);
     p_target_   = computeTargetPressure(ctx.pressure_points).to(ctx.pressure_unit);
@@ -83,7 +88,6 @@ Stand4CalibrationStrategy::begin(const CalibrationStrategyBeginContext& ctx)
         dp_nominal_);
 
     transitionToPreload(v);
-    v.commands.push_back(Verdict::StatusText{"Набор предварительного давления"});
 
     return v;
 }
@@ -220,6 +224,8 @@ void Stand4CalibrationStrategy::updatePreload(
         p_cur,
         p_preload_);
 
+    emitStatus(v, buildPreloadStatusText(p_cur));
+
     if (p_cur < p_preload_) {
         v.commands.push_back(Verdict::MotorSetFlaps{MotorFlapsState::IntakeOpened});
         return;
@@ -348,7 +354,7 @@ void Stand4CalibrationStrategy::transitionToPreload(Verdict& v)
         pressure_points_,
         MotorDirection::Forward);
 
-    v.commands.push_back(Verdict::StatusText{"Набор предварительного давления"});
+    emitStatus(v, buildPreloadStatusText(static_cast<float>(last_pressure_)));
 }
 
 void Stand4CalibrationStrategy::transitionToForward(Verdict& v)
@@ -369,7 +375,7 @@ void Stand4CalibrationStrategy::transitionToForward(Verdict& v)
     v.commands.push_back(
         Verdict::MotorStart{});
 
-    v.commands.push_back(Verdict::StatusText{"Прямой ход: съём показаний"});
+    emitStatus(v, "Прямой ход: съём показаний");
 }
 
 void Stand4CalibrationStrategy::transitionToBackward(Verdict& v)
@@ -393,7 +399,7 @@ void Stand4CalibrationStrategy::transitionToBackward(Verdict& v)
     v.commands.push_back(
         Verdict::MotorSetDirection{MotorDirection::Backward});
 
-    v.commands.push_back(Verdict::StatusText{"Обратный ход: возврат и съём"});
+    emitStatus(v, "Обратный ход: возврат и съём");
 }
 
 void Stand4CalibrationStrategy::transitionToFinished(Verdict& v)
@@ -408,7 +414,7 @@ void Stand4CalibrationStrategy::transitionToFinished(Verdict& v)
 
     v.commands.push_back(Verdict::MotorSetFlaps{MotorFlapsState::ExhaustOpened});
 
-    v.commands.push_back(Verdict::StatusText{"Градуировка завершена"});
+    emitStatus(v, "Градуировка завершена");
     v.commands.push_back(Verdict::Complete{});
 }
 
@@ -420,5 +426,34 @@ void Stand4CalibrationStrategy::transitionToFault(Verdict& v)
     v.commands.push_back(Verdict::MotorStop{});
 
     points_tracker_.endTracking();
-    v.commands.push_back(Verdict::StatusText{"Аварийная остановка: ошибка стратегии"});
+    emitStatus(v, "Аварийная остановка: ошибка стратегии");
+}
+
+void Stand4CalibrationStrategy::emitStatus(Verdict& v, std::string text)
+{
+    if (text.empty() || text == last_status_text_) {
+        return;
+    }
+
+    last_status_text_ = text;
+    v.commands.push_back(Verdict::StatusText{std::move(text)});
+}
+
+std::string Stand4CalibrationStrategy::buildPreloadStatusText(float current_pressure) const
+{
+    const double safe_target = std::max(0.001, p_preload_);
+    const double progress = std::clamp(static_cast<double>(current_pressure) / safe_target, 0.0, 1.0);
+    const int progress_percent = static_cast<int>(progress * 100.0 + 0.5);
+
+    std::ostringstream ss;
+    ss << std::fixed << std::setprecision(1)
+       << "Набор предварительного давления: "
+       << current_pressure
+       << " / "
+       << p_preload_
+       << " ("
+       << progress_percent
+       << "%)";
+
+    return ss.str();
 }
