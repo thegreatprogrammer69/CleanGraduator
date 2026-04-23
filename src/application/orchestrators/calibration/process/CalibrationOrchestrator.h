@@ -98,6 +98,7 @@ private:
     CalibrationOrchestratorPorts ports_;
     CalibrationOrchestratorInput inp_;
     CalibrationSafetyMonitor safety_monitor_;
+    std::atomic<bool> recording_enabled_{false};
 };
 
 } // namespace application::orchestrators
