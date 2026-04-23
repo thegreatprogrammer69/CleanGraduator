@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <stdexcept>
+#include <thread>
 #include <type_traits>
 #include <utility>
 #include <variant>
@@ -26,6 +27,9 @@ using namespace domain::common;
 
 namespace {
 constexpr auto kMotorWatchdogTimeout = std::chrono::milliseconds(200);
+constexpr auto kHomeTimeout = std::chrono::seconds(30);
+constexpr auto kPressureWaitTimeout = std::chrono::seconds(120);
+constexpr auto kPostZeroDelay = std::chrono::milliseconds(1500);
 }
 
 CalibrationOrchestrator::CalibrationOrchestrator(CalibrationOrchestratorPorts ports)
@@ -38,7 +42,7 @@ CalibrationOrchestrator::CalibrationOrchestrator(CalibrationOrchestratorPorts po
 
 CalibrationOrchestrator::~CalibrationOrchestrator()
 {
-    stop();
+    stopInternal(ShutdownMode::Regular);
 }
 
 bool CalibrationOrchestrator::start(CalibrationOrchestratorInput input)
@@ -198,6 +202,16 @@ bool CalibrationOrchestrator::start(CalibrationOrchestratorInput input)
 
 void CalibrationOrchestrator::stop()
 {
+    stopInternal(ShutdownMode::UserStop);
+}
+
+void CalibrationOrchestrator::emergencyStop()
+{
+    stopInternal(ShutdownMode::EmergencyStop);
+}
+
+void CalibrationOrchestrator::stopInternal(ShutdownMode mode)
+{
     auto current = state_.load(std::memory_order_acquire);
 
     if (current == CalibrationOrchestratorState::Stopped ||
@@ -208,7 +222,7 @@ void CalibrationOrchestrator::stop()
 
     state_.store(CalibrationOrchestratorState::Stopping, std::memory_order_acq_rel);
 
-    teardown();
+    teardown(mode);
 
     state_.store(
         CalibrationOrchestratorState::Stopped,
@@ -264,6 +278,12 @@ void CalibrationOrchestrator::onPressureSourceEvent(const PressureSourceEvent& e
 
 void CalibrationOrchestrator::onPressurePacket(const PressurePacket& p)
 {
+    {
+        std::lock_guard lock(pressure_mutex_);
+        latest_pressure_pa_ = p.pressure.pa();
+    }
+    pressure_cv_.notify_all();
+
     if (state_.load(std::memory_order_acquire) != CalibrationOrchestratorState::Started)
         return;
 
@@ -295,7 +315,7 @@ void CalibrationOrchestrator::onPressurePacket(const PressurePacket& p)
     if (exec.complete)
     {
         logger_.info("Calibration strategy finished successfully.");
-        stop();
+        stopInternal(ShutdownMode::StrategySuccess);
     }
     else if (exec.fault)
     {
@@ -429,15 +449,13 @@ void CalibrationOrchestrator::notifyObservers(const CalibrationOrchestratorEvent
         });
 }
 
-void CalibrationOrchestrator::teardown()
+void CalibrationOrchestrator::teardown(ShutdownMode mode)
 {
     safety_monitor_.stop();
     ports_.motor_driver.watchdog().stop();
-    ports_.motor_driver.stop();
-    detachObservers();
 
     // Сначала даём стратегии корректно завершиться и вернуть shutdown-команды.
-    if (ports_.strategy.isRunning())
+    if (mode != ShutdownMode::EmergencyStop && ports_.strategy.isRunning())
     {
         const auto end_verdict = ports_.strategy.end();
         const auto exec = applyVerdict(end_verdict);
@@ -445,12 +463,25 @@ void CalibrationOrchestrator::teardown()
         if (exec.fault)
             logger_.warn("Strategy end() reported fault: {}", *exec.fault);
     }
+
+    if (mode == ShutdownMode::UserStop)
+    {
+        performUserStopSequence();
+    }
+    else if (mode == ShutdownMode::StrategySuccess)
+    {
+        performSuccessSequence();
+    }
+    else if (mode == ShutdownMode::EmergencyStop)
+    {
+        ports_.motor_driver.emergencyStop();
+    }
     else
     {
-        // defensive stop на случай частично поднятой системы
         ports_.motor_driver.stop();
     }
 
+    detachObservers();
     ports_.pressure_source.stop();
 
     for (const auto& id : opened_angle_sources_)
@@ -484,7 +515,7 @@ void CalibrationOrchestrator::stopWithError(const std::string& error)
         return;
     }
 
-    teardown();
+    teardown(ShutdownMode::Error);
 
     state_.store(
         CalibrationOrchestratorState::Stopped,
@@ -572,5 +603,67 @@ void CalibrationOrchestrator::applyCommand(const StrategyVerdict::StatusText& cm
 
 void CalibrationOrchestrator::applyCommand(const StrategyVerdict::Complete&)
 {
-    stop();
+    stopInternal(ShutdownMode::StrategySuccess);
+}
+
+void CalibrationOrchestrator::performUserStopSequence()
+{
+    moveMotorToHome();
+    depressurizeAndCloseFlaps();
+}
+
+void CalibrationOrchestrator::performSuccessSequence()
+{
+    depressurizeAndCloseFlaps();
+}
+
+void CalibrationOrchestrator::moveMotorToHome()
+{
+    logger_.info("Manual stop: moving motor to HOME position.");
+
+    ports_.motor_driver.setDirection(MotorDirection::Backward);
+    ports_.motor_driver.setFrequency(MotorFrequency(2000));
+    ports_.motor_driver.start();
+
+    const auto started = std::chrono::steady_clock::now();
+    while (!ports_.motor_driver.limits().home)
+    {
+        if (std::chrono::steady_clock::now() - started >= kHomeTimeout)
+        {
+            logger_.warn("Manual stop: HOME wasn't reached within timeout.");
+            break;
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    }
+
+    ports_.motor_driver.stop();
+}
+
+void CalibrationOrchestrator::depressurizeAndCloseFlaps()
+{
+    logger_.info("Opening exhaust flap and waiting pressure <= 0.");
+    ports_.motor_driver.setFlapsState(MotorFlapsState::ExhaustOpened);
+
+    if (!waitForPressureAtOrBelowZero(kPressureWaitTimeout))
+    {
+        logger_.warn("Timeout while waiting pressure <= 0. Closing flaps anyway.");
+    }
+    else
+    {
+        std::this_thread::sleep_for(kPostZeroDelay);
+    }
+
+    ports_.motor_driver.setFlapsState(MotorFlapsState::FlapsClosed);
+}
+
+bool CalibrationOrchestrator::waitForPressureAtOrBelowZero(std::chrono::seconds timeout)
+{
+    std::unique_lock lock(pressure_mutex_);
+    return pressure_cv_.wait_for(
+        lock,
+        timeout,
+        [this]
+        {
+            return latest_pressure_pa_.has_value() && *latest_pressure_pa_ <= 0.0;
+        });
 }

@@ -2,6 +2,8 @@
 #define CLEANGRADUATOR_CALIBRATIONPROCESSORCHESTRATOR_H
 
 #include <atomic>
+#include <chrono>
+#include <condition_variable>
 #include <mutex>
 #include <optional>
 #include <set>
@@ -42,6 +44,7 @@ public:
 
     bool start(CalibrationOrchestratorInput input);
     void stop();
+    void emergencyStop();
     bool isRunning() const;
 
     void addObserver(ports::CalibrationOrchestratorObserver& observer);
@@ -54,6 +57,15 @@ public:
     void onMotorEvent(const domain::common::MotorDriverEvent& event) override;
 
 private:
+    enum class ShutdownMode
+    {
+        Regular,
+        StrategySuccess,
+        UserStop,
+        EmergencyStop,
+        Error
+    };
+
     using StrategyVerdict = domain::common::CalibrationStrategyVerdict;
 
     struct StrategyExecutionResult
@@ -68,8 +80,14 @@ private:
 
     void notifyObservers(const CalibrationOrchestratorEvent& ev);
 
-    void teardown();
+    void teardown(ShutdownMode mode = ShutdownMode::Regular);
+    void stopInternal(ShutdownMode mode);
     void stopWithError(const std::string& error);
+    void performUserStopSequence();
+    void performSuccessSequence();
+    void moveMotorToHome();
+    void depressurizeAndCloseFlaps();
+    bool waitForPressureAtOrBelowZero(std::chrono::seconds timeout);
 
     StrategyExecutionResult applyVerdict(const StrategyVerdict& verdict);
 
@@ -98,6 +116,10 @@ private:
     CalibrationOrchestratorPorts ports_;
     CalibrationOrchestratorInput inp_;
     CalibrationSafetyMonitor safety_monitor_;
+
+    std::mutex pressure_mutex_;
+    std::condition_variable pressure_cv_;
+    std::optional<double> latest_pressure_pa_;
 };
 
 } // namespace application::orchestrators
