@@ -8,6 +8,7 @@
 #include <QMetaObject>
 #include <QVBoxLayout>
 
+#include "QtCalibrationSessionControlWidget.h"
 #include "ui/widgets/calibration/result/QtCalibrationResultSaveWidget.h"
 #include "viewmodels/control/CalibrationSessionControlViewModel.h"
 #include "viewmodels/control/ControlViewModel.h"

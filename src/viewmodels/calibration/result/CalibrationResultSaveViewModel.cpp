@@ -63,7 +63,7 @@ application::usecase::SaveCalibrationResult::Result CalibrationResultSaveViewMod
 
     std::vector<int> selected;
     for (const auto& source : current->sources()) {
-        if (!blocked_sources.contains(source.value)) {
+        if (blocked_sources.find(source.value) != blocked_sources.end()) {
             selected.push_back(source.value);
         }
     }
