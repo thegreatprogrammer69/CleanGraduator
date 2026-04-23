@@ -232,6 +232,7 @@ void Stand4CalibrationStrategy::updatePreload(
     }
 
     logger_.info("Достигнуто давление преднагрузки {}", p_cur);
+    v.commands.push_back(Verdict::PlaySound{CalibrationAudioCue::OperatorAction});
 
     transitionToForward(v);
 }
@@ -388,6 +389,7 @@ void Stand4CalibrationStrategy::transitionToBackward(Verdict& v)
     p_backward_target_ = p_preload_;
 
     v.commands.push_back(Verdict::EndSession{});
+    v.commands.push_back(Verdict::PlaySound{CalibrationAudioCue::Alarm});
 
     points_tracker_.endTracking();
 
@@ -417,6 +419,7 @@ void Stand4CalibrationStrategy::transitionToFinished(Verdict& v)
     v.commands.push_back(Verdict::MotorSetFlaps{MotorFlapsState::ExhaustOpened});
 
     emitStatus(v, "Градуировка завершена");
+    v.commands.push_back(Verdict::PlaySound{CalibrationAudioCue::ProcessComplete});
     v.commands.push_back(Verdict::Complete{});
 }
 

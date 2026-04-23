@@ -5,6 +5,7 @@
 #include <QMetaObject>
 #include <QVBoxLayout>
 
+#include "ui/audio/QtToneAudioCuePlayer.h"
 #include "viewmodels/control/CalibrationSessionControlViewModel.h"
 
 namespace ui {
@@ -15,6 +16,7 @@ QtCalibrationSessionControlWidget::QtCalibrationSessionControlWidget(
     : QWidget(parent)
     , vm_(vm)
 {
+    audioCuePlayer_ = std::make_unique<QtToneAudioCuePlayer>(this);
     setupUi();
     bind();
 }
@@ -86,6 +88,18 @@ void QtCalibrationSessionControlWidget::bind() {
         QMetaObject::invokeMethod(this, [this, text = QString::fromStdString(change.new_value)]() {
             errorLabel_->setText(text);
             errorLabel_->setVisible(!text.isEmpty());
+        }, Qt::QueuedConnection);
+    }, false);
+
+    audioCueSub_ = vm_.audio_cue.subscribe([this](const auto& change) {
+        if (!change.new_value.has_value() || !audioCuePlayer_) {
+            return;
+        }
+
+        QMetaObject::invokeMethod(this, [this, cue = *change.new_value]() {
+            if (audioCuePlayer_) {
+                audioCuePlayer_->play(cue);
+            }
         }, Qt::QueuedConnection);
     }, false);
 

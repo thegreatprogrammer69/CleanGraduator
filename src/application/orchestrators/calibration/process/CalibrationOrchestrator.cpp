@@ -570,6 +570,11 @@ void CalibrationOrchestrator::applyCommand(const StrategyVerdict::StatusText& cm
     notifyObservers(CalibrationOrchestratorEvent(CalibrationOrchestratorEvent::StatusText{cmd.text}));
 }
 
+void CalibrationOrchestrator::applyCommand(const StrategyVerdict::PlaySound& cmd)
+{
+    notifyObservers(CalibrationOrchestratorEvent(CalibrationOrchestratorEvent::SoundCue{cmd.cue}));
+}
+
 void CalibrationOrchestrator::applyCommand(const StrategyVerdict::Complete&)
 {
     stop();
