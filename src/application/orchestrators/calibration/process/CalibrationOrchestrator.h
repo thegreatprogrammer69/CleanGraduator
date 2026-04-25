@@ -2,6 +2,7 @@
 #define CLEANGRADUATOR_CALIBRATIONPROCESSORCHESTRATOR_H
 
 #include <atomic>
+#include <condition_variable>
 #include <mutex>
 #include <optional>
 #include <set>
@@ -42,6 +43,7 @@ public:
 
     bool start(CalibrationOrchestratorInput input);
     void stop();
+    void emergencyStop();
     bool isRunning() const;
 
     void addObserver(ports::CalibrationOrchestratorObserver& observer);
@@ -63,12 +65,22 @@ private:
     };
 
 private:
+    enum class StopReason
+    {
+        StrategyCompleted,
+        Manual,
+        Error,
+        Emergency
+    };
+
     void attachObservers();
     void detachObservers();
 
     void notifyObservers(const CalibrationOrchestratorEvent& ev);
 
-    void teardown();
+    void teardown(StopReason reason);
+    void rollbackMotorToHome();
+    void releasePressureWithExhaust();
     void stopWithError(const std::string& error);
 
     StrategyExecutionResult applyVerdict(const StrategyVerdict& verdict);
@@ -98,6 +110,10 @@ private:
     CalibrationOrchestratorPorts ports_;
     CalibrationOrchestratorInput inp_;
     CalibrationSafetyMonitor safety_monitor_;
+
+    std::mutex pressure_mutex_;
+    std::condition_variable pressure_cv_;
+    std::optional<double> last_pressure_;
 };
 
 } // namespace application::orchestrators
