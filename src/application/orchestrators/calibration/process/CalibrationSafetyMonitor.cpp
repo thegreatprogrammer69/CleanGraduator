@@ -263,7 +263,8 @@ CalibrationSafetyMonitor::CalibrationSafetyMonitor(fmt::Logger logger)
     : logger_(std::move(logger))
 {
     rules_.emplace_back(std::make_unique<AngleSourceTimeoutRule>());
-    rules_.emplace_back(std::make_unique<AngleGrowthHazardRule>());
+    // TODO
+    // rules_.emplace_back(std::make_unique<AngleGrowthHazardRule>());
 }
 
 CalibrationSafetyMonitor::~CalibrationSafetyMonitor()

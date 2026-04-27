@@ -85,6 +85,8 @@ int main(int argc, char *argv[])
 {
     SetUnhandledExceptionFilter(ExceptionHandler);
 
+    // system("net use Z: \\\\uf-manotom\\ОБМЕН");
+
     QCoreApplication::setAttribute(Qt::AA_UseDesktopOpenGL);
     QApplication app(argc, argv);
 

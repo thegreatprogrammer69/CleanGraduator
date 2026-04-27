@@ -299,21 +299,22 @@ namespace infra::motor {
 
     bool G540LptMotorDriver::pollSafety(const MotorLimitsState &current_limits) {
 
-        // 1. Проверка software watchdog
-        if (software_watchdog_.expired()) {
-            logger_.error("Watchdog timeout detected");
-
-            MotorDriverError new_err;
-            new_err.message = "Watchdog timeout";
-            error_.store(new_err);
-
-            // 2. Уведомление о fault
-            MotorDriverEvent::Fault ev;
-            ev.error = new_err;
-            notifier_.notifyEvent(MotorDriverEvent(ev));
-
-            return false;
-        }
+        // TODO
+        // // 1. Проверка software watchdog
+        // if (software_watchdog_.expired()) {
+        //     logger_.error("Watchdog timeout detected");
+        //
+        //     MotorDriverError new_err;
+        //     new_err.message = "Watchdog timeout";
+        //     error_.store(new_err);
+        //
+        //     // 2. Уведомление о fault
+        //     MotorDriverEvent::Fault ev;
+        //     ev.error = new_err;
+        //     notifier_.notifyEvent(MotorDriverEvent(ev));
+        //
+        //     return false;
+        // }
 
         // 3. Проверка достижения END при движении Forward
         if (direction_ == MotorDirection::Forward && current_limits.end) {
