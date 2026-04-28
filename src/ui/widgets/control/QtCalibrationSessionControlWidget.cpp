@@ -57,7 +57,7 @@ void QtCalibrationSessionControlWidget::setupUi() {
 
 void QtCalibrationSessionControlWidget::bind() {
     connect(reverseModeCheckBox_, &QCheckBox::toggled, this, [this](bool checked) {
-        vm_.setReverseModeEnabled(checked);
+        vm_.setReverseModeEnabled(!checked);
     });
     connect(slowdownCheckBox_, &QCheckBox::toggled, this, [this](bool checked) {
         vm_.setSlowdownEnabled(checked);
