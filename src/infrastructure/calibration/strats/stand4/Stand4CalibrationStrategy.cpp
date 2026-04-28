@@ -189,13 +189,34 @@ void Stand4CalibrationStrategy::onPressurePointsTrackerEvent(
             else
                 return;
 
+            const auto pointIndex = e.index;
+
+            // --- НОВАЯ ЛОГИКА ФИЛЬТРАЦИИ ---
+            if (direction == MotorDirection::Backward)
+            {
+                // 1. OnlyForward — вообще ничего не пишем назад
+                if (calibration_mode_ == CalibrationMode::OnlyForward)
+                    return;
+
+                // 2. Full — пропускаем первую и последнюю точки
+                if (calibration_mode_ != CalibrationMode::OnlyForward)
+                {
+                    const bool isFirst = pointIndex.id == 0;
+                    const bool isLast  = pointIndex.id == pressure_points_.size() - 1;
+
+                    if (isFirst || isLast)
+                        return;
+                }
+            }
+            // --- КОНЕЦ НОВОЙ ЛОГИКИ ---
+
             logger_.info(
                 "Вход в зону точки {} по направлению {}",
-                e.index.id,
+                pointIndex.id,
                 direction);
 
             CalibrationSessionId session;
-            session.point = e.index;
+            session.point = pointIndex;
             session.direction = direction;
 
             pending_.push_back(Verdict::Command{Verdict::BeginSession{session}});
