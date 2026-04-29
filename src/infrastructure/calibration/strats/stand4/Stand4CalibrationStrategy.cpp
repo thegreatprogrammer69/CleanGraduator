@@ -297,7 +297,7 @@ void Stand4CalibrationStrategy::updateForward(
         dp_cur,
         dp_nominal_);
     const int mode_freq = calibration_mode_ == CalibrationMode::OnlyLast
-        ? std::min(freq * 2, kMaxMotorFrequencyHz)
+        ? std::min(freq * 2, static_cast<int>(config_.max_motor_frequency_hz))
         : freq;
 
     logger_.info("Расчёт частоты двигателя {}", mode_freq);
