@@ -13,6 +13,7 @@
 #include "domain/ports/calibration/recording/ICalibrationRecorder.h"
 #include "domain/ports/calibration/strategy/ICalibrationStrategy.h"
 #include "infrastructure/calibration/batch/BatchContextProvider.h"
+#include "infrastructure/calibration/batch/FileStandNameProvider.h"
 #include "infrastructure/calibration/recording/in_memory/InMemoryCalibrationRecorder.h"
 #include "infrastructure/calibration/result/in_file/FileCalibrationResultSaver.h"
 #include "infrastructure/calibration/strats/stand4/Stand4CalibrationStrategy.h"
@@ -93,9 +94,14 @@ void UseCasesBootstrap::createCalibrationSessionControl() {
 }
 
 void UseCasesBootstrap::createBatchContextProvider() {
+    stand_name_provider = std::make_unique<infra::calib::FileStandNameProvider>(
+        app_.createLogger("FileStandNameProvider"),
+        "setup/stand");
+
     infra::calib::BatchContextProviderPorts ports{
         app_.createLogger("BatchContextProvider"),
-        *calibration_context_provider
+        *calibration_context_provider,
+        *stand_name_provider
     };
 
     batch_context_provider = std::make_unique<infra::calib::BatchContextProvider>(ports);

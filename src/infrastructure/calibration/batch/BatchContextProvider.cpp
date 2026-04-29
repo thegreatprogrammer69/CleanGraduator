@@ -12,6 +12,7 @@ infra::calib::BatchContextProvider::~BatchContextProvider() {}
 infra::calib::BatchContextProvider::BatchContextProvider(BatchContextProviderPorts ports)
     : logger_(ports.logger_)
     , context_provider_(ports.context_provider_)
+    , stand_name_provider_(ports.stand_name_provider_)
 {
 }
 
@@ -37,7 +38,13 @@ infra::calib::BatchContextProvider::current()
         return std::nullopt;
     }
 
-    QString fullBasePath = baseDir.filePath("stend4\\" + date);
+    const auto standName = stand_name_provider_.current();
+    if (!standName) {
+        logger_.error("BatchContextProvider: stand name is not configured");
+        return std::nullopt;
+    }
+
+    QString fullBasePath = baseDir.filePath(QString::fromStdString(*standName) + "\\" + date);
 
     // --- диагностика перед созданием ---
     QDir checkDir(fullBasePath);

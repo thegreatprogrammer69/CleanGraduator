@@ -42,6 +42,7 @@ set(SOURCES
         factory/MotorDriverFactory.cpp
 
         calibration/batch/BatchContextProvider.cpp
+        calibration/batch/FileStandNameProvider.cpp
         calibration/strats/stand4/Stand4FrequencyCalculator.cpp
         calibration/strats/stand4/Stand4CalibrationStrategy.cpp
         calibration/recording/in_memory/InMemoryCalibrationRecorder.cpp

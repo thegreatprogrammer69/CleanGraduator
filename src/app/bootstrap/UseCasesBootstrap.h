@@ -14,6 +14,10 @@ namespace application::orchestrators {
     class CalibrationOrchestrator;
 }
 
+namespace infra::calib {
+    class FileStandNameProvider;
+}
+
 namespace domain::ports {
     class ICalibrationStrategy;
     struct ICalibrationRecorder;
@@ -42,6 +46,7 @@ public:
     std::unique_ptr<application::usecase::CloseAllCameras> close_all_cameras;
     std::unique_ptr<application::usecase::CalibrationSessionControl> calibration_session_control;
     std::unique_ptr<application::ports::IBatchContextProvider> batch_context_provider;
+    std::unique_ptr<infra::calib::FileStandNameProvider> stand_name_provider;
     std::unique_ptr<application::ports::ICalibrationResultSaver> calibration_result_saver;
     std::unique_ptr<application::usecase::SaveCalibrationResult> save_calibration_result;
 

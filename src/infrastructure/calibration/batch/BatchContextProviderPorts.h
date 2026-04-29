@@ -10,9 +10,12 @@ namespace application::orchestrators {
 }
 
 namespace infra::calib {
+    struct IStandNameProvider;
+
     struct BatchContextProviderPorts {
         domain::ports::ILogger& logger_;
         application::orchestrators::CalibrationContextProvider& context_provider_;
+        IStandNameProvider& stand_name_provider_;
     };
 }
 

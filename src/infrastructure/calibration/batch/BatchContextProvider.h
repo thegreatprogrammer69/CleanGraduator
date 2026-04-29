@@ -3,6 +3,7 @@
 
 #include "BatchContextProviderPorts.h"
 #include "application/ports/batch/IBatchContextProvider.h"
+#include "IStandNameProvider.h"
 #include "domain/fmt/Logger.h"
 
 namespace infra::calib {
@@ -15,6 +16,7 @@ namespace infra::calib {
     private:
         fmt::Logger logger_;
         application::orchestrators::CalibrationContextProvider& context_provider_;
+        IStandNameProvider& stand_name_provider_;
     };
 }
 
