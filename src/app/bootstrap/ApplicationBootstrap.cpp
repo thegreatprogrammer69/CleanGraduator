@@ -39,6 +39,7 @@
 #include "infrastructure/storage/LogSourcesStorage.h"
 #include "viewmodels/settings/SettingsViewModel.h"
 #include "domain/ports/video/IVideoSource.h"
+#include "shared/ini/IniFile.h"
 
 #include "infrastructure/angle/from_video/AngleSourceFromVideo.h"
 #include "infrastructure/calibration/recording/in_memory/InMemoryCalibrationRecorder.h"
@@ -338,7 +339,14 @@ void ApplicationBootstrap::createCalibrationStrategy() {
     infra::calib::CalibrationStrategyPorts ports {
         createLogger("Stand4CalibrationStrategy")
     };
+
     infra::calib::stand4::Stand4CalibrationStrategyConfig config {};
+    shared::ini::IniFile motor_ini;
+    if (motor_ini.load(setup_dir_ + "/motor.ini") && motor_ini.hasSection("motor")) {
+        const auto section = motor_ini["motor"];
+        config.max_motor_frequency_hz = section.getInt("max_freq_hz", config.max_motor_frequency_hz);
+    }
+
     calibration_strategy = std::make_unique<infra::calib::stand4::Stand4CalibrationStrategy>(ports, config);
 }
 
