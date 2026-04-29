@@ -53,8 +53,8 @@ void QtSettingsWidget::buildUi() {
     circleOverlayLayout->addWidget(circleOverlayWidget_);
 
     mainLayout->addWidget(cameraGridGroup);
-    mainLayout->addWidget(circleOverlayGroup);
     mainLayout->addWidget(infoSettingsGroup);
+    mainLayout->addWidget(circleOverlayGroup);
 
     mainLayout->addStretch();
 }
