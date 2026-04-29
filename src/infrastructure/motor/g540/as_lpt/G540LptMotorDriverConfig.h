@@ -12,7 +12,8 @@ namespace infra::motors {
         int bit_begin_limit_switch{};
         int bit_end_limit_switch{};
 
-        int max_freq_hz{};
+        static constexpr int kDefaultMaxFreqHz = 2000;
+        int max_freq_hz{kDefaultMaxFreqHz};
         int min_freq_hz{};
     };
 }

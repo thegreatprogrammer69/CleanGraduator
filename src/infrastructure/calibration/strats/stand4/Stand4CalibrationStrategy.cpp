@@ -8,6 +8,8 @@
 #include "infrastructure/calibration/tracking/PressurePointsTrackerEvent.h"
 
 #include <algorithm>
+
+#include "infrastructure/motor/g540/as_lpt/G540LptMotorDriverConfig.h"
 #include <iomanip>
 #include <sstream>
 
@@ -21,7 +23,7 @@ using namespace infra::calib::tracking;
 
 namespace
 {
-constexpr int kMaxMotorFrequencyHz = 2000;
+constexpr int kMaxMotorFrequencyHz = infra::motors::G540LptMotorDriverConfig::kDefaultMaxFreqHz;
 
 const char* toString(Stand4CalibrationStrategy::State s)
 {
@@ -43,7 +45,7 @@ Stand4CalibrationStrategy::Stand4CalibrationStrategy(
     : logger_(ports.logger)
     , freq_calc_(
         0.1, 10.0,
-        10.0, 2000.0,
+        10.0, static_cast<double>(kMaxMotorFrequencyHz),
         1.7, 0.7,
         1.0)
     , points_tracker_(*this)
