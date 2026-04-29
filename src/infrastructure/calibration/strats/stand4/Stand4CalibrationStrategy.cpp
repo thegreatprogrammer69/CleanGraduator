@@ -21,7 +21,6 @@ using namespace infra::calib::tracking;
 
 namespace
 {
-constexpr int kMaxMotorFrequencyHz = 2000;
 
 const char* toString(Stand4CalibrationStrategy::State s)
 {
@@ -41,14 +40,14 @@ Stand4CalibrationStrategy::Stand4CalibrationStrategy(
     CalibrationStrategyPorts ports,
     Stand4CalibrationStrategyConfig config)
     : logger_(ports.logger)
+    , config_(config)
     , freq_calc_(
         0.1, 10.0,
-        10.0, 2000.0,
+        10.0, static_cast<double>(config.max_motor_frequency_hz),
         1.7, 0.7,
         1.0)
     , points_tracker_(*this)
 {
-    (void)config;
 }
 
 CalibrationStrategyVerdict
@@ -328,7 +327,7 @@ void Stand4CalibrationStrategy::updateBackward(const CalibrationStrategyFeedCont
         ? (p_cur - last_pressure_) / dt
         : 0.0f;
 
-    int frequency = kMaxMotorFrequencyHz;
+    int frequency = config_.max_motor_frequency_hz;
 
     if (calibration_mode_ == CalibrationMode::Full) {
         const double backward_progress = std::max(0.0, p_backward_start_ - static_cast<double>(p_cur));

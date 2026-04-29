@@ -48,6 +48,8 @@
 #include "infrastructure/factory/AngleSourceFactory.h"
 #include "infrastructure/factory/MotorDriverFactory.h"
 
+#include "shared/ini/IniFile.h"
+
 using namespace mvvm;
 using namespace domain::ports;
 using namespace domain::common;
@@ -338,7 +340,16 @@ void ApplicationBootstrap::createCalibrationStrategy() {
     infra::calib::CalibrationStrategyPorts ports {
         createLogger("Stand4CalibrationStrategy")
     };
+
     infra::calib::stand4::Stand4CalibrationStrategyConfig config {};
+
+    shared::ini::IniFile motor_ini;
+    const std::string motor_ini_path = setup_dir_ + "/motor.ini";
+    if (motor_ini.load(motor_ini_path) && motor_ini.hasSection("motor")) {
+        const auto motor_section = motor_ini["motor"];
+        config.max_motor_frequency_hz = motor_section.getInt("max_freq_hz", config.max_motor_frequency_hz);
+    }
+
     calibration_strategy = std::make_unique<infra::calib::stand4::Stand4CalibrationStrategy>(ports, config);
 }
 

@@ -3,7 +3,7 @@
 
 namespace infra::calib::stand4 {
     struct Stand4CalibrationStrategyConfig {
-
+        int max_motor_frequency_hz{2000};
     };
 }
 
