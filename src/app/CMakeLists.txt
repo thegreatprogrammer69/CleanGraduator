@@ -25,7 +25,7 @@ target_link_libraries(CleanGraduator
         ui
 )
 
-target_link_libraries(CleanGraduator PRIVATE Qt5::Widgets)
+target_link_libraries(CleanGraduator PRIVATE Qt5::Widgets Qt5::Multimedia)
 
 
 add_custom_command(

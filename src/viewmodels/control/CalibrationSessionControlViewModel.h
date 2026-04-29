@@ -10,6 +10,7 @@
 #include "domain/ports/calibration/result/ICalibrationResultValidationSource.h"
 #include "domain/core/calibration/common/CalibrationMode.h"
 #include "viewmodels/Observable.h"
+#include "viewmodels/control/ICalibrationSoundNotifier.h"
 
 namespace mvvm {
 
@@ -37,7 +38,7 @@ public:
     void emergencyStop();
 
     void onCalibrationOrchestratorEvent(const application::orchestrators::CalibrationOrchestratorEvent &ev) override;
-
+    void setSoundNotifier(ICalibrationSoundNotifier* notifier);
 
     Observable<domain::common::CalibrationMode> selected_mode{domain::common::CalibrationMode::Full};
     Observable<std::string> error_text{std::string()};
@@ -57,6 +58,8 @@ private:
     application::usecase::CalibrationSessionControl& control_;
     application::ports::IInfoSettingsStorage& settings_storage_;
     domain::ports::ICalibrationResultValidationSource& validation_source_;
+    ICalibrationSoundNotifier* sound_notifier_{nullptr};
+    bool forward_phase_reported_{false};
 };
 
 } // namespace mvvm

@@ -4,6 +4,7 @@
 
 namespace ui {
     class QtMainWindow;
+    class QtCalibrationSoundNotifier;
 }
 
 class ViewModelsBootstrap;
@@ -19,6 +20,7 @@ public:
 
 private:
     ViewModelsBootstrap& view_models_;
+    std::unique_ptr<ui::QtCalibrationSoundNotifier> calibration_sound_notifier_;
 
     void createMainWindow();
 };
