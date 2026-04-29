@@ -24,6 +24,14 @@ void mvvm::MotorControlViewModel::stop() {
     interactor_.stop();
 }
 
+void mvvm::MotorControlViewModel::runForwardWithMaxFrequency() {
+    interactor_.start(motor_.frequencyLimits().maxHz, domain::common::MotorDirection::Forward);
+}
+
+void mvvm::MotorControlViewModel::runBackwardWithMaxFrequency() {
+    interactor_.start(motor_.frequencyLimits().maxHz, domain::common::MotorDirection::Backward);
+}
+
 void mvvm::MotorControlViewModel::setFrequency(int f) {
     frequency_ = f;
 }

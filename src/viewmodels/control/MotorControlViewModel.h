@@ -27,6 +27,9 @@ namespace mvvm {
         void start();
         void stop();
 
+        void runForwardWithMaxFrequency();
+        void runBackwardWithMaxFrequency();
+
         void setFrequency(int f);
         void setDirection(domain::common::MotorDirection d);
 

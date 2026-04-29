@@ -17,9 +17,6 @@
 #include "viewmodels/status_bar/AppStatusBarViewModel.h"
 #include "viewmodels/status_bar/PressureSensorStatusBarViewModel.h"
 
-namespace {
-constexpr int kManualMotorFrequency = 2000;
-}
 
 namespace ui {
 
@@ -83,16 +80,10 @@ QWidget* QtControlWidget::makeManualSection()
     layout->addWidget(openExhaust, 2, 2);
 
     connect(moveForwardButton_, &QPushButton::clicked, this, [this] {
-        auto& vm = vm_.motorViewModel();
-        vm.setDirection(domain::common::MotorDirection::Forward);
-        vm.setFrequency(kManualMotorFrequency);
-        vm.start();
+        vm_.motorViewModel().runForwardWithMaxFrequency();
     });
     connect(moveBackwardButton_, &QPushButton::clicked, this, [this] {
-        auto& vm = vm_.motorViewModel();
-        vm.setDirection(domain::common::MotorDirection::Backward);
-        vm.setFrequency(kManualMotorFrequency);
-        vm.start();
+        vm_.motorViewModel().runBackwardWithMaxFrequency();
     });
     connect(motorStopButton_, &QPushButton::clicked, this, [this] {
         vm_.motorViewModel().stop();
