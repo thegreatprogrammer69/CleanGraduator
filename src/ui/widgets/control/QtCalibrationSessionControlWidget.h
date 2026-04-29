@@ -3,8 +3,8 @@
 
 #include <QCheckBox>
 #include <QLabel>
+#include <QMediaPlayer>
 #include <QPushButton>
-#include <QSoundEffect>
 #include <QWidget>
 
 #include "viewmodels/control/CalibrationSessionControlViewModel.h"
@@ -48,9 +48,9 @@ private:
     mvvm::Observable<bool>::Subscription canStopSub_;
     mvvm::Observable<mvvm::CalibrationSessionControlViewModel::SoundCue>::Subscription soundCueSub_;
 
-    QSoundEffect forwardFinishedSound_;
-    QSoundEffect backwardFinishedSound_;
-    QSoundEffect processErrorSound_;
+    QMediaPlayer forwardFinishedSound_;
+    QMediaPlayer backwardFinishedSound_;
+    QMediaPlayer processErrorSound_;
 };
 
 } // namespace ui

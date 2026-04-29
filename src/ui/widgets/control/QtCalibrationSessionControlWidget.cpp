@@ -136,27 +136,32 @@ void QtCalibrationSessionControlWidget::bind() {
 
 void QtCalibrationSessionControlWidget::initializeSounds()
 {
-    forwardFinishedSound_.setSource(QUrl("qrc:/audio/forward_movement_finished.wav"));
-    backwardFinishedSound_.setSource(QUrl("qrc:/audio/backward_movement_finished.wav"));
-    processErrorSound_.setSource(QUrl("qrc:/audio/error_during_process.wav"));
+    forwardFinishedSound_.setMedia(QUrl("qrc:/audio/forward_movement_finished.wav"));
+    backwardFinishedSound_.setMedia(QUrl("qrc:/audio/backward_movement_finished.wav"));
+    processErrorSound_.setMedia(QUrl("qrc:/audio/error_during_process.wav"));
 
-    forwardFinishedSound_.setVolume(0.9f);
-    backwardFinishedSound_.setVolume(0.9f);
-    processErrorSound_.setVolume(1.0f);
+    forwardFinishedSound_.setVolume(90);
+    backwardFinishedSound_.setVolume(90);
+    processErrorSound_.setVolume(100);
 }
 
 void QtCalibrationSessionControlWidget::playSound(mvvm::CalibrationSessionControlViewModel::SoundCue cue)
 {
     using SoundCue = mvvm::CalibrationSessionControlViewModel::SoundCue;
+    auto play = [](QMediaPlayer& player) {
+        player.stop();
+        player.play();
+    };
+
     switch (cue) {
         case SoundCue::ForwardMovementFinished:
-            forwardFinishedSound_.play();
+            play(forwardFinishedSound_);
             break;
         case SoundCue::BackwardMovementFinished:
-            backwardFinishedSound_.play();
+            play(backwardFinishedSound_);
             break;
         case SoundCue::ProcessError:
-            processErrorSound_.play();
+            play(processErrorSound_);
             break;
         case SoundCue::None:
             break;
