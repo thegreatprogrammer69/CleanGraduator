@@ -1,15 +1,12 @@
 #include "QtControlWidget.h"
 
-#include <algorithm>
 #include <QFrame>
 #include <sstream>
 #include <QGridLayout>
 #include <QGroupBox>
 #include <QHBoxLayout>
 #include <QMetaObject>
-#include <QProgressBar>
 #include <QVBoxLayout>
-#include <QRegularExpression>
 
 #include "QtCalibrationSessionControlWidget.h"
 #include "ui/widgets/calibration/result/QtCalibrationResultSaveWidget.h"
@@ -179,7 +176,6 @@ void QtControlWidget::refreshMetrics()
     speed_stream << vm_.pressureSensorViewModel().pressureSpeedPerSecond();
     speedLabel_->setText(QString::fromStdString(speed_stream.str()));
 
-    updateProgressBars(statusTextLabel_->text());
 }
 
 void QtControlWidget::bind()
@@ -187,7 +183,16 @@ void QtControlWidget::bind()
     statusTextSub_ = vm_.calibrationViewModel().status_text.subscribe([this](const auto& change) {
         QMetaObject::invokeMethod(this, [this, text = QString::fromStdString(change.new_value)] {
             statusTextLabel_->setText(text);
-            updateProgressBars(text);
+        }, Qt::QueuedConnection);
+    }, false);
+    forwardProgressSub_ = vm_.calibrationViewModel().forward_progress_percent.subscribe([this](const auto& change) {
+        QMetaObject::invokeMethod(this, [this, value = change.new_value] {
+            forwardProgressBar_->setValue(value);
+        }, Qt::QueuedConnection);
+    }, false);
+    backwardProgressSub_ = vm_.calibrationViewModel().backward_progress_percent.subscribe([this](const auto& change) {
+        QMetaObject::invokeMethod(this, [this, value = change.new_value] {
+            backwardProgressBar_->setValue(value);
         }, Qt::QueuedConnection);
     }, false);
 
@@ -205,65 +210,13 @@ void QtControlWidget::bind()
 
     const auto initial_status = QString::fromStdString(vm_.calibrationViewModel().status_text.get_copy());
     statusTextLabel_->setText(initial_status);
-    updateProgressBars(initial_status);
+    forwardProgressBar_->setValue(vm_.calibrationViewModel().forward_progress_percent.get_copy());
+    backwardProgressBar_->setValue(vm_.calibrationViewModel().backward_progress_percent.get_copy());
     moveForwardButton_->setEnabled(!vm_.motorViewModel().is_running.get_copy());
     moveBackwardButton_->setEnabled(!vm_.motorViewModel().is_running.get_copy());
     motorStopButton_->setEnabled(vm_.motorViewModel().is_running.get_copy());
     refreshMetrics();
 }
 
-
-void QtControlWidget::updateProgressBars(const QString& status_text)
-{
-    if (status_text.contains(QStringLiteral("Прямой ход"), Qt::CaseInsensitive)) {
-        const int progress = parseForwardProgressPercent(status_text);
-        if (progress >= 0) {
-            forwardProgressBar_->setValue(progress);
-        }
-
-        const double target_pressure = parseForwardTargetPressure(status_text);
-        if (target_pressure > 0.0) {
-            lastForwardTargetPressure_ = target_pressure;
-        }
-        return;
-    }
-
-    if (status_text.contains(QStringLiteral("Обратный ход"), Qt::CaseInsensitive)) {
-        backwardProgressBar_->setValue(calculateBackwardProgressPercent());
-    }
-}
-
-int QtControlWidget::parseForwardProgressPercent(const QString& status_text) const
-{
-    static const QRegularExpression re(QStringLiteral(R"(\((\d+)\s*%\))"));
-    const auto match = re.match(status_text);
-    if (!match.hasMatch()) {
-        return -1;
-    }
-    return std::clamp(match.captured(1).toInt(), 0, 100);
-}
-
-double QtControlWidget::parseForwardTargetPressure(const QString& status_text) const
-{
-    static const QRegularExpression re(QStringLiteral(R"(([-+]?\d+(?:[\.,]\d+)?)\s*/\s*([-+]?\d+(?:[\.,]\d+)?))"));
-    const auto match = re.match(status_text);
-    if (!match.hasMatch()) {
-        return 0.0;
-    }
-
-    auto target_text = match.captured(2);
-    target_text.replace(',', '.');
-    return target_text.toDouble();
-}
-
-int QtControlWidget::calculateBackwardProgressPercent() const
-{
-    const auto pressure = vm_.pressureSensorViewModel().pressure.get_copy();
-    const double current_pressure = pressure.pa();
-
-    const double start_pressure = std::max(lastForwardTargetPressure_, 0.001);
-    const double progress = std::clamp((start_pressure - current_pressure) / start_pressure, 0.0, 1.0);
-    return static_cast<int>(progress * 100.0 + 0.5);
-}
 
 } // namespace ui

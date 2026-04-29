@@ -20,6 +20,10 @@ namespace domain::common {
         struct MotorStart {};
         struct MotorStop {};
         struct StatusText { std::string text; };
+        struct Progress {
+            int forward_percent{0};
+            int backward_percent{0};
+        };
 
         struct Complete {};
         struct Fault { std::string error; };
@@ -27,7 +31,7 @@ namespace domain::common {
         using Command = std::variant<
             BeginSession, EndSession,
             MotorSetFrequency, MotorSetDirection,
-            MotorSetFlaps, MotorStart, MotorStop, StatusText,
+            MotorSetFlaps, MotorStart, MotorStop, StatusText, Progress,
             Complete, Fault
         >;
 

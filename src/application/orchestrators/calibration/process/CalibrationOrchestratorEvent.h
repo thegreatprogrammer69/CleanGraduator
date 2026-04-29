@@ -14,11 +14,15 @@ namespace application::orchestrators {
         struct StatusText {
             std::string text;
         };
+        struct Progress {
+            int forward_percent{0};
+            int backward_percent{0};
+        };
         struct StartFailed {
             std::string error;
         };
 
-        using Data = std::variant<Started, Stopped, Failed, StatusText>;
+        using Data = std::variant<Started, Stopped, Failed, StatusText, Progress>;
         Data data;
 
         CalibrationOrchestratorEvent(Data data) : data(std::move(data)) {};

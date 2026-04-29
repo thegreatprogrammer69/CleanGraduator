@@ -275,6 +275,7 @@ void Stand4CalibrationStrategy::updateForward(
         dp_cur,
         dt);
     emitStatus(v, buildForwardStatusText(p_cur));
+    emitProgress(v, calculateForwardProgressPercent(p_cur), 0);
 
     if (ctx.limits_state.end) {
         logger_.info("Достигнут конечный концевик на прямом ходе");
@@ -319,10 +320,6 @@ void Stand4CalibrationStrategy::updateBackward(const CalibrationStrategyFeedCont
         transitionToFinished(v);
         return;
     }
-    /*
-     *Когда программа только запущена, и камеры не открывались, в комбо-боксе выбрана 1 камера, но в строке камер тогда надо тоже написать 1. А ещё, при выборе в комбо боксе кол-ва камер, нужн автоматич
-     **/
-
     const float p_cur = ctx.pressure;
     const float dt = ctx.timestamp - last_time_;
 
@@ -345,6 +342,7 @@ void Stand4CalibrationStrategy::updateBackward(const CalibrationStrategyFeedCont
 
     logger_.info("Возврат двигателя домой частота {}", frequency);
     emitStatus(v, buildBackwardStatusText(p_cur));
+    emitProgress(v, 100, calculateBackwardProgressPercent(p_cur));
 
     v.commands.push_back(
         Verdict::MotorSetFrequency{frequency});
@@ -378,6 +376,7 @@ void Stand4CalibrationStrategy::transitionToPreload(Verdict& v)
         MotorDirection::Forward);
 
     emitStatus(v, buildPreloadStatusText(static_cast<float>(last_pressure_)));
+    emitProgress(v, 0, 0);
 }
 
 void Stand4CalibrationStrategy::transitionToForward(Verdict& v)
@@ -399,6 +398,7 @@ void Stand4CalibrationStrategy::transitionToForward(Verdict& v)
         Verdict::MotorStart{});
 
     emitStatus(v, buildForwardStatusText(static_cast<float>(last_pressure_)));
+    emitProgress(v, calculateForwardProgressPercent(static_cast<float>(last_pressure_)), 0);
 }
 
 void Stand4CalibrationStrategy::transitionToBackward(Verdict& v)
@@ -423,6 +423,7 @@ void Stand4CalibrationStrategy::transitionToBackward(Verdict& v)
         Verdict::MotorSetDirection{MotorDirection::Backward});
 
     emitStatus(v, buildBackwardStatusText(static_cast<float>(last_pressure_)));
+    emitProgress(v, 100, calculateBackwardProgressPercent(static_cast<float>(last_pressure_)));
 }
 
 void Stand4CalibrationStrategy::transitionToFinished(Verdict& v)
@@ -438,6 +439,7 @@ void Stand4CalibrationStrategy::transitionToFinished(Verdict& v)
     v.commands.push_back(Verdict::MotorSetFlaps{MotorFlapsState::ExhaustOpened});
 
     emitStatus(v, "Градуировка завершена");
+    emitProgress(v, 100, 100);
     v.commands.push_back(Verdict::Complete{});
 }
 
@@ -462,6 +464,14 @@ void Stand4CalibrationStrategy::emitStatus(Verdict& v, std::string text)
     v.commands.push_back(Verdict::StatusText{std::move(text)});
 }
 
+void Stand4CalibrationStrategy::emitProgress(Verdict& v, int forward_percent, int backward_percent)
+{
+    v.commands.push_back(Verdict::Progress{
+        std::clamp(forward_percent, 0, 100),
+        std::clamp(backward_percent, 0, 100)
+    });
+}
+
 std::string Stand4CalibrationStrategy::buildPreloadStatusText(float current_pressure) const
 {
     const double safe_target = std::max(0.001, p_preload_);
@@ -483,9 +493,7 @@ std::string Stand4CalibrationStrategy::buildPreloadStatusText(float current_pres
 
 std::string Stand4CalibrationStrategy::buildForwardStatusText(float current_pressure) const
 {
-    const double safe_target = std::max(0.001, p_target_);
-    const double progress = std::clamp(static_cast<double>(current_pressure) / safe_target, 0.0, 1.0);
-    const int progress_percent = static_cast<int>(progress * 100.0 + 0.5);
+    const int progress_percent = calculateForwardProgressPercent(current_pressure);
 
     std::ostringstream ss;
     ss << std::fixed << std::setprecision(1)
@@ -502,5 +510,21 @@ std::string Stand4CalibrationStrategy::buildForwardStatusText(float current_pres
 
 std::string Stand4CalibrationStrategy::buildBackwardStatusText(float current_pressure) const
 {
-    return "Обратный ход: возврат и съём";
+    std::ostringstream ss;
+    ss << "Обратный ход: возврат и съём (" << calculateBackwardProgressPercent(current_pressure) << "%)";
+    return ss.str();
+}
+
+int Stand4CalibrationStrategy::calculateForwardProgressPercent(float current_pressure) const
+{
+    const double safe_target = std::max(0.001, p_target_);
+    const double progress = std::clamp(static_cast<double>(current_pressure) / safe_target, 0.0, 1.0);
+    return static_cast<int>(progress * 100.0 + 0.5);
+}
+
+int Stand4CalibrationStrategy::calculateBackwardProgressPercent(float current_pressure) const
+{
+    const double start = std::max(0.001, p_backward_start_);
+    const double progress = std::clamp((start - static_cast<double>(current_pressure)) / start, 0.0, 1.0);
+    return static_cast<int>(progress * 100.0 + 0.5);
 }

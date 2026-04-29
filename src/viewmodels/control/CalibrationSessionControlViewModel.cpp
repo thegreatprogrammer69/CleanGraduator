@@ -1,5 +1,6 @@
 #include "CalibrationSessionControlViewModel.h"
 
+#include <algorithm>
 #include <type_traits>
 #include <variant>
 
@@ -63,6 +64,7 @@ void CalibrationSessionControlViewModel::startCalibration() {
     selected_mode.set(mode);
     applyState(CalibrationOrchestratorState::Starting, "");
     status_text.set("Подготовка к запуску");
+    resetProgress();
 
     std::string error_text;
     if (!control_.start(mode, slowdown_enabled.get_copy(), play_valve_enabled.get_copy(), error_text)) {
@@ -76,6 +78,7 @@ void CalibrationSessionControlViewModel::aimCalibration() {
     selected_mode.set(domain::common::CalibrationMode::OnlyLast);
     applyState(CalibrationOrchestratorState::Starting, "");
     status_text.set("Запуск прицела: последняя точка");
+    resetProgress();
 
     std::string error_text;
     if (!control_.start(domain::common::CalibrationMode::OnlyLast, slowdown_enabled.get_copy(), play_valve_enabled.get_copy(), error_text)) {
@@ -128,6 +131,7 @@ void CalibrationSessionControlViewModel::onCalibrationOrchestratorEvent(
             forward_phase_active_ = false;
             backward_phase_active_ = false;
             applyState(CalibrationOrchestratorState::Stopped, "");
+            resetProgress();
         }
         else if constexpr (std::is_same_v<T, CalibrationOrchestratorEvent::Failed>) {
             emitSoundCue(SoundCue::ProcessError);
@@ -135,10 +139,15 @@ void CalibrationSessionControlViewModel::onCalibrationOrchestratorEvent(
             backward_phase_active_ = false;
             applyState(CalibrationOrchestratorState::Stopped, event.error);
             status_text.set("Ошибка: " + event.error);
+            resetProgress();
         }
         else if constexpr (std::is_same_v<T, CalibrationOrchestratorEvent::StatusText>) {
             handleStatusText(event.text);
             status_text.set(event.text);
+        }
+        else if constexpr (std::is_same_v<T, CalibrationOrchestratorEvent::Progress>) {
+            forward_progress_percent.set(std::clamp(event.forward_percent, 0, 100));
+            backward_progress_percent.set(std::clamp(event.backward_percent, 0, 100));
         }
     }, ev.data);
 }
@@ -183,4 +192,10 @@ void CalibrationSessionControlViewModel::emitSoundCue(SoundCue cue)
 {
     sound_cue.set(SoundCue::None);
     sound_cue.set(cue);
+}
+
+void CalibrationSessionControlViewModel::resetProgress()
+{
+    forward_progress_percent.set(0);
+    backward_progress_percent.set(0);
 }

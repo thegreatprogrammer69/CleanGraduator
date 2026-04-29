@@ -570,6 +570,15 @@ void CalibrationOrchestrator::applyCommand(const StrategyVerdict::StatusText& cm
     notifyObservers(CalibrationOrchestratorEvent(CalibrationOrchestratorEvent::StatusText{cmd.text}));
 }
 
+void CalibrationOrchestrator::applyCommand(const StrategyVerdict::Progress& cmd)
+{
+    notifyObservers(CalibrationOrchestratorEvent(
+        CalibrationOrchestratorEvent::Progress{
+            cmd.forward_percent,
+            cmd.backward_percent
+        }));
+}
+
 void CalibrationOrchestrator::applyCommand(const StrategyVerdict::Complete&)
 {
     stop();

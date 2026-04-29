@@ -36,10 +36,6 @@ namespace ui {
 
         QString formatTime(domain::common::Timestamp ts) const;
         void refreshMetrics();
-        void updateProgressBars(const QString& status_text);
-        int parseForwardProgressPercent(const QString& status_text) const;
-        double parseForwardTargetPressure(const QString& status_text) const;
-        int calculateBackwardProgressPercent() const;
 
     private:
         mvvm::ControlViewModel& vm_;
@@ -57,9 +53,9 @@ namespace ui {
 
         mvvm::Observable<bool>::Subscription motorRunningSub_;
         mvvm::Observable<std::string>::Subscription statusTextSub_;
+        mvvm::Observable<int>::Subscription forwardProgressSub_;
+        mvvm::Observable<int>::Subscription backwardProgressSub_;
         QTimer metricsTimer_;
-
-        double lastForwardTargetPressure_{0.0};
     };
 
 } // namespace ui

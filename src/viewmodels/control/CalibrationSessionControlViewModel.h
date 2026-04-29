@@ -54,6 +54,8 @@ public:
     Observable<bool> slowdown_enabled{false};
     Observable<bool> play_valve_enabled{false};
     Observable<std::string> status_text{std::string("Ожидание запуска")};
+    Observable<int> forward_progress_percent{0};
+    Observable<int> backward_progress_percent{0};
     Observable<bool> can_start{true};
     Observable<bool> can_stop{false};
     Observable<bool> can_abort{false};
@@ -62,6 +64,7 @@ public:
 private:
     void applyState(application::orchestrators::CalibrationOrchestratorState state, const std::string& last_error);
     void handleStatusText(const std::string& text);
+    void resetProgress();
     void emitSoundCue(SoundCue cue);
 
     application::usecase::CalibrationSessionControl& control_;

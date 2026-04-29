@@ -76,9 +76,12 @@ private:
     void transitionToFinished(Verdict& v);
     void transitionToFault(Verdict& v);
     void emitStatus(Verdict& v, std::string text);
+    void emitProgress(Verdict& v, int forward_percent, int backward_percent);
     std::string buildPreloadStatusText(float current_pressure) const;
     std::string buildForwardStatusText(float current_pressure) const;
     std::string buildBackwardStatusText(float current_pressure) const;
+    int calculateForwardProgressPercent(float current_pressure) const;
+    int calculateBackwardProgressPercent(float current_pressure) const;
 
 private:
 
