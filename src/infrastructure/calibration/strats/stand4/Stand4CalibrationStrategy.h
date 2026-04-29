@@ -86,6 +86,7 @@ private:
 private:
 
     fmt::Logger logger_;
+    Stand4CalibrationStrategyConfig config_;
 
     Stand4FrequencyCalculator freq_calc_;
 
