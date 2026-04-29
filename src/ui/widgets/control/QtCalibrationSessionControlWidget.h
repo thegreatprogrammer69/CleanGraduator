@@ -3,7 +3,6 @@
 
 #include <QCheckBox>
 #include <QLabel>
-#include <QMediaPlayer>
 #include <QPushButton>
 #include <QWidget>
 
@@ -22,8 +21,6 @@ public:
 private:
     void setupUi();
     void bind();
-    void initializeSounds();
-    void playSound(mvvm::CalibrationSessionControlViewModel::SoundCue cue);
 
 private:
     mvvm::CalibrationSessionControlViewModel& vm_;
@@ -46,11 +43,6 @@ private:
     mvvm::Observable<bool>::Subscription playValveSub_;
     mvvm::Observable<bool>::Subscription canStartSub_;
     mvvm::Observable<bool>::Subscription canStopSub_;
-    mvvm::Observable<mvvm::CalibrationSessionControlViewModel::SoundCue>::Subscription soundCueSub_;
-
-    QMediaPlayer forwardFinishedSound_;
-    QMediaPlayer backwardFinishedSound_;
-    QMediaPlayer processErrorSound_;
 };
 
 } // namespace ui

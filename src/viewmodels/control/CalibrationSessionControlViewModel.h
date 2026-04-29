@@ -22,13 +22,6 @@ struct CalibrationSessionControlViewModelDeps {
 class CalibrationSessionControlViewModel final : public application::ports::CalibrationOrchestratorObserver
 {
 public:
-    enum class SoundCue {
-        None,
-        ForwardMovementFinished,
-        BackwardMovementFinished,
-        ProcessError
-    };
-
     explicit CalibrationSessionControlViewModel(CalibrationSessionControlViewModelDeps deps);
     ~CalibrationSessionControlViewModel() override;
 
@@ -59,19 +52,14 @@ public:
     Observable<bool> can_start{true};
     Observable<bool> can_stop{false};
     Observable<bool> can_abort{false};
-    Observable<SoundCue> sound_cue{SoundCue::None};
 
 private:
     void applyState(application::orchestrators::CalibrationOrchestratorState state, const std::string& last_error);
-    void handleStatusText(const std::string& text);
     void resetProgress();
-    void emitSoundCue(SoundCue cue);
 
     application::usecase::CalibrationSessionControl& control_;
     application::ports::IInfoSettingsStorage& settings_storage_;
     domain::ports::ICalibrationResultValidationSource& validation_source_;
-    bool forward_phase_active_{false};
-    bool backward_phase_active_{false};
 };
 
 } // namespace mvvm

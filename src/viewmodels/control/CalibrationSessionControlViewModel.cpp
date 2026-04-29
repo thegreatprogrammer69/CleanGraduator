@@ -68,7 +68,6 @@ void CalibrationSessionControlViewModel::startCalibration() {
 
     std::string error_text;
     if (!control_.start(mode, slowdown_enabled.get_copy(), play_valve_enabled.get_copy(), error_text)) {
-        emitSoundCue(SoundCue::ProcessError);
         applyState(CalibrationOrchestratorState::Stopped, error_text);
         status_text.set("Ошибка запуска");
     }
@@ -82,7 +81,6 @@ void CalibrationSessionControlViewModel::aimCalibration() {
 
     std::string error_text;
     if (!control_.start(domain::common::CalibrationMode::OnlyLast, slowdown_enabled.get_copy(), play_valve_enabled.get_copy(), error_text)) {
-        emitSoundCue(SoundCue::ProcessError);
         applyState(CalibrationOrchestratorState::Stopped, error_text);
         status_text.set("Ошибка запуска прицела");
     }
@@ -125,24 +123,15 @@ void CalibrationSessionControlViewModel::onCalibrationOrchestratorEvent(
             applyState(CalibrationOrchestratorState::Started, "");
         }
         else if constexpr (std::is_same_v<T, CalibrationOrchestratorEvent::Stopped>) {
-            if (backward_phase_active_) {
-                emitSoundCue(SoundCue::BackwardMovementFinished);
-            }
-            forward_phase_active_ = false;
-            backward_phase_active_ = false;
             applyState(CalibrationOrchestratorState::Stopped, "");
             resetProgress();
         }
         else if constexpr (std::is_same_v<T, CalibrationOrchestratorEvent::Failed>) {
-            emitSoundCue(SoundCue::ProcessError);
-            forward_phase_active_ = false;
-            backward_phase_active_ = false;
             applyState(CalibrationOrchestratorState::Stopped, event.error);
             status_text.set("Ошибка: " + event.error);
             resetProgress();
         }
         else if constexpr (std::is_same_v<T, CalibrationOrchestratorEvent::StatusText>) {
-            handleStatusText(event.text);
             status_text.set(event.text);
         }
         else if constexpr (std::is_same_v<T, CalibrationOrchestratorEvent::Progress>) {
@@ -173,25 +162,6 @@ void CalibrationSessionControlViewModel::applyState(
     if (state == CalibrationOrchestratorState::Stopped && last_error.empty()) {
         status_text.set("Ожидание запуска");
     }
-}
-
-void CalibrationSessionControlViewModel::handleStatusText(const std::string& text)
-{
-    const bool is_forward = text.rfind("Прямой ход:", 0) == 0;
-    const bool is_backward = text.rfind("Обратный ход:", 0) == 0;
-
-    if (forward_phase_active_ && is_backward) {
-        emitSoundCue(SoundCue::ForwardMovementFinished);
-    }
-
-    forward_phase_active_ = is_forward;
-    backward_phase_active_ = is_backward;
-}
-
-void CalibrationSessionControlViewModel::emitSoundCue(SoundCue cue)
-{
-    sound_cue.set(SoundCue::None);
-    sound_cue.set(cue);
 }
 
 void CalibrationSessionControlViewModel::resetProgress()

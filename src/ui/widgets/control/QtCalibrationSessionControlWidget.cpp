@@ -2,9 +2,7 @@
 
 #include <QGridLayout>
 #include <QHBoxLayout>
-#include <QDebug>
 #include <QMetaObject>
-#include <QUrl>
 #include <QVBoxLayout>
 
 namespace ui {
@@ -16,7 +14,6 @@ QtCalibrationSessionControlWidget::QtCalibrationSessionControlWidget(
     , vm_(vm)
 {
     setupUi();
-    initializeSounds();
     bind();
 }
 
@@ -117,11 +114,6 @@ void QtCalibrationSessionControlWidget::bind() {
         }, Qt::QueuedConnection);
     }, false);
 
-    soundCueSub_ = vm_.sound_cue.subscribe([this](const auto& change) {
-        QMetaObject::invokeMethod(this, [this, cue = change.new_value]() {
-            playSound(cue);
-        }, Qt::QueuedConnection);
-    }, false);
 
     errorLabel_->setText(QString::fromStdString(vm_.error_text.get_copy()));
     errorLabel_->setVisible(!errorLabel_->text().isEmpty());
@@ -135,55 +127,5 @@ void QtCalibrationSessionControlWidget::bind() {
     stopButton_->setEnabled(vm_.can_stop.get_copy());
 }
 
-void QtCalibrationSessionControlWidget::initializeSounds()
-{
-    forwardFinishedSound_.setMedia(QUrl("qrc:/audio/forward_movement_finished.wav"));
-    backwardFinishedSound_.setMedia(QUrl("qrc:/audio/backward_movement_finished.wav"));
-    processErrorSound_.setMedia(QUrl("qrc:/audio/error_during_process.wav"));
-
-    forwardFinishedSound_.setVolume(90);
-    backwardFinishedSound_.setVolume(90);
-    processErrorSound_.setVolume(100);
-
-    auto bindPlaybackLogging = [this](QMediaPlayer& player, const char* sound_name) {
-        connect(&player, &QMediaPlayer::stateChanged, this, [sound_name](QMediaPlayer::State state) {
-            if (state == QMediaPlayer::PlayingState) {
-                qInfo().noquote() << QString("Звук \"%1\" был проигран").arg(QString::fromUtf8(sound_name));
-            }
-        });
-
-        connect(&player, QOverload<QMediaPlayer::Error>::of(&QMediaPlayer::error), this, [sound_name, &player](QMediaPlayer::Error) {
-            qWarning().noquote() << QString("Ошибка воспроизведения звука \"%1\": %2")
-                                        .arg(QString::fromUtf8(sound_name), player.errorString());
-        });
-    };
-
-    bindPlaybackLogging(forwardFinishedSound_, "forward_movement_finished.wav");
-    bindPlaybackLogging(backwardFinishedSound_, "backward_movement_finished.wav");
-    bindPlaybackLogging(processErrorSound_, "error_during_process.wav");
-}
-
-void QtCalibrationSessionControlWidget::playSound(mvvm::CalibrationSessionControlViewModel::SoundCue cue)
-{
-    using SoundCue = mvvm::CalibrationSessionControlViewModel::SoundCue;
-    auto play = [](QMediaPlayer& player) {
-        player.stop();
-        player.play();
-    };
-
-    switch (cue) {
-        case SoundCue::ForwardMovementFinished:
-            play(forwardFinishedSound_);
-            break;
-        case SoundCue::BackwardMovementFinished:
-            play(backwardFinishedSound_);
-            break;
-        case SoundCue::ProcessError:
-            play(processErrorSound_);
-            break;
-        case SoundCue::None:
-            break;
-    }
-}
 
 } // namespace ui
