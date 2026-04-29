@@ -110,6 +110,11 @@ void CalibrationSessionControlViewModel::emergencyStop() {
     control_.emergencyStop();
 }
 
+void CalibrationSessionControlViewModel::setSoundNotifier(ICalibrationSoundNotifier* notifier)
+{
+    sound_notifier_ = notifier;
+}
+
 void CalibrationSessionControlViewModel::onCalibrationOrchestratorEvent(
     const CalibrationOrchestratorEvent& ev)
 {
@@ -117,6 +122,7 @@ void CalibrationSessionControlViewModel::onCalibrationOrchestratorEvent(
         using T = std::decay_t<decltype(event)>;
 
         if constexpr (std::is_same_v<T, CalibrationOrchestratorEvent::Started>) {
+            forward_phase_reported_ = false;
             applyState(CalibrationOrchestratorState::Started, "");
         }
         else if constexpr (std::is_same_v<T, CalibrationOrchestratorEvent::Stopped>) {
@@ -125,9 +131,23 @@ void CalibrationSessionControlViewModel::onCalibrationOrchestratorEvent(
         else if constexpr (std::is_same_v<T, CalibrationOrchestratorEvent::Failed>) {
             applyState(CalibrationOrchestratorState::Stopped, event.error);
             status_text.set("Ошибка: " + event.error);
+            if (sound_notifier_ != nullptr) {
+                sound_notifier_->onProcessError();
+            }
         }
         else if constexpr (std::is_same_v<T, CalibrationOrchestratorEvent::StatusText>) {
             status_text.set(event.text);
+
+            if (sound_notifier_ == nullptr) {
+                return;
+            }
+
+            if (!forward_phase_reported_ && event.text.rfind("Обратный ход", 0) == 0) {
+                forward_phase_reported_ = true;
+                sound_notifier_->onForwardMovementFinished();
+            } else if (event.text == "Градуировка завершена") {
+                sound_notifier_->onBackwardMovementFinished();
+            }
         }
     }, ev.data);
 }
