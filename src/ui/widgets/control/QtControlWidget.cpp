@@ -1,11 +1,13 @@
 #include "QtControlWidget.h"
 
+#include <algorithm>
 #include <QFrame>
 #include <sstream>
 #include <QGridLayout>
 #include <QGroupBox>
 #include <QHBoxLayout>
 #include <QMetaObject>
+#include <QRegularExpression>
 #include <QVBoxLayout>
 
 #include "QtCalibrationSessionControlWidget.h"
@@ -108,14 +110,31 @@ QWidget* QtControlWidget::makeManualSection()
 QWidget* QtControlWidget::makeStatusSection()
 {
     auto* box = new QGroupBox(tr("Статус"), this);
-    auto* layout = new QHBoxLayout(box);
+    auto* layout = new QVBoxLayout(box);
+    auto* topRow = new QHBoxLayout();
 
     auto* dot = new QLabel("●", box);
     dot->setStyleSheet("color:#22c55e; font-size: 20px;");
     statusTextLabel_ = new QLabel(tr("Ожидание запуска"), box);
 
-    layout->addWidget(dot);
-    layout->addWidget(statusTextLabel_, 1);
+    topRow->addWidget(dot);
+    topRow->addWidget(statusTextLabel_, 1);
+    layout->addLayout(topRow);
+
+    forwardProgressBar_ = new QProgressBar(box);
+    forwardProgressBar_->setRange(0, 100);
+    forwardProgressBar_->setValue(0);
+    forwardProgressBar_->setFormat(tr("Прямой ход: %p%"));
+    forwardProgressBar_->setStyleSheet("QProgressBar::chunk { background-color: #2563eb; }");
+
+    backwardProgressBar_ = new QProgressBar(box);
+    backwardProgressBar_->setRange(0, 100);
+    backwardProgressBar_->setValue(0);
+    backwardProgressBar_->setFormat(tr("Обратный ход: %p%"));
+    backwardProgressBar_->setStyleSheet("QProgressBar::chunk { background-color: #dc2626; }");
+
+    layout->addWidget(forwardProgressBar_);
+    layout->addWidget(backwardProgressBar_);
     return box;
 }
 
@@ -164,8 +183,8 @@ void QtControlWidget::refreshMetrics()
 void QtControlWidget::bind()
 {
     statusTextSub_ = vm_.calibrationViewModel().status_text.subscribe([this](const auto& change) {
-        QMetaObject::invokeMethod(this, [this, text = QString::fromStdString(change.new_value)] {
-            statusTextLabel_->setText(text);
+        QMetaObject::invokeMethod(this, [this, text = change.new_value] {
+            updateStatusPresentation(text);
         }, Qt::QueuedConnection);
     }, false);
 
@@ -181,11 +200,28 @@ void QtControlWidget::bind()
     connect(&metricsTimer_, &QTimer::timeout, this, [this] { refreshMetrics(); });
     metricsTimer_.start();
 
-    statusTextLabel_->setText(QString::fromStdString(vm_.calibrationViewModel().status_text.get_copy()));
+    updateStatusPresentation(vm_.calibrationViewModel().status_text.get_copy());
     moveForwardButton_->setEnabled(!vm_.motorViewModel().is_running.get_copy());
     moveBackwardButton_->setEnabled(!vm_.motorViewModel().is_running.get_copy());
     motorStopButton_->setEnabled(vm_.motorViewModel().is_running.get_copy());
     refreshMetrics();
+}
+
+void QtControlWidget::updateStatusPresentation(const std::string& status_text)
+{
+    const QString text = QString::fromStdString(status_text);
+    QRegularExpression expr(R"( \[FWD:(\d{1,3});BWD:(\d{1,3})\]$)");
+    const auto match = expr.match(text);
+    if (!match.hasMatch()) {
+        statusTextLabel_->setText(text);
+        return;
+    }
+
+    const int forward = std::clamp(match.captured(1).toInt(), 0, 100);
+    const int backward = std::clamp(match.captured(2).toInt(), 0, 100);
+    statusTextLabel_->setText(text.left(match.capturedStart()));
+    forwardProgressBar_->setValue(forward);
+    backwardProgressBar_->setValue(backward);
 }
 
 } // namespace ui
