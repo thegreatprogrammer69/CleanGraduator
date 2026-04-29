@@ -476,7 +476,8 @@ std::string Stand4CalibrationStrategy::buildPreloadStatusText(float current_pres
        << p_preload_
        << " ("
        << progress_percent
-       << "%)";
+       << "%)"
+       << " [FWD:0;BWD:0]";
 
     return ss.str();
 }
@@ -495,12 +496,26 @@ std::string Stand4CalibrationStrategy::buildForwardStatusText(float current_pres
        << p_target_
        << " ("
        << progress_percent
-       << "%)";
+       << "%)"
+       << " [FWD:" << progress_percent << ";BWD:0]";
 
     return ss.str();
 }
 
 std::string Stand4CalibrationStrategy::buildBackwardStatusText(float current_pressure) const
 {
-    return "Обратный ход: возврат и съём";
+    const double start_pressure = std::max(0.001, p_backward_start_);
+    const double progress = std::clamp((start_pressure - static_cast<double>(current_pressure)) / start_pressure, 0.0, 1.0);
+    const int progress_percent = static_cast<int>(progress * 100.0 + 0.5);
+
+    std::ostringstream ss;
+    ss << std::fixed << std::setprecision(1)
+       << "Обратный ход: возврат и съём "
+       << current_pressure
+       << " / 0.0"
+       << " ("
+       << progress_percent
+       << "%)"
+       << " [FWD:100;BWD:" << progress_percent << "]";
+    return ss.str();
 }
