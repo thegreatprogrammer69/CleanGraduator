@@ -122,25 +122,25 @@ private:
             padding: 4px 0;
             font-size: 15px;
             font-weight: 600;
-            color: #374151;
+            color: #64748B;
         }
 
         QPushButton[role="switchLink"]:hover {
-            color: #2563EB;
+            color: #0EA5E9;
             text-decoration: underline;
         }
 
         QPushButton[role="switchLink"]:checked {
-            color: #111827;
-            border-bottom: 2px solid #2563EB;
+            color: #0F172A;
+            border-bottom: 2px solid #0284C7;
         }
 
         /* =========================
            Card (как GroupBox без title)
         ==========================*/
         QWidget[role="card"] {
-            background: #FFFFFF;
-            border: 1px solid #9CA3AF;
+            background: #F8FAFC;
+            border: 1px solid #CBD5E1;
             border-radius: 6px;
         }
 
@@ -148,20 +148,21 @@ private:
            Action Buttons
         ==========================*/
         QPushButton {
-            background: #F9FAFB;
-            border: 1px solid #D1D5DB;
+            background: #E2E8F0;
+            border: 1px solid #94A3B8;
             border-radius: 6px;
             padding: 8px;
             font-size: 14px;
+            color: #0F172A;
         }
 
         QPushButton:hover {
-            background: #EFF6FF;
-            border: 1px solid #3B82F6;
+            background: #BAE6FD;
+            border: 1px solid #0284C7;
         }
 
         QPushButton:pressed {
-            background: #DBEAFE;
+            background: #7DD3FC;
         }
 
         )");
