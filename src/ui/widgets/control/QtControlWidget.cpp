@@ -1,12 +1,15 @@
 #include "QtControlWidget.h"
 
+#include <algorithm>
 #include <QFrame>
 #include <sstream>
 #include <QGridLayout>
 #include <QGroupBox>
 #include <QHBoxLayout>
 #include <QMetaObject>
+#include <QProgressBar>
 #include <QVBoxLayout>
+#include <QRegularExpression>
 
 #include "QtCalibrationSessionControlWidget.h"
 #include "ui/widgets/calibration/result/QtCalibrationResultSaveWidget.h"
@@ -108,14 +111,30 @@ QWidget* QtControlWidget::makeManualSection()
 QWidget* QtControlWidget::makeStatusSection()
 {
     auto* box = new QGroupBox(tr("Статус"), this);
-    auto* layout = new QHBoxLayout(box);
+    auto* layout = new QVBoxLayout(box);
 
+    auto* textRow = new QHBoxLayout();
     auto* dot = new QLabel("●", box);
     dot->setStyleSheet("color:#22c55e; font-size: 20px;");
     statusTextLabel_ = new QLabel(tr("Ожидание запуска"), box);
+    textRow->addWidget(dot);
+    textRow->addWidget(statusTextLabel_, 1);
 
-    layout->addWidget(dot);
-    layout->addWidget(statusTextLabel_, 1);
+    forwardProgressBar_ = new QProgressBar(box);
+    forwardProgressBar_->setRange(0, 100);
+    forwardProgressBar_->setValue(0);
+    forwardProgressBar_->setFormat(tr("Прямой ход: %p%"));
+    forwardProgressBar_->setStyleSheet("QProgressBar::chunk { background-color: #3b82f6; }");
+
+    backwardProgressBar_ = new QProgressBar(box);
+    backwardProgressBar_->setRange(0, 100);
+    backwardProgressBar_->setValue(0);
+    backwardProgressBar_->setFormat(tr("Обратный ход: %p%"));
+    backwardProgressBar_->setStyleSheet("QProgressBar::chunk { background-color: #ef4444; }");
+
+    layout->addLayout(textRow);
+    layout->addWidget(forwardProgressBar_);
+    layout->addWidget(backwardProgressBar_);
     return box;
 }
 
@@ -159,6 +178,8 @@ void QtControlWidget::refreshMetrics()
     std::stringstream speed_stream;
     speed_stream << vm_.pressureSensorViewModel().pressureSpeedPerSecond();
     speedLabel_->setText(QString::fromStdString(speed_stream.str()));
+
+    updateProgressBars(statusTextLabel_->text());
 }
 
 void QtControlWidget::bind()
@@ -166,6 +187,7 @@ void QtControlWidget::bind()
     statusTextSub_ = vm_.calibrationViewModel().status_text.subscribe([this](const auto& change) {
         QMetaObject::invokeMethod(this, [this, text = QString::fromStdString(change.new_value)] {
             statusTextLabel_->setText(text);
+            updateProgressBars(text);
         }, Qt::QueuedConnection);
     }, false);
 
@@ -181,11 +203,67 @@ void QtControlWidget::bind()
     connect(&metricsTimer_, &QTimer::timeout, this, [this] { refreshMetrics(); });
     metricsTimer_.start();
 
-    statusTextLabel_->setText(QString::fromStdString(vm_.calibrationViewModel().status_text.get_copy()));
+    const auto initial_status = QString::fromStdString(vm_.calibrationViewModel().status_text.get_copy());
+    statusTextLabel_->setText(initial_status);
+    updateProgressBars(initial_status);
     moveForwardButton_->setEnabled(!vm_.motorViewModel().is_running.get_copy());
     moveBackwardButton_->setEnabled(!vm_.motorViewModel().is_running.get_copy());
     motorStopButton_->setEnabled(vm_.motorViewModel().is_running.get_copy());
     refreshMetrics();
+}
+
+
+void QtControlWidget::updateProgressBars(const QString& status_text)
+{
+    if (status_text.contains(QStringLiteral("Прямой ход"), Qt::CaseInsensitive)) {
+        const int progress = parseForwardProgressPercent(status_text);
+        if (progress >= 0) {
+            forwardProgressBar_->setValue(progress);
+        }
+
+        const double target_pressure = parseForwardTargetPressure(status_text);
+        if (target_pressure > 0.0) {
+            lastForwardTargetPressure_ = target_pressure;
+        }
+        return;
+    }
+
+    if (status_text.contains(QStringLiteral("Обратный ход"), Qt::CaseInsensitive)) {
+        backwardProgressBar_->setValue(calculateBackwardProgressPercent());
+    }
+}
+
+int QtControlWidget::parseForwardProgressPercent(const QString& status_text) const
+{
+    static const QRegularExpression re(QStringLiteral(R"(\((\d+)\s*%\))"));
+    const auto match = re.match(status_text);
+    if (!match.hasMatch()) {
+        return -1;
+    }
+    return std::clamp(match.captured(1).toInt(), 0, 100);
+}
+
+double QtControlWidget::parseForwardTargetPressure(const QString& status_text) const
+{
+    static const QRegularExpression re(QStringLiteral(R"(([-+]?\d+(?:[\.,]\d+)?)\s*/\s*([-+]?\d+(?:[\.,]\d+)?))"));
+    const auto match = re.match(status_text);
+    if (!match.hasMatch()) {
+        return 0.0;
+    }
+
+    auto target_text = match.captured(2);
+    target_text.replace(',', '.');
+    return target_text.toDouble();
+}
+
+int QtControlWidget::calculateBackwardProgressPercent() const
+{
+    const auto pressure = vm_.pressureSensorViewModel().pressure.get_copy();
+    const double current_pressure = pressure.pa();
+
+    const double start_pressure = std::max(lastForwardTargetPressure_, 0.001);
+    const double progress = std::clamp((start_pressure - current_pressure) / start_pressure, 0.0, 1.0);
+    return static_cast<int>(progress * 100.0 + 0.5);
 }
 
 } // namespace ui
