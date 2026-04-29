@@ -14,10 +14,10 @@ namespace ui {
 
 namespace {
 
-const QColor kResultRowBackground{248, 248, 248};
-const QColor kInfoRowBackground{236, 236, 236};
-const QColor kHighNonlinearityBackground{255, 205, 210};
-const QColor kCenterDeviationErrorBackground{255, 205, 210};
+const QColor kResultRowBackground{248, 250, 252};
+const QColor kInfoRowBackground{241, 245, 249};
+const QColor kHighNonlinearityBackground{254, 226, 226};
+const QColor kCenterDeviationErrorBackground{255, 228, 230};
 constexpr float kHighNonlinearityThresholdPercent = 10.0F;
 
 bool isAngleSpanIssueKind(domain::common::CalibrationValidationIssueKind kind)
@@ -117,11 +117,11 @@ QColor validationColor(domain::common::CalibrationValidationIssueKind kind)
 
     switch (kind) {
         case Kind::HysteresisExceeded:
-            return QColor(255, 236, 179);
+            return QColor(254, 243, 199);
         case Kind::AngleSpanTooHigh:
-            return QColor(255, 205, 210);
+            return QColor(254, 226, 226);
         case Kind::AngleSpanTooLow:
-            return QColor(210, 240, 255);
+            return QColor(219, 234, 254);
     }
 
     return {};

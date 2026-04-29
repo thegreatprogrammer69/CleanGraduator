@@ -112,7 +112,7 @@ QWidget* QtControlWidget::makeStatusSection()
 
     auto* textRow = new QHBoxLayout();
     auto* dot = new QLabel("●", box);
-    dot->setStyleSheet("color:#22c55e; font-size: 20px;");
+    dot->setStyleSheet("color:#0ea5a4; font-size: 20px;");
     statusTextLabel_ = new QLabel(tr("Ожидание запуска"), box);
     textRow->addWidget(dot);
     textRow->addWidget(statusTextLabel_, 1);
@@ -121,14 +121,14 @@ QWidget* QtControlWidget::makeStatusSection()
     forwardProgressBar_->setRange(0, 100);
     forwardProgressBar_->setValue(0);
     forwardProgressBar_->setFormat(tr("Прямой ход: %p%"));
-    forwardProgressBar_->setStyleSheet("QProgressBar::chunk { background-color: #3b82f6; }");
+    forwardProgressBar_->setStyleSheet("QProgressBar::chunk { background-color: #2563eb; border-radius: 4px; } QProgressBar { background-color: #e2e8f0; border: 1px solid #cbd5e1; border-radius: 4px; }");
 
     backwardProgressBar_ = new QProgressBar(box);
     backwardProgressBar_->setRange(0, 100);
     backwardProgressBar_->setValue(0);
     backwardProgressBar_->setInvertedAppearance(true);
     backwardProgressBar_->setFormat(tr("Обратный ход: %p%"));
-    backwardProgressBar_->setStyleSheet("QProgressBar::chunk { background-color: #ef4444; }");
+    backwardProgressBar_->setStyleSheet("QProgressBar::chunk { background-color: #f97316; border-radius: 4px; } QProgressBar { background-color: #ffedd5; border: 1px solid #fdba74; border-radius: 4px; }");
 
     layout->addLayout(textRow);
     layout->addWidget(forwardProgressBar_);
