@@ -90,7 +90,7 @@ void QtCalibrationResultSaveWidget::setupUi() {
 
     errorLabel_ = new QLabel(this);
     errorLabel_->setWordWrap(true);
-    errorLabel_->setStyleSheet("color: #b91c1c;");
+    errorLabel_->setStyleSheet("color: #be123c;");
 
     rootLayout->addLayout(topLayout);
     rootLayout->addLayout(mainButtonLayout);
@@ -179,22 +179,22 @@ void QtCalibrationResultSaveWidget::bind()
 
 void QtCalibrationResultSaveWidget::updateStateBadge(mvvm::CalibrationResultSaveState state, const QString& text)
 {
-    QString color = "#6b7280";
+    QString color = "#64748b";
     QString fg = "#ffffff";
 
     switch (state) {
     case mvvm::CalibrationResultSaveState::Saved:
-        color = "#15803d";
+        color = "#0f766e";
         break;
     case mvvm::CalibrationResultSaveState::Saving:
         color = "#b45309";
         break;
     case mvvm::CalibrationResultSaveState::Error:
-        color = "#b91c1c";
+        color = "#be123c";
         break;
     case mvvm::CalibrationResultSaveState::NotSaved:
     default:
-        color = "#6b7280";
+        color = "#64748b";
         break;
     }
 

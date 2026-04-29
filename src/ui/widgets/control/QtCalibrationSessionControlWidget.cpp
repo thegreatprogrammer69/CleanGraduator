@@ -48,7 +48,7 @@ void QtCalibrationSessionControlWidget::setupUi() {
     optionsGrid->addWidget(playValveCheckBox_, 2, 0, 1, 2);
 
     errorLabel_ = new QLabel(this);
-    errorLabel_->setStyleSheet("color: #b91c1c;");
+    errorLabel_->setStyleSheet("color: #be123c;");
     errorLabel_->setWordWrap(true);
 
     mainLayout->addLayout(buttonLayout);
