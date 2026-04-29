@@ -127,11 +127,11 @@ void QtMotorDriverStatusBarWidget::setDirection(domain::common::MotorDirection d
 void QtMotorDriverStatusBarWidget::setLimits(domain::common::MotorLimitsState limits)
 {
     home_value_->setStyleSheet(
-        limits.home ? "color: red;" : "color: black;"
+        limits.home ? "color: #dc2626;" : "color: #334155;"
     );
 
     end_value_->setStyleSheet(
-        limits.end ? "color: red;" : "color: black;"
+        limits.end ? "color: #dc2626;" : "color: #334155;"
     );
 }
 
