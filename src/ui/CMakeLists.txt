@@ -1,5 +1,6 @@
 add_library(ui STATIC
         resources.qrc
+        audio.qrc
 
         widgets/control/QtDualValveControlWidget.cpp
         widgets/control/QtDualValveControlWidget.h
@@ -73,6 +74,7 @@ target_link_libraries(ui
         PUBLIC
         Qt5::Widgets
         Qt5::OpenGL
+        Qt5::Multimedia
         OpenGL::GL
         domain
         application

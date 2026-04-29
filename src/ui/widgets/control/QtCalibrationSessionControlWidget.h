@@ -4,13 +4,11 @@
 #include <QCheckBox>
 #include <QLabel>
 #include <QPushButton>
+#include <QSoundEffect>
 #include <QWidget>
 
+#include "viewmodels/control/CalibrationSessionControlViewModel.h"
 #include "viewmodels/Observable.h"
-
-namespace mvvm {
-class CalibrationSessionControlViewModel;
-}
 
 namespace ui {
 
@@ -24,6 +22,8 @@ public:
 private:
     void setupUi();
     void bind();
+    void initializeSounds();
+    void playSound(mvvm::CalibrationSessionControlViewModel::SoundCue cue);
 
 private:
     mvvm::CalibrationSessionControlViewModel& vm_;
@@ -46,6 +46,11 @@ private:
     mvvm::Observable<bool>::Subscription playValveSub_;
     mvvm::Observable<bool>::Subscription canStartSub_;
     mvvm::Observable<bool>::Subscription canStopSub_;
+    mvvm::Observable<mvvm::CalibrationSessionControlViewModel::SoundCue>::Subscription soundCueSub_;
+
+    QSoundEffect forwardFinishedSound_;
+    QSoundEffect backwardFinishedSound_;
+    QSoundEffect processErrorSound_;
 };
 
 } // namespace ui

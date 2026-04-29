@@ -3,9 +3,8 @@
 #include <QGridLayout>
 #include <QHBoxLayout>
 #include <QMetaObject>
+#include <QUrl>
 #include <QVBoxLayout>
-
-#include "viewmodels/control/CalibrationSessionControlViewModel.h"
 
 namespace ui {
 
@@ -16,6 +15,7 @@ QtCalibrationSessionControlWidget::QtCalibrationSessionControlWidget(
     , vm_(vm)
 {
     setupUi();
+    initializeSounds();
     bind();
 }
 
@@ -116,6 +116,12 @@ void QtCalibrationSessionControlWidget::bind() {
         }, Qt::QueuedConnection);
     }, false);
 
+    soundCueSub_ = vm_.sound_cue.subscribe([this](const auto& change) {
+        QMetaObject::invokeMethod(this, [this, cue = change.new_value]() {
+            playSound(cue);
+        }, Qt::QueuedConnection);
+    }, false);
+
     errorLabel_->setText(QString::fromStdString(vm_.error_text.get_copy()));
     errorLabel_->setVisible(!errorLabel_->text().isEmpty());
     reverseModeCheckBox_->setChecked(vm_.reverse_mode_enabled.get_copy());
@@ -126,6 +132,35 @@ void QtCalibrationSessionControlWidget::bind() {
     startButton_->setEnabled(vm_.can_start.get_copy());
     aimButton_->setEnabled(vm_.can_start.get_copy());
     stopButton_->setEnabled(vm_.can_stop.get_copy());
+}
+
+void QtCalibrationSessionControlWidget::initializeSounds()
+{
+    forwardFinishedSound_.setSource(QUrl("qrc:/audio/forward_movement_finished.wav"));
+    backwardFinishedSound_.setSource(QUrl("qrc:/audio/backward_movement_finished.wav"));
+    processErrorSound_.setSource(QUrl("qrc:/audio/error_during_process.wav"));
+
+    forwardFinishedSound_.setVolume(0.9f);
+    backwardFinishedSound_.setVolume(0.9f);
+    processErrorSound_.setVolume(1.0f);
+}
+
+void QtCalibrationSessionControlWidget::playSound(mvvm::CalibrationSessionControlViewModel::SoundCue cue)
+{
+    using SoundCue = mvvm::CalibrationSessionControlViewModel::SoundCue;
+    switch (cue) {
+        case SoundCue::ForwardMovementFinished:
+            forwardFinishedSound_.play();
+            break;
+        case SoundCue::BackwardMovementFinished:
+            backwardFinishedSound_.play();
+            break;
+        case SoundCue::ProcessError:
+            processErrorSound_.play();
+            break;
+        case SoundCue::None:
+            break;
+    }
 }
 
 } // namespace ui

@@ -1,0 +1,7 @@
+<RCC>
+    <qresource prefix="/audio">
+        <file>../../audio/backward_movement_finished.wav</file>
+        <file>../../audio/forward_movement_finished.wav</file>
+        <file>../../audio/error_during_process.wav</file>
+    </qresource>
+</RCC>
