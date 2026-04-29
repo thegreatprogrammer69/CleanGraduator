@@ -126,6 +126,7 @@ QWidget* QtControlWidget::makeStatusSection()
     backwardProgressBar_ = new QProgressBar(box);
     backwardProgressBar_->setRange(0, 100);
     backwardProgressBar_->setValue(0);
+    backwardProgressBar_->setInvertedAppearance(true);
     backwardProgressBar_->setFormat(tr("Обратный ход: %p%"));
     backwardProgressBar_->setStyleSheet("QProgressBar::chunk { background-color: #ef4444; }");
 
