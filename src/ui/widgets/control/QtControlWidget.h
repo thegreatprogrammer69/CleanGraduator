@@ -2,6 +2,7 @@
 #define CLEANGRADUATOR_QTCONTROLWIDGET_H
 
 #include <QLabel>
+#include <QProgressBar>
 #include <QPushButton>
 #include <QTimer>
 #include <QWidget>
@@ -40,6 +41,8 @@ namespace ui {
         mvvm::ControlViewModel& vm_;
 
         QLabel* statusTextLabel_{nullptr};
+        QProgressBar* forwardPressureProgressBar_{nullptr};
+        QProgressBar* backwardPressureProgressBar_{nullptr};
         QLabel* sessionTimeLabel_{nullptr};
         QLabel* pressureLabel_{nullptr};
         QLabel* speedLabel_{nullptr};
@@ -51,6 +54,9 @@ namespace ui {
         mvvm::Observable<bool>::Subscription motorRunningSub_;
         mvvm::Observable<std::string>::Subscription statusTextSub_;
         QTimer metricsTimer_;
+
+        double forwardTargetPressure_{0.0};
+        double backwardStartPressure_{0.0};
     };
 
 } // namespace ui
