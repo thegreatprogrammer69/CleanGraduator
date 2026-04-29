@@ -2,6 +2,7 @@
 
 #include <QGridLayout>
 #include <QHBoxLayout>
+#include <QDebug>
 #include <QMetaObject>
 #include <QUrl>
 #include <QVBoxLayout>
@@ -143,6 +144,23 @@ void QtCalibrationSessionControlWidget::initializeSounds()
     forwardFinishedSound_.setVolume(90);
     backwardFinishedSound_.setVolume(90);
     processErrorSound_.setVolume(100);
+
+    auto bindPlaybackLogging = [this](QMediaPlayer& player, const char* sound_name) {
+        connect(&player, &QMediaPlayer::stateChanged, this, [sound_name](QMediaPlayer::State state) {
+            if (state == QMediaPlayer::PlayingState) {
+                qInfo().noquote() << QString("Звук \"%1\" был проигран").arg(QString::fromUtf8(sound_name));
+            }
+        });
+
+        connect(&player, QOverload<QMediaPlayer::Error>::of(&QMediaPlayer::error), this, [sound_name, &player](QMediaPlayer::Error) {
+            qWarning().noquote() << QString("Ошибка воспроизведения звука \"%1\": %2")
+                                        .arg(QString::fromUtf8(sound_name), player.errorString());
+        });
+    };
+
+    bindPlaybackLogging(forwardFinishedSound_, "forward_movement_finished.wav");
+    bindPlaybackLogging(backwardFinishedSound_, "backward_movement_finished.wav");
+    bindPlaybackLogging(processErrorSound_, "error_during_process.wav");
 }
 
 void QtCalibrationSessionControlWidget::playSound(mvvm::CalibrationSessionControlViewModel::SoundCue cue)
